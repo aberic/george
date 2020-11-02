@@ -5,16 +5,19 @@ use std::sync::{Arc, RwLock};
 use chrono::{Duration, Local, NaiveDateTime};
 use once_cell::sync::Lazy;
 
+use comm::env;
 use comm::errors::children::{DatabaseExistError, DatabaseNoExistError};
 use comm::errors::entrances::GeorgeError;
 use comm::errors::entrances::GeorgeResult;
 use comm::io::file;
 use comm::io::writer::write_append_bytes;
+use logs::set_log;
 
 use crate::engine::database::Database;
 use crate::engine::traits::TDescription;
 use crate::engine::view::View;
-use crate::utils::comm::{Category, IndexType, LevelType};
+use crate::utils::comm::{Category, IndexType, LevelType, GEORGE_DB_CONFIG};
+use crate::utils::deploy::init_config;
 use crate::utils::path::{bootstrap_file_path, data_path, database_file_path, database_path};
 use crate::utils::store::{head, recovery_before_content, FileHeader, Tag};
 
@@ -29,6 +32,8 @@ pub(crate) struct Engine {
 pub(crate) static GLOBAL_CLIENT: Lazy<Arc<Engine>> = Lazy::new(|| {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
+    init_log();
+    init_config(config_path());
     let engine = Engine {
         databases: Default::default(),
         create_time,
@@ -36,7 +41,7 @@ pub(crate) static GLOBAL_CLIENT: Lazy<Arc<Engine>> = Lazy::new(|| {
     let arc_engine = Arc::new(engine);
     // 创建数据根目录
     match file::create_dir(data_path()) {
-        Ok(_file) => println!("create data path success!"),
+        Ok(_file) => println!("load data path success!"),
         Err(err) => panic!("create data path failed! error is {}", err),
     }
     // 创建引导文件
@@ -47,14 +52,31 @@ pub(crate) static GLOBAL_CLIENT: Lazy<Arc<Engine>> = Lazy::new(|| {
     arc_engine
 });
 
+fn config_path() -> String {
+    env::get(GEORGE_DB_CONFIG, "src/examples/conf.yaml")
+}
+
+fn init_log() {
+    set_log(
+        String::from("db"),
+        String::from("src/test"),
+        1024,
+        7,
+        String::from("trace"),
+    );
+}
+
 impl Engine {
     /// 初始化sky或恢复sky数据
     fn init_or_recovery(&self) {
-        match read_to_string(bootstrap_file_path()) {
+        let bootstrap_file = bootstrap_file_path();
+        match read_to_string(bootstrap_file.clone()) {
             Ok(text) => {
                 if text.is_empty() {
+                    println!("initialize new data");
                     self.init()
                 } else {
+                    println!("recovery exist data from bootstrap file {}", bootstrap_file);
                     self.recovery()
                 }
             }
@@ -64,7 +86,6 @@ impl Engine {
 
     /// 初始化sky
     fn init(&self) {
-        println!("init");
         match write_append_bytes(
             bootstrap_file_path(),
             head(FileHeader::create(
@@ -82,7 +103,6 @@ impl Engine {
 
     /// 恢复sky数据
     fn recovery(&self) {
-        println!("recovery");
         // 读取data目录下所有文件
         match read_dir(data_path()) {
             Ok(paths) => self.recovery_databases(paths),
@@ -99,7 +119,7 @@ impl Engine {
                 Ok(dir) => {
                     if dir.path().is_dir() {
                         let database_dir_name = dir.file_name().to_str().unwrap().to_string();
-                        println!("database_dir_name = {}", database_dir_name);
+                        println!("recovery database {}", database_dir_name);
                         self.recovery_database(database_dir_name.clone());
                     }
                 }
@@ -113,18 +133,17 @@ impl Engine {
         match recovery_before_content(Tag::Database, database_file_path(database_dir_name.clone()))
         {
             Ok(hd) => {
-                println!("head = {:#?}", hd.header);
+                // println!("head = {:#?}", hd.header);
                 // 恢复database数据
                 let mut db = Database::empty();
                 match db.recover(hd.description) {
                     Ok(()) => {
                         let db_name = db.name();
                         println!(
-                            "db = {}, {}, {}, {}",
+                            "db [id={}, name={}, create time ={}]",
                             db.id(),
                             db_name,
-                            db.comment(),
-                            db.create_time().num_nanoseconds().unwrap().to_string()
+                            db.create_time().num_nanoseconds().unwrap().to_string(),
                         );
                         // 如果已存在该database，则不处理
                         if self.exist_database(db_name.clone()) {
@@ -209,12 +228,22 @@ impl Engine {
         }
     }
     fn exist_database(&self, database_name: String) -> bool {
-        for res in self.databases.clone().read().unwrap().iter() {
-            if res.0.eq(&database_name) {
-                return true;
-            }
-        }
-        return false;
+        return match self
+            .databases
+            .clone()
+            .read()
+            .unwrap()
+            .get(database_name.as_str())
+        {
+            Some(a) => true,
+            None => false,
+        };
+        // for res in self.databases.clone().read().unwrap().iter() {
+        //     if res.0.eq(&database_name) {
+        //         return true;
+        //     }
+        // }
+        // return false;
     }
     /// 创建视图
     pub(crate) fn create_view(

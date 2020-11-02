@@ -52,8 +52,8 @@ pub static GLOBAL_CONFIG: Lazy<RwLock<Config>> = Lazy::new(|| {
     RwLock::new(config)
 });
 
-pub fn init(filepath: String) {
-    match read_all_string(filepath) {
+pub fn init_config(filepath: String) {
+    match read_all_string(filepath.clone()) {
         Ok(config_yaml_str_res) => {
             let conf: Conf;
             match serde_yaml::from_str(&config_yaml_str_res) {
@@ -92,7 +92,9 @@ pub fn init(filepath: String) {
                     .parse::<bool>()
                     .expect("config GEORGE_DB_PRODUCTION type error");
         }
-        _ => {}
+        _ => {
+            log::info!("No config file match in path {}", filepath);
+        }
     }
 }
 

@@ -300,7 +300,7 @@ impl Database {
                 Ok(dir) => {
                     if dir.path().is_dir() {
                         let view_dir_name = dir.file_name().to_str().unwrap().to_string();
-                        println!("view_dir_name = {}", view_dir_name);
+                        println!("recovery view {}", view_dir_name);
                         // 恢复view数据
                         self.recovery_view(view_dir_name.clone());
                     }
@@ -315,19 +315,17 @@ impl Database {
         let view_file_path = view_file_path(self.id(), view_dir_name.clone());
         match recovery_before_content(Tag::View, view_file_path.clone()) {
             Ok(hd) => {
-                println!("head = {:#?}", hd.header);
+                // println!("head = {:#?}", hd.header);
                 // 恢复view数据
                 let mut view = View::empty();
                 match view.recover(hd.description) {
                     Ok(()) => {
                         let view_name = view.name();
                         println!(
-                            "view = {}, {}, {}, {}, {:#?}, {:#?}, {:#?}, {}",
+                            "view [dbID={}, id={}, name={}, category={:#?}, level={:#?}, create_time={}]",
                             view.database_id(),
                             view.id(),
                             view_name,
-                            view.comment(),
-                            view.index_type(),
                             view.category(),
                             view.level(),
                             view.create_time().num_nanoseconds().unwrap().to_string()

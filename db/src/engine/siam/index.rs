@@ -293,7 +293,7 @@ impl<N: TNode> Index<N> {
         };
         index.recover(description)?;
         println!(
-            "index = {}, {}, {}, {}, {}, {:#?}, {:#?}, {}",
+            "index [dbID={}, vid={}, id={}, key_structure={}, primary={}, category={:#?}, level={:#?}, create_time={}]",
             index.database_id(),
             index.view_id(),
             index.id(),

@@ -394,7 +394,7 @@ impl View {
                     if dir.path().is_file() {
                         let index_file_name = dir.file_name().to_str().unwrap().to_string();
                         if index_file_name != "view.sr" {
-                            println!("index_file_name = {}", index_file_name);
+                            println!("recovery index {}", index_file_name);
                             // 恢复index数据
                             match self.recovery_index(database.id(), index_file_name.clone()) {
                                 Ok(index) => {
@@ -405,10 +405,7 @@ impl View {
                                     if self.exist_index(index_id.clone()) {
                                         return;
                                     }
-                                    println!(
-                                        "recovery indexes index category = {:#?}",
-                                        idx_r.category()
-                                    );
+                                    // println!("recovery indexes index category = {:#?}", idx_r.category());
                                     self.indexes
                                         .clone()
                                         .write()
@@ -432,7 +429,7 @@ impl View {
     ) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
         let index_file_path = index_file_path_yet(database_id, self.id(), index_file_name.clone());
         let hd = recovery_before_content(Tag::Index, index_file_path.clone())?;
-        println!("head = {:#?}", hd.header);
+        // println!("head = {:#?}", hd.header);
         match self.index_type {
             IndexType::Siam => match self.category {
                 Category::Memory => Ok(Siam_Index::regain(

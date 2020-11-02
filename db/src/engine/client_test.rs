@@ -141,6 +141,48 @@ mod engine_test {
         get("database_test", "view_test_doc", "key", 4);
     }
 
+    #[test]
+    fn put_document3() {
+        create_database("database3", "comment", 1);
+        create_database("database3", "comment", 2);
+        create_database("database3_1", "comment", 3);
+        create_view(
+            "database3",
+            "view_doc",
+            "comment",
+            IndexType::Siam,
+            Category::Document,
+            LevelType::Small,
+            1,
+        );
+        create_view(
+            "database3",
+            "view_doc",
+            "comment",
+            IndexType::Siam,
+            Category::Document,
+            LevelType::Small,
+            2,
+        );
+        create_view(
+            "database3",
+            "view_doc1",
+            "comment",
+            IndexType::Siam,
+            Category::Document,
+            LevelType::Small,
+            3,
+        );
+        create_index("database3", "view_doc", "index", false, 1);
+        create_index("database3", "view_doc", "index", false, 2);
+        put("database3", "view_doc", "md516", "database1 tValue", 1);
+        get("database3", "view_doc", "md516", 1);
+        put("database3", "view_doc", "md516", "database2 tValue", 2);
+        get("database3", "view_doc", "md516", 2);
+        set("database3", "view_doc", "md516", "database3 tValue", 3);
+        get("database3", "view_doc", "md516", 3);
+    }
+
     fn create_database(database_name: &str, database_comment: &str, position: usize) {
         create_database_string(
             database_name.to_string(),
