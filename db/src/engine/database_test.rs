@@ -18,8 +18,7 @@ mod database_test {
 
     #[test]
     fn description() {
-        let mut database: Database =
-            Database::create(String::from("name"), String::from("comment"));
+        let mut database = Database::create(String::from("name"), String::from("comment"));
         let d = database.description();
         println!(
             "database = {}, {}, {}, {}",
@@ -34,8 +33,7 @@ mod database_test {
         );
         println!("d = {:#?}", d);
 
-        let mut database1: Database =
-            Database::create(String::from("name1"), String::from("comment1"));
+        let mut database1 = Database::create(String::from("name1"), String::from("comment1"));
         let d1 = database1.description();
         println!("d1 = {:#?}", d1);
         println!(
@@ -65,8 +63,7 @@ mod database_test {
 
     #[test]
     fn put() {
-        let mut database: Database =
-            Database::create(String::from("name"), String::from("comment"));
+        let database = Database::create(String::from("name"), String::from("comment"));
         database
             .create_view(
                 String::from("name"),

@@ -19,7 +19,7 @@ log = "0.4.11"
 log4rs = "0.13.0"
 chrono = "0.4.19"
 serde = "1.0.117"
-serde_yaml = "0.8.13"
+serde_yaml = "0.8.14"
 comm = { path = "../comm", version = "0.1.0" }
 logs = { path = "../logs", version = "0.1.0" }
 lazy_static = "1.4.0"

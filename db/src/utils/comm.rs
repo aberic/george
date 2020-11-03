@@ -7,6 +7,9 @@ pub const GEORGE_DB_LOG_FILE_MAX_COUNT: &str = "GEORGE_DB_LOG_FILE_MAX_COUNT";
 pub const GEORGE_DB_LOG_LEVEL: &str = "GEORGE_DB_LOG_LEVEL";
 pub const GEORGE_DB_PRODUCTION: &str = "GEORGE_DB_PRODUCTION";
 
+pub const INDEX_CATALOG: &str = "george_db_index_catalog";
+pub const INDEX_SEQUENCE: &str = "george_db_index_sequence";
+
 #[derive(Debug, Clone, Copy)]
 pub enum IndexType {
     Siam,

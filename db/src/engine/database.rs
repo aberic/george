@@ -220,7 +220,7 @@ impl Database {
     }
     /// 在指定视图中创建索引
     pub(crate) fn create_index(
-        &mut self,
+        &self,
         view_name: String,
         key_structure: String,
         primary: bool,
