@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fs::ReadDir;
+use std::sync::atomic::AtomicU32;
 use std::sync::{Arc, RwLock};
 
 use chrono::{Duration, Local, NaiveDateTime};
@@ -46,6 +47,8 @@ pub(crate) struct View {
     create_time: Duration,
     /// 索引集合
     indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
+    /// 自增ID
+    auto_id: Arc<AtomicU32>,
 }
 
 impl TDescription for View {
@@ -138,6 +141,7 @@ fn new_view(
         level,
         create_time,
         indexes: Default::default(),
+        auto_id: Arc::new(AtomicU32::new(1)),
     };
 }
 
@@ -197,6 +201,7 @@ impl View {
             level: LevelType::Small,
             create_time: Duration::nanoseconds(1),
             indexes: Arc::new(Default::default()),
+            auto_id: Arc::new(AtomicU32::new(1)),
         };
     }
     pub(crate) fn database_id(&self) -> String {

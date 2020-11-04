@@ -18,10 +18,7 @@ use crate::utils::writer::GLOBAL_WRITER;
 /// node 所查找的集合根
 ///
 /// match_index 在该集合中真实的下标位置
-pub(super) fn binary_match_data_pre<N: TNode>(
-    node: &N,
-    match_index: u16,
-) -> GeorgeResult<Arc<N>> {
+pub(super) fn binary_match_data_pre<N: TNode>(node: &N, match_index: u16) -> GeorgeResult<Arc<N>> {
     return match node.clone().nodes() {
         Some(arc_nodes) => {
             if arc_nodes.clone().read().unwrap().clone().len() > 0 {
@@ -256,6 +253,7 @@ fn create_or_take<N: TNode>(node: &N, index: u16, leaf: bool) -> Arc<N> {
 ///     key: String, // 当前结果原始key信息
 ///     value: Vec<u8>, // 当前结果value信息
 /// }
+/// ```
 ///
 /// flexible_key 下一级最左最小树所对应真实key<p><p>
 ///
@@ -267,7 +265,6 @@ fn create_or_take<N: TNode>(node: &N, index: u16, leaf: bool) -> Arc<N> {
 pub(super) fn put_in_node_u64<N: TNode>(
     node: &N,
     level: u8,
-    hash_key: u64,
     flexible_key: u64,
     seed: Arc<RwLock<dyn TSeed>>,
     force: bool,
@@ -287,14 +284,7 @@ pub(super) fn put_in_node_u64<N: TNode>(
     } else {
         // 创建或获取下一个子节点
         node_next = create_or_take_node(node, next_degree);
-        put_in_node_u64(
-            &*node_next,
-            node_next_level,
-            hash_key,
-            next_flexible_key,
-            seed,
-            force,
-        )
+        put_in_node_u64(&*node_next, node_next_level, next_flexible_key, seed, force)
     }
 }
 
@@ -325,7 +315,6 @@ pub(super) fn put_in_node_u64<N: TNode>(
 pub(super) fn get_in_node_u64<N: TNode>(
     node: &N,
     level: u8,
-    hash_key: u64,
     md516_key: String,
     flexible_key: u64,
 ) -> GeorgeResult<Vec<u8>> {
@@ -341,13 +330,7 @@ pub(super) fn get_in_node_u64<N: TNode>(
         return get_seed_value(node, md516_key);
     };
     let node_next = binary_match_data_pre(node, next_degree)?;
-    get_in_node_u64(
-        node_next.as_ref(),
-        level + 1,
-        hash_key,
-        md516_key,
-        next_flexible_key,
-    )
+    get_in_node_u64(node_next.as_ref(), level + 1, md516_key, next_flexible_key)
 }
 
 /// 插入数据<p><p>
@@ -461,11 +444,7 @@ pub(super) fn get_in_node_u32<N: TNode>(
     )
 }
 
-pub fn put_seed<N: TNode>(
-    node: &N,
-    seed: Arc<RwLock<dyn TSeed>>,
-    force: bool,
-) -> GeorgeResult<()> {
+pub fn put_seed<N: TNode>(node: &N, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
     // 获取seed叶子，如果存在，则判断版本号，如果不存在，则新建一个空并返回
     return if force {
         exist_seed_save_force(node, seed.clone());

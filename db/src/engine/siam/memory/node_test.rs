@@ -1,10 +1,14 @@
 #[cfg(test)]
 mod node_test {
-    use std::sync::Arc;
+    use std::sync::{Arc, RwLock};
 
     use crate::engine::siam::comm::add_child_node;
     use crate::engine::siam::memory::node::Node;
+    use crate::engine::siam::memory::seed::Seed;
     use crate::engine::siam::traits::TNode;
+    use crate::engine::traits::TSeed;
+    use comm::cryptos::hash::md516;
+    use std::error::Error;
 
     #[test]
     fn create_root_test() {
@@ -49,6 +53,21 @@ mod node_test {
         // let v = pv.clone().nodes().unwrap().read().unwrap().clone();
         for node in n.clone().nodes().unwrap().read().unwrap().iter() {
             println!("node degree = {}", node.degree_index())
+        }
+    }
+
+    #[test]
+    fn put_get() {
+        let root: Arc<Node> = Node::create_root();
+        let key = "test".to_string();
+        let seed = Arc::new(RwLock::new(Seed::create(md516(key.clone()))));
+        seed.write().unwrap().save("1".as_bytes().to_vec());
+        root.put(key.clone(), seed, false, "".to_string(), 0)
+            .unwrap();
+        let irg = root.get(key.clone(), "".to_string(), 0);
+        match irg {
+            Ok(seed) => println!("u is {:#?}", seed),
+            Err(ie) => println!("res is {:#?}", ie.source().unwrap().to_string()),
         }
     }
 }

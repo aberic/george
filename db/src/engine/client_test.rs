@@ -141,48 +141,6 @@ mod engine_test {
         get("database_test", "view_test_doc", "key", 4);
     }
 
-    #[test]
-    fn put_document3() {
-        create_database("database3", "comment", 1);
-        create_database("database3", "comment", 2);
-        create_database("database3_1", "comment", 3);
-        create_view(
-            "database3",
-            "view_doc",
-            "comment",
-            IndexType::Siam,
-            Category::Document,
-            LevelType::Small,
-            1,
-        );
-        create_view(
-            "database3",
-            "view_doc",
-            "comment",
-            IndexType::Siam,
-            Category::Document,
-            LevelType::Small,
-            2,
-        );
-        create_view(
-            "database3",
-            "view_doc1",
-            "comment",
-            IndexType::Siam,
-            Category::Document,
-            LevelType::Small,
-            3,
-        );
-        create_index("database3", "view_doc", "index", false, 1);
-        create_index("database3", "view_doc", "index", false, 2);
-        put("database3", "view_doc", "md516", "database1 tValue", 1);
-        get("database3", "view_doc", "md516", 1);
-        put("database3", "view_doc", "md516", "database2 tValue", 2);
-        get("database3", "view_doc", "md516", 2);
-        set("database3", "view_doc", "md516", "database3 tValue", 3);
-        get("database3", "view_doc", "md516", 3);
-    }
-
     fn create_database(database_name: &str, database_comment: &str, position: usize) {
         create_database_string(
             database_name.to_string(),
@@ -207,30 +165,10 @@ mod engine_test {
         view_level: LevelType,
         position: usize,
     ) {
-        create_view_string(
+        match GLOBAL_CLIENT.create_view(
             database_name.to_string(),
             view_name.to_string(),
             view_comment.to_string(),
-            index_type,
-            view_category,
-            view_level,
-            position,
-        )
-    }
-
-    fn create_view_string(
-        database_name: String,
-        view_name: String,
-        view_comment: String,
-        index_type: IndexType,
-        view_category: Category,
-        view_level: LevelType,
-        position: usize,
-    ) {
-        match GLOBAL_CLIENT.create_view(
-            database_name,
-            view_name,
-            view_comment,
             index_type,
             view_category,
             view_level,
@@ -247,46 +185,24 @@ mod engine_test {
         primary: bool,
         position: usize,
     ) {
-        create_index_string(
+        match GLOBAL_CLIENT.create_index(
             database_name.to_string(),
             view_name.to_string(),
             key_structure.to_string(),
             primary,
-            position,
-        )
-    }
-
-    fn create_index_string(
-        database_name: String,
-        view_name: String,
-        key_structure: String,
-        primary: bool,
-        position: usize,
-    ) {
-        match GLOBAL_CLIENT.create_index(database_name, view_name, key_structure.clone(), primary) {
+        ) {
             Err(err) => println!("create_index{} {} = {}", position, key_structure, err),
             _ => {}
         }
     }
 
     fn put(database_name: &str, view_name: &str, key: &str, value: &str, position: usize) {
-        put_string(
+        match GLOBAL_CLIENT.put(
             database_name.to_string(),
             view_name.to_string(),
             key.to_string(),
-            value.to_string(),
-            position,
-        )
-    }
-
-    fn put_string(
-        database_name: String,
-        view_name: String,
-        key: String,
-        value: String,
-        position: usize,
-    ) {
-        match GLOBAL_CLIENT.put(database_name, view_name, key, value.into_bytes()) {
+            value.to_string().into_bytes(),
+        ) {
             Err(ie) => println!(
                 "put{} error is {:#?}",
                 position,
@@ -297,23 +213,12 @@ mod engine_test {
     }
 
     fn set(database_name: &str, view_name: &str, key: &str, value: &str, position: usize) {
-        set_string(
+        match GLOBAL_CLIENT.set(
             database_name.to_string(),
             view_name.to_string(),
             key.to_string(),
-            value.to_string(),
-            position,
-        )
-    }
-
-    fn set_string(
-        database_name: String,
-        view_name: String,
-        key: String,
-        value: String,
-        position: usize,
-    ) {
-        match GLOBAL_CLIENT.set(database_name, view_name, key, value.into_bytes()) {
+            value.to_string().into_bytes(),
+        ) {
             Err(ie) => println!(
                 "put{} error is {:#?}",
                 position,
@@ -324,16 +229,11 @@ mod engine_test {
     }
 
     fn get(database_name: &str, view_name: &str, key: &str, position: usize) {
-        get_string(
+        match GLOBAL_CLIENT.get(
             database_name.to_string(),
             view_name.to_string(),
             key.to_string(),
-            position,
-        )
-    }
-
-    fn get_string(database_name: String, view_name: String, key: String, position: usize) {
-        match GLOBAL_CLIENT.get(database_name, view_name, key) {
+        ) {
             Ok(vu8) => println!(
                 "get{} is {:#?}",
                 position,
@@ -344,21 +244,11 @@ mod engine_test {
     }
 
     fn modify_view(database_name: &str, view_old_name: &str, view_new_name: &str, position: usize) {
-        modify_view_string(
+        match GLOBAL_CLIENT.modify_view(
             database_name.to_string(),
             view_old_name.to_string(),
             view_new_name.to_string(),
-            position,
-        )
-    }
-
-    fn modify_view_string(
-        database_name: String,
-        view_old_name: String,
-        view_new_name: String,
-        position: usize,
-    ) {
-        match GLOBAL_CLIENT.modify_view(database_name, view_old_name, view_new_name) {
+        ) {
             Err(ie) => println!(
                 "modify view {} is {:#?}",
                 position,
@@ -369,19 +259,9 @@ mod engine_test {
     }
 
     fn modify_database(database_old_name: &str, database_new_name: &str, position: usize) {
-        modify_database_string(
-            database_old_name.to_string(),
-            database_new_name.to_string(),
-            position,
-        )
-    }
-
-    fn modify_database_string(
-        database_old_name: String,
-        database_new_name: String,
-        position: usize,
-    ) {
-        match GLOBAL_CLIENT.modify_database(database_old_name, database_new_name) {
+        match GLOBAL_CLIENT
+            .modify_database(database_old_name.to_string(), database_new_name.to_string())
+        {
             Err(ie) => println!(
                 "modify database {} is {:#?}",
                 position,

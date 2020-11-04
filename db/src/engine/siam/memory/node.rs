@@ -1,11 +1,11 @@
 use std::fmt::Debug;
 use std::sync::{Arc, RwLock};
 
-use comm::cryptos::hash::{hashcode64_enhance, md516};
-use comm::errors::entrances::GeorgeResult;
 use crate::engine::siam::comm::{get_in_node_u64, put_in_node_u64};
 use crate::engine::siam::traits::TNode;
 use crate::engine::traits::TSeed;
+use comm::cryptos::hash::{hashcode64_enhance, md516};
+use comm::errors::entrances::GeorgeResult;
 
 /// 索引B+Tree结点结构
 ///
@@ -112,7 +112,7 @@ impl TNode for Node {
         Self: Sized,
     {
         let hash_key = hashcode64_enhance(key);
-        put_in_node_u64(self, 1, hash_key, hash_key, seed, force)
+        put_in_node_u64(self, 1, hash_key, seed, force)
     }
     fn get(
         &self,
@@ -124,6 +124,6 @@ impl TNode for Node {
         Self: Sized,
     {
         let hash_key = hashcode64_enhance(key.clone());
-        get_in_node_u64(self, 1, hash_key, md516(key), hash_key)
+        get_in_node_u64(self, 1, md516(key), hash_key)
     }
 }

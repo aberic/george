@@ -16,7 +16,7 @@ use logs::set_log;
 use crate::engine::database::Database;
 use crate::engine::traits::TDescription;
 use crate::engine::view::View;
-use crate::utils::comm::{Category, IndexType, LevelType, GEORGE_DB_CONFIG};
+use crate::utils::comm::{Category, IndexType, LevelType, GEORGE_DB_CONFIG, INDEX_CATALOG};
 use crate::utils::deploy::init_config;
 use crate::utils::path::{bootstrap_file_path, data_path, database_file_path, database_path};
 use crate::utils::store::{head, recovery_before_content, FileHeader, Tag};
@@ -235,15 +235,9 @@ impl Engine {
             .unwrap()
             .get(database_name.as_str())
         {
-            Some(a) => true,
+            Some(_) => true,
             None => false,
         };
-        // for res in self.databases.clone().read().unwrap().iter() {
-        //     if res.0.eq(&database_name) {
-        //         return true;
-        //     }
-        // }
-        // return false;
     }
     /// 创建视图
     pub(crate) fn create_view(
@@ -255,19 +249,20 @@ impl Engine {
         view_category: Category,
         view_level: LevelType,
     ) -> GeorgeResult<()> {
-        return match self.databases.clone().read().unwrap().get(&database_name) {
+        match self.databases.clone().read().unwrap().get(&database_name) {
             Some(database_lock) => {
                 let database = database_lock.read().unwrap();
                 database.create_view(
-                    view_name,
+                    view_name.clone(),
                     view_comment,
                     index_type,
                     view_category,
                     view_level,
                 )
             }
-            None => Err(GeorgeError::DatabaseNoExistError(DatabaseNoExistError)),
-        };
+            None => return Err(GeorgeError::DatabaseNoExistError(DatabaseNoExistError)),
+        }
+        // self.create_index(database_name, view_name, INDEX_CATALOG.to_string(), true)
     }
     /// 获取数据库集合
     pub(crate) fn db_array(&self) -> Vec<Arc<RwLock<Database>>> {

@@ -6,8 +6,9 @@ mod index_test {
     use crate::engine::siam::index::Index;
     use crate::engine::siam::memory::node::Node;
     use crate::engine::siam::memory::seed::Seed;
-    use crate::engine::traits::{TDescription, TIndex};
+    use crate::engine::traits::{TDescription, TIndex, TSeed};
     use crate::utils::comm::{Category, LevelType};
+    use comm::cryptos::hash::md516;
 
     fn obtain_index() -> Index<Node> {
         Index::create(
@@ -84,11 +85,13 @@ mod index_test {
     }
 
     #[test]
-    fn put() {
+    fn put_get() {
         let index = obtain_index();
-        let seed = Arc::new(RwLock::new(Seed::create(String::from("1"))));
-        index.put("test".to_string(), seed, false).unwrap();
-        let irg = index.get("test".to_string());
+        let key = "test".to_string();
+        let seed = Arc::new(RwLock::new(Seed::create(md516(key.clone()))));
+        seed.write().unwrap().save("1".as_bytes().to_vec());
+        index.put(key.clone(), seed, false).unwrap();
+        let irg = index.get(key.clone());
         match irg {
             Ok(seed) => println!("u is {:#?}", seed),
             Err(ie) => println!("res is {:#?}", ie.source().unwrap().to_string()),
