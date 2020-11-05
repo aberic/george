@@ -60,7 +60,7 @@ impl<N: TNode> TDescription for Index<N> {
         ))
         .into_bytes();
         let len = des_front.len();
-        self.description_len = len + 2 + 38;
+        self.description_len = len + 2 + 40;
         let mut len_bytes = trans_u16_2_bytes(len as u16);
         des.append(&mut len_bytes);
         des.append(&mut des_front);
@@ -91,7 +91,7 @@ impl<N: TNode> TDescription for Index<N> {
                         self.create_time = Duration::nanoseconds(
                             split.next().unwrap().to_string().parse::<i64>().unwrap(),
                         );
-                        self.description_len = description_len + 38;
+                        self.description_len = description_len + 40;
                         self.root.set_node_bytes(node_bytes);
                         Ok(())
                     }
@@ -248,8 +248,8 @@ impl<N: TNode> Index<N> {
             0x00,
         ));
         let mut description = index.description();
-        // 初始化为32 + 6，即head长度加正文描述符长度
-        let mut before_description = before_content_bytes(38, description.len() as u16);
+        // 初始化为32 + 8，即head长度加正文描述符长度
+        let mut before_description = before_content_bytes_for_index(40, description.len() as u32);
         head.append(&mut before_description);
         head.append(&mut description);
         save(Tag::Index, file, head, id, index_file_path, index)
