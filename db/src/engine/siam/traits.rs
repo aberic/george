@@ -122,6 +122,7 @@ pub trait DiskNode: Send + Sync {
         index_file_path: String,
         view_file_path: String,
         next_node_seek: u64,
+        level_type: LevelType,
     ) -> GeorgeResult<()>
     where
         Self: Sized;
@@ -152,6 +153,7 @@ pub trait DiskNode: Send + Sync {
         index_file_path: String,
         view_file_path: String,
         node_seek: u64,
+        level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>
     where
         Self: Sized;
@@ -184,6 +186,7 @@ pub trait DiskNode: Send + Sync {
         index_file_path: String,
         view_file_path: String,
         next_node_seek: u64,
+        level_type: LevelType,
     ) -> GeorgeResult<()>
     where
         Self: Sized;
@@ -214,6 +217,7 @@ pub trait DiskNode: Send + Sync {
         index_file_path: String,
         view_file_path: String,
         node_seek: u64,
+        level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>
     where
         Self: Sized;

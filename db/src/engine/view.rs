@@ -27,6 +27,7 @@ use crate::utils::store::{
     recovery_before_content, save, FileHeader, Tag,
 };
 use crate::utils::writer::GLOBAL_WRITER;
+use std::sync::atomic::{AtomicU32, Ordering};
 
 /// 视图，类似表
 pub(crate) struct View {
@@ -49,9 +50,7 @@ pub(crate) struct View {
     /// 索引集合
     indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
     /// 自增ID
-    auto_id: u32,
-    /// 自增锁
-    lock: Arc<RwLock<u8>>,
+    auto_id: Arc<AtomicU32>,
 }
 
 impl TDescription for View {
@@ -144,8 +143,7 @@ fn new_view(
         level,
         create_time,
         indexes: Default::default(),
-        auto_id: 0,
-        lock: Arc::new(Default::default()),
+        auto_id: Arc::new(AtomicU32::new(1)),
     };
 }
 
@@ -205,8 +203,7 @@ impl View {
             level: LevelType::Small,
             create_time: Duration::nanoseconds(1),
             indexes: Arc::new(Default::default()),
-            auto_id: 0,
-            lock: Arc::new(Default::default()),
+            auto_id: Arc::new(Default::default()),
         };
     }
     pub(crate) fn database_id(&self) -> String {
@@ -293,7 +290,7 @@ impl View {
                     index_id,
                     key_structure,
                     primary,
-                    Siam_Doc_Node::create_root(self.database_id(), self.id()),
+                    Siam_Doc_Node::create_root(self.database_id(), self.id(), self.level()),
                     category(self.category),
                     level(self.level),
                 )?),
@@ -386,7 +383,10 @@ impl View {
             let key_structure = index_r.key_structure();
             match key_structure.as_str() {
                 INDEX_CATALOG => index_r.put(key.clone(), seed.clone(), force)?,
-                INDEX_SEQUENCE => {}
+                INDEX_SEQUENCE => {
+                    let id = self.auto_id.fetch_add(1, Ordering::Relaxed);
+                    index_r.put(id.to_string(), seed.clone(), force)?
+                }
                 _ => {}
             }
         }
@@ -451,7 +451,7 @@ impl View {
                 Category::Document => {
                     let index = Siam_Index::regain(
                         hd.description,
-                        Siam_Doc_Node::create_root(self.database_id(), self.id()),
+                        Siam_Doc_Node::create_root(self.database_id(), self.id(), self.level()),
                     )?;
                     GLOBAL_WRITER
                         .clone()

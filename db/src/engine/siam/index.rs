@@ -13,7 +13,8 @@ use crate::engine::traits::{TDescription, TIndex, TSeed};
 use crate::utils::comm::{Category, IndexType, LevelType};
 use crate::utils::path;
 use crate::utils::store::{
-    before_content_bytes, category, category_u8, head, level, level_u8, save, FileHeader, Tag,
+    before_content_bytes_for_index, category, category_u8, head, level, level_u8, save, FileHeader,
+    Tag,
 };
 
 /// Siam索引

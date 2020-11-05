@@ -92,8 +92,8 @@ fn put_document() {
         LevelType::Small,
         3,
     );
-    create_index("database", "view_doc", "index", false, 1);
-    create_index("database", "view_doc", "index", false, 2);
+    // create_index("database", "view_doc", "index", false, 1);
+    // create_index("database", "view_doc", "index", false, 2);
     put("database", "view_doc", "md516", "database1 tValue", 1);
     get("database", "view_doc", "md516", 1);
     put("database", "view_doc", "md516", "database2 tValue", 2);

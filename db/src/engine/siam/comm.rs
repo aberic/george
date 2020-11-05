@@ -10,7 +10,7 @@ use comm::trans::{trans_bytes_2_u64, trans_u64_2_bytes};
 use crate::engine::siam::document::seed::Seed;
 use crate::engine::siam::traits::{DiskNode, TNode};
 use crate::engine::traits::TSeed;
-use crate::utils::comm::{level_distance_32, level_distance_64};
+use crate::utils::comm::{level_distance_32, level_distance_64, LevelType};
 use crate::utils::store::Tag;
 use crate::utils::writer::GLOBAL_WRITER;
 
@@ -474,6 +474,7 @@ pub fn read_next_nodes_bytes<N: DiskNode>(
     start: u64,
     root: bool,
     new: bool,
+    level_type: LevelType,
 ) -> GeorgeResult<(Vec<u8>, u64)> {
     let seek_start = start as usize;
     let seek_end = seek_start + 8;
@@ -481,7 +482,13 @@ pub fn read_next_nodes_bytes<N: DiskNode>(
     let next_node_bytes_seek = trans_bytes_2_u64(u8s);
     if next_node_bytes_seek == 0 {
         if new {
-            let next_node_bytes = create_empty_bytes(2048);
+            // 如果子项是32位node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
+            // 如果子项是64位node集合，在node集合中每一个node的默认字节长度是8，数量是65536，即一次性读取524288个字节
+            let next_node_bytes: Vec<u8>;
+            match level_type {
+                LevelType::Small => next_node_bytes = create_empty_bytes(2048),
+                LevelType::Large => next_node_bytes = create_empty_bytes(524288),
+            }
             let seek = GLOBAL_WRITER.write_append_bytes(
                 Tag::Index,
                 index_file_name.clone(),
@@ -501,9 +508,19 @@ pub fn read_next_nodes_bytes<N: DiskNode>(
             Err(GeorgeError::DataNoExistError(DataNoExistError))
         }
     } else {
-        // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-        let next_node_bytes = read_sub_bytes(index_file_path, next_node_bytes_seek, 2048)?;
-        Ok((next_node_bytes, next_node_bytes_seek))
+        // 如果子项是32位node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
+        // 如果子项是64位node集合，在node集合中每一个node的默认字节长度是8，数量是65536，即一次性读取524288个字节
+        match level_type {
+            LevelType::Small => {
+                let next_node_bytes = read_sub_bytes(index_file_path, next_node_bytes_seek, 2048)?;
+                Ok((next_node_bytes, next_node_bytes_seek))
+            }
+            LevelType::Large => {
+                let next_node_bytes =
+                    read_sub_bytes(index_file_path, next_node_bytes_seek, 524288)?;
+                Ok((next_node_bytes, next_node_bytes_seek))
+            }
+        }
     }
 }
 
