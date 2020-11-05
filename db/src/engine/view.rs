@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::fs::ReadDir;
-use std::sync::atomic::AtomicU32;
 use std::sync::{Arc, RwLock};
 
 use chrono::{Duration, Local, NaiveDateTime};
@@ -18,7 +17,9 @@ use crate::engine::siam::index::Index as Siam_Index;
 use crate::engine::siam::memory::node::Node as Siam_Mem_Node;
 use crate::engine::siam::memory::seed::Seed as Mem_Seed;
 use crate::engine::traits::{TDescription, TIndex, TSeed};
-use crate::utils::comm::{category, level, Category, IndexType, LevelType};
+use crate::utils::comm::{
+    category, level, Category, IndexType, LevelType, INDEX_CATALOG, INDEX_SEQUENCE,
+};
 use crate::utils::path::{index_file_path_yet, view_file_path};
 use crate::utils::store;
 use crate::utils::store::{
@@ -48,7 +49,9 @@ pub(crate) struct View {
     /// 索引集合
     indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
     /// 自增ID
-    auto_id: Arc<AtomicU32>,
+    auto_id: u32,
+    /// 自增锁
+    lock: Arc<RwLock<u8>>,
 }
 
 impl TDescription for View {
@@ -141,7 +144,8 @@ fn new_view(
         level,
         create_time,
         indexes: Default::default(),
-        auto_id: Arc::new(AtomicU32::new(1)),
+        auto_id: 0,
+        lock: Arc::new(Default::default()),
     };
 }
 
@@ -201,7 +205,8 @@ impl View {
             level: LevelType::Small,
             create_time: Duration::nanoseconds(1),
             indexes: Arc::new(Default::default()),
-            auto_id: Arc::new(AtomicU32::new(1)),
+            auto_id: 0,
+            lock: Arc::new(Default::default()),
         };
     }
     pub(crate) fn database_id(&self) -> String {
@@ -377,11 +382,13 @@ impl View {
             }
         }
         for index in self.indexes.clone().read().unwrap().iter() {
-            index
-                .1
-                .read()
-                .unwrap()
-                .put(key.clone(), seed.clone(), force)?
+            let index_r = index.1.read().unwrap();
+            let key_structure = index_r.key_structure();
+            match key_structure.as_str() {
+                INDEX_CATALOG => index_r.put(key.clone(), seed.clone(), force)?,
+                INDEX_SEQUENCE => {}
+                _ => {}
+            }
         }
         // 执行真实存储操作，即索引将seed存入后，允许检索到该结果，但该结果值不存在，仅当所有索引存入都成功，才会执行本方法完成真实存储操作
         return seed.write().unwrap().save(value);

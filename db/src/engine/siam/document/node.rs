@@ -9,7 +9,7 @@ use comm::vectors;
 use crate::engine::siam::comm::{read_next_nodes_bytes, read_seed_bytes, write_seed_bytes};
 use crate::engine::siam::traits::{DiskNode, TNode};
 use crate::engine::traits::TSeed;
-use crate::utils::comm::level_distance_32;
+use crate::utils::comm::{level_distance_32, level_distance_64, LevelType};
 use crate::utils::path::{index_file_path, view_file_path};
 
 /// 索引B+Tree结点结构
@@ -91,6 +91,7 @@ impl TNode for Node {
         force: bool,
         index_file_name: String,
         description_len: usize,
+        level_type: LevelType,
     ) -> GeorgeResult<()>
     where
         Self: Sized,
@@ -100,7 +101,7 @@ impl TNode for Node {
             index_file_path(self.database_id(), self.view_id(), index_file_name.clone());
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
         let view_file_path = view_file_path(self.database_id(), self.view_id());
-        self.put_in_node(
+        self.put_32_in_node(
             node_bytes,
             1,
             hash_key,
@@ -118,6 +119,7 @@ impl TNode for Node {
         key: String,
         index_file_name: String,
         description_len: usize,
+        level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>
     where
         Self: Sized,
@@ -127,7 +129,7 @@ impl TNode for Node {
             index_file_path(self.database_id(), self.view_id(), index_file_name.clone());
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
         let view_file_path = view_file_path(self.database_id(), self.view_id());
-        self.get_in_node(
+        self.get_32_in_node(
             node_bytes,
             1,
             hash_key,
@@ -153,7 +155,7 @@ impl DiskNode for Node {
         let nb_n = vectors::modify(nb_w.to_vec(), vs, start);
         nb_w.copy_from_slice(nb_n.as_slice())
     }
-    fn put_in_node(
+    fn put_32_in_node(
         &self,
         node_bytes: Vec<u8>,
         level: u8,
@@ -201,7 +203,7 @@ impl DiskNode for Node {
                 root,
                 true,
             )?;
-            self.put_in_node(
+            self.put_32_in_node(
                 node_bytes,
                 level + 1,
                 next_flexible_key,
@@ -215,7 +217,7 @@ impl DiskNode for Node {
             )
         }
     }
-    fn get_in_node(
+    fn get_32_in_node(
         &self,
         node_bytes: Vec<u8>,
         level: u8,
@@ -249,7 +251,115 @@ impl DiskNode for Node {
                 root,
                 false,
             )?;
-            self.get_in_node(
+            self.get_32_in_node(
+                node_bytes,
+                level + 1,
+                next_flexible_key,
+                false,
+                index_file_name,
+                index_file_path,
+                view_file_path,
+                seek,
+            )
+        }
+    }
+    fn put_64_in_node(
+        &self,
+        node_bytes: Vec<u8>,
+        level: u8,
+        flexible_key: u64,
+        seed: Arc<RwLock<dyn TSeed>>,
+        force: bool,
+        root: bool,
+        index_file_name: String,
+        index_file_path: String,
+        view_file_path: String,
+        next_node_seek: u64,
+    ) -> GeorgeResult<()>
+    where
+        Self: Sized,
+    {
+        // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
+        let distance = level_distance_64(level);
+        // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数
+        let next_degree = (flexible_key / distance) as u16;
+        // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
+        let next_flexible_key = flexible_key - next_degree as u64 * distance;
+        // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
+        if level == 4 {
+            write_seed_bytes(
+                node_bytes,
+                index_file_path,
+                view_file_path,
+                next_node_seek,
+                (next_degree * 8) as u64, // 在当前操作结点的字节数组的起始位置
+                force,
+                seed,
+            )
+        } else {
+            // 下一结点状态
+            // 下一结点node_bytes
+            // 下一结点起始坐标seek
+            // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
+            let (node_bytes, seek) = read_next_nodes_bytes(
+                self,
+                node_bytes,
+                index_file_name.clone(),
+                index_file_path.clone(),
+                next_node_seek,
+                (next_degree * 8) as u64, // 在当前操作结点的字节数组的起始位置
+                root,
+                true,
+            )?;
+            self.put_64_in_node(
+                node_bytes,
+                level + 1,
+                next_flexible_key,
+                seed,
+                force,
+                false,
+                index_file_name,
+                index_file_path,
+                view_file_path,
+                seek,
+            )
+        }
+    }
+    fn get_64_in_node(
+        &self,
+        node_bytes: Vec<u8>,
+        level: u8,
+        flexible_key: u64,
+        root: bool,
+        index_file_name: String,
+        index_file_path: String,
+        view_file_path: String,
+        node_seek: u64,
+    ) -> GeorgeResult<Vec<u8>>
+    where
+        Self: Sized,
+    {
+        let distance = level_distance_64(level);
+        let next_degree = (flexible_key / distance) as u16;
+        let next_flexible_key = flexible_key - next_degree as u64 * distance;
+        if level == 4 {
+            read_seed_bytes(node_bytes, view_file_path, (next_degree * 8) as u64)
+        } else {
+            // 下一结点状态
+            // 下一结点node_bytes
+            // 下一结点起始坐标seek
+            // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
+            let (node_bytes, seek) = read_next_nodes_bytes(
+                self,
+                node_bytes,
+                index_file_name.clone(),
+                index_file_path.clone(),
+                node_seek,
+                (next_degree * 8) as u64,
+                root,
+                false,
+            )?;
+            self.get_64_in_node(
                 node_bytes,
                 level + 1,
                 next_flexible_key,

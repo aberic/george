@@ -1,6 +1,9 @@
 #[cfg(test)]
 mod md5 {
-    use crate::cryptos::hash::{hashcode32, hashcode64, hashcode64_enhance, md5, md516};
+    use crate::cryptos::hash::{
+        hashcode32, hashcode32_enhance, hashcode64, hashcode64_enhance, hashcode_enhance, md5,
+        md516,
+    };
 
     #[test]
     fn md5_test() {
@@ -33,6 +36,22 @@ mod md5 {
 
         println!("res = {}", hashcode64(bytes1));
         println!("res = {}", hashcode64(bytes2));
+    }
+
+    #[test]
+    fn hashcode_enhance_test() {
+        let x1 = String::from("1");
+        let x2 = String::from("100");
+        let x3 = String::from("10000");
+        println!("x1 = {}", hashcode32_enhance(x1.clone()) + 1);
+        println!("x2 = {}", hashcode32_enhance(x2.clone()) + 1);
+        println!("x3 = {}", hashcode32_enhance(x3.clone()) + 1);
+        println!("x1 = {}", hashcode64_enhance(x1.clone()) + 2);
+        println!("x2 = {}", hashcode64_enhance(x2.clone()) + 2);
+        println!("x3 = {}", hashcode64_enhance(x3.clone()) + 2);
+
+        println!("x3 = {:#?}", hashcode_enhance(true, x3.clone()));
+        println!("x3 = {:#?}", hashcode_enhance(false, x3.clone()));
     }
 
     #[test]

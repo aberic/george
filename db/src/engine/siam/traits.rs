@@ -3,6 +3,7 @@ use std::sync::{Arc, RwLock};
 use comm::errors::entrances::GeorgeResult;
 
 use crate::engine::traits::TSeed;
+use crate::utils::comm::LevelType;
 
 /// 结点通用特性，遵循此特性创建结点可以更方便的针对db进行扩展
 ///
@@ -59,6 +60,7 @@ pub trait TNode: Send + Sync {
         force: bool,
         index_file_name: String,
         description_len: usize,
+        level_type: LevelType,
     ) -> GeorgeResult<()>
     where
         Self: Sized;
@@ -78,6 +80,7 @@ pub trait TNode: Send + Sync {
         key: String,
         index_file_name: String,
         description_len: usize,
+        level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>
     where
         Self: Sized;
@@ -107,7 +110,7 @@ pub trait DiskNode: Send + Sync {
     /// root 是否根结点
     ///
     /// node_seek 当前操作结点在文件中的真实起始位置
-    fn put_in_node(
+    fn put_32_in_node(
         &self,
         node_bytes: Vec<u8>,
         level: u8,
@@ -139,11 +142,73 @@ pub trait DiskNode: Send + Sync {
     /// root 是否根结点
     ///
     /// node_seek 当前操作结点在文件中的真实起始位置
-    fn get_in_node(
+    fn get_32_in_node(
         &self,
         node_bytes: Vec<u8>,
         level: u8,
         flexible_key: u32,
+        root: bool,
+        index_file_name: String,
+        index_file_path: String,
+        view_file_path: String,
+        node_seek: u64,
+    ) -> GeorgeResult<Vec<u8>>
+    where
+        Self: Sized;
+    /// 存储数据真实操作
+    ///
+    /// node_bytes 当前操作结点的字节数组
+    ///
+    /// level 当前操作结点层
+    ///
+    /// hash_key 存储数据hash
+    ///
+    /// flexible_key 下一级最左最小树所对应真实key
+    ///
+    /// Seed value信息
+    ///
+    /// force 如果存在原值，是否覆盖原结果
+    ///
+    /// root 是否根结点
+    ///
+    /// node_seek 当前操作结点在文件中的真实起始位置
+    fn put_64_in_node(
+        &self,
+        node_bytes: Vec<u8>,
+        level: u8,
+        flexible_key: u64,
+        seed: Arc<RwLock<dyn TSeed>>,
+        force: bool,
+        root: bool,
+        index_file_name: String,
+        index_file_path: String,
+        view_file_path: String,
+        next_node_seek: u64,
+    ) -> GeorgeResult<()>
+    where
+        Self: Sized;
+    /// 存储数据真实操作
+    ///
+    /// node_bytes 当前操作结点的字节数组
+    ///
+    /// level 当前操作结点层
+    ///
+    /// hash_key 存储数据hash
+    ///
+    /// flexible_key 下一级最左最小树所对应真实key
+    ///
+    /// Seed value信息
+    ///
+    /// force 如果存在原值，是否覆盖原结果
+    ///
+    /// root 是否根结点
+    ///
+    /// node_seek 当前操作结点在文件中的真实起始位置
+    fn get_64_in_node(
+        &self,
+        node_bytes: Vec<u8>,
+        level: u8,
+        flexible_key: u64,
         root: bool,
         index_file_name: String,
         index_file_path: String,

@@ -172,19 +172,33 @@ impl<N: TNode> TIndex for Index<N> {
     }
     fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
         match self.category {
-            Category::Memory => {
-                self.root
-                    .put(key, seed, force, "".to_string(), self.description_len)
-            }
-            Category::Document => self
-                .root
-                .put(key, seed, force, self.id(), self.description_len),
+            Category::Memory => self.root.put(
+                key,
+                seed,
+                force,
+                "".to_string(),
+                self.description_len,
+                self.level(),
+            ),
+            Category::Document => self.root.put(
+                key,
+                seed,
+                force,
+                self.id(),
+                self.description_len,
+                self.level(),
+            ),
         }
     }
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
         match self.category {
-            Category::Memory => self.root.get(key, "".to_string(), self.description_len),
-            Category::Document => self.root.get(key, self.id(), self.description_len),
+            Category::Memory => {
+                self.root
+                    .get(key, "".to_string(), self.description_len, self.level())
+            }
+            Category::Document => self
+                .root
+                .get(key, self.id(), self.description_len, self.level()),
         }
     }
 }

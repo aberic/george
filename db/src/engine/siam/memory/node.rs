@@ -1,10 +1,13 @@
 use std::fmt::Debug;
 use std::sync::{Arc, RwLock};
 
-use crate::engine::siam::comm::{get_in_node_u64, put_in_node_u64};
+use crate::engine::siam::comm::{
+    get_in_node_u32, get_in_node_u64, put_in_node_u32, put_in_node_u64,
+};
 use crate::engine::siam::traits::TNode;
 use crate::engine::traits::TSeed;
-use comm::cryptos::hash::{hashcode64_enhance, md516};
+use crate::utils::comm::LevelType;
+use comm::cryptos::hash::{hashcode32_enhance, hashcode64_enhance, md516};
 use comm::errors::entrances::GeorgeResult;
 
 /// 索引B+Tree结点结构
@@ -107,23 +110,33 @@ impl TNode for Node {
         force: bool,
         _index_file_name: String,
         _description_len: usize,
+        level_type: LevelType,
     ) -> GeorgeResult<()>
     where
         Self: Sized,
     {
-        let hash_key = hashcode64_enhance(key);
-        put_in_node_u64(self, 1, hash_key, seed, force)
+        match level_type {
+            LevelType::Small => put_in_node_u32(self, 1, hashcode32_enhance(key), seed, force),
+            LevelType::Large => put_in_node_u64(self, 1, hashcode64_enhance(key), seed, force),
+        }
     }
     fn get(
         &self,
         key: String,
         _index_file_name: String,
         _description_len: usize,
+        level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>
     where
         Self: Sized,
     {
-        let hash_key = hashcode64_enhance(key.clone());
-        get_in_node_u64(self, 1, md516(key), hash_key)
+        match level_type {
+            LevelType::Small => {
+                get_in_node_u32(self, 1, md516(key.clone()), hashcode32_enhance(key.clone()))
+            }
+            LevelType::Large => {
+                get_in_node_u64(self, 1, md516(key.clone()), hashcode64_enhance(key.clone()))
+            }
+        }
     }
 }

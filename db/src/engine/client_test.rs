@@ -36,8 +36,6 @@ fn put_memory() {
         LevelType::Small,
         3,
     );
-    create_index("database", "view", "index", false, 1);
-    create_index("database", "view", "index", false, 2);
     put("database", "view", "md516", "database1 tValue", 1);
     get("database", "view", "md516", 1);
     put("database", "view", "md516", "database2 tValue", 2);
@@ -126,18 +124,31 @@ fn put_document2() {
     create_database("database_test", "comment", 1);
     create_view(
         "database_test",
-        "view_test_doc",
+        "view_test_doc_32",
         "comment",
         IndexType::Siam,
         Category::Document,
         LevelType::Small,
         1,
     );
-    // create_index("database_test", "view_test_doc", "index_test", false, 1);
-    put("database_test", "view_test_doc", "key", "value1", 1);
-    get("database_test", "view_test_doc", "key", 2);
-    set("database_test", "view_test_doc", "key", "value2", 3);
-    get("database_test", "view_test_doc", "key", 4);
+    put("database_test", "view_test_doc_32", "key", "value1", 1);
+    get("database_test", "view_test_doc_32", "key", 2);
+    set("database_test", "view_test_doc_32", "key", "value2", 3);
+    get("database_test", "view_test_doc_32", "key", 4);
+
+    create_view(
+        "database_test",
+        "view_test_doc_64",
+        "comment",
+        IndexType::Siam,
+        Category::Document,
+        LevelType::Large,
+        1,
+    );
+    put("database_test", "view_test_doc_64", "key", "value1", 1);
+    get("database_test", "view_test_doc_64", "key", 2);
+    set("database_test", "view_test_doc_64", "key", "value2", 3);
+    get("database_test", "view_test_doc_64", "key", 4);
 }
 
 fn create_database(database_name: &str, database_comment: &str, position: usize) {

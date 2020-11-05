@@ -7,6 +7,7 @@ mod node_test {
     use crate::engine::siam::memory::seed::Seed;
     use crate::engine::siam::traits::TNode;
     use crate::engine::traits::TSeed;
+    use crate::utils::comm::LevelType;
     use comm::cryptos::hash::md516;
     use std::error::Error;
 
@@ -57,14 +58,53 @@ mod node_test {
     }
 
     #[test]
-    fn put_get() {
+    fn put_get_32() {
         let root: Arc<Node> = Node::create_root();
         let key = "test".to_string();
         let seed = Arc::new(RwLock::new(Seed::create(md516(key.clone()))));
         seed.write().unwrap().save("1".as_bytes().to_vec());
-        root.put(key.clone(), seed, false, "".to_string(), 0)
-            .unwrap();
-        let irg = root.get(key.clone(), "".to_string(), 0);
+        root.put(
+            key.clone(),
+            seed,
+            false,
+            "".to_string(),
+            0,
+            LevelType::Small,
+        )
+        .unwrap();
+        let irg = root.get(key.clone(), "".to_string(), 0, LevelType::Small);
+        match irg {
+            Ok(seed) => println!("u is {:#?}", seed),
+            Err(ie) => println!("res is {:#?}", ie.source().unwrap().to_string()),
+        }
+        let irg = root.get(key.clone(), "".to_string(), 0, LevelType::Large);
+        match irg {
+            Ok(seed) => println!("u is {:#?}", seed),
+            Err(ie) => println!("res is {:#?}", ie.source().unwrap().to_string()),
+        }
+    }
+
+    #[test]
+    fn put_get_64() {
+        let root: Arc<Node> = Node::create_root();
+        let key = "test".to_string();
+        let seed = Arc::new(RwLock::new(Seed::create(md516(key.clone()))));
+        seed.write().unwrap().save("1".as_bytes().to_vec());
+        root.put(
+            key.clone(),
+            seed,
+            false,
+            "".to_string(),
+            0,
+            LevelType::Large,
+        )
+        .unwrap();
+        let irg = root.get(key.clone(), "".to_string(), 0, LevelType::Large);
+        match irg {
+            Ok(seed) => println!("u is {:#?}", seed),
+            Err(ie) => println!("res is {:#?}", ie.source().unwrap().to_string()),
+        }
+        let irg = root.get(key.clone(), "".to_string(), 0, LevelType::Small);
         match irg {
             Ok(seed) => println!("u is {:#?}", seed),
             Err(ie) => println!("res is {:#?}", ie.source().unwrap().to_string()),

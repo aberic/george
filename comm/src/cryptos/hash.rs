@@ -21,8 +21,8 @@ pub fn hashcode32(comment: &[u8]) -> u32 {
 }
 
 pub fn hashcode32_enhance(comment: String) -> u32 {
-    return match comment.parse::<i32>() {
-        Ok(si64) => si64 as u32,
+    return match comment.parse::<u32>() {
+        Ok(su32) => su32,
         Err(_err) => hashcode32(comment.as_bytes()),
     };
 }
@@ -34,8 +34,16 @@ pub fn hashcode64(comment: &[u8]) -> u64 {
 }
 
 pub fn hashcode64_enhance(comment: String) -> u64 {
-    return match comment.parse::<i64>() {
-        Ok(si64) => si64 as u64,
+    return match comment.parse::<u64>() {
+        Ok(su64) => su64,
         Err(_err) => hashcode64(comment.as_bytes()),
     };
+}
+
+pub fn hashcode_enhance(u32: bool, comment: String) -> (u32, u64) {
+    if u32 {
+        (hashcode32_enhance(comment), 0)
+    } else {
+        (0, hashcode64_enhance(comment))
+    }
 }
