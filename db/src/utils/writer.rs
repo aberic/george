@@ -1,21 +1,23 @@
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
-use std::io::Write;
+use std::io::{Seek, SeekFrom, Write};
 use std::sync::{Arc, RwLock};
 
 use once_cell::sync::Lazy;
 
 use comm::errors::children::NoneError;
-use comm::errors::entrances::{err_string, GeorgeError};
 use comm::errors::entrances::GeorgeResult;
+use comm::errors::entrances::{err_string, GeorgeError};
 
 use crate::utils::store::Tag;
 
+/// 视图及索引写对象
 pub struct Writer {
     pub views: Arc<RwLock<HashMap<String, Arc<RwLock<File>>>>>,
     pub indexes: Arc<RwLock<HashMap<String, Arc<RwLock<File>>>>>,
 }
 
+/// 视图及索引写全局单例对象
 pub(crate) static GLOBAL_WRITER: Lazy<Arc<Writer>> = Lazy::new(|| {
     let writer = Writer {
         views: Arc::new(Default::default()),
@@ -25,6 +27,7 @@ pub(crate) static GLOBAL_WRITER: Lazy<Arc<Writer>> = Lazy::new(|| {
 });
 
 impl Writer {
+    /// 视图及索引写对象新增视图管理
     pub fn insert_view(&self, view_id: String, view_file_path: String) -> GeorgeResult<()> {
         match OpenOptions::new().append(true).open(view_file_path) {
             Ok(file) => {
@@ -38,6 +41,8 @@ impl Writer {
             Err(err) => Err(err_string(err.to_string())),
         }
     }
+
+    /// 视图及索引写对象新增索引管理
     pub fn insert_index(&self, index_id: String, index_file_path: String) -> GeorgeResult<()> {
         match OpenOptions::new().append(true).open(index_file_path) {
             Ok(file) => {
@@ -52,6 +57,7 @@ impl Writer {
         }
     }
 
+    /// 获取视图或索引写文件对象
     fn file(&self, tag: Tag, id: String) -> GeorgeResult<Arc<RwLock<File>>> {
         return match tag {
             Tag::View => match self.views.clone().read().unwrap().get(&id) {
@@ -67,27 +73,7 @@ impl Writer {
     }
 
     /// 在指定文件中追加数据
-    pub fn write_append_str(&self, tag: Tag, id: String, content: &str) -> GeorgeResult<u64> {
-        self.write_append_u8s(tag, id, content.as_bytes())
-    }
-
-    /// 在指定文件中追加数据
-    pub fn write_append_string(
-        &self,
-        tag: Tag,
-        id: String,
-        content: String,
-    ) -> GeorgeResult<u64> {
-        self.write_append_u8s(tag, id, content.as_bytes())
-    }
-
-    /// 在指定文件中追加数据
-    pub fn write_append_bytes(
-        &self,
-        tag: Tag,
-        id: String,
-        content: Vec<u8>,
-    ) -> GeorgeResult<u64> {
+    pub fn write_append_bytes(&self, tag: Tag, id: String, content: Vec<u8>) -> GeorgeResult<u64> {
         self.write_append_u8s(tag, id, content.as_slice())
     }
 
@@ -97,9 +83,34 @@ impl Writer {
             Ok(file_arc) => {
                 let file = file_arc.clone();
                 let mut file_w = file.write().unwrap();
+                // 获取当前文件总长度，并将其作为写的偏移量
                 let seek_start = file_w.metadata().unwrap().len();
                 match file_w.write_all(content) {
                     Ok(()) => Ok(seek_start),
+                    Err(err) => Err(err_string(err.to_string())),
+                }
+            }
+            Err(err) => Err(err),
+        }
+    }
+
+    /// 在指定文件中指定位置后覆盖数据
+    pub fn write_seek_u8s(
+        &self,
+        tag: Tag,
+        id: String,
+        seek: u64,
+        content: &[u8],
+    ) -> GeorgeResult<()> {
+        match self.file(tag, id) {
+            Ok(file_arc) => {
+                let file = file_arc.clone();
+                let mut file_w = file.write().unwrap();
+                match file_w.seek(SeekFrom::Start(seek)) {
+                    Ok(_s) => match file_w.write_all(content) {
+                        Ok(()) => Ok(()),
+                        Err(err) => Err(err_string(err.to_string())),
+                    },
                     Err(err) => Err(err_string(err.to_string())),
                 }
             }

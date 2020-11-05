@@ -2,7 +2,7 @@
 mod node_test {
     use crate::engine::siam::comm::add_child_node;
     use crate::engine::siam::document::node::Node;
-    use crate::engine::siam::traits::{DiskNode, TNode};
+    use crate::engine::siam::traits::TNode;
     use std::sync::Arc;
 
     #[test]

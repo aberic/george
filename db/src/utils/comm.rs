@@ -10,17 +10,23 @@ pub const GEORGE_DB_PRODUCTION: &str = "GEORGE_DB_PRODUCTION";
 pub const INDEX_CATALOG: &str = "george_db_index_catalog";
 pub const INDEX_SEQUENCE: &str = "george_db_index_sequence";
 
+/// 索引类型
 #[derive(Debug, Clone, Copy)]
 pub enum IndexType {
+    /// 静态索引方法(static index access method)
     Siam,
 }
 
+/// 存储类型
 #[derive(Debug, Clone, Copy)]
 pub enum Category {
+    /// 内存存储类型
     Memory,
+    /// 文档存储类型
     Document,
 }
 
+/// 获取存储类型
 pub(crate) fn category(category: Category) -> Category {
     match category {
         Category::Memory => Category::Memory,
@@ -48,12 +54,16 @@ const LEVEL3DISTANCE64: u64 = 65536;
 /// LEVEL4DISTANCE level4间隔 65536^0 = 1 | 测试 4^0 = 1
 const LEVEL4DISTANCE64: u64 = 1;
 
+/// 存储量级
 #[derive(Debug, Clone, Copy)]
 pub enum LevelType {
+    /// 低级，支持存储2^32个元素
     Small,
+    /// 高级，支持存储2^64个元素
     Large,
 }
 
+/// 获取存储量级
 pub fn level(level: LevelType) -> LevelType {
     match level {
         LevelType::Small => LevelType::Small,
@@ -61,6 +71,7 @@ pub fn level(level: LevelType) -> LevelType {
     }
 }
 
+/// 获取在2^32量级组成树的指定层中元素的间隔数，即每一度中存在的元素数量
 pub fn level_distance_32(level: u8) -> u32 {
     if level == 1 {
         return LEVEL1DISTANCE32;
@@ -74,6 +85,7 @@ pub fn level_distance_32(level: u8) -> u32 {
     return 0;
 }
 
+/// 获取在2^64量级组成树的指定层中元素的间隔数，即每一度中存在的元素数量
 pub fn level_distance_64(level: u8) -> u64 {
     if level == 1 {
         return LEVEL1DISTANCE64;

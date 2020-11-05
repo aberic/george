@@ -258,11 +258,11 @@ impl Engine {
                     index_type,
                     view_category,
                     view_level,
-                )
+                )?;
             }
             None => return Err(GeorgeError::DatabaseNoExistError(DatabaseNoExistError)),
         }
-        // self.create_index(database_name, view_name, INDEX_CATALOG.to_string(), true)
+        self.create_index(database_name, view_name, INDEX_CATALOG.to_string(), true)
     }
     /// 获取数据库集合
     pub(crate) fn db_array(&self) -> Vec<Arc<RwLock<Database>>> {

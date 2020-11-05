@@ -17,7 +17,6 @@ pub trait TNode: Send + Sync {
     fn seeds(&self) -> Option<Arc<RwLock<Vec<Arc<RwLock<dyn TSeed>>>>>>;
     /// 存储结点所属各子结点坐标顺序字符串
     ///
-    /// 如果子项是node集合，在node集合中每一个node的默认字符长度是6，数量是256，即一次性读取1536个字符
     /// 如果子项是node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
     ///
     /// 如果子项是seed集合，在seed集合中每一个seed的默认字符长度是6，当前叶子node会存储叶子中首个出现hash碰撞的
@@ -61,8 +60,8 @@ pub trait TNode: Send + Sync {
         index_file_name: String,
         description_len: usize,
     ) -> GeorgeResult<()>
-        where
-            Self: Sized;
+    where
+        Self: Sized;
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -80,8 +79,8 @@ pub trait TNode: Send + Sync {
         index_file_name: String,
         description_len: usize,
     ) -> GeorgeResult<Vec<u8>>
-        where
-            Self: Sized;
+    where
+        Self: Sized;
 }
 
 /// 存储文件结点通用特性，遵循此特性创建结点可以更方便的针对db进行扩展
@@ -121,8 +120,8 @@ pub trait DiskNode: Send + Sync {
         view_file_path: String,
         next_node_seek: u64,
     ) -> GeorgeResult<()>
-        where
-            Self: Sized;
+    where
+        Self: Sized;
     /// 存储数据真实操作
     ///
     /// node_bytes 当前操作结点的字节数组
@@ -151,6 +150,6 @@ pub trait DiskNode: Send + Sync {
         view_file_path: String,
         node_seek: u64,
     ) -> GeorgeResult<Vec<u8>>
-        where
-            Self: Sized;
+    where
+        Self: Sized;
 }

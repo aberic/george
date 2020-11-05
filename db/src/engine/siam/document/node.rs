@@ -3,14 +3,10 @@ use std::sync::{Arc, RwLock};
 
 use comm::bytes::create_empty_bytes;
 use comm::cryptos::hash::hashcode32_enhance;
-use comm::errors::children::{DataExistError, DataNoExistError};
 use comm::errors::entrances::GeorgeResult;
-use comm::io::reader::read_sub_bytes;
-use comm::io::writer::write_seek_u8s;
-use comm::trans::{trans_bytes_2_u64, trans_u64_2_bytes};
 use comm::vectors;
 
-use crate::engine::siam::comm::{read_next_nodes_bytes, read_seed_bytes, write_seed, write_seed_bytes};
+use crate::engine::siam::comm::{read_next_nodes_bytes, read_seed_bytes, write_seed_bytes};
 use crate::engine::siam::traits::{DiskNode, TNode};
 use crate::engine::traits::TSeed;
 use crate::utils::comm::level_distance_32;
@@ -31,7 +27,6 @@ pub(crate) struct Node {
     view_id: String,
     /// 存储结点所属各子结点坐标顺序字符串
     ///
-    /// 如果子项是node集合，在node集合中每一个node的默认字符长度是6，数量是256，即一次性读取1536个字符
     /// 如果子项是node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
     ///
     /// 如果子项是seed集合，在seed集合中每一个seed的默认字符长度是6，当前叶子node会存储叶子中首个出现hash碰撞的
@@ -97,8 +92,8 @@ impl TNode for Node {
         index_file_name: String,
         description_len: usize,
     ) -> GeorgeResult<()>
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         let hash_key = hashcode32_enhance(key);
         let index_file_path =
@@ -124,8 +119,8 @@ impl TNode for Node {
         index_file_name: String,
         description_len: usize,
     ) -> GeorgeResult<Vec<u8>>
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         let hash_key = hashcode32_enhance(key.clone());
         let index_file_path =
@@ -171,21 +166,23 @@ impl DiskNode for Node {
         view_file_path: String,
         next_node_seek: u64,
     ) -> GeorgeResult<()>
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
+        // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
         let distance = level_distance_32(level);
+        // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数
         let next_degree = (flexible_key / distance) as u16;
+        // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
         let next_flexible_key = flexible_key - next_degree as u32 * distance;
-        let start = (next_degree * 8) as u64;
+        // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
             write_seed_bytes(
-                self,
                 node_bytes,
                 index_file_path,
                 view_file_path,
                 next_node_seek,
-                start,
+                (next_degree * 8) as u64, // 在当前操作结点的字节数组的起始位置
                 force,
                 seed,
             )
@@ -200,7 +197,7 @@ impl DiskNode for Node {
                 index_file_name.clone(),
                 index_file_path.clone(),
                 next_node_seek,
-                start,
+                (next_degree * 8) as u64, // 在当前操作结点的字节数组的起始位置
                 root,
                 true,
             )?;
@@ -229,15 +226,14 @@ impl DiskNode for Node {
         view_file_path: String,
         node_seek: u64,
     ) -> GeorgeResult<Vec<u8>>
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         let distance = level_distance_32(level);
         let next_degree = (flexible_key / distance) as u16;
         let next_flexible_key = flexible_key - next_degree as u32 * distance;
-        let next_seek = (next_degree * 8) as u64;
         if level == 4 {
-            read_seed_bytes(node_bytes, view_file_path, next_seek)
+            read_seed_bytes(node_bytes, view_file_path, (next_degree * 8) as u64)
         } else {
             // 下一结点状态
             // 下一结点node_bytes
@@ -249,7 +245,7 @@ impl DiskNode for Node {
                 index_file_name.clone(),
                 index_file_path.clone(),
                 node_seek,
-                next_seek,
+                (next_degree * 8) as u64,
                 root,
                 false,
             )?;

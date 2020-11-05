@@ -249,7 +249,7 @@ impl Database {
     pub(crate) fn put(&self, view_name: String, key: String, value: Vec<u8>) -> GeorgeResult<()> {
         return match self.views.clone().read().unwrap().get(&view_name) {
             Some(view) => view.read().unwrap().put(key, value),
-            _ => Err(GeorgeError::DataNoExistError(DataNoExistError)),
+            _ => Err(GeorgeError::ViewNoExistError(ViewNoExistError)),
         };
     }
     /// 插入数据，无论存在与否都会插入或更新数据<p><p>

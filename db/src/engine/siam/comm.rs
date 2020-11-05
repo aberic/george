@@ -7,6 +7,7 @@ use comm::io::reader::read_sub_bytes;
 use comm::io::writer::write_seek_u8s;
 use comm::trans::{trans_bytes_2_u64, trans_u64_2_bytes};
 
+use crate::engine::siam::document::seed::Seed;
 use crate::engine::siam::traits::{DiskNode, TNode};
 use crate::engine::traits::TSeed;
 use crate::utils::comm::{level_distance_32, level_distance_64};
@@ -532,8 +533,7 @@ pub fn read_next_nodes_bytes<N: DiskNode>(
 /// new 是否插入操作
 ///
 /// force 如果存在原值，是否覆盖原结果
-pub fn write_seed_bytes<N: DiskNode>(
-    node: &N,
+pub fn write_seed_bytes(
     node_bytes: Vec<u8>,
     index_file_path: String,
     view_file_path: String,
@@ -547,7 +547,10 @@ pub fn write_seed_bytes<N: DiskNode>(
     let u8s = node_bytes.as_slice()[seek_start..seek_end].to_vec();
     let seed_seek = trans_bytes_2_u64(u8s);
     if seed_seek == 0 {
-        write_seed(node, index_file_path, next_node_seek, start, seed)
+        let seed_u8s = Seed::u8s(index_file_path, next_node_seek, start)?;
+        seed.write().unwrap().modify(seed_u8s);
+        Ok(())
+    // write_seed(view_id, index_file_path, next_node_seek, start, seed)
     } else {
         if force {
             // 先读取seed的长度
@@ -560,7 +563,10 @@ pub fn write_seed_bytes<N: DiskNode>(
             {
                 Ok(())
             } else {
-                write_seed(node, index_file_path, next_node_seek, start, seed)
+                let seed_u8s = Seed::u8s(index_file_path, next_node_seek, start)?;
+                seed.write().unwrap().modify(seed_u8s);
+                Ok(())
+                // write_seed(view_id, index_file_path, next_node_seek, start, seed)
             }
         } else {
             Err(GeorgeError::DataExistError(DataExistError))
@@ -595,8 +601,8 @@ pub fn read_seed_bytes(
     }
 }
 
-pub fn write_seed<N: DiskNode>(
-    node: &N,
+pub fn write_seed(
+    view_id: String,
     index_file_path: String,
     next_node_seek: u64,
     start: u64,
@@ -605,11 +611,8 @@ pub fn write_seed<N: DiskNode>(
     let mut seed_bytes = seed.clone().read().unwrap().value().unwrap();
     let mut seed_bytes_len_bytes = trans_u64_2_bytes(seed_bytes.len() as u64);
     seed_bytes_len_bytes.append(&mut seed_bytes);
-    let seek = GLOBAL_WRITER.write_append_bytes(
-        Tag::View,
-        node.view_id(),
-        seed_bytes_len_bytes.clone(),
-    )?;
+    let seek =
+        GLOBAL_WRITER.write_append_bytes(Tag::View, view_id, seed_bytes_len_bytes.clone())?;
     let seek_v = trans_u64_2_bytes(seek);
     write_seek_u8s(
         index_file_path.clone(),

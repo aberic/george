@@ -8,7 +8,7 @@ use chrono::{Duration, Local, NaiveDateTime};
 use comm::cryptos::hash::md516;
 use comm::errors::children::{DataNoExistError, IndexExistError};
 use comm::errors::entrances::GeorgeResult;
-use comm::errors::entrances::{err_str_enhance, err_string, GeorgeError};
+use comm::errors::entrances::{err_string, GeorgeError};
 use comm::io::file::create_file;
 
 use crate::engine::database::Database;
@@ -373,7 +373,7 @@ impl View {
                 seed = Arc::new(RwLock::new(Mem_Seed::create(md516(key.clone()))));
             }
             Category::Document => {
-                seed = Arc::new(RwLock::new(Doc_Seed::create(value.clone())));
+                seed = Arc::new(RwLock::new(Doc_Seed::create(self.id())));
             }
         }
         for index in self.indexes.clone().read().unwrap().iter() {

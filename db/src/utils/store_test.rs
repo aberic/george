@@ -1,9 +1,7 @@
 #[cfg(test)]
 mod db {
-    use hex::decode;
-
     use crate::utils::comm::{Category, IndexType, LevelType};
-    use crate::utils::store::{FileHeader, head, Tag};
+    use crate::utils::store::{head, FileHeader, Tag};
 
     #[test]
     fn head_test() {
