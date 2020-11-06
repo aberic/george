@@ -632,10 +632,17 @@ pub(super) fn read_seed_bytes(
     if seed_seek == 0 {
         Err(GeorgeError::DataNoExistError(DataNoExistError))
     } else {
-        // 先读取seed的长度
-        let seed_len_bytes = read_sub_bytes(view_file_path.clone(), seed_seek, 8)?;
-        let seed_len = trans_bytes_2_u64(seed_len_bytes);
-        let seed_bytes = read_sub_bytes(view_file_path, seed_seek + 8, seed_len as usize)?;
-        Ok(seed_bytes)
+        read_seed_bytes_from_view(view_file_path, seed_seek)
     }
+}
+
+pub(super) fn read_seed_bytes_from_view(
+    view_file_path: String,
+    seed_seek: u64,
+) -> GeorgeResult<Vec<u8>> {
+    // 先读取seed的长度
+    let seed_len_bytes = read_sub_bytes(view_file_path.clone(), seed_seek, 8)?;
+    let seed_len = trans_bytes_2_u64(seed_len_bytes);
+    let seed_bytes = read_sub_bytes(view_file_path, seed_seek + 8, seed_len as usize)?;
+    Ok(seed_bytes)
 }

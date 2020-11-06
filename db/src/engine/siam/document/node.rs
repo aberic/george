@@ -6,11 +6,16 @@ use comm::cryptos::hash::{hashcode32_enhance, hashcode64_enhance};
 use comm::errors::entrances::GeorgeResult;
 use comm::vectors;
 
-use crate::engine::siam::comm::{read_next_nodes_bytes, read_seed_bytes, write_seed_bytes};
+use crate::engine::siam::comm::{
+    read_last_nodes_bytes, read_next_nodes_bytes, read_seed_bytes, read_seed_bytes_from_view,
+    write_seed_bytes,
+};
 use crate::engine::siam::traits::{DiskNode, TNode};
 use crate::engine::traits::TSeed;
 use crate::utils::comm::{level_distance_32, level_distance_64, LevelType};
 use crate::utils::path::{index_file_path, view_file_path};
+use comm::trans::trans_bytes_2_u64;
+use comm::vectors::find_last_eq_bytes;
 
 /// 索引B+Tree结点结构
 ///
@@ -183,6 +188,13 @@ impl TNode for Node {
                 level_type,
             ),
         }
+    }
+    fn get_last(&self, level_type: LevelType) -> GeorgeResult<Vec<u8>>
+    where
+        Self: Sized,
+    {
+        let node_bytes = self.node_bytes().read().unwrap().to_vec();
+        self.get_last_in_node(node_bytes, 1, level_type)
     }
 }
 
@@ -407,6 +419,29 @@ impl DiskNode for Node {
                 seek,
                 level_type,
             )
+        }
+    }
+    fn get_last_in_node(
+        &self,
+        node_bytes: Vec<u8>,
+        level: u8,
+        level_type: LevelType,
+    ) -> GeorgeResult<Vec<u8>>
+    where
+        Self: Sized,
+    {
+        if level == 4 {
+            let u8s = find_last_eq_bytes(node_bytes, 8)?;
+            let seek = trans_bytes_2_u64(u8s);
+            read_seed_bytes_from_view(self.view_file_path(), seek)
+        } else {
+            // 下一结点状态
+            // 下一结点node_bytes
+            // 下一结点起始坐标seek
+            // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
+            let (node_bytes, seek) =
+                read_last_nodes_bytes(node_bytes, self.index_file_path(), level_type)?;
+            self.get_last_in_node(node_bytes, level + 1, level_type)
         }
     }
 }

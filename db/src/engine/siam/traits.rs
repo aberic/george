@@ -82,6 +82,20 @@ pub trait TNode: Send + Sync {
     ) -> GeorgeResult<Vec<u8>>
     where
         Self: Sized;
+    /// 获取数据，返回存储对象<p><p>
+    ///
+    /// ###Params
+    ///
+    /// key string
+    ///
+    /// description_len 描述长度
+    ///
+    /// ###Return
+    ///
+    /// Seed value信息
+    fn get_last(&self, level_type: LevelType) -> GeorgeResult<Vec<u8>>
+    where
+        Self: Sized;
 }
 
 /// 存储文件结点通用特性，遵循此特性创建结点可以更方便的针对db进行扩展
@@ -124,7 +138,7 @@ pub trait DiskNode: Send + Sync {
     ) -> GeorgeResult<()>
     where
         Self: Sized;
-    /// 存储数据真实操作
+    /// 获取数据真实操作
     ///
     /// node_bytes 当前操作结点的字节数组
     ///
@@ -182,7 +196,7 @@ pub trait DiskNode: Send + Sync {
     ) -> GeorgeResult<()>
     where
         Self: Sized;
-    /// 存储数据真实操作
+    /// 获取数据真实操作
     ///
     /// node_bytes 当前操作结点的字节数组
     ///
@@ -206,6 +220,19 @@ pub trait DiskNode: Send + Sync {
         flexible_key: u64,
         root: bool,
         node_seek: u64,
+        level_type: LevelType,
+    ) -> GeorgeResult<Vec<u8>>
+    where
+        Self: Sized;
+    /// 获取数据真实操作
+    ///
+    /// node_bytes 当前操作结点的字节数组
+    ///
+    /// level 当前操作结点层
+    fn get_last_in_node(
+        &self,
+        node_bytes: Vec<u8>,
+        level: u8,
         level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>
     where
