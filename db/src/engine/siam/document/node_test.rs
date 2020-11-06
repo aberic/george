@@ -8,8 +8,12 @@ mod node_test {
 
     #[test]
     fn create_root_test() {
-        let n: Arc<Node> =
-            Node::create_root("database".to_string(), "view".to_string(), LevelType::Small);
+        let n: Arc<Node> = Node::create_root(
+            "database".to_string(),
+            "view".to_string(),
+            "index".to_string(),
+            LevelType::Small,
+        );
         println!("node is {:#?}", n);
         println!("node degree_index = {}", n.degree_index());
         println!("node nodes = {:#?}", n.nodes());
@@ -36,8 +40,12 @@ mod node_test {
 
     #[test]
     fn add_child_node_test() {
-        let pre_n: Arc<Node> =
-            Node::create_root("database".to_string(), "view".to_string(), LevelType::Small);
+        let pre_n: Arc<Node> = Node::create_root(
+            "database".to_string(),
+            "view".to_string(),
+            "index".to_string(),
+            LevelType::Small,
+        );
         let n: Arc<Node> = Node::create_node(2);
         add_child_node(&*pre_n, n.clone());
         let nc1 = Node::create_node(13);

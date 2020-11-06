@@ -145,10 +145,62 @@ fn put_document2() {
         LevelType::Large,
         1,
     );
-    put("database_test", "view_test_doc_64", "key", "value1", 1);
+    put("database_test", "view_test_doc_64", "key", "result 1", 1);
+    get("database_test", "view_test_doc_64", "key", 1);
+    set("database_test", "view_test_doc_64", "key", "result 2", 2);
     get("database_test", "view_test_doc_64", "key", 2);
-    set("database_test", "view_test_doc_64", "key", "value2", 3);
-    get("database_test", "view_test_doc_64", "key", 4);
+    put("database_test", "view_test_doc_64", "key1", "result 3", 3);
+    get("database_test", "view_test_doc_64", "key1", 3);
+    set("database_test", "view_test_doc_64", "key1", "result 4", 4);
+    get("database_test", "view_test_doc_64", "key1", 4);
+    put("database_test", "view_test_doc_64", "key2", "result 5", 5);
+    get("database_test", "view_test_doc_64", "key2", 5);
+    set("database_test", "view_test_doc_64", "key2", "result 6", 6);
+    get("database_test", "view_test_doc_64", "key2", 6);
+    put("database_test", "view_test_doc_64", "key3", "result 7", 7);
+    get("database_test", "view_test_doc_64", "key3", 7);
+    set("database_test", "view_test_doc_64", "key3", "result 8", 8);
+    get("database_test", "view_test_doc_64", "key3", 8);
+    put("database_test", "view_test_doc_64", "key4", "result 9", 9);
+    get("database_test", "view_test_doc_64", "key4", 9);
+    set("database_test", "view_test_doc_64", "key4", "result 10", 10);
+    get("database_test", "view_test_doc_64", "key4", 10);
+    put("database_test", "view_test_doc_64", "key5", "result 11", 11);
+    get("database_test", "view_test_doc_64", "key5", 11);
+    set("database_test", "view_test_doc_64", "key5", "result 12", 12);
+    get("database_test", "view_test_doc_64", "key5", 12);
+    put("database_test", "view_test_doc_64", "key6", "result 13", 13);
+    get("database_test", "view_test_doc_64", "key6", 13);
+    set("database_test", "view_test_doc_64", "key6", "result 14", 14);
+    get("database_test", "view_test_doc_64", "key6", 14);
+    put("database_test", "view_test_doc_64", "key7", "result 15", 15);
+    get("database_test", "view_test_doc_64", "key7", 15);
+    set("database_test", "view_test_doc_64", "key7", "result 16", 16);
+    get("database_test", "view_test_doc_64", "key7", 16);
+    put("database_test", "view_test_doc_64", "key8", "result 17", 17);
+    get("database_test", "view_test_doc_64", "key8", 17);
+    set("database_test", "view_test_doc_64", "key8", "result 18", 18);
+    get("database_test", "view_test_doc_64", "key8", 18);
+    put("database_test", "view_test_doc_64", "key9", "result 19", 19);
+    get("database_test", "view_test_doc_64", "key9", 19);
+    set("database_test", "view_test_doc_64", "key9", "result 20", 20);
+    get("database_test", "view_test_doc_64", "key9", 20);
+    put(
+        "database_test",
+        "view_test_doc_64",
+        "key10",
+        "result 21",
+        21,
+    );
+    get("database_test", "view_test_doc_64", "key10", 21);
+    set(
+        "database_test",
+        "view_test_doc_64",
+        "key10",
+        "result 22",
+        22,
+    );
+    get("database_test", "view_test_doc_64", "key10", 22);
 }
 
 fn create_database(database_name: &str, database_comment: &str, position: usize) {

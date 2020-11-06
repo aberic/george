@@ -25,6 +25,12 @@ pub(crate) struct Node {
     database_id: String,
     /// 视图ID
     view_id: String,
+    /// 索引ID
+    index_id: String,
+    /// 视图文件路径
+    view_file_path: String,
+    /// 索引文件路径
+    index_file_path: String,
     /// 存储结点所属各子结点坐标顺序字符串
     ///
     /// 如果子项是32位node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
@@ -39,16 +45,29 @@ pub(crate) struct Node {
 /// 新建根结点
 ///
 /// 该结点没有Links，也没有preNode，是B+Tree的创世结点
-fn create_root_self(database_id: String, view_id: String, level_type: LevelType) -> Node {
+fn create_root_self(
+    database_id: String,
+    view_id: String,
+    index_id: String,
+    level_type: LevelType,
+) -> Node {
+    let view_file_path = view_file_path(database_id.clone(), view_id.clone());
+    let index_file_path = index_file_path(database_id.clone(), view_id.clone(), index_id.clone());
     match level_type {
         LevelType::Small => Node {
             database_id,
             view_id,
+            index_id,
+            view_file_path,
+            index_file_path,
             node_bytes: Arc::new(RwLock::new(create_empty_bytes(2048))),
         },
         LevelType::Large => Node {
             database_id,
             view_id,
+            index_id,
+            view_file_path,
+            index_file_path,
             node_bytes: Arc::new(RwLock::new(create_empty_bytes(524288))),
         },
     }
@@ -58,13 +77,21 @@ fn create_empty() -> Node {
     return Node {
         database_id: "".to_string(),
         view_id: "".to_string(),
+        index_id: "".to_string(),
+        view_file_path: "".to_string(),
+        index_file_path: "".to_string(),
         node_bytes: Arc::new(Default::default()),
     };
 }
 
 impl Node {
-    pub fn create_root(database_id: String, view_id: String, level_type: LevelType) -> Arc<Self> {
-        return Arc::new(create_root_self(database_id, view_id, level_type));
+    pub fn create_root(
+        database_id: String,
+        view_id: String,
+        index_id: String,
+        level_type: LevelType,
+    ) -> Arc<Self> {
+        return Arc::new(create_root_self(database_id, view_id, index_id, level_type));
     }
 }
 
@@ -98,17 +125,13 @@ impl TNode for Node {
         key: String,
         seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
-        index_file_name: String,
         description_len: usize,
         level_type: LevelType,
     ) -> GeorgeResult<()>
     where
         Self: Sized,
     {
-        let index_file_path =
-            index_file_path(self.database_id(), self.view_id(), index_file_name.clone());
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
-        let view_file_path = view_file_path(self.database_id(), self.view_id());
         match level_type {
             LevelType::Small => self.put_32_in_node(
                 node_bytes,
@@ -117,9 +140,6 @@ impl TNode for Node {
                 seed,
                 force,
                 true,
-                index_file_name,
-                index_file_path,
-                view_file_path,
                 description_len as u64,
                 level_type,
             ),
@@ -130,9 +150,6 @@ impl TNode for Node {
                 seed,
                 force,
                 true,
-                index_file_name,
-                index_file_path,
-                view_file_path,
                 description_len as u64,
                 level_type,
             ),
@@ -141,26 +158,19 @@ impl TNode for Node {
     fn get(
         &self,
         key: String,
-        index_file_name: String,
         description_len: usize,
         level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>
     where
         Self: Sized,
     {
-        let index_file_path =
-            index_file_path(self.database_id(), self.view_id(), index_file_name.clone());
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
-        let view_file_path = view_file_path(self.database_id(), self.view_id());
         match level_type {
             LevelType::Small => self.get_32_in_node(
                 node_bytes,
                 1,
                 hashcode32_enhance(key),
                 true,
-                index_file_name,
-                index_file_path,
-                view_file_path,
                 description_len as u64,
                 level_type,
             ),
@@ -169,9 +179,6 @@ impl TNode for Node {
                 1,
                 hashcode64_enhance(key),
                 true,
-                index_file_name,
-                index_file_path,
-                view_file_path,
                 description_len as u64,
                 level_type,
             ),
@@ -185,6 +192,15 @@ impl DiskNode for Node {
     }
     fn view_id(&self) -> String {
         self.view_id.clone()
+    }
+    fn index_id(&self) -> String {
+        self.index_id.clone()
+    }
+    fn view_file_path(&self) -> String {
+        self.view_file_path.clone()
+    }
+    fn index_file_path(&self) -> String {
+        self.index_file_path.clone()
     }
     fn modify_node_bytes(&self, start: usize, vs: Vec<u8>) {
         let nb = self.node_bytes();
@@ -200,9 +216,6 @@ impl DiskNode for Node {
         seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
         root: bool,
-        index_file_name: String,
-        index_file_path: String,
-        view_file_path: String,
         next_node_seek: u64,
         level_type: LevelType,
     ) -> GeorgeResult<()>
@@ -213,14 +226,12 @@ impl DiskNode for Node {
         let distance = level_distance_32(level);
         // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数
         let next_degree = (flexible_key / distance) as u16;
-        // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
-        let next_flexible_key = flexible_key - next_degree as u32 * distance;
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
             write_seed_bytes(
                 node_bytes,
-                index_file_path,
-                view_file_path,
+                self.index_file_path(),
+                self.view_file_path(),
                 next_node_seek,
                 (next_degree * 8) as u64, // 在当前操作结点的字节数组的起始位置
                 force,
@@ -234,14 +245,15 @@ impl DiskNode for Node {
             let (node_bytes, seek) = read_next_nodes_bytes(
                 self,
                 node_bytes,
-                index_file_name.clone(),
-                index_file_path.clone(),
+                self.index_id(),
                 next_node_seek,
                 (next_degree * 8) as u64, // 在当前操作结点的字节数组的起始位置
                 root,
                 true,
                 level_type,
             )?;
+            // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
+            let next_flexible_key = flexible_key - next_degree as u32 * distance;
             self.put_32_in_node(
                 node_bytes,
                 level + 1,
@@ -249,9 +261,6 @@ impl DiskNode for Node {
                 seed,
                 force,
                 false,
-                index_file_name,
-                index_file_path,
-                view_file_path,
                 seek,
                 level_type,
             )
@@ -263,9 +272,6 @@ impl DiskNode for Node {
         level: u8,
         flexible_key: u32,
         root: bool,
-        index_file_name: String,
-        index_file_path: String,
-        view_file_path: String,
         node_seek: u64,
         level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>
@@ -274,9 +280,8 @@ impl DiskNode for Node {
     {
         let distance = level_distance_32(level);
         let next_degree = (flexible_key / distance) as u16;
-        let next_flexible_key = flexible_key - next_degree as u32 * distance;
         if level == 4 {
-            read_seed_bytes(node_bytes, view_file_path, (next_degree * 8) as u64)
+            read_seed_bytes(node_bytes, self.view_file_path(), (next_degree * 8) as u64)
         } else {
             // 下一结点状态
             // 下一结点node_bytes
@@ -285,22 +290,20 @@ impl DiskNode for Node {
             let (node_bytes, seek) = read_next_nodes_bytes(
                 self,
                 node_bytes,
-                index_file_name.clone(),
-                index_file_path.clone(),
+                self.index_id(),
                 node_seek,
                 (next_degree * 8) as u64,
                 root,
                 false,
                 level_type,
             )?;
+            // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
+            let next_flexible_key = flexible_key - next_degree as u32 * distance;
             self.get_32_in_node(
                 node_bytes,
                 level + 1,
                 next_flexible_key,
                 false,
-                index_file_name,
-                index_file_path,
-                view_file_path,
                 seek,
                 level_type,
             )
@@ -314,9 +317,6 @@ impl DiskNode for Node {
         seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
         root: bool,
-        index_file_name: String,
-        index_file_path: String,
-        view_file_path: String,
         next_node_seek: u64,
         level_type: LevelType,
     ) -> GeorgeResult<()>
@@ -327,14 +327,12 @@ impl DiskNode for Node {
         let distance = level_distance_64(level);
         // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数
         let next_degree = flexible_key / distance;
-        // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
-        let next_flexible_key = flexible_key - next_degree * distance;
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
             write_seed_bytes(
                 node_bytes,
-                index_file_path,
-                view_file_path,
+                self.index_file_path(),
+                self.view_file_path(),
                 next_node_seek,
                 next_degree * 8, // 在当前操作结点的字节数组的起始位置
                 force,
@@ -348,14 +346,15 @@ impl DiskNode for Node {
             let (node_bytes, seek) = read_next_nodes_bytes(
                 self,
                 node_bytes,
-                index_file_name.clone(),
-                index_file_path.clone(),
+                self.index_id(),
                 next_node_seek,
                 next_degree * 8, // 在当前操作结点的字节数组的起始位置
                 root,
                 true,
                 level_type,
             )?;
+            // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
+            let next_flexible_key = flexible_key - next_degree * distance;
             self.put_64_in_node(
                 node_bytes,
                 level + 1,
@@ -363,9 +362,6 @@ impl DiskNode for Node {
                 seed,
                 force,
                 false,
-                index_file_name,
-                index_file_path,
-                view_file_path,
                 seek,
                 level_type,
             )
@@ -377,9 +373,6 @@ impl DiskNode for Node {
         level: u8,
         flexible_key: u64,
         root: bool,
-        index_file_name: String,
-        index_file_path: String,
-        view_file_path: String,
         node_seek: u64,
         level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>
@@ -388,9 +381,8 @@ impl DiskNode for Node {
     {
         let distance = level_distance_64(level);
         let next_degree = flexible_key / distance;
-        let next_flexible_key = flexible_key - next_degree as u64 * distance;
         if level == 4 {
-            read_seed_bytes(node_bytes, view_file_path, next_degree * 8)
+            read_seed_bytes(node_bytes, self.view_file_path(), next_degree * 8)
         } else {
             // 下一结点状态
             // 下一结点node_bytes
@@ -399,22 +391,19 @@ impl DiskNode for Node {
             let (node_bytes, seek) = read_next_nodes_bytes(
                 self,
                 node_bytes,
-                index_file_name.clone(),
-                index_file_path.clone(),
+                self.index_id(),
                 node_seek,
                 next_degree * 8,
                 root,
                 false,
                 level_type,
             )?;
+            let next_flexible_key = flexible_key - next_degree as u64 * distance;
             self.get_64_in_node(
                 node_bytes,
                 level + 1,
                 next_flexible_key,
                 false,
-                index_file_name,
-                index_file_path,
-                view_file_path,
                 seek,
                 level_type,
             )

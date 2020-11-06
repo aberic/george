@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fs::ReadDir;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, RwLock};
 
 use chrono::{Duration, Local, NaiveDateTime};
@@ -27,7 +28,6 @@ use crate::utils::store::{
     recovery_before_content, save, FileHeader, Tag,
 };
 use crate::utils::writer::GLOBAL_WRITER;
-use std::sync::atomic::{AtomicU32, Ordering};
 
 /// 视图，类似表
 pub(crate) struct View {
@@ -287,10 +287,15 @@ impl View {
                 Category::Document => Ok(Siam_Index::init(
                     database_id,
                     self.id(),
-                    index_id,
+                    index_id.clone(),
                     key_structure,
                     primary,
-                    Siam_Doc_Node::create_root(self.database_id(), self.id(), self.level()),
+                    Siam_Doc_Node::create_root(
+                        self.database_id(),
+                        self.id(),
+                        index_id,
+                        self.level(),
+                    ),
                     category(self.category),
                     level(self.level),
                 )?),
@@ -451,7 +456,17 @@ impl View {
                 Category::Document => {
                     let index = Siam_Index::regain(
                         hd.description,
-                        Siam_Doc_Node::create_root(self.database_id(), self.id(), self.level()),
+                        Siam_Doc_Node::create_root(
+                            self.database_id(),
+                            self.id(),
+                            index_file_name
+                                .clone()
+                                .split(".")
+                                .next()
+                                .unwrap()
+                                .to_string(),
+                            self.level(),
+                        ),
                     )?;
                     GLOBAL_WRITER
                         .clone()

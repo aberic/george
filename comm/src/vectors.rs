@@ -1,10 +1,13 @@
+use crate::errors::entrances::{err_str, GeorgeResult};
+use crate::trans::trans_bytes_2_u64;
+
 /// 变更数组内容
 ///
 /// source 原始数组
 ///
 /// target 变更内容
 ///
-/// start 其实下标
+/// start 起始下标
 pub fn modify<T: Clone>(mut source: Vec<T>, target: Vec<T>, mut start: usize) -> Vec<T> {
     let len = target.len();
     let mut position = 0;
@@ -29,4 +32,38 @@ pub fn sub<T: Clone>(source: Vec<T>, start: usize, end: usize) -> Vec<T> {
     let mut s2 = s1.split_off(start);
     let _x = s2.split_off(end - start);
     s2
+}
+
+/// 从可被`eq`整除的bytes长度的字节数组中查找最后不为0的`eq`个字节组成新的数组
+pub fn find_last_eq_bytes(bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<u8>> {
+    let mut res: Vec<u8> = vec![];
+    let mut temp: Vec<u8> = vec![];
+    let mut position = 0;
+    let mut valid = false;
+    for b in bytes {
+        if position < eq {
+            if valid || b > 0x00 {
+                valid = true;
+            }
+            temp.push(b);
+            position += 1
+        } else {
+            if temp.len().ne(&eq) {
+                return Err(err_str("temp length out of 8"));
+            }
+            if valid {
+                res = temp.to_vec();
+            }
+            temp.clear();
+            position = 0;
+            if b > 0x00 {
+                valid = true;
+            } else {
+                valid = false;
+            }
+            temp.push(b);
+            position += 1
+        }
+    }
+    Ok(res)
 }

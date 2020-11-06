@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod vectors {
-    use crate::vectors::{modify, sub};
+    use crate::bytes::create_empty_bytes;
+    use crate::vectors::{find_last_eq_bytes, modify, sub};
 
     #[test]
     fn modify_test() {
@@ -19,5 +20,23 @@ mod vectors {
         let x: Vec<u8> = vec![0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x10];
         println!("sub = {:#?}", sub(x.clone(), 2, 5));
         println!("x = {:#?}", x);
+    }
+
+    #[test]
+    fn find_last_eq_bytes_test() {
+        let mut a: Vec<u8> = vec![0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07];
+        let mut b = create_empty_bytes(8);
+        let mut c = vec![0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x10];
+        let mut d = create_empty_bytes(8);
+        let mut e = vec![0x03, 0x04, 0x05, 0x06, 0x01, 0x02, 0x08, 0x10];
+        let mut f = create_empty_bytes(8);
+        a.append(&mut b);
+        a.append(&mut c);
+        a.append(&mut d);
+        a.append(&mut e);
+        a.append(&mut f);
+        println!("a = {:#?}", a);
+        let g = find_last_eq_bytes(a, 8);
+        println!("g = {:#?}", g);
     }
 }

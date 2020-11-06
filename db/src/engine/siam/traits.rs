@@ -58,7 +58,6 @@ pub trait TNode: Send + Sync {
         key: String,
         seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
-        index_file_name: String,
         description_len: usize,
         level_type: LevelType,
     ) -> GeorgeResult<()>
@@ -78,7 +77,6 @@ pub trait TNode: Send + Sync {
     fn get(
         &self,
         key: String,
-        index_file_name: String,
         description_len: usize,
         level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>
@@ -92,6 +90,9 @@ pub trait TNode: Send + Sync {
 pub trait DiskNode: Send + Sync {
     fn database_id(&self) -> String;
     fn view_id(&self) -> String;
+    fn index_id(&self) -> String;
+    fn view_file_path(&self) -> String;
+    fn index_file_path(&self) -> String;
     fn modify_node_bytes(&self, start: usize, vs: Vec<u8>);
     /// 存储数据真实操作
     ///
@@ -118,9 +119,6 @@ pub trait DiskNode: Send + Sync {
         seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
         root: bool,
-        index_file_name: String,
-        index_file_path: String,
-        view_file_path: String,
         next_node_seek: u64,
         level_type: LevelType,
     ) -> GeorgeResult<()>
@@ -149,9 +147,6 @@ pub trait DiskNode: Send + Sync {
         level: u8,
         flexible_key: u32,
         root: bool,
-        index_file_name: String,
-        index_file_path: String,
-        view_file_path: String,
         node_seek: u64,
         level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>
@@ -182,9 +177,6 @@ pub trait DiskNode: Send + Sync {
         seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
         root: bool,
-        index_file_name: String,
-        index_file_path: String,
-        view_file_path: String,
         next_node_seek: u64,
         level_type: LevelType,
     ) -> GeorgeResult<()>
@@ -213,9 +205,6 @@ pub trait DiskNode: Send + Sync {
         level: u8,
         flexible_key: u64,
         root: bool,
-        index_file_name: String,
-        index_file_path: String,
-        view_file_path: String,
         node_seek: u64,
         level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>

@@ -2,10 +2,11 @@ use std::sync::{Arc, RwLock};
 
 use comm::bytes::create_empty_bytes;
 use comm::errors::children::{DataExistError, DataNoExistError, NoneError};
-use comm::errors::entrances::{GeorgeError, GeorgeResult};
+use comm::errors::entrances::{err_str, GeorgeError, GeorgeResult};
 use comm::io::reader::read_sub_bytes;
 use comm::io::writer::write_seek_u8s;
 use comm::trans::{trans_bytes_2_u64, trans_u64_2_bytes};
+use comm::vectors::find_last_eq_bytes;
 
 use crate::engine::siam::document::seed::Seed;
 use crate::engine::siam::traits::{DiskNode, TNode};
@@ -115,7 +116,7 @@ pub(super) fn add_child_node<N: TNode>(node_own: &N, node: Arc<N>) {
 /// 指定节点中是否存在匹配md516_key的seed
 ///
 /// 该方法用于get类型，在检索的同时会删除已发现的空seed
-pub fn get_seed_value<N: TNode>(node: &N, md516_key: String) -> GeorgeResult<Vec<u8>> {
+fn get_seed_value<N: TNode>(node: &N, md516_key: String) -> GeorgeResult<Vec<u8>> {
     let arc = node.clone().seeds().clone().unwrap().clone();
     let seeds = arc.read().unwrap();
     let mut seeds_rm_position = vec![];
@@ -203,11 +204,11 @@ fn exist_seed_save_force<N: TNode>(node: &N, seed_new: Arc<RwLock<dyn TSeed>>) {
     }
 }
 
-pub fn create_or_take_node<N: TNode>(node: &N, index: u16) -> Arc<N> {
+fn create_or_take_node<N: TNode>(node: &N, index: u16) -> Arc<N> {
     create_or_take(node, index, false)
 }
 
-pub fn create_or_take_leaf<N: TNode>(node: &N, index: u16) -> Arc<N> {
+fn create_or_take_leaf<N: TNode>(node: &N, index: u16) -> Arc<N> {
     create_or_take(node, index, true)
 }
 
@@ -430,7 +431,7 @@ pub(super) fn get_in_node_u32<N: TNode>(
     get_in_node_u32(node_next.as_ref(), level + 1, md516_key, next_flexible_key)
 }
 
-pub fn put_seed<N: TNode>(node: &N, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
+fn put_seed<N: TNode>(node: &N, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
     // 获取seed叶子，如果存在，则判断版本号，如果不存在，则新建一个空并返回
     return if force {
         exist_seed_save_force(node, seed.clone());
@@ -465,11 +466,10 @@ pub fn put_seed<N: TNode>(node: &N, seed: Arc<RwLock<dyn TSeed>>, force: bool) -
 /// 下一节点node_bytes
 ///
 /// 下一节点起始坐标seek
-pub fn read_next_nodes_bytes<N: DiskNode>(
+pub(super) fn read_next_nodes_bytes<N: DiskNode>(
     node: &N,
     node_bytes: Vec<u8>,
-    index_file_name: String,
-    index_file_path: String,
+    index_id: String,
     next_node_seek: u64,
     start: u64,
     root: bool,
@@ -491,12 +491,12 @@ pub fn read_next_nodes_bytes<N: DiskNode>(
             }
             let seek = GLOBAL_WRITER.write_append_bytes(
                 Tag::Index,
-                index_file_name.clone(),
+                index_id.clone(),
                 next_node_bytes.clone(),
             )?;
             let seek_v = trans_u64_2_bytes(seek);
             write_seek_u8s(
-                index_file_path.clone(),
+                node.index_file_path(),
                 start + next_node_seek,
                 seek_v.clone().as_slice(),
             )?;
@@ -508,18 +508,55 @@ pub fn read_next_nodes_bytes<N: DiskNode>(
             Err(GeorgeError::DataNoExistError(DataNoExistError))
         }
     } else {
-        // 如果子项是32位node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-        // 如果子项是64位node集合，在node集合中每一个node的默认字节长度是8，数量是65536，即一次性读取524288个字节
-        match level_type {
-            LevelType::Small => {
-                let next_node_bytes = read_sub_bytes(index_file_path, next_node_bytes_seek, 2048)?;
-                Ok((next_node_bytes, next_node_bytes_seek))
-            }
-            LevelType::Large => {
-                let next_node_bytes =
-                    read_sub_bytes(index_file_path, next_node_bytes_seek, 524288)?;
-                Ok((next_node_bytes, next_node_bytes_seek))
-            }
+        read_node_bytes(node.index_file_path(), next_node_bytes_seek, level_type)
+    }
+}
+
+/// 读取最右叶子节点的最右字节数组记录
+///
+/// node_bytes 当前操作节点的字节数组
+///
+/// next_node_seek 下一节点在文件中的真实起始位置
+///
+/// start 下一节点在node_bytes中的起始位置
+///
+/// root 是否根节点
+///
+/// new 是否插入操作
+///
+/// #return 下一节点状态
+///
+/// 下一节点node_bytes
+///
+/// 下一节点起始坐标seek
+pub(super) fn read_last_nodes_bytes(
+    node_bytes: Vec<u8>,
+    index_file_path: String,
+    level_type: LevelType,
+) -> GeorgeResult<(Vec<u8>, u64)> {
+    let u8s = find_last_eq_bytes(node_bytes, 8)?;
+    let next_node_bytes_seek = trans_bytes_2_u64(u8s);
+    read_node_bytes(index_file_path, next_node_bytes_seek, level_type)
+}
+
+/// 读取结点字节数组及该数组的起始偏移量
+///
+/// 如果子项是32位node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
+///
+/// 如果子项是64位node集合，在node集合中每一个node的默认字节长度是8，数量是65536，即一次性读取524288个字节
+fn read_node_bytes(
+    index_file_path: String,
+    next_node_bytes_seek: u64,
+    level_type: LevelType,
+) -> GeorgeResult<(Vec<u8>, u64)> {
+    match level_type {
+        LevelType::Small => {
+            let next_node_bytes = read_sub_bytes(index_file_path, next_node_bytes_seek, 2048)?;
+            Ok((next_node_bytes, next_node_bytes_seek))
+        }
+        LevelType::Large => {
+            let next_node_bytes = read_sub_bytes(index_file_path, next_node_bytes_seek, 524288)?;
+            Ok((next_node_bytes, next_node_bytes_seek))
         }
     }
 }
@@ -535,7 +572,7 @@ pub fn read_next_nodes_bytes<N: DiskNode>(
 /// new 是否插入操作
 ///
 /// force 如果存在原值，是否覆盖原结果
-pub fn write_seed_bytes(
+pub(super) fn write_seed_bytes(
     node_bytes: Vec<u8>,
     index_file_path: String,
     view_file_path: String,
@@ -583,7 +620,7 @@ pub fn write_seed_bytes(
 /// start 下一节点在node_bytes中的起始位置
 ///
 /// force 如果存在原值，是否覆盖原结果
-pub fn read_seed_bytes(
+pub(super) fn read_seed_bytes(
     node_bytes: Vec<u8>,
     view_file_path: String,
     start: u64,
@@ -601,25 +638,4 @@ pub fn read_seed_bytes(
         let seed_bytes = read_sub_bytes(view_file_path, seed_seek + 8, seed_len as usize)?;
         Ok(seed_bytes)
     }
-}
-
-pub fn write_seed(
-    view_id: String,
-    index_file_path: String,
-    next_node_seek: u64,
-    start: u64,
-    seed: Arc<RwLock<dyn TSeed>>,
-) -> GeorgeResult<()> {
-    let mut seed_bytes = seed.clone().read().unwrap().value().unwrap();
-    let mut seed_bytes_len_bytes = trans_u64_2_bytes(seed_bytes.len() as u64);
-    seed_bytes_len_bytes.append(&mut seed_bytes);
-    let seek =
-        GLOBAL_WRITER.write_append_bytes(Tag::View, view_id, seed_bytes_len_bytes.clone())?;
-    let seek_v = trans_u64_2_bytes(seek);
-    write_seek_u8s(
-        index_file_path.clone(),
-        start + next_node_seek,
-        seek_v.clone().as_slice(),
-    )?;
-    Ok(())
 }

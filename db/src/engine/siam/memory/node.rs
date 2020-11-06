@@ -108,7 +108,6 @@ impl TNode for Node {
         key: String,
         seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
-        _index_file_name: String,
         _description_len: usize,
         level_type: LevelType,
     ) -> GeorgeResult<()>
@@ -123,7 +122,6 @@ impl TNode for Node {
     fn get(
         &self,
         key: String,
-        _index_file_name: String,
         _description_len: usize,
         level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>
