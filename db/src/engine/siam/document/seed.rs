@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use comm::errors::entrances::{err_string, GeorgeResult};
 use comm::io::writer::write_seek_u8s;
-use comm::trans::trans_u64_2_bytes;
+use comm::trans::{trans_u64_2_bytes, trans_bytes_2_u64};
 
 use crate::engine::traits::TSeed;
 use crate::utils::store::Tag;
@@ -15,6 +15,7 @@ use crate::utils::writer::GLOBAL_WRITER;
 /// 叶子节点下真实存储数据的集合单体结构
 #[derive(Debug)]
 pub struct Seed {
+    sequence_id: u64,
     view_id: String,
     value: Vec<u8>,
     idxes: Vec<Idx>,
@@ -36,11 +37,21 @@ fn trans(v8s: Vec<u8>) -> GeorgeResult<Idx> {
     }
 }
 
+fn seed_bytes(sequence_id: u64, value: Vec<u8>) -> Vec<u8> {
+    let mut seed_bytes = trans_u64_2_bytes(sequence_id);
+    let mut value_bytes = value.clone();
+    seed_bytes.append(&mut value_bytes);
+    let mut seed_bytes_len_bytes = trans_u64_2_bytes(seed_bytes.len() as u64);
+    seed_bytes_len_bytes.append(&mut seed_bytes);
+    seed_bytes_len_bytes
+}
+
 /// 封装方法函数
 impl Seed {
     /// 新建seed
-    pub fn create(view_id: String) -> Seed {
+    pub fn create(auto_id: u64,view_id: String) -> Seed {
         return Seed {
+            sequence_id: auto_id,
             view_id,
             value: vec![],
             idxes: Vec::new(),
@@ -59,6 +70,12 @@ impl Seed {
             Ok(v8s) => Ok(v8s),
             Err(err) => Err(err_string(err.to_string())),
         }
+    }
+
+    pub fn seek_value(mut seek_bytes: Vec<u8>) -> (u64, Vec<u8>) {
+        let sequence_id_bytes = seek_bytes.as_slice()[0..8].to_vec();
+        let sequence_id = trans_bytes_2_u64(sequence_id_bytes);
+        (sequence_id, seek_bytes.split_off(8))
     }
 }
 
@@ -83,14 +100,12 @@ impl TSeed for Seed {
         }
     }
     fn save(&mut self, value: Vec<u8>) -> GeorgeResult<()> {
-        let mut seed_bytes = value.clone();
-        let mut seed_bytes_len_bytes = trans_u64_2_bytes(seed_bytes.len() as u64);
-        seed_bytes_len_bytes.append(&mut seed_bytes);
+        let seed_bytes = seed_bytes(self.sequence_id, value);
         // 将数据存入view，返回数据在view中的坐标
         let seek = GLOBAL_WRITER.write_append_bytes(
             Tag::View,
             self.view_id.clone(),
-            seed_bytes_len_bytes.clone(),
+            seed_bytes.clone(),
         )?;
         let seek_v = trans_u64_2_bytes(seek);
         // 将在数据在view中的坐标存入各个index

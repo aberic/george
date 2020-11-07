@@ -7,7 +7,9 @@ pub const GEORGE_DB_LOG_FILE_MAX_COUNT: &str = "GEORGE_DB_LOG_FILE_MAX_COUNT";
 pub const GEORGE_DB_LOG_LEVEL: &str = "GEORGE_DB_LOG_LEVEL";
 pub const GEORGE_DB_PRODUCTION: &str = "GEORGE_DB_PRODUCTION";
 
+/// 默认KV存储索引
 pub const INDEX_CATALOG: &str = "george_db_index_catalog";
+/// 默认自增序列ID索引，不保证连续性，只保证有序性
 pub const INDEX_SEQUENCE: &str = "george_db_index_sequence";
 
 /// 索引类型

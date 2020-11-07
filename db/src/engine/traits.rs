@@ -68,6 +68,8 @@ pub trait TIndex: TDescription + Send + Sync {
     ///
     /// Seed value信息
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>>;
+    /// 获取最后一条记录数据，返回存储对象
+    fn get_sequence(&self) -> GeorgeResult<u64>;
 }
 
 /// 所有生成sr文件的结构都需要实现该特征，如database、view及index

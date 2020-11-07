@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fs::ReadDir;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicU32, Ordering, AtomicU64};
 use std::sync::{Arc, RwLock};
 
 use chrono::{Duration, Local, NaiveDateTime};
@@ -49,8 +49,8 @@ pub(crate) struct View {
     create_time: Duration,
     /// 索引集合
     indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
-    /// 自增ID
-    auto_id: Arc<AtomicU32>,
+    /// 自增序列ID，不保证连续性，只保证有序性
+    sequence_id: Arc<AtomicU64>,
 }
 
 impl TDescription for View {
@@ -143,7 +143,7 @@ fn new_view(
         level,
         create_time,
         indexes: Default::default(),
-        auto_id: Arc::new(AtomicU32::new(1)),
+        sequence_id: Arc::new(AtomicU64::new(1)),
     };
 }
 
@@ -203,7 +203,7 @@ impl View {
             level: LevelType::Small,
             create_time: Duration::nanoseconds(1),
             indexes: Arc::new(Default::default()),
-            auto_id: Arc::new(Default::default()),
+            sequence_id: Arc::new(Default::default()),
         };
     }
     pub(crate) fn database_id(&self) -> String {
@@ -375,12 +375,13 @@ impl View {
     /// IndexResult<()>
     fn save(&self, key: String, value: Vec<u8>, force: bool) -> GeorgeResult<()> {
         let seed: Arc<RwLock<dyn TSeed>>;
+        let id = self.sequence_id.fetch_add(1, Ordering::Relaxed);
         match self.category {
             Category::Memory => {
                 seed = Arc::new(RwLock::new(Mem_Seed::create(md516(key.clone()))));
             }
             Category::Document => {
-                seed = Arc::new(RwLock::new(Doc_Seed::create(self.id())));
+                seed = Arc::new(RwLock::new(Doc_Seed::create(id, self.id())));
             }
         }
         for index in self.indexes.clone().read().unwrap().iter() {
@@ -389,7 +390,6 @@ impl View {
             match key_structure.as_str() {
                 INDEX_CATALOG => index_r.put(key.clone(), seed.clone(), force)?,
                 INDEX_SEQUENCE => {
-                    let id = self.auto_id.fetch_add(1, Ordering::Relaxed);
                     index_r.put(id.to_string(), seed.clone(), force)?
                 }
                 _ => {}
@@ -402,7 +402,7 @@ impl View {
 
 impl View {
     /// 恢复indexes数据
-    pub(super) fn recovery_indexes(&self, database: &Database, paths: ReadDir) {
+    pub(super) fn recovery_indexes(&mut self, database: &Database, paths: ReadDir) {
         // 遍历data目录下文件
         for path in paths {
             match path {
@@ -422,7 +422,10 @@ impl View {
                                     if self.exist_index(index_id.clone()) {
                                         return;
                                     }
-                                    // println!("recovery indexes index category = {:#?}", idx_r.category());
+                                    if idx_r.key_structure().eq(INDEX_SEQUENCE) {
+                                        println!("sequence_id = {}", idx_r.get_sequence().unwrap());
+                                        self.sequence_id.store(idx_r.get_sequence().unwrap(), Ordering::Relaxed);
+                                    }
                                     self.indexes
                                         .clone()
                                         .write()

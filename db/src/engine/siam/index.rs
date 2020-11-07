@@ -16,6 +16,7 @@ use crate::utils::store::{
     before_content_bytes_for_index, category, category_u8, head, level, level_u8, save, FileHeader,
     Tag,
 };
+use crate::engine::siam::document::seed::Seed;
 
 /// Siam索引
 ///
@@ -176,7 +177,13 @@ impl<N: TNode> TIndex for Index<N> {
             .put(key, seed, force, self.description_len, self.level())
     }
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        self.root.get(key, self.description_len, self.level())
+        let seek_bytes = self.root.get(key, self.description_len, self.level())?;
+        Ok(Seed::seek_value(seek_bytes).1)
+    }
+
+    fn get_sequence(&self) -> GeorgeResult<u64> {
+        let seek_bytes = self.root.get_last(self.level())?;
+        Ok(Seed::seek_value(seek_bytes).0)
     }
 }
 

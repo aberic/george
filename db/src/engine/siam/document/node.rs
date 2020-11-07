@@ -4,7 +4,9 @@ use std::sync::{Arc, RwLock};
 use comm::bytes::create_empty_bytes;
 use comm::cryptos::hash::{hashcode32_enhance, hashcode64_enhance};
 use comm::errors::entrances::GeorgeResult;
+use comm::trans::trans_bytes_2_u64;
 use comm::vectors;
+use comm::vectors::find_last_eq_bytes;
 
 use crate::engine::siam::comm::{
     read_last_nodes_bytes, read_next_nodes_bytes, read_seed_bytes, read_seed_bytes_from_view,
@@ -14,8 +16,6 @@ use crate::engine::siam::traits::{DiskNode, TNode};
 use crate::engine::traits::TSeed;
 use crate::utils::comm::{level_distance_32, level_distance_64, LevelType};
 use crate::utils::path::{index_file_path, view_file_path};
-use comm::trans::trans_bytes_2_u64;
-use comm::vectors::find_last_eq_bytes;
 
 /// 索引B+Tree结点结构
 ///
@@ -133,8 +133,8 @@ impl TNode for Node {
         description_len: usize,
         level_type: LevelType,
     ) -> GeorgeResult<()>
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
         match level_type {
@@ -165,10 +165,7 @@ impl TNode for Node {
         key: String,
         description_len: usize,
         level_type: LevelType,
-    ) -> GeorgeResult<Vec<u8>>
-    where
-        Self: Sized,
-    {
+    ) -> GeorgeResult<Vec<u8>> {
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
         match level_type {
             LevelType::Small => self.get_32_in_node(
@@ -190,8 +187,8 @@ impl TNode for Node {
         }
     }
     fn get_last(&self, level_type: LevelType) -> GeorgeResult<Vec<u8>>
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
         self.get_last_in_node(node_bytes, 1, level_type)
@@ -231,8 +228,8 @@ impl DiskNode for Node {
         next_node_seek: u64,
         level_type: LevelType,
     ) -> GeorgeResult<()>
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
         let distance = level_distance_32(level);
@@ -286,10 +283,7 @@ impl DiskNode for Node {
         root: bool,
         node_seek: u64,
         level_type: LevelType,
-    ) -> GeorgeResult<Vec<u8>>
-    where
-        Self: Sized,
-    {
+    ) -> GeorgeResult<Vec<u8>> {
         let distance = level_distance_32(level);
         let next_degree = (flexible_key / distance) as u16;
         if level == 4 {
@@ -332,8 +326,8 @@ impl DiskNode for Node {
         next_node_seek: u64,
         level_type: LevelType,
     ) -> GeorgeResult<()>
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
         let distance = level_distance_64(level);
@@ -387,10 +381,7 @@ impl DiskNode for Node {
         root: bool,
         node_seek: u64,
         level_type: LevelType,
-    ) -> GeorgeResult<Vec<u8>>
-    where
-        Self: Sized,
-    {
+    ) -> GeorgeResult<Vec<u8>> {
         let distance = level_distance_64(level);
         let next_degree = flexible_key / distance;
         if level == 4 {
@@ -426,10 +417,7 @@ impl DiskNode for Node {
         node_bytes: Vec<u8>,
         level: u8,
         level_type: LevelType,
-    ) -> GeorgeResult<Vec<u8>>
-    where
-        Self: Sized,
-    {
+    ) -> GeorgeResult<Vec<u8>> {
         if level == 4 {
             let u8s = find_last_eq_bytes(node_bytes, 8)?;
             let seek = trans_bytes_2_u64(u8s);
@@ -439,7 +427,7 @@ impl DiskNode for Node {
             // 下一结点node_bytes
             // 下一结点起始坐标seek
             // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            let (node_bytes, seek) =
+            let (node_bytes, _seek) =
                 read_last_nodes_bytes(node_bytes, self.index_file_path(), level_type)?;
             self.get_last_in_node(node_bytes, level + 1, level_type)
         }
