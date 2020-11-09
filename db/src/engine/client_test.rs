@@ -1,5 +1,6 @@
-#[cfg(test)]
 use std::error::Error;
+
+use serde::{Deserialize, Serialize};
 
 use crate::engine::client::GLOBAL_CLIENT;
 use crate::utils::comm::{Category, IndexType, LevelType};
@@ -145,6 +146,7 @@ fn put_document2() {
         LevelType::Large,
         1,
     );
+
     put("database_test", "view_test_doc_64", "key", "result 1", 1);
     get("database_test", "view_test_doc_64", "key", 1);
     set("database_test", "view_test_doc_64", "key", "result 2", 2);
@@ -161,46 +163,135 @@ fn put_document2() {
     get("database_test", "view_test_doc_64", "key3", 7);
     set("database_test", "view_test_doc_64", "key3", "result 8", 8);
     get("database_test", "view_test_doc_64", "key3", 8);
-    put("database_test", "view_test_doc_64", "key4", "result 9", 9);
-    get("database_test", "view_test_doc_64", "key4", 9);
-    set("database_test", "view_test_doc_64", "key4", "result 10", 10);
-    get("database_test", "view_test_doc_64", "key4", 10);
-    put("database_test", "view_test_doc_64", "key5", "result 11", 11);
-    get("database_test", "view_test_doc_64", "key5", 11);
-    set("database_test", "view_test_doc_64", "key5", "result 12", 12);
-    get("database_test", "view_test_doc_64", "key5", 12);
-    put("database_test", "view_test_doc_64", "key6", "result 13", 13);
-    get("database_test", "view_test_doc_64", "key6", 13);
-    set("database_test", "view_test_doc_64", "key6", "result 14", 14);
-    get("database_test", "view_test_doc_64", "key6", 14);
-    put("database_test", "view_test_doc_64", "key7", "result 15", 15);
-    get("database_test", "view_test_doc_64", "key7", 15);
-    set("database_test", "view_test_doc_64", "key7", "result 16", 16);
-    get("database_test", "view_test_doc_64", "key7", 16);
-    put("database_test", "view_test_doc_64", "key8", "result 17", 17);
-    get("database_test", "view_test_doc_64", "key8", 17);
-    set("database_test", "view_test_doc_64", "key8", "result 18", 18);
-    get("database_test", "view_test_doc_64", "key8", 18);
-    put("database_test", "view_test_doc_64", "key9", "result 19", 19);
-    get("database_test", "view_test_doc_64", "key9", 19);
-    set("database_test", "view_test_doc_64", "key9", "result 20", 20);
-    get("database_test", "view_test_doc_64", "key9", 20);
+    get("database_test", "view_test_doc_64", "key11", 23);
+}
+
+#[test]
+fn db_view_index_create_test() {
+    create_database("database_create_test1", "comment", 1);
+    create_view(
+        "database_create_test1",
+        "view_test_doc_32",
+        "comment",
+        IndexType::Siam,
+        Category::Document,
+        LevelType::Small,
+        1,
+    );
+    create_view(
+        "database_create_test1",
+        "view_test_doc_64",
+        "comment",
+        IndexType::Siam,
+        Category::Document,
+        LevelType::Large,
+        1,
+    );
+    create_index(
+        "database_create_test1",
+        "view_test_doc_32",
+        "name",
+        false,
+        1,
+    );
+    create_index("database_create_test1", "view_test_doc_64", "age", false, 1);
+
+    create_database("database_create_test2", "comment", 1);
+    create_view(
+        "database_create_test2",
+        "view_test_doc_32",
+        "comment",
+        IndexType::Siam,
+        Category::Document,
+        LevelType::Small,
+        1,
+    );
+    create_view(
+        "database_create_test2",
+        "view_test_doc_64",
+        "comment",
+        IndexType::Siam,
+        Category::Document,
+        LevelType::Large,
+        1,
+    );
+    create_index(
+        "database_create_test2",
+        "view_test_doc_32",
+        "name",
+        false,
+        1,
+    );
+    create_index("database_create_test2", "view_test_doc_64", "age", false, 1);
+}
+
+#[derive(Serialize, Deserialize)]
+struct User {
+    name: String,
+    age: u8,
+    blog: String,
+    addr: String,
+    married: bool,
+    job: Job,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Job {
+    company: String,
+    age: u8,
+}
+
+#[test]
+fn put_document3_index_custom() {
+    create_database("database_test_index", "comment", 1);
+    create_view(
+        "database_test_index",
+        "view_test_doc_32",
+        "comment",
+        IndexType::Siam,
+        Category::Document,
+        LevelType::Small,
+        1,
+    );
+    create_index("database_test_index", "view_test_doc_32", "age", false, 1);
+    create_index(
+        "database_test_index",
+        "view_test_doc_32",
+        "married",
+        false,
+        1,
+    );
+    create_index("database_test_index", "view_test_doc_32", "job", false, 1);
+
+    let user = User {
+        name: "aaa".to_string(),
+        age: 20,
+        blog: "true".to_string(),
+        addr: "ccc".to_string(),
+        married: false,
+        job: Job {
+            company: "ddd".to_string(),
+            age: 10,
+        },
+    };
+    let user_json_str = serde_json::to_string(&user).unwrap();
+
     put(
-        "database_test",
-        "view_test_doc_64",
-        "key10",
-        "result 21",
-        21,
+        "database_test_index",
+        "view_test_doc_32",
+        "key",
+        user_json_str.as_str(),
+        1,
     );
-    get("database_test", "view_test_doc_64", "key10", 21);
+    get("database_test_index", "view_test_doc_32", "key", 2);
     set(
-        "database_test",
-        "view_test_doc_64",
-        "key10",
-        "result 22",
-        22,
+        "database_test_index",
+        "view_test_doc_32",
+        "key",
+        user_json_str.as_str(),
+        3,
     );
-    get("database_test", "view_test_doc_64", "key10", 22);
+    get("database_test_index", "view_test_doc_32", "key", 4);
 }
 
 fn create_database(database_name: &str, database_comment: &str, position: usize) {

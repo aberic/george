@@ -13,7 +13,7 @@ use comm::io::file::create_file;
 use crate::engine::traits::TDescription;
 use crate::engine::view::View;
 use crate::utils::comm::{Category, IndexType, LevelType};
-use crate::utils::path::{database_file_path, view_file_path, view_path};
+use crate::utils::path::{database_file_path, database_path, view_file_path, view_path};
 use crate::utils::store::{
     before_content_bytes, head, modify, recovery_before_content, save, FileHeader, Tag,
 };
@@ -57,6 +57,16 @@ impl TDescription for Database {
                         self.create_time = Duration::nanoseconds(
                             split.next().unwrap().to_string().parse::<i64>().unwrap(),
                         );
+                        // 读取database目录下所有文件
+                        match read_dir(database_path(self.id())) {
+                            // 恢复views数据
+                            Ok(paths) => {
+                                self.recovery_views(paths);
+                            }
+                            Err(err) => {
+                                panic!("recovery databases read dir failed! error is {}", err)
+                            }
+                        }
                         Ok(())
                     }
                     Err(err) => Err(err_string(format!(
@@ -219,6 +229,14 @@ impl Database {
         return false;
     }
     /// 在指定视图中创建索引
+    ///
+    /// 该索引需要定义ID，此外索引所表达的字段组成内容也是必须的，并通过primary判断索引类型，具体传参参考如下定义：<p><p>
+    ///
+    /// ###Params
+    ///
+    /// key_structure 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`key_structure`作为索引存入
+    ///
+    /// primary 是否主键
     pub(crate) fn create_index(
         &self,
         view_name: String,
@@ -333,35 +351,26 @@ impl Database {
                         // 如果已存在该view，则不处理
                         if self.exist_view(view_name.clone()) {
                             return;
-                        } else {
-                            // 读取database目录下所有文件
-                            match read_dir(view_path(self.id(), view_dir_name.clone())) {
-                                // 恢复indexes数据
-                                Ok(paths) => {
-                                    view.recovery_indexes(self, paths);
-                                    let v = Arc::new(RwLock::new(view));
-                                    self.insert_view(view_name, v.clone());
-                                    match GLOBAL_WRITER
-                                        .clone()
-                                        .insert_view(view_dir_name, view_file_path)
-                                    {
-                                        Ok(()) => {}
-                                        Err(err) => panic!(
-                                            "recovery writer insert view failed! error is {}",
-                                            err
-                                        ),
-                                    }
-                                }
-                                Err(err) => {
-                                    panic!("recovery view read dir failed! error is {}", err)
-                                }
-                            }
+                        }
+                        self.insert_view(view_name, Arc::new(RwLock::new(view)));
+                        match GLOBAL_WRITER
+                            .clone()
+                            .insert_view(view_dir_name, view_file_path)
+                        {
+                            Ok(()) => {}
+                            Err(err) => panic!(
+                                "recovery view when writer insert view failed! error is {}",
+                                err
+                            ),
                         }
                     }
-                    Err(err) => panic!("{}", err),
+                    Err(err) => panic!("recovery view failed! error is {}", err),
                 }
             }
-            Err(err) => panic!("{}", err),
+            Err(err) => panic!(
+                "recovery view when recovery before content failed! error is {}",
+                err
+            ),
         }
     }
 }

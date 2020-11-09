@@ -16,7 +16,9 @@ use logs::set_log;
 use crate::engine::database::Database;
 use crate::engine::traits::TDescription;
 use crate::engine::view::View;
-use crate::utils::comm::{Category, IndexType, LevelType, GEORGE_DB_CONFIG, INDEX_CATALOG, INDEX_SEQUENCE};
+use crate::utils::comm::{
+    Category, IndexType, LevelType, GEORGE_DB_CONFIG, INDEX_CATALOG, INDEX_SEQUENCE,
+};
 use crate::utils::deploy::init_config;
 use crate::utils::path::{bootstrap_file_path, data_path, database_file_path, database_path};
 use crate::utils::store::{head, recovery_before_content, FileHeader, Tag};
@@ -123,7 +125,7 @@ impl Engine {
                         self.recovery_database(database_dir_name.clone());
                     }
                 }
-                Err(err) => panic!("recovery databases path failed! error is {}", err),
+                Err(err) => panic!("recovery databases failed! error is {}", err),
             }
         }
     }
@@ -149,24 +151,13 @@ impl Engine {
                         if self.exist_database(db_name.clone()) {
                             return;
                         }
-                        // 读取database目录下所有文件
-                        match read_dir(database_path(database_dir_name.clone())) {
-                            // 恢复views数据
-                            Ok(paths) => {
-                                db.recovery_views(paths);
-                                let database = Arc::new(RwLock::new(db));
-                                self.databases
-                                    .clone()
-                                    .write()
-                                    .unwrap()
-                                    .insert(db_name.clone(), database.clone());
-                            }
-                            Err(err) => {
-                                panic!("recovery databases read dir failed! error is {}", err)
-                            }
-                        }
+                        self.databases
+                            .clone()
+                            .write()
+                            .unwrap()
+                            .insert(db_name.clone(), Arc::new(RwLock::new(db)));
                     }
-                    Err(err) => panic!("{}", err),
+                    Err(err) => panic!("recovery database failed! error is {}", err),
                 }
             }
             Err(err) => panic!("{}", err),
@@ -263,9 +254,16 @@ impl Engine {
             None => return Err(GeorgeError::DatabaseNoExistError(DatabaseNoExistError)),
         }
         match view_category {
-            Category::Memory => self.create_index(database_name, view_name, INDEX_CATALOG.to_string(), true),
+            Category::Memory => {
+                self.create_index(database_name, view_name, INDEX_CATALOG.to_string(), true)
+            }
             Category::Document => {
-                self.create_index(database_name.clone(), view_name.clone(), INDEX_CATALOG.to_string(), true)?;
+                self.create_index(
+                    database_name.clone(),
+                    view_name.clone(),
+                    INDEX_CATALOG.to_string(),
+                    true,
+                )?;
                 self.create_index(database_name, view_name, INDEX_SEQUENCE.to_string(), true)
             }
         }
@@ -307,6 +305,14 @@ impl Engine {
             .view(view_name)
     }
     /// 在指定库及视图中创建索引
+    ///
+    /// 该索引需要定义ID，此外索引所表达的字段组成内容也是必须的，并通过primary判断索引类型，具体传参参考如下定义：<p><p>
+    ///
+    /// ###Params
+    ///
+    /// key_structure 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`key_structure`作为索引存入
+    ///
+    /// primary 是否主键
     pub(crate) fn create_index(
         &self,
         database_name: String,

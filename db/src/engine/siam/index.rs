@@ -8,6 +8,7 @@ use comm::io::file::create_file;
 use comm::trans::{trans_bytes_2_u16, trans_u16_2_bytes};
 use comm::vectors;
 
+use crate::engine::siam::document::seed::Seed;
 use crate::engine::siam::traits::TNode;
 use crate::engine::traits::{TDescription, TIndex, TSeed};
 use crate::utils::comm::{Category, IndexType, LevelType};
@@ -16,7 +17,6 @@ use crate::utils::store::{
     before_content_bytes_for_index, category, category_u8, head, level, level_u8, save, FileHeader,
     Tag,
 };
-use crate::engine::siam::document::seed::Seed;
 
 /// Siam索引
 ///
@@ -31,7 +31,7 @@ pub struct Index<N: TNode> {
     id: String,
     /// 是否主键
     primary: bool,
-    /// 按照规范结构组成的索引字段名称，由对象结构层级字段通过'.'组成，如'i','in.s'
+    /// 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`key_structure`作为索引存入
     key_structure: String,
     /// 结点
     root: Arc<N>,
@@ -117,7 +117,7 @@ impl<N: TNode> TDescription for Index<N> {
 ///
 /// ###Params
 ///
-/// key_structure 按照规范结构组成的索引字段名称，由对象结构层级字段通过'.'组成，如'i','in.s'
+/// key_structure 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`key_structure`作为索引存入
 ///
 /// primary 是否主键
 fn new_index<N: TNode>(
@@ -196,7 +196,7 @@ impl<N: TNode> Index<N> {
     /// ###Params
     ///
     /// key_structure 索引名称，可以自定义；<p>
-    /// siam::Index按照规范结构组成的索引字段名称，由对象结构层级字段通过'.'组成，如'i','in.s'<p><p>
+    /// siam::Index 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`key_structure`作为索引存入<p><p>
     ///
     /// primary 是否主键
     ///
@@ -245,7 +245,7 @@ impl<N: TNode> Index<N> {
     /// ###Params
     ///
     /// key_structure 索引名称，可以自定义；<p>
-    /// siam::Index按照规范结构组成的索引字段名称，由对象结构层级字段通过'.'组成，如'i','in.s'<p><p>
+    /// siam::Index 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`key_structure`作为索引存入<p><p>
     ///
     /// primary 是否主键
     ///

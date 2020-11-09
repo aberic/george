@@ -38,7 +38,7 @@ pub trait TIndex: TDescription + Send + Sync {
     /// 当前索引是否为主键
     fn is_primary(&self) -> bool;
     /// 索引名称，可以自定义；<p>
-    /// siam::Index按照规范结构组成的索引字段名称，由对象结构层级字段通过'.'组成，如'i','in.s'<p><p>
+    /// siam::Index 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`key_structure`作为索引存入<p><p>
     fn key_structure(&self) -> String;
     /// 视图类型
     fn category(&self) -> Category;

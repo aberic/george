@@ -1,3 +1,6 @@
+use comm::errors::entrances::{err_str, err_string, GeorgeResult};
+use serde_json::{Error, Value};
+
 pub const GEORGE_DB_CONFIG: &str = "GEORGE_DB_CONFIG";
 pub const GEORGE_DB_DATA_DIR: &str = "GEORGE_DB_DATA_DIR";
 pub const GEORGE_DB_LIMIT_OPEN_FILE: &str = "GEORGE_DB_LIMIT_OPEN_FILE";
@@ -75,28 +78,41 @@ pub fn level(level: LevelType) -> LevelType {
 
 /// 获取在2^32量级组成树的指定层中元素的间隔数，即每一度中存在的元素数量
 pub fn level_distance_32(level: u8) -> u32 {
-    if level == 1 {
-        return LEVEL1DISTANCE32;
-    } else if level == 2 {
-        return LEVEL2DISTANCE32;
-    } else if level == 3 {
-        return LEVEL3DISTANCE32;
-    } else if level == 4 {
-        return LEVEL4DISTANCE32;
+    match level {
+        1 => return LEVEL1DISTANCE32,
+        2 => return LEVEL2DISTANCE32,
+        3 => return LEVEL3DISTANCE32,
+        4 => return LEVEL4DISTANCE32,
+        _ => 0,
     }
-    return 0;
 }
 
 /// 获取在2^64量级组成树的指定层中元素的间隔数，即每一度中存在的元素数量
 pub fn level_distance_64(level: u8) -> u64 {
-    if level == 1 {
-        return LEVEL1DISTANCE64;
-    } else if level == 2 {
-        return LEVEL2DISTANCE64;
-    } else if level == 3 {
-        return LEVEL3DISTANCE64;
-    } else if level == 4 {
-        return LEVEL4DISTANCE64;
+    match level {
+        1 => return LEVEL1DISTANCE64,
+        2 => return LEVEL2DISTANCE64,
+        3 => return LEVEL3DISTANCE64,
+        4 => return LEVEL4DISTANCE64,
+        _ => 0,
     }
-    return 0;
+}
+
+pub fn key_fetch(key_structure: String, value: Vec<u8>) -> GeorgeResult<String> {
+    match String::from_utf8(value) {
+        Ok(value_str) => {
+            let res: Result<Value, Error> = serde_json::from_str(value_str.as_ref());
+            match res {
+                Ok(v) => match v[key_structure.clone()] {
+                    Value::Null => Err(err_str("key structure do not support none!")),
+                    Value::Object(..) => Err(err_str("key structure do not support object!")),
+                    Value::Array(..) => Err(err_str("key structure do not support array!")),
+                    Value::Bool(..) => Err(err_str("key structure do not support bool!")),
+                    _ => Ok(format!("{}", v[key_structure])),
+                },
+                Err(err) => Err(err_string(err.to_string())),
+            }
+        }
+        Err(err) => Err(err_string(err.to_string())),
+    }
 }

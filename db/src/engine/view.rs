@@ -1,7 +1,9 @@
 use std::collections::HashMap;
-use std::fs::ReadDir;
-use std::sync::atomic::{AtomicU32, Ordering, AtomicU64};
-use std::sync::{Arc, RwLock};
+use std::fs::{read_dir, ReadDir};
+use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use std::sync::mpsc::RecvError;
+use std::sync::{mpsc, Arc, RwLock};
+use std::thread;
 
 use chrono::{Duration, Local, NaiveDateTime};
 
@@ -19,9 +21,9 @@ use crate::engine::siam::memory::node::Node as Siam_Mem_Node;
 use crate::engine::siam::memory::seed::Seed as Mem_Seed;
 use crate::engine::traits::{TDescription, TIndex, TSeed};
 use crate::utils::comm::{
-    category, level, Category, IndexType, LevelType, INDEX_CATALOG, INDEX_SEQUENCE,
+    category, key_fetch, level, Category, IndexType, LevelType, INDEX_CATALOG, INDEX_SEQUENCE,
 };
-use crate::utils::path::{index_file_path_yet, view_file_path};
+use crate::utils::path::{index_file_path_yet, view_file_path, view_path};
 use crate::utils::store;
 use crate::utils::store::{
     before_content_bytes, category_u8, head, index_type_u8, level_u8, modify,
@@ -90,6 +92,13 @@ impl TDescription for View {
                         self.create_time = Duration::nanoseconds(
                             split.next().unwrap().to_string().parse::<i64>().unwrap(),
                         );
+                        match read_dir(view_path(self.database_id(), self.id())) {
+                            // 恢复indexes数据
+                            Ok(paths) => {
+                                self.recovery_indexes(paths);
+                            }
+                            Err(err) => panic!("recovery view read dir failed! error is {}", err),
+                        }
                         Ok(())
                     }
                     Err(err) => Err(err_string(format!(
@@ -241,7 +250,7 @@ impl View {
     ///
     /// ###Params
     ///
-    /// key_structure 按照规范结构组成的索引字段名称，由对象结构层级字段通过'.'组成，如'i','in.s'
+    /// key_structure 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`key_structure`作为索引存入
     ///
     /// primary 是否主键
     pub(crate) fn create_index(
@@ -348,17 +357,16 @@ impl View {
     ///
     /// Seed value信息
     pub(crate) fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        for index in self.indexes.clone().read().unwrap().iter() {
-            match index.1.read().unwrap().get(key.clone()) {
-                Ok(v) => {
-                    return Ok(v);
-                }
-                _ => {
-                    continue;
-                }
-            }
+        match self
+            .indexes
+            .clone()
+            .read()
+            .unwrap()
+            .get(&self.index_id(INDEX_CATALOG.to_string()))
+        {
+            Some(index) => index.read().unwrap().get(key.clone()),
+            None => Err(GeorgeError::DataNoExistError(DataNoExistError)),
         }
-        return Err(GeorgeError::DataNoExistError(DataNoExistError));
     }
     /// 插入数据业务方法<p><p>
     ///
@@ -384,15 +392,39 @@ impl View {
                 seed = Arc::new(RwLock::new(Doc_Seed::create(id, self.id())));
             }
         }
+        let mut receives = Vec::new();
         for index in self.indexes.clone().read().unwrap().iter() {
-            let index_r = index.1.read().unwrap();
-            let key_structure = index_r.key_structure();
-            match key_structure.as_str() {
-                INDEX_CATALOG => index_r.put(key.clone(), seed.clone(), force)?,
-                INDEX_SEQUENCE => {
-                    index_r.put(id.to_string(), seed.clone(), force)?
+            let key_move = key.clone();
+            let seed_move = seed.clone();
+            let (sender, receive) = mpsc::channel();
+            receives.push(receive);
+            let index_move = index.1.clone();
+            let value_move = value.clone();
+            thread::spawn(move || {
+                let index_r = index_move.read().unwrap();
+                let key_structure = index_r.key_structure();
+                match key_structure.as_str() {
+                    INDEX_CATALOG => {
+                        sender.send(index_r.put(key_move.clone(), seed_move.clone(), force))
+                    }
+                    INDEX_SEQUENCE => {
+                        sender.send(index_r.put(id.to_string(), seed_move.clone(), force))
+                    }
+                    _ => match key_fetch(index_r.key_structure(), value_move) {
+                        Ok(res) => sender.send(index_r.put(res, seed_move.clone(), force)),
+                        _ => sender.send(Ok(())),
+                    },
                 }
-                _ => {}
+            });
+        }
+        for receive in receives.iter() {
+            let res = receive.recv();
+            match res {
+                Ok(gr) => match gr {
+                    Err(err) => return Err(err),
+                    _ => {}
+                },
+                Err(err) => return Err(err_string(err.to_string())),
             }
         }
         // 执行真实存储操作，即索引将seed存入后，允许检索到该结果，但该结果值不存在，仅当所有索引存入都成功，才会执行本方法完成真实存储操作
@@ -402,7 +434,7 @@ impl View {
 
 impl View {
     /// 恢复indexes数据
-    pub(super) fn recovery_indexes(&mut self, database: &Database, paths: ReadDir) {
+    pub(super) fn recovery_indexes(&mut self, paths: ReadDir) {
         // 遍历data目录下文件
         for path in paths {
             match path {
@@ -413,7 +445,7 @@ impl View {
                         if index_file_name != "view.sr" {
                             println!("recovery index {}", index_file_name);
                             // 恢复index数据
-                            match self.recovery_index(database.id(), index_file_name.clone()) {
+                            match self.recovery_index(self.database_id(), index_file_name.clone()) {
                                 Ok(index) => {
                                     let idx = index.clone();
                                     let idx_r = idx.read().unwrap();
@@ -432,7 +464,7 @@ impl View {
                                         .unwrap()
                                         .insert(index_id, index);
                                 }
-                                Err(err) => panic!("recovery_index failed while database is {} and index_file_name is {}, error: {}", database.id(), index_file_name, err),
+                                Err(err) => panic!("recovery_index failed while database is {} and index_file_name is {}, error: {}", self.database_id(), index_file_name, err),
                             }
                         }
                     }
