@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use std::sync::{Arc, RwLock};
 
 use comm::cryptos::hash::{hashcode32_enhance, hashcode64_enhance, md516};
-use comm::errors::entrances::GeorgeResult;
+use comm::errors::entrances::{err_str, GeorgeResult};
 
 use crate::engine::siam::comm::{
     get_in_node_u32, get_in_node_u64, put_in_node_u32, put_in_node_u64,
@@ -134,5 +134,11 @@ impl TNode for Node {
                 get_in_node_u64(self, 1, md516(key.clone()), hashcode64_enhance(key.clone()))
             }
         }
+    }
+    fn get_last(&self, _level_type: LevelType) -> GeorgeResult<Vec<u8>>
+    where
+        Self: Sized,
+    {
+        Err(err_str("unimplemented!"))
     }
 }

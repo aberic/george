@@ -30,7 +30,7 @@ pub trait TSeed: Send + Sync + Debug {
 /// 索引通用特性，遵循此特性创建索引可以更方便的针对icdb进行扩展
 ///
 /// 该特性包含了索引的基本方法，理论上都需要进行实现才能使用
-pub trait TIndex: TDescription + Send + Sync {
+pub trait TIndex: TDescription + Send + Sync + Debug {
     fn database_id(&self) -> String;
     fn view_id(&self) -> String;
     /// 获取索引唯一ID

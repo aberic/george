@@ -16,12 +16,16 @@ use crate::utils::store::{
     before_content_bytes_for_index, category, category_u8, head, level, level_u8, save, FileHeader,
     Tag,
 };
+use std::fmt::Debug;
 
 /// Siam索引
 ///
 /// 5位key及16位md5后key及5位起始seek和4位持续seek
 #[derive(Debug)]
-pub struct Index<N: TNode> {
+pub struct Index<N: TNode>
+where
+    N: Debug,
+{
     /// 库ID
     database_id: String,
     /// 视图ID
@@ -44,7 +48,7 @@ pub struct Index<N: TNode> {
     description_len: usize,
 }
 
-impl<N: TNode> TDescription for Index<N> {
+impl<N: TNode + Debug> TDescription for Index<N> {
     fn description(&mut self) -> Vec<u8> {
         let mut des: Vec<u8> = vec![];
         let mut des_front = hex::encode(format!(
@@ -119,7 +123,7 @@ impl<N: TNode> TDescription for Index<N> {
 /// key_structure 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`key_structure`作为索引存入
 ///
 /// primary 是否主键
-fn new_index<N: TNode>(
+fn new_index<N: TNode + Debug>(
     database_id: String,
     view_id: String,
     id: String,
@@ -146,7 +150,7 @@ fn new_index<N: TNode>(
 }
 
 /// 封装方法函数
-impl<N: TNode> TIndex for Index<N> {
+impl<N: TNode + Debug> TIndex for Index<N> {
     fn database_id(&self) -> String {
         self.database_id.clone()
     }
@@ -181,7 +185,7 @@ impl<N: TNode> TIndex for Index<N> {
 }
 
 /// 封装方法函数
-impl<N: TNode> Index<N> {
+impl<N: TNode + Debug> Index<N> {
     /// 新建索引
     ///
     /// 该索引需要定义ID，此外索引所表达的字段组成内容也是必须的，并通过primary判断索引类型，具体传参参考如下定义：<p><p>

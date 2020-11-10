@@ -62,7 +62,7 @@ mod node_test {
         let root: Arc<Node> = Node::create_root();
         let key = "test".to_string();
         let seed = Arc::new(RwLock::new(Seed::create(md516(key.clone()))));
-        seed.write().unwrap().save("1".as_bytes().to_vec());
+        seed.write().unwrap().save("1".as_bytes().to_vec()).unwrap();
         root.put(key.clone(), seed, false, 0, LevelType::Small)
             .unwrap();
         let irg = root.get(key.clone(), 0, LevelType::Small);
@@ -82,7 +82,7 @@ mod node_test {
         let root: Arc<Node> = Node::create_root();
         let key = "test".to_string();
         let seed = Arc::new(RwLock::new(Seed::create(md516(key.clone()))));
-        seed.write().unwrap().save("1".as_bytes().to_vec());
+        seed.write().unwrap().save("1".as_bytes().to_vec()).unwrap();
         root.put(key.clone(), seed, false, 0, LevelType::Large)
             .unwrap();
         let irg = root.get(key.clone(), 0, LevelType::Large);

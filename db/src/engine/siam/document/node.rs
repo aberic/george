@@ -186,6 +186,13 @@ impl TNode for Node {
             ),
         }
     }
+    fn get_last(&self, level_type: LevelType) -> GeorgeResult<Vec<u8>>
+    where
+        Self: Sized,
+    {
+        let node_bytes = self.node_bytes().read().unwrap().to_vec();
+        self.get_last_in_node(node_bytes, 1, level_type)
+    }
 }
 
 impl DiskNode for Node {
