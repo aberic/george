@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use comm::errors::entrances::{err_string, GeorgeResult};
 use comm::io::writer::write_seek_u8s;
-use comm::trans::{trans_u64_2_bytes, trans_bytes_2_u64};
+use comm::trans::{trans_bytes_2_u64, trans_u64_2_bytes};
 
 use crate::engine::traits::TSeed;
 use crate::utils::store::Tag;
@@ -15,7 +15,6 @@ use crate::utils::writer::GLOBAL_WRITER;
 /// 叶子节点下真实存储数据的集合单体结构
 #[derive(Debug)]
 pub struct Seed {
-    sequence_id: u64,
     view_id: String,
     value: Vec<u8>,
     idxes: Vec<Idx>,
@@ -37,10 +36,8 @@ fn trans(v8s: Vec<u8>) -> GeorgeResult<Idx> {
     }
 }
 
-fn seed_bytes(sequence_id: u64, value: Vec<u8>) -> Vec<u8> {
-    let mut seed_bytes = trans_u64_2_bytes(sequence_id);
-    let mut value_bytes = value.clone();
-    seed_bytes.append(&mut value_bytes);
+fn seed_bytes(value: Vec<u8>) -> Vec<u8> {
+    let mut seed_bytes = value.clone();
     let mut seed_bytes_len_bytes = trans_u64_2_bytes(seed_bytes.len() as u64);
     seed_bytes_len_bytes.append(&mut seed_bytes);
     seed_bytes_len_bytes
@@ -49,11 +46,10 @@ fn seed_bytes(sequence_id: u64, value: Vec<u8>) -> Vec<u8> {
 /// 封装方法函数
 impl Seed {
     /// 新建seed
-    pub fn create(auto_id: u64,view_id: String) -> Seed {
+    pub fn create(view_id: String, value: Vec<u8>) -> Seed {
         return Seed {
-            sequence_id: auto_id,
             view_id,
-            value: vec![],
+            value,
             idxes: Vec::new(),
             invalid: false,
             error: "".to_string(),
@@ -100,7 +96,10 @@ impl TSeed for Seed {
         }
     }
     fn save(&mut self, value: Vec<u8>) -> GeorgeResult<()> {
-        let seed_bytes = seed_bytes(self.sequence_id, value);
+        if self.idxes.len() == 0 {
+            return Ok(());
+        }
+        let seed_bytes = seed_bytes(value);
         // 将数据存入view，返回数据在view中的坐标
         let seek = GLOBAL_WRITER.write_append_bytes(
             Tag::View,

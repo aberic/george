@@ -8,7 +8,6 @@ use comm::io::file::create_file;
 use comm::trans::{trans_bytes_2_u16, trans_u16_2_bytes};
 use comm::vectors;
 
-use crate::engine::siam::document::seed::Seed;
 use crate::engine::siam::traits::TNode;
 use crate::engine::traits::{TDescription, TIndex, TSeed};
 use crate::utils::comm::{Category, IndexType, LevelType};
@@ -177,13 +176,7 @@ impl<N: TNode> TIndex for Index<N> {
             .put(key, seed, force, self.description_len, self.level())
     }
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        let seek_bytes = self.root.get(key, self.description_len, self.level())?;
-        Ok(Seed::seek_value(seek_bytes).1)
-    }
-
-    fn get_sequence(&self) -> GeorgeResult<u64> {
-        let seek_bytes = self.root.get_last(self.level())?;
-        Ok(Seed::seek_value(seek_bytes).0)
+        self.root.get(key, self.description_len, self.level())
     }
 }
 

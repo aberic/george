@@ -1,5 +1,4 @@
 use crate::errors::entrances::{err_str, GeorgeResult};
-use crate::trans::trans_bytes_2_u64;
 
 /// 变更数组内容
 ///

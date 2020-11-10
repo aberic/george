@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 use std::fs::{read_dir, ReadDir};
-use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
-use std::sync::mpsc::RecvError;
 use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
 
@@ -13,7 +11,6 @@ use comm::errors::entrances::GeorgeResult;
 use comm::errors::entrances::{err_string, GeorgeError};
 use comm::io::file::create_file;
 
-use crate::engine::database::Database;
 use crate::engine::siam::document::node::Node as Siam_Doc_Node;
 use crate::engine::siam::document::seed::Seed as Doc_Seed;
 use crate::engine::siam::index::Index as Siam_Index;
@@ -21,7 +18,7 @@ use crate::engine::siam::memory::node::Node as Siam_Mem_Node;
 use crate::engine::siam::memory::seed::Seed as Mem_Seed;
 use crate::engine::traits::{TDescription, TIndex, TSeed};
 use crate::utils::comm::{
-    category, key_fetch, level, Category, IndexType, LevelType, INDEX_CATALOG, INDEX_SEQUENCE,
+    category, key_fetch, level, Category, IndexType, LevelType, INDEX_CATALOG,
 };
 use crate::utils::path::{index_file_path_yet, view_file_path, view_path};
 use crate::utils::store;
@@ -51,8 +48,6 @@ pub(crate) struct View {
     create_time: Duration,
     /// 索引集合
     indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
-    /// 自增序列ID，不保证连续性，只保证有序性
-    sequence_id: Arc<AtomicU64>,
 }
 
 impl TDescription for View {
@@ -152,7 +147,6 @@ fn new_view(
         level,
         create_time,
         indexes: Default::default(),
-        sequence_id: Arc::new(AtomicU64::new(1)),
     };
 }
 
@@ -212,7 +206,6 @@ impl View {
             level: LevelType::Small,
             create_time: Duration::nanoseconds(1),
             indexes: Arc::new(Default::default()),
-            sequence_id: Arc::new(Default::default()),
         };
     }
     pub(crate) fn database_id(&self) -> String {
@@ -383,13 +376,12 @@ impl View {
     /// IndexResult<()>
     fn save(&self, key: String, value: Vec<u8>, force: bool) -> GeorgeResult<()> {
         let seed: Arc<RwLock<dyn TSeed>>;
-        let id = self.sequence_id.fetch_add(1, Ordering::Relaxed);
         match self.category {
             Category::Memory => {
                 seed = Arc::new(RwLock::new(Mem_Seed::create(md516(key.clone()))));
             }
             Category::Document => {
-                seed = Arc::new(RwLock::new(Doc_Seed::create(id, self.id())));
+                seed = Arc::new(RwLock::new(Doc_Seed::create(self.id(), value.clone())));
             }
         }
         let mut receives = Vec::new();
@@ -406,9 +398,6 @@ impl View {
                 match key_structure.as_str() {
                     INDEX_CATALOG => {
                         sender.send(index_r.put(key_move.clone(), seed_move.clone(), force))
-                    }
-                    INDEX_SEQUENCE => {
-                        sender.send(index_r.put(id.to_string(), seed_move.clone(), force))
                     }
                     _ => match key_fetch(index_r.key_structure(), value_move) {
                         Ok(res) => sender.send(index_r.put(res, seed_move.clone(), force)),
@@ -453,10 +442,6 @@ impl View {
                                     // 如果已存在该view，则不处理
                                     if self.exist_index(index_id.clone()) {
                                         return;
-                                    }
-                                    if idx_r.key_structure().eq(INDEX_SEQUENCE) {
-                                        println!("sequence_id = {}", idx_r.get_sequence().unwrap());
-                                        self.sequence_id.store(idx_r.get_sequence().unwrap(), Ordering::Relaxed);
                                     }
                                     self.indexes
                                         .clone()

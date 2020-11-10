@@ -16,11 +16,9 @@ use logs::set_log;
 use crate::engine::database::Database;
 use crate::engine::traits::TDescription;
 use crate::engine::view::View;
-use crate::utils::comm::{
-    Category, IndexType, LevelType, GEORGE_DB_CONFIG, INDEX_CATALOG, INDEX_SEQUENCE,
-};
+use crate::utils::comm::{Category, IndexType, LevelType, GEORGE_DB_CONFIG, INDEX_CATALOG};
 use crate::utils::deploy::init_config;
-use crate::utils::path::{bootstrap_file_path, data_path, database_file_path, database_path};
+use crate::utils::path::{bootstrap_file_path, data_path, database_file_path};
 use crate::utils::store::{head, recovery_before_content, FileHeader, Tag};
 
 /// 数据库
@@ -253,20 +251,7 @@ impl Engine {
             }
             None => return Err(GeorgeError::DatabaseNoExistError(DatabaseNoExistError)),
         }
-        match view_category {
-            Category::Memory => {
-                self.create_index(database_name, view_name, INDEX_CATALOG.to_string(), true)
-            }
-            Category::Document => {
-                self.create_index(
-                    database_name.clone(),
-                    view_name.clone(),
-                    INDEX_CATALOG.to_string(),
-                    true,
-                )?;
-                self.create_index(database_name, view_name, INDEX_SEQUENCE.to_string(), true)
-            }
-        }
+        self.create_index(database_name, view_name, INDEX_CATALOG.to_string(), true)
     }
     /// 获取数据库集合
     pub(crate) fn db_array(&self) -> Vec<Arc<RwLock<Database>>> {

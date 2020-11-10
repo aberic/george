@@ -2,7 +2,7 @@ use std::sync::{Arc, RwLock};
 
 use comm::bytes::create_empty_bytes;
 use comm::errors::children::{DataExistError, DataNoExistError, NoneError};
-use comm::errors::entrances::{err_str, GeorgeError, GeorgeResult};
+use comm::errors::entrances::{GeorgeError, GeorgeResult};
 use comm::io::reader::read_sub_bytes;
 use comm::io::writer::write_seek_u8s;
 use comm::trans::{trans_bytes_2_u64, trans_u64_2_bytes};
@@ -589,23 +589,19 @@ pub(super) fn write_seed_bytes(
         let seed_u8s = Seed::u8s(index_file_path, next_node_seek, start)?;
         seed.write().unwrap().modify(seed_u8s);
         Ok(())
-    // write_seed(view_id, index_file_path, next_node_seek, start, seed)
     } else {
         if force {
             // 先读取seed的长度
             let seed_len_bytes = read_sub_bytes(view_file_path.clone(), seed_seek, 8)?;
             let seed_len = trans_bytes_2_u64(seed_len_bytes);
             let seed_bytes = read_sub_bytes(view_file_path, seed_seek + 8, seed_len as usize)?;
-            if seed_bytes
-                .as_slice()
-                .eq(seed.clone().read().unwrap().value().unwrap().as_slice())
-            {
+            let seed_value_bytes = seed.clone().read().unwrap().value().unwrap();
+            if seed_bytes.as_slice().eq(seed_value_bytes.as_slice()) {
                 Ok(())
             } else {
                 let seed_u8s = Seed::u8s(index_file_path, next_node_seek, start)?;
                 seed.write().unwrap().modify(seed_u8s);
                 Ok(())
-                // write_seed(view_id, index_file_path, next_node_seek, start, seed)
             }
         } else {
             Err(GeorgeError::DataExistError(DataExistError))

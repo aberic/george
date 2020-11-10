@@ -133,8 +133,8 @@ impl TNode for Node {
         description_len: usize,
         level_type: LevelType,
     ) -> GeorgeResult<()>
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
         match level_type {
@@ -186,13 +186,6 @@ impl TNode for Node {
             ),
         }
     }
-    fn get_last(&self, level_type: LevelType) -> GeorgeResult<Vec<u8>>
-        where
-            Self: Sized,
-    {
-        let node_bytes = self.node_bytes().read().unwrap().to_vec();
-        self.get_last_in_node(node_bytes, 1, level_type)
-    }
 }
 
 impl DiskNode for Node {
@@ -228,8 +221,8 @@ impl DiskNode for Node {
         next_node_seek: u64,
         level_type: LevelType,
     ) -> GeorgeResult<()>
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
         let distance = level_distance_32(level);
@@ -326,8 +319,8 @@ impl DiskNode for Node {
         next_node_seek: u64,
         level_type: LevelType,
     ) -> GeorgeResult<()>
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
         let distance = level_distance_64(level);

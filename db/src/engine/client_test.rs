@@ -132,10 +132,10 @@ fn put_document2() {
         LevelType::Small,
         1,
     );
-    put("database_test", "view_test_doc_32", "key", "value1", 1);
-    get("database_test", "view_test_doc_32", "key", 2);
-    set("database_test", "view_test_doc_32", "key", "value2", 3);
-    get("database_test", "view_test_doc_32", "key", 4);
+    put("database_test", "view_test_doc_32", "key", "value1", 321);
+    get("database_test", "view_test_doc_32", "key", 322);
+    set("database_test", "view_test_doc_32", "key", "value2", 323);
+    get("database_test", "view_test_doc_32", "key", 324);
 
     create_view(
         "database_test",
@@ -147,23 +147,23 @@ fn put_document2() {
         1,
     );
 
-    put("database_test", "view_test_doc_64", "key", "result 1", 1);
-    get("database_test", "view_test_doc_64", "key", 1);
-    set("database_test", "view_test_doc_64", "key", "result 2", 2);
-    get("database_test", "view_test_doc_64", "key", 2);
-    put("database_test", "view_test_doc_64", "key1", "result 3", 3);
-    get("database_test", "view_test_doc_64", "key1", 3);
-    set("database_test", "view_test_doc_64", "key1", "result 4", 4);
-    get("database_test", "view_test_doc_64", "key1", 4);
-    put("database_test", "view_test_doc_64", "key2", "result 5", 5);
-    get("database_test", "view_test_doc_64", "key2", 5);
-    set("database_test", "view_test_doc_64", "key2", "result 6", 6);
-    get("database_test", "view_test_doc_64", "key2", 6);
-    put("database_test", "view_test_doc_64", "key3", "result 7", 7);
-    get("database_test", "view_test_doc_64", "key3", 7);
-    set("database_test", "view_test_doc_64", "key3", "result 8", 8);
-    get("database_test", "view_test_doc_64", "key3", 8);
-    get("database_test", "view_test_doc_64", "key11", 23);
+    put("database_test", "view_test_doc_64", "key", "result 1", 641);
+    get("database_test", "view_test_doc_64", "key", 641);
+    set("database_test", "view_test_doc_64", "key", "result 2", 642);
+    get("database_test", "view_test_doc_64", "key", 642);
+    put("database_test", "view_test_doc_64", "key1", "result 3", 643);
+    get("database_test", "view_test_doc_64", "key1", 643);
+    set("database_test", "view_test_doc_64", "key1", "result 4", 644);
+    get("database_test", "view_test_doc_64", "key1", 644);
+    put("database_test", "view_test_doc_64", "key2", "result 5", 645);
+    get("database_test", "view_test_doc_64", "key2", 645);
+    set("database_test", "view_test_doc_64", "key2", "result 6", 646);
+    get("database_test", "view_test_doc_64", "key2", 646);
+    put("database_test", "view_test_doc_64", "key3", "result 7", 647);
+    get("database_test", "view_test_doc_64", "key3", 647);
+    set("database_test", "view_test_doc_64", "key3", "result 8", 648);
+    get("database_test", "view_test_doc_64", "key3", 648);
+    get("database_test", "view_test_doc_64", "key11", 6423);
 }
 
 #[test]

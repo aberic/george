@@ -13,7 +13,7 @@ use comm::io::file::create_file;
 use crate::engine::traits::TDescription;
 use crate::engine::view::View;
 use crate::utils::comm::{Category, IndexType, LevelType};
-use crate::utils::path::{database_file_path, database_path, view_file_path, view_path};
+use crate::utils::path::{database_file_path, database_path, view_file_path};
 use crate::utils::store::{
     before_content_bytes, head, modify, recovery_before_content, save, FileHeader, Tag,
 };
