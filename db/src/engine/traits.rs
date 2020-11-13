@@ -5,6 +5,7 @@ use serde::export::fmt::Debug;
 
 use comm::errors::entrances::GeorgeResult;
 
+use crate::engine::siam::selector::{Constraint, Expectation};
 use crate::utils::comm::{Category, LevelType};
 
 /// B+Tree索引叶子结点内防hash碰撞数组对象中对象特性
@@ -68,6 +69,18 @@ pub trait TIndex: TDescription + Send + Sync + Debug {
     ///
     /// Seed value信息
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>>;
+    /// 通过查询约束获取数据集
+    ///
+    /// ###Params
+    ///
+    /// left 是否左查询
+    ///
+    /// constraint 查询约束
+    ///
+    /// ###Return
+    ///
+    /// Expectation 经由Selector后的期望结果
+    fn select(&self, left: bool, constraint: Constraint) -> GeorgeResult<Expectation>;
 }
 
 /// 所有生成sr文件的结构都需要实现该特征，如database、view及index

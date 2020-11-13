@@ -12,6 +12,7 @@ use crate::engine::siam::comm::{
     read_last_nodes_bytes, read_next_nodes_bytes, read_seed_bytes, read_seed_bytes_from_view,
     write_seed_bytes,
 };
+use crate::engine::siam::selector::Constraint;
 use crate::engine::siam::traits::{DiskNode, TNode};
 use crate::engine::traits::TSeed;
 use crate::utils::comm::{level_distance_32, level_distance_64, LevelType};
@@ -192,6 +193,13 @@ impl TNode for Node {
     {
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
         self.get_last_in_node(node_bytes, 1, level_type)
+    }
+    fn select(&self, left: bool, constraint: Constraint) -> GeorgeResult<(u64, Vec<Vec<u8>>)> {
+        if left {
+            self.left_query(constraint)
+        } else {
+            self.right_query(constraint)
+        }
     }
 }
 
@@ -431,5 +439,15 @@ impl DiskNode for Node {
                 read_last_nodes_bytes(node_bytes, self.index_file_path(), level_type)?;
             self.get_last_in_node(node_bytes, level + 1, level_type)
         }
+    }
+
+    fn left_query(&self, _constraint: Constraint) -> GeorgeResult<(u64, Vec<Vec<u8>>)> {
+        // todo
+        Ok((150, vec![]))
+    }
+
+    fn right_query(&self, _constraint: Constraint) -> GeorgeResult<(u64, Vec<Vec<u8>>)> {
+        // todo
+        Ok((900, vec![]))
     }
 }

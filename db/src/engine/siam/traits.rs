@@ -2,6 +2,7 @@ use std::sync::{Arc, RwLock};
 
 use comm::errors::entrances::GeorgeResult;
 
+use crate::engine::siam::selector::Constraint;
 use crate::engine::traits::TSeed;
 use crate::utils::comm::LevelType;
 
@@ -82,6 +83,20 @@ pub trait TNode: Send + Sync {
     ) -> GeorgeResult<Vec<u8>>;
     /// 获取最后一条记录数据，返回存储对象
     fn get_last(&self, level_type: LevelType) -> GeorgeResult<Vec<u8>>;
+    /// 通过查询约束获取数据集
+    ///
+    /// ###Params
+    ///
+    /// left 是否左查询
+    ///
+    /// constraint 查询约束
+    ///
+    /// ###Return
+    ///
+    /// count 检索结果过程中遍历的总条数
+    ///
+    /// values 检索结果集合
+    fn select(&self, left: bool, constraint: Constraint) -> GeorgeResult<(u64, Vec<Vec<u8>>)>;
 }
 
 /// 存储文件结点通用特性，遵循此特性创建结点可以更方便的针对db进行扩展
@@ -217,4 +232,28 @@ pub trait DiskNode: Send + Sync {
         level: u8,
         level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>;
+    /// 通过左查询约束获取数据集
+    ///
+    /// ###Params
+    ///
+    /// constraint 查询约束
+    ///
+    /// ###Return
+    ///
+    /// count 检索结果过程中遍历的总条数
+    ///
+    /// values 检索结果集合
+    fn left_query(&self, constraint: Constraint) -> GeorgeResult<(u64, Vec<Vec<u8>>)>;
+    /// 通过右查询约束获取数据集
+    ///
+    /// ###Params
+    ///
+    /// constraint 查询约束
+    ///
+    /// ###Return
+    ///
+    /// count 检索结果过程中遍历的总条数
+    ///
+    /// values 检索结果集合
+    fn right_query(&self, constraint: Constraint) -> GeorgeResult<(u64, Vec<Vec<u8>>)>;
 }

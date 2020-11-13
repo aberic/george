@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::sync::{Arc, RwLock};
 
 use chrono::{Duration, Local, NaiveDateTime};
@@ -8,6 +9,7 @@ use comm::io::file::create_file;
 use comm::trans::{trans_bytes_2_u16, trans_u16_2_bytes};
 use comm::vectors;
 
+use crate::engine::siam::selector::{Constraint, Expectation};
 use crate::engine::siam::traits::TNode;
 use crate::engine::traits::{TDescription, TIndex, TSeed};
 use crate::utils::comm::{Category, IndexType, LevelType};
@@ -16,7 +18,6 @@ use crate::utils::store::{
     before_content_bytes_for_index, category, category_u8, head, level, level_u8, save, FileHeader,
     Tag,
 };
-use std::fmt::Debug;
 
 /// Siam索引
 ///
@@ -181,6 +182,14 @@ impl<N: TNode + Debug> TIndex for Index<N> {
     }
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
         self.root.get(key, self.description_len, self.level())
+    }
+    fn select(&self, left: bool, constraint: Constraint) -> GeorgeResult<Expectation> {
+        let (count, values) = self.root.select(left, constraint)?;
+        Ok(Expectation {
+            count,
+            index_name: self.key_structure(),
+            values,
+        })
     }
 }
 

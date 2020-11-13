@@ -7,6 +7,7 @@ use comm::errors::entrances::{err_str, GeorgeResult};
 use crate::engine::siam::comm::{
     get_in_node_u32, get_in_node_u64, put_in_node_u32, put_in_node_u64,
 };
+use crate::engine::siam::selector::Constraint;
 use crate::engine::siam::traits::TNode;
 use crate::engine::traits::TSeed;
 use crate::utils::comm::LevelType;
@@ -139,6 +140,9 @@ impl TNode for Node {
     where
         Self: Sized,
     {
+        Err(err_str("unimplemented!"))
+    }
+    fn select(&self, _left: bool, _constraint: Constraint) -> GeorgeResult<(u64, Vec<Vec<u8>>)> {
         Err(err_str("unimplemented!"))
     }
 }
