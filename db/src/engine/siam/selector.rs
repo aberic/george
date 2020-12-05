@@ -142,39 +142,41 @@ impl Constraint {
     /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
     /// todo unused
     fn valid_constraint(&self, value: Value, mut condition: Condition) -> bool {
+        // log::debug!("condition value type_id = {:?}", condition.value.clone().type_id());
         let b = false;
         let a: &mut dyn Any = &mut condition.value;
-        match value[condition.param.clone()] {
-            Value::Bool(..) => {
+        match value[condition.param] {
+            Value::Bool(ref val) => {
                 if let Some(compare) = a.downcast_ref::<bool>() {
-                    return value[condition.param.clone()].eq(compare);
+                    return val.eq(compare);
                 }
             }
-            Value::String(..) => {
-                if let Some(compare) = a.downcast_ref::<&str>() {
+            Value::String(ref val) => {
+                if let Some(compare) = a.downcast_ref::<String>() {
                     if condition.cond == "eq" {
-                        return value[condition.param.clone()].eq(*compare);
+                        return val.eq(compare);
                     }
                 }
             }
-            Value::Number(..) => {
+            Value::Number(ref val) => {
                 if let Some(compare) = a.downcast_ref::<f64>() {
                     return if condition.cond == "eq" {
-                        value[condition.param.clone()].as_f64().unwrap().eq(compare)
+                        val.as_f64().unwrap().eq(compare)
                     } else if condition.cond == "gt" {
-                        value[condition.param.clone()].as_f64().unwrap().gt(compare)
+                        val.as_f64().unwrap().gt(compare)
                     } else if condition.cond == "ge" {
-                        value[condition.param.clone()].as_f64().unwrap().ge(compare)
+                        val.as_f64().unwrap().ge(compare)
                     } else if condition.cond == "lt" {
-                        value[condition.param.clone()].as_f64().unwrap().lt(compare)
+                        val.as_f64().unwrap().lt(compare)
                     } else if condition.cond == "le" {
-                        value[condition.param.clone()].as_f64().unwrap().le(compare)
+                        val.as_f64().unwrap().le(compare)
                     } else {
-                        value[condition.param.clone()].as_f64().unwrap().ne(compare)
+                        val.as_f64().unwrap().ne(compare)
                     };
                 }
+                log::debug!("select valid constraint value Number can not be f64")
             }
-            _ => {}
+            _ => log::debug!("select valid constraint value is not bool/string/number")
         }
         b
     }
@@ -217,7 +219,7 @@ impl Selector {
         indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
         delete: bool,
     ) -> GeorgeResult<Selector> {
-        let mut constraint = Constraint::new(constraint_json_bytes, delete)?;
+        let constraint = Constraint::new(constraint_json_bytes, delete)?;
         Ok(Selector {
             indexes,
             constraint,

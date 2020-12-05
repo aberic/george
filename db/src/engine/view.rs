@@ -366,7 +366,7 @@ impl View {
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
     pub fn select(&self, constraint_json_bytes: Vec<u8>) -> GeorgeResult<Expectation> {
-        let mut constraint = Constraint::new(constraint_json_bytes, false)?;
+        let constraint = Constraint::new(constraint_json_bytes, false)?;
         let selector = Selector {
             indexes: self.indexes.clone(),
             constraint,
@@ -377,7 +377,7 @@ impl View {
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
     pub fn delete(&self, constraint_json_bytes: Vec<u8>) -> GeorgeResult<Expectation> {
-        let mut constraint = Constraint::new(constraint_json_bytes, true)?;
+        let constraint = Constraint::new(constraint_json_bytes, true)?;
         let selector = Selector {
             indexes: self.indexes.clone(),
             constraint,
