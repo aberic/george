@@ -1,4 +1,4 @@
-use crate::errors::entrances::{err_str, GeorgeResult};
+use crate::errors::entrances::{err_str, err_string, GeorgeResult};
 
 /// 变更数组内容
 ///
@@ -52,6 +52,43 @@ pub fn find_last_eq_bytes(bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<u8>> {
             }
             if valid {
                 res = temp.to_vec();
+            }
+            temp.clear();
+            position = 0;
+            if b > 0x00 {
+                valid = true;
+            } else {
+                valid = false;
+            }
+            temp.push(b);
+            position += 1
+        }
+    }
+    Ok(res)
+}
+
+/// 从可被`eq`整除的bytes长度的字节数组中查找所有与`eq`长度相同的不为0的字节数组集合
+pub fn find_eq_vec_bytes(bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<Vec<u8>>> {
+    if bytes.len() % eq != 0 {
+        return Err(err_string(format!("bytes length can't % by {}", eq)));
+    }
+    let mut res: Vec<Vec<u8>> = vec![];
+    let mut temp: Vec<u8> = vec![];
+    let mut position = 0;
+    let mut valid = false;
+    for b in bytes {
+        if position < eq {
+            if valid || b > 0x00 {
+                valid = true;
+            }
+            temp.push(b);
+            position += 1
+        } else {
+            if temp.len().ne(&eq) {
+                return Err(err_str("temp length out of 8"));
+            }
+            if valid {
+                res.push(temp.to_vec())
             }
             temp.clear();
             position = 0;

@@ -184,7 +184,7 @@ impl<N: TNode + Debug> TIndex for Index<N> {
         self.root.get(key, self.description_len, self.level())
     }
     fn select(&self, left: bool, constraint: Constraint) -> GeorgeResult<Expectation> {
-        let (count, values) = self.root.select(left, constraint)?;
+        let (count, values) = self.root.select(left, constraint, self.level())?;
         Ok(Expectation {
             count,
             index_name: self.key_structure(),

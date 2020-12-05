@@ -16,6 +16,7 @@ use crate::engine::siam::document::seed::Seed as Doc_Seed;
 use crate::engine::siam::index::Index as Siam_Index;
 use crate::engine::siam::memory::node::Node as Siam_Mem_Node;
 use crate::engine::siam::memory::seed::Seed as Mem_Seed;
+use crate::engine::siam::selector::{Constraint, Expectation, Selector};
 use crate::engine::traits::{TDescription, TIndex, TSeed};
 use crate::utils::comm::{
     category, key_fetch, level, Category, IndexType, LevelType, INDEX_CATALOG,
@@ -361,6 +362,28 @@ impl View {
             None => Err(GeorgeError::DataNoExistError(DataNoExistError)),
         }
     }
+    /// 条件检索
+    ///
+    /// selector_json_bytes 选择器字节数组，自定义转换策略
+    pub fn select(&self, constraint_json_bytes: Vec<u8>) -> GeorgeResult<Expectation> {
+        let mut constraint = Constraint::new(constraint_json_bytes, false)?;
+        let selector = Selector {
+            indexes: self.indexes.clone(),
+            constraint,
+        };
+        selector.run()
+    }
+    /// 条件删除
+    ///
+    /// selector_json_bytes 选择器字节数组，自定义转换策略
+    pub fn delete(&self, constraint_json_bytes: Vec<u8>) -> GeorgeResult<Expectation> {
+        let mut constraint = Constraint::new(constraint_json_bytes, true)?;
+        let selector = Selector {
+            indexes: self.indexes.clone(),
+            constraint,
+        };
+        selector.run()
+    }
     /// 插入数据业务方法<p><p>
     ///
     /// ###Params
@@ -386,22 +409,25 @@ impl View {
         }
         let mut receives = Vec::new();
         for index in self.indexes.clone().read().unwrap().iter() {
-            let key_move = key.clone();
-            let seed_move = seed.clone();
+            let key_clone = key.clone();
+            let seed_clone = seed.clone();
             let (sender, receive) = mpsc::channel();
             receives.push(receive);
-            let index_move = index.1.clone();
-            let value_move = value.clone();
+            let index_clone = index.1.clone();
+            let value_clone = value.clone();
             thread::spawn(move || {
-                let index_r = index_move.read().unwrap();
+                let index_r = index_clone.read().unwrap();
                 let key_structure = index_r.key_structure();
                 match key_structure.as_str() {
                     INDEX_CATALOG => {
-                        sender.send(index_r.put(key_move.clone(), seed_move.clone(), force))
+                        sender.send(index_r.put(key_clone.clone(), seed_clone.clone(), force))
                     }
-                    _ => match key_fetch(index_r.key_structure(), value_move) {
-                        Ok(res) => sender.send(index_r.put(res, seed_move.clone(), force)),
-                        _ => sender.send(Ok(())),
+                    _ => match key_fetch(index_r.key_structure(), value_clone) {
+                        Ok(res) => sender.send(index_r.put(res, seed_clone.clone(), force)),
+                        Err(err) => {
+                            log::debug!("error is {}", err);
+                            sender.send(Ok(()))
+                        }
                     },
                 }
             });

@@ -142,7 +142,12 @@ impl TNode for Node {
     {
         Err(err_str("unimplemented!"))
     }
-    fn select(&self, _left: bool, _constraint: Constraint) -> GeorgeResult<(u64, Vec<Vec<u8>>)> {
+    fn select(
+        &self,
+        _left: bool,
+        _constraint: Constraint,
+        _level_type: LevelType,
+    ) -> GeorgeResult<(u64, Vec<Vec<u8>>)> {
         Err(err_str("unimplemented!"))
     }
 }

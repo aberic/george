@@ -3,14 +3,14 @@ use std::sync::{Arc, RwLock};
 
 use comm::bytes::create_empty_bytes;
 use comm::cryptos::hash::{hashcode32_enhance, hashcode64_enhance};
-use comm::errors::entrances::GeorgeResult;
+use comm::errors::entrances::{err_str, GeorgeResult};
 use comm::trans::trans_bytes_2_u64;
 use comm::vectors;
 use comm::vectors::find_last_eq_bytes;
 
 use crate::engine::siam::comm::{
-    read_last_nodes_bytes, read_next_nodes_bytes, read_seed_bytes, read_seed_bytes_from_view,
-    write_seed_bytes,
+    read_last_nodes_bytes, read_next_all_nodes_bytes, read_next_nodes_bytes, read_seed_bytes,
+    read_seed_bytes_from_view, write_seed_bytes,
 };
 use crate::engine::siam::selector::Constraint;
 use crate::engine::siam::traits::{DiskNode, TNode};
@@ -194,11 +194,17 @@ impl TNode for Node {
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
         self.get_last_in_node(node_bytes, 1, level_type)
     }
-    fn select(&self, left: bool, constraint: Constraint) -> GeorgeResult<(u64, Vec<Vec<u8>>)> {
+    fn select(
+        &self,
+        left: bool,
+        constraint: Constraint,
+        level_type: LevelType,
+    ) -> GeorgeResult<(u64, Vec<Vec<u8>>)> {
+        let node_bytes = self.node_bytes().read().unwrap().to_vec();
         if left {
-            self.left_query(constraint)
+            self.left_query(node_bytes, 1, level_type, constraint)
         } else {
-            self.right_query(constraint)
+            self.right_query(node_bytes, 1, level_type, constraint)
         }
     }
 }
@@ -259,7 +265,7 @@ impl DiskNode for Node {
             // 下一结点node_bytes
             // 下一结点起始坐标seek
             // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            let (node_bytes, seek) = read_next_nodes_bytes(
+            let nbs = read_next_nodes_bytes(
                 self,
                 node_bytes,
                 self.index_id(),
@@ -272,13 +278,13 @@ impl DiskNode for Node {
             // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
             let next_flexible_key = flexible_key - next_degree as u32 * distance;
             self.put_32_in_node(
-                node_bytes,
+                nbs.bytes,
                 level + 1,
                 next_flexible_key,
                 seed,
                 force,
                 false,
-                seek,
+                nbs.seek,
                 level_type,
             )
         }
@@ -301,7 +307,7 @@ impl DiskNode for Node {
             // 下一结点node_bytes
             // 下一结点起始坐标seek
             // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            let (node_bytes, seek) = read_next_nodes_bytes(
+            let nbs = read_next_nodes_bytes(
                 self,
                 node_bytes,
                 self.index_id(),
@@ -314,11 +320,11 @@ impl DiskNode for Node {
             // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
             let next_flexible_key = flexible_key - next_degree as u32 * distance;
             self.get_32_in_node(
-                node_bytes,
+                nbs.bytes,
                 level + 1,
                 next_flexible_key,
                 false,
-                seek,
+                nbs.seek,
                 level_type,
             )
         }
@@ -357,7 +363,7 @@ impl DiskNode for Node {
             // 下一结点node_bytes
             // 下一结点起始坐标seek
             // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            let (node_bytes, seek) = read_next_nodes_bytes(
+            let nbs = read_next_nodes_bytes(
                 self,
                 node_bytes,
                 self.index_id(),
@@ -370,13 +376,13 @@ impl DiskNode for Node {
             // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
             let next_flexible_key = flexible_key - next_degree * distance;
             self.put_64_in_node(
-                node_bytes,
+                nbs.bytes,
                 level + 1,
                 next_flexible_key,
                 seed,
                 force,
                 false,
-                seek,
+                nbs.seek,
                 level_type,
             )
         }
@@ -399,7 +405,7 @@ impl DiskNode for Node {
             // 下一结点node_bytes
             // 下一结点起始坐标seek
             // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            let (node_bytes, seek) = read_next_nodes_bytes(
+            let nbs = read_next_nodes_bytes(
                 self,
                 node_bytes,
                 self.index_id(),
@@ -411,11 +417,11 @@ impl DiskNode for Node {
             )?;
             let next_flexible_key = flexible_key - next_degree as u64 * distance;
             self.get_64_in_node(
-                node_bytes,
+                nbs.bytes,
                 level + 1,
                 next_flexible_key,
                 false,
-                seek,
+                nbs.seek,
                 level_type,
             )
         }
@@ -435,19 +441,92 @@ impl DiskNode for Node {
             // 下一结点node_bytes
             // 下一结点起始坐标seek
             // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            let (node_bytes, _seek) =
-                read_last_nodes_bytes(node_bytes, self.index_file_path(), level_type)?;
-            self.get_last_in_node(node_bytes, level + 1, level_type)
+            let nbs = read_last_nodes_bytes(node_bytes, self.index_file_path(), level_type)?;
+            self.get_last_in_node(nbs.bytes, level + 1, level_type)
         }
     }
 
-    fn left_query(&self, _constraint: Constraint) -> GeorgeResult<(u64, Vec<Vec<u8>>)> {
-        // todo
-        Ok((150, vec![]))
+    fn left_query(
+        &self,
+        node_bytes: Vec<u8>,
+        level: u8,
+        level_type: LevelType,
+        constraint: Constraint,
+    ) -> GeorgeResult<(u64, Vec<Vec<u8>>)> {
+        let mut count: u64 = 0;
+        let mut res: Vec<Vec<u8>> = vec![];
+        if level == 4 {
+            let nbs_arr =
+                read_next_all_nodes_bytes(node_bytes, self.index_file_path(), level_type)?;
+            for nbs in nbs_arr {
+                let bytes = read_seed_bytes_from_view(self.view_file_path(), nbs.seek)?;
+                if constraint.valid(bytes.clone()) {
+                    count += 1;
+                    res.push(bytes)
+                }
+            }
+        } else {
+            // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
+            let nbs_arr =
+                read_next_all_nodes_bytes(node_bytes, self.index_file_path(), level_type)?;
+            for nbs in nbs_arr {
+                let mut temp =
+                    self.left_query(nbs.bytes, level + 1, level_type, constraint.clone())?;
+                count += temp.0;
+                res.append(&mut temp.1)
+            }
+        }
+        Ok((count, res))
     }
 
-    fn right_query(&self, _constraint: Constraint) -> GeorgeResult<(u64, Vec<Vec<u8>>)> {
-        // todo
-        Ok((900, vec![]))
+    fn right_query(
+        &self,
+        node_bytes: Vec<u8>,
+        level: u8,
+        level_type: LevelType,
+        constraint: Constraint,
+    ) -> GeorgeResult<(u64, Vec<Vec<u8>>)> {
+        let mut count: u64 = 0;
+        let mut res: Vec<Vec<u8>> = vec![];
+        if level == 4 {
+            let nbs_arr =
+                read_next_all_nodes_bytes(node_bytes, self.index_file_path(), level_type)?;
+            let mut len = nbs_arr.len();
+            while len > 0 {
+                match nbs_arr.get(len - 1) {
+                    Some(nbs) => {
+                        let bytes = read_seed_bytes_from_view(self.view_file_path(), nbs.seek)?;
+                        if constraint.valid(bytes.clone()) {
+                            count += 1;
+                            res.push(bytes)
+                        }
+                        len -= 1;
+                    }
+                    None => return Err(err_str("select bytes get none error")),
+                }
+            }
+        } else {
+            // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
+            let nbs_arr =
+                read_next_all_nodes_bytes(node_bytes, self.index_file_path(), level_type)?;
+            let mut len = nbs_arr.len();
+            while len > 0 {
+                match nbs_arr.get(len - 1) {
+                    Some(nbs) => {
+                        let mut temp = self.right_query(
+                            nbs.bytes.clone(),
+                            level + 1,
+                            level_type,
+                            constraint.clone(),
+                        )?;
+                        count += temp.0;
+                        res.append(&mut temp.1);
+                        len -= 1;
+                    }
+                    None => return Err(err_str("select bytes get none error")),
+                }
+            }
+        }
+        Ok((count, res))
     }
 }

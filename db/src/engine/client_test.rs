@@ -294,6 +294,103 @@ fn put_document3_index_custom() {
     get("database_test_index", "view_test_doc_32", "key", 4);
 }
 
+#[test]
+fn select_document1() {
+    create_database("select_document1", "comment", 1);
+    create_view(
+        "select_document1",
+        "view1",
+        "comment",
+        IndexType::Siam,
+        Category::Document,
+        LevelType::Small,
+        1,
+    );
+    create_index("select_document1", "view1", "age", false, 1);
+    create_index("select_document1", "view1", "job", false, 1);
+
+    let user_str1 = serde_json::to_string(&create_user(10)).unwrap();
+    let user_str2 = serde_json::to_string(&create_user(15)).unwrap();
+    let user_str3 = serde_json::to_string(&create_user(1)).unwrap();
+    let user_str4 = serde_json::to_string(&create_user(7)).unwrap();
+    let user_str5 = serde_json::to_string(&create_user(4)).unwrap();
+    let user_str6 = serde_json::to_string(&create_user(9)).unwrap();
+
+    put("select_document1", "view1", "10", user_str1.as_str(), 1);
+    put("select_document1", "view1", "15", user_str2.as_str(), 2);
+    put("select_document1", "view1", "1", user_str3.as_str(), 3);
+    put("select_document1", "view1", "7", user_str4.as_str(), 4);
+    put("select_document1", "view1", "4", user_str5.as_str(), 5);
+    put("select_document1", "view1", "9", user_str6.as_str(), 6);
+
+    get("select_document1", "view1", "10", 11);
+    get("select_document1", "view1", "15", 12);
+    get("select_document1", "view1", "1", 13);
+    get("select_document1", "view1", "7", 14);
+    get("select_document1", "view1", "4", 15);
+    get("select_document1", "view1", "9", 16);
+
+    let cond_str1 = r#"
+  {
+    "Conditions":[
+        {
+            "Param":"age",
+            "Cond":"gt",
+            "Value":3
+        }
+    ],
+    "Sort":{
+        "Param":"age",
+        "Asc":false
+    },
+    "Skip":5,
+    "Limit":30
+  }"#;
+    select(
+        "select_document1",
+        "view1",
+        cond_str1.as_bytes().to_vec(),
+        17,
+    );
+
+    let cond_str2 = r#"
+  {
+    "Conditions":[
+        {
+            "Param":"age",
+            "Cond":"gt",
+            "Value":3
+        }
+    ],
+    "Sort":{
+        "Param":"age",
+        "Asc":true
+    },
+    "Skip":5,
+    "Limit":30
+  }"#;
+    select(
+        "select_document1",
+        "view1",
+        cond_str2.as_bytes().to_vec(),
+        18,
+    );
+}
+
+fn create_user(age: u8) -> User {
+    User {
+        name: "aaa".to_string(),
+        age,
+        blog: "true".to_string(),
+        addr: "ccc".to_string(),
+        married: false,
+        job: Job {
+            company: "ddd".to_string(),
+            age: 10,
+        },
+    }
+}
+
 fn create_database(database_name: &str, database_comment: &str, position: usize) {
     create_database_string(
         database_name.to_string(),
@@ -393,6 +490,29 @@ fn get(database_name: &str, view_name: &str, key: &str, position: usize) {
             String::from_utf8(vu8).unwrap().as_str()
         ),
         Err(ie) => println!("get{} is {:#?}", position, ie.source().unwrap().to_string()),
+    }
+}
+
+fn select(database_name: &str, view_name: &str, constraint_json_bytes: Vec<u8>, position: usize) {
+    match GLOBAL_CLIENT.select(
+        database_name.to_string(),
+        view_name.to_string(),
+        constraint_json_bytes,
+    ) {
+        Ok(e) => {
+            println!(
+                "select{},count={},index_name={}",
+                position, e.count, e.index_name
+            );
+            for value in e.values {
+                println!("value={}", String::from_utf8(value).unwrap());
+            }
+        }
+        Err(ie) => println!(
+            "select{} is {:#?}",
+            position,
+            ie.source().unwrap().to_string()
+        ),
     }
 }
 

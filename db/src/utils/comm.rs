@@ -1,4 +1,4 @@
-use comm::errors::entrances::{err_str, err_string, GeorgeResult};
+use comm::errors::entrances::{err_string, GeorgeResult};
 use serde_json::{Error, Value};
 
 pub const GEORGE_DB_CONFIG: &str = "GEORGE_DB_CONFIG";
@@ -104,10 +104,22 @@ pub fn key_fetch(key_structure: String, value: Vec<u8>) -> GeorgeResult<String> 
             let res: Result<Value, Error> = serde_json::from_str(value_str.as_ref());
             match res {
                 Ok(v) => match v[key_structure.clone()] {
-                    Value::Null => Err(err_str("key structure do not support none!")),
-                    Value::Object(..) => Err(err_str("key structure do not support object!")),
-                    Value::Array(..) => Err(err_str("key structure do not support array!")),
-                    Value::Bool(..) => Err(err_str("key structure do not support bool!")),
+                    Value::Null => Err(err_string(format!(
+                        "key structure {} do not support none!",
+                        key_structure
+                    ))),
+                    Value::Object(..) => Err(err_string(format!(
+                        "key structure {} do not support object!",
+                        key_structure
+                    ))),
+                    Value::Array(..) => Err(err_string(format!(
+                        "key structure {} do not support array!",
+                        key_structure
+                    ))),
+                    Value::Bool(..) => Err(err_string(format!(
+                        "key structure {} do not support bool!",
+                        key_structure
+                    ))),
                     _ => Ok(format!("{}", v[key_structure])),
                 },
                 Err(err) => Err(err_string(err.to_string())),

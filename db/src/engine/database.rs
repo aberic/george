@@ -10,6 +10,7 @@ use comm::errors::entrances::GeorgeResult;
 use comm::errors::entrances::{err_string, GeorgeError};
 use comm::io::file::create_file;
 
+use crate::engine::siam::selector::Expectation;
 use crate::engine::traits::TDescription;
 use crate::engine::view::View;
 use crate::utils::comm::{Category, IndexType, LevelType};
@@ -303,6 +304,32 @@ impl Database {
     pub(crate) fn get(&self, view_name: String, key: String) -> GeorgeResult<Vec<u8>> {
         return match self.views.clone().read().unwrap().get(&view_name) {
             Some(view) => view.read().unwrap().get(key),
+            _ => Err(GeorgeError::ViewNoExistError(ViewNoExistError)),
+        };
+    }
+    /// 条件检索
+    ///
+    /// selector_json_bytes 选择器字节数组，自定义转换策略
+    pub fn select(
+        &self,
+        view_name: String,
+        constraint_json_bytes: Vec<u8>,
+    ) -> GeorgeResult<Expectation> {
+        return match self.views.clone().read().unwrap().get(&view_name) {
+            Some(view) => view.read().unwrap().select(constraint_json_bytes),
+            _ => Err(GeorgeError::ViewNoExistError(ViewNoExistError)),
+        };
+    }
+    /// 条件删除
+    ///
+    /// selector_json_bytes 选择器字节数组，自定义转换策略
+    pub fn delete(
+        &self,
+        view_name: String,
+        constraint_json_bytes: Vec<u8>,
+    ) -> GeorgeResult<Expectation> {
+        return match self.views.clone().read().unwrap().get(&view_name) {
+            Some(view) => view.read().unwrap().delete(constraint_json_bytes),
             _ => Err(GeorgeError::ViewNoExistError(ViewNoExistError)),
         };
     }

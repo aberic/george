@@ -6,7 +6,7 @@ use comm::errors::entrances::{GeorgeError, GeorgeResult};
 use comm::io::reader::read_sub_bytes;
 use comm::io::writer::write_seek_u8s;
 use comm::trans::{trans_bytes_2_u64, trans_u64_2_bytes};
-use comm::vectors::find_last_eq_bytes;
+use comm::vectors::{find_eq_vec_bytes, find_last_eq_bytes};
 
 use crate::engine::siam::document::seed::Seed;
 use crate::engine::siam::traits::{DiskNode, TNode};
@@ -449,6 +449,14 @@ fn put_seed<N: TNode>(node: &N, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> Ge
 
 // Disk Node Exec After
 
+/// 下一节点信息
+pub(super) struct NodeBytes {
+    /// 下一节点node_bytes
+    pub(super) bytes: Vec<u8>,
+    /// 下一节点起始坐标seek
+    pub(super) seek: u64,
+}
+
 /// 读取下一个节点的字节数组记录，如果不存在，则判断是否为插入操作，如果是插入操作，则新建下一个节点默认数组
 ///
 /// node_bytes 当前操作节点的字节数组
@@ -475,7 +483,7 @@ pub(super) fn read_next_nodes_bytes<N: DiskNode>(
     root: bool,
     new: bool,
     level_type: LevelType,
-) -> GeorgeResult<(Vec<u8>, u64)> {
+) -> GeorgeResult<NodeBytes> {
     let seek_start = start as usize;
     let seek_end = seek_start + 8;
     let u8s = node_bytes.as_slice()[seek_start..seek_end].to_vec();
@@ -503,7 +511,10 @@ pub(super) fn read_next_nodes_bytes<N: DiskNode>(
             if root {
                 node.modify_node_bytes(seek_start, seek_v)
             }
-            Ok((next_node_bytes, seek))
+            Ok(NodeBytes {
+                bytes: next_node_bytes,
+                seek,
+            })
         } else {
             Err(GeorgeError::DataNoExistError(DataNoExistError))
         }
@@ -533,10 +544,45 @@ pub(super) fn read_last_nodes_bytes(
     node_bytes: Vec<u8>,
     index_file_path: String,
     level_type: LevelType,
-) -> GeorgeResult<(Vec<u8>, u64)> {
+) -> GeorgeResult<NodeBytes> {
     let u8s = find_last_eq_bytes(node_bytes, 8)?;
     let next_node_bytes_seek = trans_bytes_2_u64(u8s);
     read_node_bytes(index_file_path, next_node_bytes_seek, level_type)
+}
+
+/// 读取最右叶子节点的字节数组集合记录
+///
+/// node_bytes 当前操作节点的字节数组
+///
+/// next_node_seek 下一节点在文件中的真实起始位置
+///
+/// start 下一节点在node_bytes中的起始位置
+///
+/// root 是否根节点
+///
+/// new 是否插入操作
+///
+/// #return 下一节点状态
+///
+/// 下一节点node_bytes
+///
+/// 下一节点起始坐标seek
+pub(super) fn read_next_all_nodes_bytes(
+    node_bytes: Vec<u8>,
+    index_file_path: String,
+    level_type: LevelType,
+) -> GeorgeResult<Vec<NodeBytes>> {
+    let mut nbs: Vec<NodeBytes> = vec![];
+    let u82s = find_eq_vec_bytes(node_bytes, 8)?;
+    for u8s in u82s {
+        let next_node_bytes_seek = trans_bytes_2_u64(u8s);
+        nbs.push(read_node_bytes(
+            index_file_path.clone(),
+            next_node_bytes_seek,
+            level_type,
+        )?);
+    }
+    Ok(nbs)
 }
 
 /// 读取结点字节数组及该数组的起始偏移量
@@ -548,15 +594,21 @@ fn read_node_bytes(
     index_file_path: String,
     next_node_bytes_seek: u64,
     level_type: LevelType,
-) -> GeorgeResult<(Vec<u8>, u64)> {
+) -> GeorgeResult<NodeBytes> {
     match level_type {
         LevelType::Small => {
             let next_node_bytes = read_sub_bytes(index_file_path, next_node_bytes_seek, 2048)?;
-            Ok((next_node_bytes, next_node_bytes_seek))
+            Ok(NodeBytes {
+                bytes: next_node_bytes,
+                seek: next_node_bytes_seek,
+            })
         }
         LevelType::Large => {
             let next_node_bytes = read_sub_bytes(index_file_path, next_node_bytes_seek, 524288)?;
-            Ok((next_node_bytes, next_node_bytes_seek))
+            Ok(NodeBytes {
+                bytes: next_node_bytes,
+                seek: next_node_bytes_seek,
+            })
         }
     }
 }

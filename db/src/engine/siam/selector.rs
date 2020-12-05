@@ -15,7 +15,7 @@ use crate::engine::traits::TIndex;
 struct Condition {
     /// 参数名，新插入的数据将会尝试将数据对象转成json，并将json中的`param`作为参数使用
     param: String,
-    /// 条件 gt/lt/eq/diff 大于/小于/等于/不等
+    /// 条件 gt/ge/lt/le/eq/ne 大于/大于等于/小于/小于等于/等于/不等
     cond: String,
     /// 比较对象，支持int、string、float和bool
     value: *mut dyn Any,
@@ -51,9 +51,9 @@ pub struct Constraint {
 #[derive(Debug, Clone)]
 pub struct Selector {
     /// 索引集合
-    indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
+    pub indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
     /// 查询约束
-    constraint: Constraint,
+    pub constraint: Constraint,
 }
 
 /// 经由`Selector`后的期望结果
@@ -121,9 +121,11 @@ impl Constraint {
                     break;
                 }
                 if !v["Cond"].as_str().unwrap().eq("gt")
+                    && !v["Cond"].as_str().unwrap().eq("ge")
                     && !v["Cond"].as_str().unwrap().eq("lt")
+                    && !v["Cond"].as_str().unwrap().eq("le")
                     && !v["Cond"].as_str().unwrap().eq("eq")
-                    && !v["Cond"].as_str().unwrap().eq("diff")
+                    && !v["Cond"].as_str().unwrap().eq("ne")
                 {
                     break;
                 }
@@ -135,6 +137,70 @@ impl Constraint {
                 })
             }
         }
+    }
+
+    /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
+    /// todo unused
+    fn valid_constraint(&self, value: Value, mut condition: Condition) -> bool {
+        let b = false;
+        let a: &mut dyn Any = &mut condition.value;
+        match value[condition.param.clone()] {
+            Value::Bool(..) => {
+                if let Some(compare) = a.downcast_ref::<bool>() {
+                    return value[condition.param.clone()].eq(compare);
+                }
+            }
+            Value::String(..) => {
+                if let Some(compare) = a.downcast_ref::<&str>() {
+                    if condition.cond == "eq" {
+                        return value[condition.param.clone()].eq(*compare);
+                    }
+                }
+            }
+            Value::Number(..) => {
+                if let Some(compare) = a.downcast_ref::<f64>() {
+                    return if condition.cond == "eq" {
+                        value[condition.param.clone()].as_f64().unwrap().eq(compare)
+                    } else if condition.cond == "gt" {
+                        value[condition.param.clone()].as_f64().unwrap().gt(compare)
+                    } else if condition.cond == "ge" {
+                        value[condition.param.clone()].as_f64().unwrap().ge(compare)
+                    } else if condition.cond == "lt" {
+                        value[condition.param.clone()].as_f64().unwrap().lt(compare)
+                    } else if condition.cond == "le" {
+                        value[condition.param.clone()].as_f64().unwrap().le(compare)
+                    } else {
+                        value[condition.param.clone()].as_f64().unwrap().ne(compare)
+                    };
+                }
+            }
+            _ => {}
+        }
+        b
+    }
+
+    /// 约束是否有效
+    pub fn valid(&self, bytes: Vec<u8>) -> bool {
+        let mut b = false;
+        match String::from_utf8(bytes.clone()) {
+            Ok(value_str) => {
+                let res: Result<Value, Error> = serde_json::from_str(value_str.as_ref());
+                match res {
+                    Ok(v) => {
+                        for condition in self.conditions.clone() {
+                            if self.valid_constraint(v.clone(), condition) {
+                                b = true
+                            } else {
+                                return false;
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
+        }
+        b
     }
 }
 

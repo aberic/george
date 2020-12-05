@@ -96,7 +96,12 @@ pub trait TNode: Send + Sync {
     /// count 检索结果过程中遍历的总条数
     ///
     /// values 检索结果集合
-    fn select(&self, left: bool, constraint: Constraint) -> GeorgeResult<(u64, Vec<Vec<u8>>)>;
+    fn select(
+        &self,
+        left: bool,
+        constraint: Constraint,
+        level_type: LevelType,
+    ) -> GeorgeResult<(u64, Vec<Vec<u8>>)>;
 }
 
 /// 存储文件结点通用特性，遵循此特性创建结点可以更方便的针对db进行扩展
@@ -236,6 +241,8 @@ pub trait DiskNode: Send + Sync {
     ///
     /// ###Params
     ///
+    /// node_bytes 当前操作结点的字节数组
+    ///
     /// constraint 查询约束
     ///
     /// ###Return
@@ -243,11 +250,19 @@ pub trait DiskNode: Send + Sync {
     /// count 检索结果过程中遍历的总条数
     ///
     /// values 检索结果集合
-    fn left_query(&self, constraint: Constraint) -> GeorgeResult<(u64, Vec<Vec<u8>>)>;
+    fn left_query(
+        &self,
+        node_bytes: Vec<u8>,
+        level: u8,
+        level_type: LevelType,
+        constraint: Constraint,
+    ) -> GeorgeResult<(u64, Vec<Vec<u8>>)>;
     /// 通过右查询约束获取数据集
     ///
     /// ###Params
     ///
+    /// node_bytes 当前操作结点的字节数组
+    ///
     /// constraint 查询约束
     ///
     /// ###Return
@@ -255,5 +270,11 @@ pub trait DiskNode: Send + Sync {
     /// count 检索结果过程中遍历的总条数
     ///
     /// values 检索结果集合
-    fn right_query(&self, constraint: Constraint) -> GeorgeResult<(u64, Vec<Vec<u8>>)>;
+    fn right_query(
+        &self,
+        node_bytes: Vec<u8>,
+        level: u8,
+        level_type: LevelType,
+        constraint: Constraint,
+    ) -> GeorgeResult<(u64, Vec<Vec<u8>>)>;
 }
