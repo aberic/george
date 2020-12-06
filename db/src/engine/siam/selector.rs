@@ -141,10 +141,10 @@ impl Constraint {
 
     /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
     /// todo unused
-    fn valid_constraint(&self, value: Value, mut condition: Condition) -> bool {
+    fn valid_constraint(&self, value: Value, condition: Condition) -> bool {
         // log::debug!("condition value type_id = {:?}", condition.value.clone().type_id());
         let b = false;
-        let a: &mut dyn Any = &mut condition.value;
+        let a: &dyn Any = &condition.value;
         match value[condition.param] {
             Value::Bool(ref val) => {
                 if let Some(compare) = a.downcast_ref::<bool>() {
