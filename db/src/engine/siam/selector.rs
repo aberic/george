@@ -2,23 +2,93 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
+use serde::Deserializer;
 use serde_json::{Error, Value};
 
 use comm::errors::entrances::{err_str, err_string, GeorgeResult};
 
 use crate::engine::traits::TIndex;
 
+/// 条件 gt/ge/lt/le/eq/ne 大于/大于等于/小于/小于等于/等于/不等
+#[derive(Debug, Clone, Copy)]
+pub enum ConditionType {
+    /// 大于
+    GT,
+    /// 大于等于
+    GE,
+    /// 小于
+    LT,
+    /// 小于等于
+    LE,
+    /// 等于
+    EQ,
+    /// 不等
+    NE,
+}
+
+/// 支持比较对象，支持int、string、float和bool
+#[derive(Debug, Clone, Copy)]
+pub enum ConditionSupport {
+    /// string
+    STRING,
+    /// i64
+    I64,
+    /// u64
+    U64,
+    /// float
+    F64,
+    /// bool
+    BOOL,
+}
+
 /// 条件查询
 ///
 /// 查询过程中不满足条件的记录将被移除出结果集
 #[derive(Debug, Clone)]
-struct Condition {
+pub struct Condition {
     /// 参数名，新插入的数据将会尝试将数据对象转成json，并将json中的`param`作为参数使用
     param: String,
     /// 条件 gt/ge/lt/le/eq/ne 大于/大于等于/小于/小于等于/等于/不等
-    cond: String,
+    cond: ConditionType,
+    /// 支持比较对象，支持int64、uint64、string、float和bool
+    support: ConditionSupport,
     /// 比较对象，支持int、string、float和bool
-    value: *mut dyn Any,
+    value: String,
+}
+
+impl Condition {
+    /// 参数名，新插入的数据将会尝试将数据对象转成json，并将json中的`param`作为参数使用
+    fn param(&self) -> String {
+        self.param.clone()
+    }
+    /// 条件 gt/ge/lt/le/eq/ne 大于/大于等于/小于/小于等于/等于/不等
+    fn cond(&self) -> ConditionType {
+        self.cond
+    }
+    /// 支持比较对象，支持int64、uint64、string、float和bool
+    fn support(&self) -> ConditionSupport {
+        self.support
+    }
+    /// 比较对象值
+    fn value_str(&self) -> String {
+        self.value.clone()
+    }
+    /// 比较对象值
+    fn value_i64(&self) -> i64 {
+        self.value.clone().parse().unwrap()
+    }
+    /// 比较对象值
+    fn value_u64(&self) -> u64 {
+        self.value.clone().parse().unwrap()
+    }
+    /// 比较对象值
+    fn value_f64(&self) -> f64 {
+        self.value.clone().parse().unwrap()
+    }
+    /// 比较对象值
+    fn value_bool(&self) -> bool {
+        self.value.clone().eq("1")
+    }
 }
 
 /// 排序方式
@@ -90,8 +160,8 @@ impl Constraint {
                 if value["Skip"].is_u64() {
                     constraint.skip = value["Skip"].as_u64().unwrap();
                 }
-                constraint.fit_sort(value.clone());
-                constraint.fit_conditions(value.clone());
+                constraint.fit_sort(value["Sort"].clone());
+                constraint.fit_conditions(value["Conditions"].clone());
                 Ok(constraint)
             }
             Err(err) => Err(err_string(err.to_string())),
@@ -99,14 +169,14 @@ impl Constraint {
     }
     /// 解析`json value`并获取排序索引
     fn fit_sort(&mut self, value: Value) {
-        if value["Sort"].is_object() {
-            if value["Sort"]["Param"].is_string() {
+        if value.is_object() {
+            if value["Param"].is_string() {
                 let mut sort = Sort {
-                    param: value["Sort"]["Param"].as_str().unwrap().to_string(),
+                    param: value["Param"].as_str().unwrap().to_string(),
                     asc: false,
                 };
-                if !value["Sort"]["Asc"].is_null() {
-                    sort.asc = value["Sort"]["Asc"].as_bool().unwrap();
+                if !value["Asc"].is_null() {
+                    sort.asc = value["Asc"].as_bool().unwrap();
                 }
                 self.sort = Some(sort);
             }
@@ -115,70 +185,114 @@ impl Constraint {
 
     /// 解析`json value`并获取条件索引
     fn fit_conditions(&mut self, value: Value) {
-        if value["Conditions"].is_array() {
-            for v in value["Conditions"].as_array().unwrap().iter() {
-                if !v["Param"].is_string() || !v["Cond"].is_string() {
-                    break;
+        if value.is_array() {
+            for v in value.as_array().unwrap().iter() {
+                let cond: ConditionType;
+                match v["Param"].as_str() {
+                    Some(ref val_param) => match v["Cond"].as_str() {
+                        Some(ref val_cond) => {
+                            if val_cond.eq(&"gt") {
+                                cond = ConditionType::GT
+                            } else if val_cond.eq(&"ge") {
+                                cond = ConditionType::GE
+                            } else if val_cond.eq(&"lt") {
+                                cond = ConditionType::LT
+                            } else if val_cond.eq(&"le") {
+                                cond = ConditionType::LE
+                            } else if val_cond.eq(&"eq") {
+                                cond = ConditionType::EQ
+                            } else if val_cond.eq(&"ne") {
+                                cond = ConditionType::NE
+                            } else {
+                                break;
+                            }
+                            match v["Value"] {
+                                Value::Bool(ref val_bool) => {
+                                    let value_res: String;
+                                    if *val_bool {
+                                        value_res = String::from("1")
+                                    } else {
+                                        value_res = String::from("0")
+                                    }
+                                    self.conditions.push(Condition {
+                                        param: val_param.to_string(),
+                                        cond,
+                                        support: ConditionSupport::BOOL,
+                                        value: value_res,
+                                    })
+                                }
+                                Value::String(ref val_str) => self.conditions.push(Condition {
+                                    param: val_param.to_string(),
+                                    cond,
+                                    support: ConditionSupport::STRING,
+                                    value: val_str.to_string(),
+                                }),
+                                Value::Number(ref val_num) => self.conditions.push(Condition {
+                                    param: val_param.to_string(),
+                                    cond,
+                                    support: ConditionSupport::F64,
+                                    value: v["Value"].as_f64().unwrap().to_string(),
+                                }),
+                                _ => {}
+                            }
+                        }
+                        _ => {}
+                    },
+                    _ => {}
                 }
-                if !v["Cond"].as_str().unwrap().eq("gt")
-                    && !v["Cond"].as_str().unwrap().eq("ge")
-                    && !v["Cond"].as_str().unwrap().eq("lt")
-                    && !v["Cond"].as_str().unwrap().eq("le")
-                    && !v["Cond"].as_str().unwrap().eq("eq")
-                    && !v["Cond"].as_str().unwrap().eq("ne")
-                {
-                    break;
-                }
-                let mut v_res = v["Value"].to_string();
-                self.conditions.push(Condition {
-                    param: v["Param"].as_str().unwrap().to_string(),
-                    cond: v["Cond"].as_str().unwrap().to_string(),
-                    value: &mut v_res,
-                })
             }
         }
     }
 
     /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
-    /// todo unused
     fn valid_constraint(&self, value: Value, condition: Condition) -> bool {
-        // log::debug!("condition value type_id = {:?}", condition.value.clone().type_id());
-        let b = false;
-        let a: &dyn Any = &condition.value;
-        match value[condition.param] {
-            Value::Bool(ref val) => {
-                if let Some(compare) = a.downcast_ref::<bool>() {
-                    return val.eq(compare);
+        return match value[condition.param()] {
+            Value::Bool(ref val) => match condition.support() {
+                ConditionSupport::BOOL => val.eq(&condition.value_bool()),
+                _ => false,
+            },
+            Value::String(ref val) => match condition.support() {
+                ConditionSupport::STRING => match condition.cond() {
+                    ConditionType::EQ => val.eq(&condition.value_str()),
+                    _ => false,
+                },
+                _ => false,
+            },
+            Value::Number(ref val) => match condition.support() {
+                ConditionSupport::I64 => match condition.cond() {
+                    ConditionType::EQ => val.as_i64().unwrap().eq(&condition.value_i64()),
+                    ConditionType::GT => val.as_i64().unwrap().gt(&condition.value_i64()),
+                    ConditionType::GE => val.as_i64().unwrap().ge(&condition.value_i64()),
+                    ConditionType::LT => val.as_i64().unwrap().lt(&condition.value_i64()),
+                    ConditionType::LE => val.as_i64().unwrap().le(&condition.value_i64()),
+                    ConditionType::NE => val.as_i64().unwrap().ne(&condition.value_i64()),
+                },
+                ConditionSupport::U64 => match condition.cond() {
+                    ConditionType::EQ => val.as_u64().unwrap().eq(&condition.value_u64()),
+                    ConditionType::GT => val.as_u64().unwrap().gt(&condition.value_u64()),
+                    ConditionType::GE => val.as_u64().unwrap().ge(&condition.value_u64()),
+                    ConditionType::LT => val.as_u64().unwrap().lt(&condition.value_u64()),
+                    ConditionType::LE => val.as_u64().unwrap().le(&condition.value_u64()),
+                    ConditionType::NE => val.as_u64().unwrap().ne(&condition.value_u64()),
+                },
+                ConditionSupport::F64 => match condition.cond() {
+                    ConditionType::EQ => val.as_f64().unwrap().eq(&condition.value_f64()),
+                    ConditionType::GT => val.as_f64().unwrap().gt(&condition.value_f64()),
+                    ConditionType::GE => val.as_f64().unwrap().ge(&condition.value_f64()),
+                    ConditionType::LT => val.as_f64().unwrap().lt(&condition.value_f64()),
+                    ConditionType::LE => val.as_f64().unwrap().le(&condition.value_f64()),
+                    ConditionType::NE => val.as_f64().unwrap().ne(&condition.value_f64()),
+                },
+                _ => {
+                    log::debug!("select valid condition does't support");
+                    false
                 }
+            },
+            _ => {
+                log::debug!("select valid constraint value is not bool/string/number");
+                false
             }
-            Value::String(ref val) => {
-                if let Some(compare) = a.downcast_ref::<String>() {
-                    if condition.cond == "eq" {
-                        return val.eq(compare);
-                    }
-                }
-            }
-            Value::Number(ref val) => {
-                if let Some(compare) = a.downcast_ref::<f64>() {
-                    return if condition.cond == "eq" {
-                        val.as_f64().unwrap().eq(compare)
-                    } else if condition.cond == "gt" {
-                        val.as_f64().unwrap().gt(compare)
-                    } else if condition.cond == "ge" {
-                        val.as_f64().unwrap().ge(compare)
-                    } else if condition.cond == "lt" {
-                        val.as_f64().unwrap().lt(compare)
-                    } else if condition.cond == "le" {
-                        val.as_f64().unwrap().le(compare)
-                    } else {
-                        val.as_f64().unwrap().ne(compare)
-                    };
-                }
-                log::debug!("select valid constraint value Number can not be f64")
-            }
-            _ => log::debug!("select valid constraint value is not bool/string/number")
-        }
-        b
+        };
     }
 
     /// 约束是否有效

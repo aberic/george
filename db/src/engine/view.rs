@@ -366,10 +366,10 @@ impl View {
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
     pub fn select(&self, constraint_json_bytes: Vec<u8>) -> GeorgeResult<Expectation> {
-        let constraint = Constraint::new(constraint_json_bytes, false)?;
+        let c = Constraint::new(constraint_json_bytes, false)?;
         let selector = Selector {
             indexes: self.indexes.clone(),
-            constraint,
+            constraint: c,
         };
         selector.run()
     }

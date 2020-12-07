@@ -294,6 +294,15 @@ fn put_document3_index_custom() {
     get("database_test_index", "view_test_doc_32", "key", 4);
 }
 
+#[derive(Serialize, Deserialize)]
+struct Teacher {
+    name: String,
+    age: u8,
+    height: u8,
+    blog: String,
+    married: bool,
+}
+
 #[test]
 fn select_document1() {
     create_database("select_document1", "comment", 1);
@@ -309,12 +318,12 @@ fn select_document1() {
     create_index("select_document1", "view1", "age", false, 1);
     create_index("select_document1", "view1", "job", false, 1);
 
-    let user_str1 = serde_json::to_string(&create_user(10)).unwrap();
-    let user_str2 = serde_json::to_string(&create_user(15)).unwrap();
-    let user_str3 = serde_json::to_string(&create_user(1)).unwrap();
-    let user_str4 = serde_json::to_string(&create_user(7)).unwrap();
-    let user_str5 = serde_json::to_string(&create_user(4)).unwrap();
-    let user_str6 = serde_json::to_string(&create_user(9)).unwrap();
+    let user_str1 = serde_json::to_string(&create_t(10, 102)).unwrap();
+    let user_str2 = serde_json::to_string(&create_t(15, 12)).unwrap();
+    let user_str3 = serde_json::to_string(&create_t(1, 192)).unwrap();
+    let user_str4 = serde_json::to_string(&create_t(7, 82)).unwrap();
+    let user_str5 = serde_json::to_string(&create_t(4, 2)).unwrap();
+    let user_str6 = serde_json::to_string(&create_t(9, 1)).unwrap();
 
     put("select_document1", "view1", "10", user_str1.as_str(), 1);
     put("select_document1", "view1", "15", user_str2.as_str(), 2);
@@ -335,12 +344,12 @@ fn select_document1() {
     "Conditions":[
         {
             "Param":"age",
-            "Cond":"gt",
-            "Value":3
+            "Cond":"le",
+            "Value":9
         }
     ],
     "Sort":{
-        "Param":"age",
+        "Param":"height",
         "Asc":false
     },
     "Skip":5,
@@ -363,7 +372,7 @@ fn select_document1() {
         }
     ],
     "Sort":{
-        "Param":"age",
+        "Param":"height",
         "Asc":true
     },
     "Skip":5,
@@ -377,17 +386,13 @@ fn select_document1() {
     );
 }
 
-fn create_user(age: u8) -> User {
-    User {
-        name: "aaa".to_string(),
-        age,
-        blog: "true".to_string(),
-        addr: "ccc".to_string(),
-        married: false,
-        job: Job {
-            company: "ddd".to_string(),
-            age: 10,
-        },
+fn create_t(a: u8, h: u8) -> Teacher {
+    Teacher {
+        name: a.to_string(),
+        age: a,
+        height: h,
+        blog: a.to_string(),
+        married: a % 2 == 0,
     }
 }
 
