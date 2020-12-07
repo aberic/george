@@ -181,7 +181,7 @@ impl<N: TNode + Debug> TIndex for Index<N> {
             .put(key, seed, force, self.description_len, self.level())
     }
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        self.root.get(key, self.description_len, self.level())
+        self.root.get(key, self.level())
     }
     fn select(&self, left: bool, constraint: Constraint) -> GeorgeResult<Expectation> {
         let (count, values) = self.root.select(left, constraint, self.level())?;

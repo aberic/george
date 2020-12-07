@@ -10,7 +10,7 @@ use comm::vectors::find_last_eq_bytes;
 
 use crate::engine::siam::comm::{
     read_last_nodes_bytes, read_next_all_nodes_bytes, read_next_nodes_bytes, read_seed_bytes,
-    read_seed_bytes_from_view, write_seed_bytes,
+    read_seed_bytes_from_view, try_read_next_nodes_bytes, write_seed_bytes,
 };
 use crate::engine::siam::selector::Constraint;
 use crate::engine::siam::traits::{DiskNode, TNode};
@@ -161,30 +161,15 @@ impl TNode for Node {
             ),
         }
     }
-    fn get(
-        &self,
-        key: String,
-        description_len: usize,
-        level_type: LevelType,
-    ) -> GeorgeResult<Vec<u8>> {
+    fn get(&self, key: String, level_type: LevelType) -> GeorgeResult<Vec<u8>> {
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
         match level_type {
-            LevelType::Small => self.get_32_in_node(
-                node_bytes,
-                1,
-                hashcode32_enhance(key),
-                true,
-                description_len as u64,
-                level_type,
-            ),
-            LevelType::Large => self.get_64_in_node(
-                node_bytes,
-                1,
-                hashcode64_enhance(key),
-                true,
-                description_len as u64,
-                level_type,
-            ),
+            LevelType::Small => {
+                self.get_32_in_node(node_bytes, 1, hashcode32_enhance(key), level_type)
+            }
+            LevelType::Large => {
+                self.get_64_in_node(node_bytes, 1, hashcode64_enhance(key), level_type)
+            }
         }
     }
     fn get_last(&self, level_type: LevelType) -> GeorgeResult<Vec<u8>>
@@ -272,7 +257,6 @@ impl DiskNode for Node {
                 next_node_seek,
                 (next_degree * 8) as u64, // 在当前操作结点的字节数组的起始位置
                 root,
-                true,
                 level_type,
             )?;
             // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
@@ -294,8 +278,6 @@ impl DiskNode for Node {
         node_bytes: Vec<u8>,
         level: u8,
         flexible_key: u32,
-        root: bool,
-        node_seek: u64,
         level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>> {
         let distance = level_distance_32(level);
@@ -307,26 +289,11 @@ impl DiskNode for Node {
             // 下一结点node_bytes
             // 下一结点起始坐标seek
             // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            let nbs = read_next_nodes_bytes(
-                self,
-                node_bytes,
-                self.index_id(),
-                node_seek,
-                (next_degree * 8) as u64,
-                root,
-                false,
-                level_type,
-            )?;
+            let nbs =
+                try_read_next_nodes_bytes(self, node_bytes, (next_degree * 8) as u64, level_type)?;
             // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
             let next_flexible_key = flexible_key - next_degree as u32 * distance;
-            self.get_32_in_node(
-                nbs.bytes,
-                level + 1,
-                next_flexible_key,
-                false,
-                nbs.seek,
-                level_type,
-            )
+            self.get_32_in_node(nbs.bytes, level + 1, next_flexible_key, level_type)
         }
     }
     fn put_64_in_node(
@@ -370,7 +337,6 @@ impl DiskNode for Node {
                 next_node_seek,
                 next_degree * 8, // 在当前操作结点的字节数组的起始位置
                 root,
-                true,
                 level_type,
             )?;
             // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
@@ -392,8 +358,6 @@ impl DiskNode for Node {
         node_bytes: Vec<u8>,
         level: u8,
         flexible_key: u64,
-        root: bool,
-        node_seek: u64,
         level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>> {
         let distance = level_distance_64(level);
@@ -405,25 +369,9 @@ impl DiskNode for Node {
             // 下一结点node_bytes
             // 下一结点起始坐标seek
             // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            let nbs = read_next_nodes_bytes(
-                self,
-                node_bytes,
-                self.index_id(),
-                node_seek,
-                next_degree * 8,
-                root,
-                false,
-                level_type,
-            )?;
+            let nbs = try_read_next_nodes_bytes(self, node_bytes, next_degree * 8, level_type)?;
             let next_flexible_key = flexible_key - next_degree as u64 * distance;
-            self.get_64_in_node(
-                nbs.bytes,
-                level + 1,
-                next_flexible_key,
-                false,
-                nbs.seek,
-                level_type,
-            )
+            self.get_64_in_node(nbs.bytes, level + 1, next_flexible_key, level_type)
         }
     }
     fn get_last_in_node(

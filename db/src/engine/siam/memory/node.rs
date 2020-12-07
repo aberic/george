@@ -121,12 +121,7 @@ impl TNode for Node {
             LevelType::Large => put_in_node_u64(self, 1, hashcode64_enhance(key), seed, force),
         }
     }
-    fn get(
-        &self,
-        key: String,
-        _description_len: usize,
-        level_type: LevelType,
-    ) -> GeorgeResult<Vec<u8>> {
+    fn get(&self, key: String, level_type: LevelType) -> GeorgeResult<Vec<u8>> {
         match level_type {
             LevelType::Small => {
                 get_in_node_u32(self, 1, md516(key.clone()), hashcode32_enhance(key.clone()))

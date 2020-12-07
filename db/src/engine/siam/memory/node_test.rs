@@ -65,12 +65,12 @@ mod node_test {
         seed.write().unwrap().save("1".as_bytes().to_vec()).unwrap();
         root.put(key.clone(), seed, false, 0, LevelType::Small)
             .unwrap();
-        let irg = root.get(key.clone(), 0, LevelType::Small);
+        let irg = root.get(key.clone(), LevelType::Small);
         match irg {
             Ok(seed) => println!("u is {:#?}", seed),
             Err(ie) => println!("res is {:#?}", ie.source().unwrap().to_string()),
         }
-        let irg = root.get(key.clone(), 0, LevelType::Large);
+        let irg = root.get(key.clone(), LevelType::Large);
         match irg {
             Ok(seed) => println!("u is {:#?}", seed),
             Err(ie) => println!("res is {:#?}", ie.source().unwrap().to_string()),
@@ -85,12 +85,12 @@ mod node_test {
         seed.write().unwrap().save("1".as_bytes().to_vec()).unwrap();
         root.put(key.clone(), seed, false, 0, LevelType::Large)
             .unwrap();
-        let irg = root.get(key.clone(), 0, LevelType::Large);
+        let irg = root.get(key.clone(), LevelType::Large);
         match irg {
             Ok(seed) => println!("u is {:#?}", seed),
             Err(ie) => println!("res is {:#?}", ie.source().unwrap().to_string()),
         }
-        let irg = root.get(key.clone(), 0, LevelType::Small);
+        let irg = root.get(key.clone(), LevelType::Small);
         match irg {
             Ok(seed) => println!("u is {:#?}", seed),
             Err(ie) => println!("res is {:#?}", ie.source().unwrap().to_string()),

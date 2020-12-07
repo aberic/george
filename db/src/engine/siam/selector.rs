@@ -352,13 +352,7 @@ impl Selector {
     pub fn run(&self) -> GeorgeResult<Expectation> {
         let (asc, idx) = self.index();
         match idx {
-            Some(index) => {
-                if asc {
-                    index.read().unwrap().select(true, self.constraint.clone())
-                } else {
-                    index.read().unwrap().select(false, self.constraint.clone())
-                }
-            }
+            Some(index) => index.read().unwrap().select(asc, self.constraint.clone()),
             None => Err(err_str("no index found!")),
         }
     }
@@ -384,17 +378,6 @@ impl Selector {
         }
     }
 
-    /// 通过param参数匹配获取索引
-    fn index_param(&self, param: String) -> Option<Arc<RwLock<dyn TIndex>>> {
-        for (_str, index) in self.indexes.clone().read().unwrap().iter() {
-            let key_structure = index.clone().read().unwrap().key_structure();
-            if key_structure.eq(&param) {
-                return Some(index.clone());
-            }
-        }
-        None
-    }
-
     /// 通过sort所包含参数匹配索引
     fn index_sort(&self) -> Option<Arc<RwLock<dyn TIndex>>> {
         match self.constraint.sort.clone() {
@@ -409,6 +392,17 @@ impl Selector {
             match self.index_param(condition.param.clone()) {
                 Some(index) => return Some(index),
                 None => {}
+            }
+        }
+        None
+    }
+
+    /// 通过param参数匹配获取索引
+    fn index_param(&self, param: String) -> Option<Arc<RwLock<dyn TIndex>>> {
+        for (_str, index) in self.indexes.clone().read().unwrap().iter() {
+            let key_structure = index.clone().read().unwrap().key_structure();
+            if key_structure.eq(&param) {
+                return Some(index.clone());
             }
         }
         None

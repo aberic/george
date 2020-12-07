@@ -75,12 +75,7 @@ pub trait TNode: Send + Sync {
     /// ###Return
     ///
     /// Seed value信息
-    fn get(
-        &self,
-        key: String,
-        description_len: usize,
-        level_type: LevelType,
-    ) -> GeorgeResult<Vec<u8>>;
+    fn get(&self, key: String, level_type: LevelType) -> GeorgeResult<Vec<u8>>;
     /// 获取最后一条记录数据，返回存储对象
     fn get_last(&self, level_type: LevelType) -> GeorgeResult<Vec<u8>>;
     /// 通过查询约束获取数据集
@@ -157,17 +152,11 @@ pub trait DiskNode: Send + Sync {
     /// Seed value信息
     ///
     /// force 如果存在原值，是否覆盖原结果
-    ///
-    /// root 是否根结点
-    ///
-    /// node_seek 当前操作结点在文件中的真实起始位置
     fn get_32_in_node(
         &self,
         node_bytes: Vec<u8>,
         level: u8,
         flexible_key: u32,
-        root: bool,
-        node_seek: u64,
         level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>;
     /// 存储数据真实操作
@@ -213,17 +202,11 @@ pub trait DiskNode: Send + Sync {
     /// Seed value信息
     ///
     /// force 如果存在原值，是否覆盖原结果
-    ///
-    /// root 是否根结点
-    ///
-    /// node_seek 当前操作结点在文件中的真实起始位置
     fn get_64_in_node(
         &self,
         node_bytes: Vec<u8>,
         level: u8,
         flexible_key: u64,
-        root: bool,
-        node_seek: u64,
         level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>;
     /// 获取数据真实操作

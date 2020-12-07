@@ -481,7 +481,6 @@ pub(super) fn read_next_nodes_bytes<N: DiskNode>(
     next_node_seek: u64,
     start: u64,
     root: bool,
-    new: bool,
     level_type: LevelType,
 ) -> GeorgeResult<NodeBytes> {
     let seek_start = start as usize;
@@ -489,35 +488,65 @@ pub(super) fn read_next_nodes_bytes<N: DiskNode>(
     let u8s = node_bytes.as_slice()[seek_start..seek_end].to_vec();
     let next_node_bytes_seek = trans_bytes_2_u64(u8s);
     if next_node_bytes_seek == 0 {
-        if new {
-            // 如果子项是32位node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            // 如果子项是64位node集合，在node集合中每一个node的默认字节长度是8，数量是65536，即一次性读取524288个字节
-            let next_node_bytes: Vec<u8>;
-            match level_type {
-                LevelType::Small => next_node_bytes = create_empty_bytes(2048),
-                LevelType::Large => next_node_bytes = create_empty_bytes(524288),
-            }
-            let seek = GLOBAL_WRITER.write_append_bytes(
-                Tag::Index,
-                index_id.clone(),
-                next_node_bytes.clone(),
-            )?;
-            let seek_v = trans_u64_2_bytes(seek);
-            write_seek_u8s(
-                node.index_file_path(),
-                start + next_node_seek,
-                seek_v.clone().as_slice(),
-            )?;
-            if root {
-                node.modify_node_bytes(seek_start, seek_v)
-            }
-            Ok(NodeBytes {
-                bytes: next_node_bytes,
-                seek,
-            })
-        } else {
-            Err(GeorgeError::DataNoExistError(DataNoExistError))
+        // 如果子项是32位node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
+        // 如果子项是64位node集合，在node集合中每一个node的默认字节长度是8，数量是65536，即一次性读取524288个字节
+        let next_node_bytes: Vec<u8>;
+        match level_type {
+            LevelType::Small => next_node_bytes = create_empty_bytes(2048),
+            LevelType::Large => next_node_bytes = create_empty_bytes(524288),
         }
+        let seek = GLOBAL_WRITER.write_append_bytes(
+            Tag::Index,
+            index_id.clone(),
+            next_node_bytes.clone(),
+        )?;
+        let seek_v = trans_u64_2_bytes(seek);
+        write_seek_u8s(
+            node.index_file_path(),
+            start + next_node_seek,
+            seek_v.clone().as_slice(),
+        )?;
+        if root {
+            node.modify_node_bytes(seek_start, seek_v)
+        }
+        Ok(NodeBytes {
+            bytes: next_node_bytes,
+            seek,
+        })
+    } else {
+        read_node_bytes(node.index_file_path(), next_node_bytes_seek, level_type)
+    }
+}
+
+/// 读取下一个节点的字节数组记录，如果不存在，则判断是否为插入操作，如果是插入操作，则新建下一个节点默认数组
+///
+/// node_bytes 当前操作节点的字节数组
+///
+/// next_node_seek 下一节点在文件中的真实起始位置
+///
+/// start 下一节点在node_bytes中的起始位置
+///
+/// root 是否根节点
+///
+/// new 是否插入操作
+///
+/// #return 下一节点状态
+///
+/// 下一节点node_bytes
+///
+/// 下一节点起始坐标seek
+pub(super) fn try_read_next_nodes_bytes<N: DiskNode>(
+    node: &N,
+    node_bytes: Vec<u8>,
+    start: u64,
+    level_type: LevelType,
+) -> GeorgeResult<NodeBytes> {
+    let seek_start = start as usize;
+    let seek_end = seek_start + 8;
+    let u8s = node_bytes.as_slice()[seek_start..seek_end].to_vec();
+    let next_node_bytes_seek = trans_bytes_2_u64(u8s);
+    if next_node_bytes_seek == 0 {
+        Err(GeorgeError::DataNoExistError(DataNoExistError))
     } else {
         read_node_bytes(node.index_file_path(), next_node_bytes_seek, level_type)
     }
