@@ -22,6 +22,23 @@ pub enum IndexType {
     Siam,
 }
 
+/// 索引值类型
+#[derive(Debug, Clone, Copy)]
+pub enum IndexMold {
+    /// 字符串索引
+    String,
+    /// 无符号64位整型
+    U64,
+    /// 有符号64位整型
+    I64,
+    /// 无符号64位整型
+    U32,
+    /// 有符号64位整型
+    I32,
+    /// 有符号64位浮点类型
+    F64,
+}
+
 /// 存储类型
 #[derive(Debug, Clone, Copy)]
 pub enum Category {

@@ -19,7 +19,7 @@ use crate::engine::siam::memory::seed::Seed as Mem_Seed;
 use crate::engine::siam::selector::{Constraint, Expectation, Selector};
 use crate::engine::traits::{TDescription, TIndex, TSeed};
 use crate::utils::comm::{
-    category, key_fetch, level, Category, IndexType, LevelType, INDEX_CATALOG,
+    category, key_fetch, level, Category, IndexMold, IndexType, LevelType, INDEX_CATALOG,
 };
 use crate::utils::path::{index_file_path_yet, view_file_path, view_path};
 use crate::utils::store;
@@ -251,13 +251,20 @@ impl View {
         &self,
         database_id: String,
         key_structure: String,
+        index_mold: IndexMold,
         primary: bool,
     ) -> GeorgeResult<()> {
         let index_id = self.index_id(key_structure.clone());
         if self.exist_index(index_id.clone()) {
             return Err(GeorgeError::IndexExistError(IndexExistError));
         }
-        let index = self.index(database_id, index_id.clone(), key_structure, primary)?;
+        let index = self.index(
+            database_id,
+            index_id.clone(),
+            key_structure,
+            index_mold,
+            primary,
+        )?;
         self.indexes
             .clone()
             .write()
@@ -273,6 +280,7 @@ impl View {
         database_id: String,
         index_id: String,
         key_structure: String,
+        index_mold: IndexMold,
         primary: bool,
     ) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
         match self.index_type {
@@ -285,6 +293,7 @@ impl View {
                     primary,
                     Siam_Mem_Node::create_root(),
                     category(self.category),
+                    index_mold,
                     level(self.level),
                 )))),
                 Category::Document => Ok(Siam_Index::init(
@@ -300,6 +309,7 @@ impl View {
                         self.level(),
                     ),
                     category(self.category),
+                    index_mold,
                     level(self.level),
                 )?),
             },

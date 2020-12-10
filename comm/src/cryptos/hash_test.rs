@@ -33,9 +33,32 @@ mod md5 {
     fn hashcode64_test() {
         let bytes1 = "test1".as_bytes();
         let bytes2 = "test2".as_bytes();
+        let bytes3 = &[0x00];
+        let bytes4 = &0_i32.to_be_bytes();
+        let bytes41 = &1_i32.to_be_bytes();
+        let i: i32 = -1;
+        let bytes42 = &i.to_be_bytes();
+        let bytes5 = &0_u64.to_be_bytes();
+        let bytes6 = &[0x01];
+        let bytes7 = &1_u32.to_be_bytes();
+        let bytes8 = &1_i64.to_be_bytes();
+        let bytes9 = &[0xff];
+        let bytes10 = &16_u64.to_be_bytes();
+        let bytes11 = &16_f64.to_be_bytes();
 
-        println!("res = {}", hashcode64(bytes1));
-        println!("res = {}", hashcode64(bytes2));
+        println!("res1 = {}", hashcode64(bytes1));
+        println!("res2 = {}", hashcode64(bytes2));
+        println!("res3 = {}", hashcode64(bytes3));
+        println!("res4 = {}", hashcode64(bytes4));
+        println!("res41 = {}", hashcode64(bytes41));
+        println!("res42 = {}", hashcode64(bytes42));
+        println!("res5 = {}", hashcode64(bytes5));
+        println!("res6 = {}", hashcode64(bytes6));
+        println!("res7 = {}", hashcode64(bytes7));
+        println!("res8 = {}", hashcode64(bytes8));
+        println!("res9 = {}", hashcode64(bytes9));
+        println!("res10 = {}", hashcode64(bytes10));
+        println!("res11 = {}", hashcode64(bytes11));
     }
 
     #[test]

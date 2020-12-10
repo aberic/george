@@ -4,7 +4,7 @@ mod view_test {
 
     use crate::engine::traits::TDescription;
     use crate::engine::view::View;
-    use crate::utils::comm::{Category, IndexType, LevelType};
+    use crate::utils::comm::{Category, IndexMold, IndexType, LevelType};
 
     #[test]
     fn create() {
@@ -83,8 +83,13 @@ mod view_test {
             Category::Memory,
             LevelType::Small,
         );
-        view.create_index("database_id".to_string(), String::from("1"), false)
-            .unwrap();
+        view.create_index(
+            "database_id".to_string(),
+            String::from("1"),
+            IndexMold::String,
+            false,
+        )
+        .unwrap();
         // let seed = Arc::new(Seed::new_seed(String::from("md516"), vec![0, 0, 7]));
         let irp = view.put(
             String::from("md516"),

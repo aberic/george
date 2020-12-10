@@ -9,7 +9,7 @@ use comm::io::reader::read_sub_file_bytes;
 use comm::io::writer::{write_all_bytes, write_seek_u8s};
 use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_u16_2_bytes, trans_u32_2_bytes};
 
-use crate::utils::comm::{Category, IndexType, LevelType};
+use crate::utils::comm::{Category, IndexMold, IndexType, LevelType};
 use crate::utils::deploy::VERSION;
 use crate::utils::writer::GLOBAL_WRITER;
 
@@ -102,6 +102,17 @@ pub fn level_u8(level_type: LevelType) -> u8 {
     }
 }
 
+pub fn mold_u8(mold: IndexMold) -> u8 {
+    match mold {
+        IndexMold::String => 0x00,
+        IndexMold::U64 => 0x01,
+        IndexMold::I64 => 0x02,
+        IndexMold::U32 => 0x03,
+        IndexMold::I32 => 0x04,
+        IndexMold::F64 => 0x05,
+    }
+}
+
 pub fn index_type_u8(index_type: IndexType) -> u8 {
     match index_type {
         IndexType::Siam => 0x00,
@@ -123,6 +134,18 @@ pub fn category(b: u8) -> Category {
         0x00 => Category::Memory,
         0x01 => Category::Document,
         _ => Category::Memory,
+    }
+}
+
+pub fn mold(b: u8) -> IndexMold {
+    match b {
+        0x00 => IndexMold::String,
+        0x01 => IndexMold::U64,
+        0x02 => IndexMold::I64,
+        0x03 => IndexMold::U32,
+        0x04 => IndexMold::I32,
+        0x05 => IndexMold::F64,
+        _ => IndexMold::String,
     }
 }
 

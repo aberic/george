@@ -1,8 +1,6 @@
-use std::any::Any;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
-use serde::Deserializer;
 use serde_json::{Error, Value};
 
 use comm::errors::entrances::{err_str, err_string, GeorgeResult};
@@ -30,15 +28,11 @@ pub enum ConditionType {
 #[derive(Debug, Clone, Copy)]
 pub enum ConditionSupport {
     /// string
-    STRING,
-    /// i64
-    I64,
-    /// u64
-    U64,
+    String,
     /// float
-    F64,
+    Number,
     /// bool
-    BOOL,
+    Bool,
 }
 
 /// 条件查询
@@ -74,14 +68,6 @@ impl Condition {
         self.value.clone()
     }
     /// 比较对象值
-    fn value_i64(&self) -> i64 {
-        self.value.clone().parse().unwrap()
-    }
-    /// 比较对象值
-    fn value_u64(&self) -> u64 {
-        self.value.clone().parse().unwrap()
-    }
-    /// 比较对象值
     fn value_f64(&self) -> f64 {
         self.value.clone().parse().unwrap()
     }
@@ -100,6 +86,17 @@ struct Sort {
     asc: bool,
 }
 
+/// 经由`Selector`后的期望结果
+#[derive(Debug)]
+pub struct Expectation {
+    /// 检索结果总条数
+    pub count: u64,
+    ///  使用到的索引名称，如果没用上则为空
+    pub index_name: String,
+    /// values 检索结果集合
+    pub values: Vec<Vec<u8>>,
+}
+
 /// 查询约束
 #[derive(Debug, Clone)]
 pub struct Constraint {
@@ -113,28 +110,6 @@ pub struct Constraint {
     limit: u64,
     /// 是否删除检索结果
     delete: bool,
-}
-
-/// 检索选择器
-///
-/// 检索顺序 sort -> conditions -> skip -> limit
-#[derive(Debug, Clone)]
-pub struct Selector {
-    /// 索引集合
-    pub indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
-    /// 查询约束
-    pub constraint: Constraint,
-}
-
-/// 经由`Selector`后的期望结果
-#[derive(Debug)]
-pub struct Expectation {
-    /// 检索结果总条数
-    pub count: u64,
-    ///  使用到的索引名称，如果没用上则为空
-    pub index_name: String,
-    /// values 检索结果集合
-    pub values: Vec<Vec<u8>>,
 }
 
 impl Constraint {
@@ -217,21 +192,21 @@ impl Constraint {
                                     self.conditions.push(Condition {
                                         param: val_param.to_string(),
                                         cond,
-                                        support: ConditionSupport::BOOL,
+                                        support: ConditionSupport::Bool,
                                         value: value_res,
                                     })
                                 }
                                 Value::String(ref val_str) => self.conditions.push(Condition {
                                     param: val_param.to_string(),
                                     cond,
-                                    support: ConditionSupport::STRING,
+                                    support: ConditionSupport::String,
                                     value: val_str.to_string(),
                                 }),
                                 Value::Number(ref val_num) => self.conditions.push(Condition {
                                     param: val_param.to_string(),
                                     cond,
-                                    support: ConditionSupport::F64,
-                                    value: v["Value"].as_f64().unwrap().to_string(),
+                                    support: ConditionSupport::Number,
+                                    value: val_num.as_f64().unwrap().to_string(),
                                 }),
                                 _ => {}
                             }
@@ -248,34 +223,18 @@ impl Constraint {
     fn valid_constraint(&self, value: Value, condition: Condition) -> bool {
         return match value[condition.param()] {
             Value::Bool(ref val) => match condition.support() {
-                ConditionSupport::BOOL => val.eq(&condition.value_bool()),
+                ConditionSupport::Bool => val.eq(&condition.value_bool()),
                 _ => false,
             },
             Value::String(ref val) => match condition.support() {
-                ConditionSupport::STRING => match condition.cond() {
+                ConditionSupport::String => match condition.cond() {
                     ConditionType::EQ => val.eq(&condition.value_str()),
                     _ => false,
                 },
                 _ => false,
             },
             Value::Number(ref val) => match condition.support() {
-                ConditionSupport::I64 => match condition.cond() {
-                    ConditionType::EQ => val.as_i64().unwrap().eq(&condition.value_i64()),
-                    ConditionType::GT => val.as_i64().unwrap().gt(&condition.value_i64()),
-                    ConditionType::GE => val.as_i64().unwrap().ge(&condition.value_i64()),
-                    ConditionType::LT => val.as_i64().unwrap().lt(&condition.value_i64()),
-                    ConditionType::LE => val.as_i64().unwrap().le(&condition.value_i64()),
-                    ConditionType::NE => val.as_i64().unwrap().ne(&condition.value_i64()),
-                },
-                ConditionSupport::U64 => match condition.cond() {
-                    ConditionType::EQ => val.as_u64().unwrap().eq(&condition.value_u64()),
-                    ConditionType::GT => val.as_u64().unwrap().gt(&condition.value_u64()),
-                    ConditionType::GE => val.as_u64().unwrap().ge(&condition.value_u64()),
-                    ConditionType::LT => val.as_u64().unwrap().lt(&condition.value_u64()),
-                    ConditionType::LE => val.as_u64().unwrap().le(&condition.value_u64()),
-                    ConditionType::NE => val.as_u64().unwrap().ne(&condition.value_u64()),
-                },
-                ConditionSupport::F64 => match condition.cond() {
+                ConditionSupport::Number => match condition.cond() {
                     ConditionType::EQ => val.as_f64().unwrap().eq(&condition.value_f64()),
                     ConditionType::GT => val.as_f64().unwrap().gt(&condition.value_f64()),
                     ConditionType::GE => val.as_f64().unwrap().ge(&condition.value_f64()),
@@ -318,6 +277,52 @@ impl Constraint {
         }
         b
     }
+}
+
+/// 索引可用状态
+struct IndexStatus {
+    /// 索引
+    index: Option<Arc<RwLock<dyn TIndex>>>,
+    /// 是否顺序
+    asc: bool,
+    /// 查询起始值
+    start: i64,
+    /// 查询终止值
+    end: i64,
+}
+
+impl IndexStatus {
+    fn new() -> IndexStatus {
+        IndexStatus {
+            index: None,
+            asc: false,
+            start: -1,
+            end: -1,
+        }
+    }
+    fn fit_index(&mut self, index: Option<Arc<RwLock<dyn TIndex>>>) {
+        self.index = index
+    }
+    fn fit_asc(&mut self, asc: bool) {
+        self.asc = asc
+    }
+    fn fit_start(&mut self, start: i64) {
+        self.start = start
+    }
+    fn fit_end(&mut self, end: i64) {
+        self.end = end
+    }
+}
+
+/// 检索选择器
+///
+/// 检索顺序 sort -> conditions -> skip -> limit
+#[derive(Debug, Clone)]
+pub struct Selector {
+    /// 索引集合
+    pub indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
+    /// 查询约束
+    pub constraint: Constraint,
 }
 
 impl Selector {
@@ -380,8 +385,33 @@ impl Selector {
 
     /// 通过sort所包含参数匹配索引
     fn index_sort(&self) -> Option<Arc<RwLock<dyn TIndex>>> {
+        // let mut status = IndexStatus::new();
         match self.constraint.sort.clone() {
-            Some(sort) => self.index_param(sort.param),
+            Some(sort) => {
+                self.index_param(sort.param)
+                // 通过参数匹配到排序索引
+                // let index = self.index_param(sort.param);
+                // status.fit_index(index.clone());
+                // match index.clone() {
+                //     Some(idx) => {
+                //         let idx_r = idx.read().unwrap();
+                //         // 确认排序索引是否存在条件区间
+                //         for condition in self.constraint.conditions.iter() {
+                //             if condition.param.clone() == idx_r.key_structure() {
+                //                 match condition.support() {
+                //                     ConditionSupport::Number => match condition.cond {
+                //                         ConditionType::GT => {
+                //                             status.fit_start(condition.value_f64() as i64)
+                //                         }
+                //                     },
+                //                 }
+                //             }
+                //         }
+                //         index
+                //     }
+                //     _ => index,
+                // }
+            }
             None => None,
         }
     }

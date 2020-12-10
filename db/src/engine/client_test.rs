@@ -3,7 +3,7 @@ use std::error::Error;
 use serde::{Deserialize, Serialize};
 
 use crate::engine::client::GLOBAL_CLIENT;
-use crate::utils::comm::{Category, IndexType, LevelType};
+use crate::utils::comm::{Category, IndexMold, IndexType, LevelType};
 
 #[test]
 fn put_memory() {
@@ -191,10 +191,18 @@ fn db_view_index_create_test() {
         "database_create_test1",
         "view_test_doc_32",
         "name",
+        IndexMold::String,
         false,
         1,
     );
-    create_index("database_create_test1", "view_test_doc_64", "age", false, 1);
+    create_index(
+        "database_create_test1",
+        "view_test_doc_64",
+        "age",
+        IndexMold::String,
+        false,
+        1,
+    );
 
     create_database("database_create_test2", "comment", 1);
     create_view(
@@ -219,10 +227,18 @@ fn db_view_index_create_test() {
         "database_create_test2",
         "view_test_doc_32",
         "name",
+        IndexMold::String,
         false,
         1,
     );
-    create_index("database_create_test2", "view_test_doc_64", "age", false, 1);
+    create_index(
+        "database_create_test2",
+        "view_test_doc_64",
+        "age",
+        IndexMold::String,
+        false,
+        1,
+    );
 }
 
 #[derive(Serialize, Deserialize)]
@@ -253,15 +269,30 @@ fn put_document3_index_custom() {
         LevelType::Small,
         1,
     );
-    create_index("database_test_index", "view_test_doc_32", "age", false, 1);
+    create_index(
+        "database_test_index",
+        "view_test_doc_32",
+        "age",
+        IndexMold::U64,
+        false,
+        1,
+    );
     create_index(
         "database_test_index",
         "view_test_doc_32",
         "married",
+        IndexMold::String,
         false,
         1,
     );
-    create_index("database_test_index", "view_test_doc_32", "job", false, 1);
+    create_index(
+        "database_test_index",
+        "view_test_doc_32",
+        "job",
+        IndexMold::String,
+        false,
+        1,
+    );
 
     let user = User {
         name: "aaa".to_string(),
@@ -315,8 +346,15 @@ fn select_document1() {
         LevelType::Small,
         1,
     );
-    create_index("select_document1", "view1", "age", false, 1);
-    create_index("select_document1", "view1", "job", false, 1);
+    create_index("select_document1", "view1", "age", IndexMold::U64, false, 1);
+    create_index(
+        "select_document1",
+        "view1",
+        "job",
+        IndexMold::String,
+        false,
+        1,
+    );
 
     let user_str1 = serde_json::to_string(&create_t(10, 102)).unwrap();
     let user_str2 = serde_json::to_string(&create_t(15, 12)).unwrap();
@@ -437,6 +475,7 @@ fn create_index(
     database_name: &str,
     view_name: &str,
     key_structure: &str,
+    index_mold: IndexMold,
     primary: bool,
     position: usize,
 ) {
@@ -444,6 +483,7 @@ fn create_index(
         database_name.to_string(),
         view_name.to_string(),
         key_structure.to_string(),
+        index_mold,
         primary,
     ) {
         Err(err) => println!("create_index{} {} = {}", position, key_structure, err),

@@ -17,7 +17,9 @@ use crate::engine::database::Database;
 use crate::engine::siam::selector::Expectation;
 use crate::engine::traits::TDescription;
 use crate::engine::view::View;
-use crate::utils::comm::{Category, IndexType, LevelType, GEORGE_DB_CONFIG, INDEX_CATALOG};
+use crate::utils::comm::{
+    Category, IndexMold, IndexType, LevelType, GEORGE_DB_CONFIG, INDEX_CATALOG,
+};
 use crate::utils::deploy::init_config;
 use crate::utils::path::{bootstrap_file_path, data_path, database_file_path};
 use crate::utils::store::{head, recovery_before_content, FileHeader, Tag};
@@ -230,6 +232,8 @@ impl Engine {
         };
     }
     /// 创建视图
+    ///
+    /// it 0-siam
     pub(crate) fn create_view(
         &self,
         database_name: String,
@@ -252,7 +256,13 @@ impl Engine {
             }
             None => return Err(GeorgeError::DatabaseNoExistError(DatabaseNoExistError)),
         }
-        self.create_index(database_name, view_name, INDEX_CATALOG.to_string(), true)
+        self.create_index(
+            database_name,
+            view_name,
+            INDEX_CATALOG.to_string(),
+            IndexMold::String,
+            true,
+        )
     }
     /// 获取数据库集合
     pub(crate) fn db_array(&self) -> Vec<Arc<RwLock<Database>>> {
@@ -304,6 +314,7 @@ impl Engine {
         database_name: String,
         view_name: String,
         key_structure: String,
+        index_mold: IndexMold,
         primary: bool,
     ) -> GeorgeResult<()> {
         let database = self.database(database_name)?;
@@ -312,7 +323,7 @@ impl Engine {
         let view = db_r.view(view_name)?;
         let v = view.clone();
         let v_r = v.read().unwrap();
-        v_r.create_index(db_r.id(), key_structure, primary)
+        v_r.create_index(db_r.id(), key_structure, index_mold, primary)
     }
     pub(crate) fn modify_view(
         &self,

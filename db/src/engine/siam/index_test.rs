@@ -7,7 +7,7 @@ mod index_test {
     use crate::engine::siam::memory::node::Node;
     use crate::engine::siam::memory::seed::Seed;
     use crate::engine::traits::{TDescription, TIndex, TSeed};
-    use crate::utils::comm::{Category, LevelType};
+    use crate::utils::comm::{Category, IndexMold, LevelType};
     use comm::cryptos::hash::md516;
 
     fn obtain_index() -> Index<Node> {
@@ -19,6 +19,7 @@ mod index_test {
             false,
             Node::create_root(),
             Category::Memory,
+            IndexMold::String,
             LevelType::Large,
         )
     }
@@ -43,6 +44,7 @@ mod index_test {
             false,
             Node::create_root(),
             Category::Memory,
+            IndexMold::String,
             LevelType::Large,
         );
         let d = index.description();
@@ -63,6 +65,7 @@ mod index_test {
             true,
             Node::create_root(),
             Category::Memory,
+            IndexMold::String,
             LevelType::Small,
         );
         let d1 = index1.description();

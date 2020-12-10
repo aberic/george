@@ -6,7 +6,7 @@ use serde::export::fmt::Debug;
 use comm::errors::entrances::GeorgeResult;
 
 use crate::engine::siam::selector::{Constraint, Expectation};
-use crate::utils::comm::{Category, LevelType};
+use crate::utils::comm::{Category, IndexMold, LevelType};
 
 /// B+Tree索引叶子结点内防hash碰撞数组对象中对象特性
 ///
@@ -45,6 +45,8 @@ pub trait TIndex: TDescription + Send + Sync + Debug {
     fn category(&self) -> Category;
     /// 索引容量
     fn level(&self) -> LevelType;
+    /// 索引值类型
+    fn mold(&self) -> IndexMold;
     /// 创建时间
     fn create_time(&self) -> Duration;
     /// 插入数据<p><p>

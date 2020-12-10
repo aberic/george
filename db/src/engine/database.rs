@@ -16,7 +16,7 @@ use crate::engine::view::View;
 use crate::utils::comm::{Category, IndexType, LevelType};
 use crate::utils::path::{database_file_path, database_path, view_file_path};
 use crate::utils::store::{
-    before_content_bytes, head, modify, recovery_before_content, save, FileHeader, Tag,
+    before_content_bytes, head, modify, mold, recovery_before_content, save, FileHeader, Tag,
 };
 use crate::utils::writer::GLOBAL_WRITER;
 
@@ -238,17 +238,21 @@ impl Database {
     /// key_structure 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`key_structure`作为索引存入
     ///
     /// primary 是否主键
+    ///
+    /// m 0-string;1-u64;2-i64;3-u32;4-i32;5-f64
     pub(crate) fn create_index(
         &self,
         view_name: String,
         key_structure: String,
         primary: bool,
+        m: u8,
     ) -> GeorgeResult<()> {
         return match self.views.clone().read().unwrap().get(&view_name) {
-            Some(view) => view
-                .write()
-                .unwrap()
-                .create_index(self.id(), key_structure, primary),
+            Some(view) => {
+                view.write()
+                    .unwrap()
+                    .create_index(self.id(), key_structure, mold(m), primary)
+            }
             _ => Err(GeorgeError::ViewNoExistError(ViewNoExistError)),
         };
     }

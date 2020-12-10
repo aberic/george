@@ -84,9 +84,9 @@ mod database_test {
             _ => {}
         }
         database
-            .create_index(String::from("name"), String::from("1"), false)
+            .create_index(String::from("name"), String::from("1"), false, 0)
             .unwrap();
-        match database.create_index(String::from("name"), String::from("1"), false) {
+        match database.create_index(String::from("name"), String::from("1"), false, 0) {
             Err(err) => println!("create_index = {}", err),
             _ => {}
         }

@@ -36,6 +36,9 @@ pub fn hashcode64(comment: &[u8]) -> u64 {
 pub fn hashcode64_enhance(comment: String) -> u64 {
     return match comment.parse::<u64>() {
         Ok(su64) => su64,
+        // Ok(si64) => {
+        //     si64.add(9223372036854775807).add(1) as u64
+        // }
         Err(_err) => hashcode64(comment.as_bytes()),
     };
 }
