@@ -42,11 +42,11 @@ fn new_test() {
   }"#;
     let indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>> =
         Arc::new(Default::default());
-    let selector1 = Selector::new(cond_str1.as_bytes().to_vec(), indexes.clone(), true).unwrap();
+    let selector1 = Selector::run(cond_str1.as_bytes().to_vec(), indexes.clone(), true).unwrap();
     println!("selector1 = {:#?}", selector1);
-    let selector2 = Selector::new(cond_str2.as_bytes().to_vec(), indexes.clone(), false).unwrap();
+    let selector2 = Selector::run(cond_str2.as_bytes().to_vec(), indexes.clone(), false).unwrap();
     println!("selector2 = {:#?}", selector2);
-    let selector3 = Selector::new(cond_str3.as_bytes().to_vec(), indexes.clone(), true).unwrap();
+    let selector3 = Selector::run(cond_str3.as_bytes().to_vec(), indexes.clone(), true).unwrap();
     println!("selector3 = {:#?}", selector3);
 }
 
@@ -105,8 +105,7 @@ fn run_test() {
         .write()
         .unwrap()
         .insert(index_id, Arc::new(RwLock::new(index)));
-    let selector1 = Selector::new(cond_str1.as_bytes().to_vec(), indexes.clone(), true).unwrap();
-    let exp = selector1.run();
+    let exp = Selector::run(cond_str1.as_bytes().to_vec(), indexes.clone(), true).unwrap();
     println!("selector1 run exp = {:#?}", exp);
     // let selector2 = Selector::new(cond_str2.as_bytes().to_vec(), indexes.clone(), false);
     // let selector3 = Selector::new(cond_str3.as_bytes().to_vec(), indexes.clone(), true);

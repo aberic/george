@@ -133,3 +133,9 @@ pub fn err_str_enhance(msg: &str, err: String) -> GeorgeError {
         error_msg: format!("{}! error is {}", msg, err),
     })
 }
+
+pub fn err_string_enhance(msg: String, err: String) -> GeorgeError {
+    GeorgeError::StringError(StringError {
+        error_msg: format!("{}! error is {}", msg, err),
+    })
+}

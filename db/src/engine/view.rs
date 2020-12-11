@@ -16,7 +16,7 @@ use crate::engine::siam::document::seed::Seed as Doc_Seed;
 use crate::engine::siam::index::Index as Siam_Index;
 use crate::engine::siam::memory::node::Node as Siam_Mem_Node;
 use crate::engine::siam::memory::seed::Seed as Mem_Seed;
-use crate::engine::siam::selector::{Constraint, Expectation, Selector};
+use crate::engine::siam::selector::{Expectation, Selector};
 use crate::engine::traits::{TDescription, TIndex, TSeed};
 use crate::utils::comm::{
     category, key_fetch, level, Category, IndexMold, IndexType, LevelType, INDEX_CATALOG,
@@ -376,23 +376,13 @@ impl View {
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
     pub fn select(&self, constraint_json_bytes: Vec<u8>) -> GeorgeResult<Expectation> {
-        let c = Constraint::new(constraint_json_bytes, false)?;
-        let selector = Selector {
-            indexes: self.indexes.clone(),
-            constraint: c,
-        };
-        selector.run()
+        Selector::run(constraint_json_bytes, self.indexes.clone(), false)
     }
     /// 条件删除
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
     pub fn delete(&self, constraint_json_bytes: Vec<u8>) -> GeorgeResult<Expectation> {
-        let constraint = Constraint::new(constraint_json_bytes, true)?;
-        let selector = Selector {
-            indexes: self.indexes.clone(),
-            constraint,
-        };
-        selector.run()
+        Selector::run(constraint_json_bytes, self.indexes.clone(), true)
     }
     /// 插入数据业务方法<p><p>
     ///

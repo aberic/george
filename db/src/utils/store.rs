@@ -164,6 +164,17 @@ pub fn index_type(b: u8) -> IndexType {
     }
 }
 
+pub fn mold_str(mold: IndexMold) -> String {
+    match mold {
+        IndexMold::String => String::from("string"),
+        IndexMold::U64 => String::from("u64"),
+        IndexMold::I64 => String::from("i64"),
+        IndexMold::U32 => String::from("u32"),
+        IndexMold::I32 => String::from("i32"),
+        IndexMold::F64 => String::from("f32"),
+    }
+}
+
 /// 生成sr文件首部信息字符串，长度32个字节<p>
 ///
 /// 文件包括文件首部和正文两部分组成，文件首部告知了文件组成的所有有效信息，损坏将无法使用<p>

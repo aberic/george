@@ -3,9 +3,13 @@ use std::sync::{Arc, RwLock};
 
 use serde_json::{Error, Value};
 
-use comm::errors::entrances::{err_str, err_string, GeorgeResult};
+use comm::errors::entrances::{err_str, err_string, err_string_enhance, GeorgeError, GeorgeResult};
 
+use crate::engine::siam::comm::{i32_2_u64, i64_2_u64};
 use crate::engine::traits::TIndex;
+use crate::utils::comm::IndexMold;
+use crate::utils::store::mold_str;
+use std::ops::Add;
 
 /// 条件 gt/ge/lt/le/eq/ne 大于/大于等于/小于/小于等于/等于/不等
 #[derive(Debug, Clone, Copy)]
@@ -63,17 +67,68 @@ impl Condition {
     fn support(&self) -> ConditionSupport {
         self.support
     }
+    fn support_check(&self, mold: IndexMold) -> bool {
+        match self.support {
+            ConditionSupport::Number => match mold {
+                IndexMold::String => false,
+                _ => true,
+            },
+            ConditionSupport::String => match mold {
+                IndexMold::String => true,
+                _ => false,
+            },
+            _ => false,
+        }
+    }
     /// 比较对象值
     fn value_str(&self) -> String {
         self.value.clone()
     }
     /// 比较对象值
-    fn value_f64(&self) -> f64 {
-        self.value.clone().parse().unwrap()
+    fn value_u64(&self) -> GeorgeResult<u64> {
+        match self.value.clone().parse() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(self.err("u64", err.to_string())),
+        }
+    }
+    fn value_i64(&self) -> GeorgeResult<i64> {
+        match self.value.clone().parse() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(self.err("i64", err.to_string())),
+        }
+    }
+    fn value_u32(&self) -> GeorgeResult<u32> {
+        match self.value.clone().parse() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(self.err("u32", err.to_string())),
+        }
+    }
+    fn value_i32(&self) -> GeorgeResult<i32> {
+        match self.value.clone().parse() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(self.err("i32", err.to_string())),
+        }
+    }
+    fn value_f64(&self) -> GeorgeResult<f64> {
+        match self.value.clone().parse() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(self.err("f64", err.to_string())),
+        }
     }
     /// 比较对象值
     fn value_bool(&self) -> bool {
         self.value.clone().eq("1")
+    }
+    fn err(&self, to: &str, err: String) -> GeorgeError {
+        err_string_enhance(
+            format!(
+                "{} {} can't parse to {}",
+                self.param(),
+                self.value_str(),
+                to
+            ),
+            err,
+        )
     }
 }
 
@@ -118,7 +173,7 @@ impl Constraint {
     /// selector_json_bytes 选择器字节数组，自定义转换策略
     ///
     /// delete 是否删除检索结果
-    pub fn new(constraint_json_bytes: Vec<u8>, delete: bool) -> GeorgeResult<Constraint> {
+    fn new(constraint_json_bytes: Vec<u8>, delete: bool) -> GeorgeResult<Constraint> {
         let mut constraint = Constraint {
             conditions: vec![],
             skip: 0,
@@ -235,12 +290,12 @@ impl Constraint {
             },
             Value::Number(ref val) => match condition.support() {
                 ConditionSupport::Number => match condition.cond() {
-                    ConditionType::EQ => val.as_f64().unwrap().eq(&condition.value_f64()),
-                    ConditionType::GT => val.as_f64().unwrap().gt(&condition.value_f64()),
-                    ConditionType::GE => val.as_f64().unwrap().ge(&condition.value_f64()),
-                    ConditionType::LT => val.as_f64().unwrap().lt(&condition.value_f64()),
-                    ConditionType::LE => val.as_f64().unwrap().le(&condition.value_f64()),
-                    ConditionType::NE => val.as_f64().unwrap().ne(&condition.value_f64()),
+                    ConditionType::EQ => val.as_f64().unwrap().eq(&condition.value_f64().unwrap()),
+                    ConditionType::GT => val.as_f64().unwrap().gt(&condition.value_f64().unwrap()),
+                    ConditionType::GE => val.as_f64().unwrap().ge(&condition.value_f64().unwrap()),
+                    ConditionType::LT => val.as_f64().unwrap().lt(&condition.value_f64().unwrap()),
+                    ConditionType::LE => val.as_f64().unwrap().le(&condition.value_f64().unwrap()),
+                    ConditionType::NE => val.as_f64().unwrap().ne(&condition.value_f64().unwrap()),
                 },
                 _ => {
                     log::debug!("select valid condition does't support");
@@ -280,37 +335,38 @@ impl Constraint {
 }
 
 /// 索引可用状态
+#[derive(Debug, Clone)]
 struct IndexStatus {
     /// 索引
-    index: Option<Arc<RwLock<dyn TIndex>>>,
+    index: Arc<RwLock<dyn TIndex>>,
     /// 是否顺序
     asc: bool,
     /// 查询起始值
-    start: i64,
+    start: u64,
     /// 查询终止值
-    end: i64,
+    end: u64,
+    /// 索引评级。asc=1；start=2；end=3。
+    level: u8,
 }
 
 impl IndexStatus {
-    fn new() -> IndexStatus {
-        IndexStatus {
-            index: None,
-            asc: false,
-            start: -1,
-            end: -1,
-        }
+    fn index(&mut self) -> Arc<RwLock<dyn TIndex>> {
+        self.index.clone()
     }
-    fn fit_index(&mut self, index: Option<Arc<RwLock<dyn TIndex>>>) {
+    fn fit_index(&mut self, index: Arc<RwLock<dyn TIndex>>) {
         self.index = index
     }
-    fn fit_asc(&mut self, asc: bool) {
-        self.asc = asc
+    fn fit_start(&mut self, start: u64) {
+        if start > self.start {
+            self.start = start;
+            self.level = self.level.add(2)
+        }
     }
-    fn fit_start(&mut self, start: i64) {
-        self.start = start
-    }
-    fn fit_end(&mut self, end: i64) {
-        self.end = end
+    fn fit_end(&mut self, end: u64) {
+        if 0 == self.end || end < self.end {
+            self.end = end;
+            self.level = self.level.add(2)
+        }
     }
 }
 
@@ -333,16 +389,17 @@ impl Selector {
     /// indexes 索引集合
     ///
     /// delete 是否删除检索结果
-    pub fn new(
+    pub fn run(
         constraint_json_bytes: Vec<u8>,
         indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
         delete: bool,
-    ) -> GeorgeResult<Selector> {
+    ) -> GeorgeResult<Expectation> {
         let constraint = Constraint::new(constraint_json_bytes, delete)?;
-        Ok(Selector {
+        let select = Selector {
             indexes,
             constraint,
-        })
+        };
+        select.exec()
     }
 
     /// 执行富查询
@@ -354,77 +411,251 @@ impl Selector {
     /// index_name 使用到的索引名称，如果没用上则为空
     ///
     /// values 检索结果集合
-    pub fn run(&self) -> GeorgeResult<Expectation> {
-        let (asc, idx) = self.index();
-        match idx {
-            Some(index) => index.read().unwrap().select(asc, self.constraint.clone()),
-            None => Err(err_str("no index found!")),
-        }
+    pub fn exec(&self) -> GeorgeResult<Expectation> {
+        let status = self.index()?;
+        // todo status自测，移除多余condition
+        status
+            .index
+            .clone()
+            .read()
+            .unwrap()
+            .select(status.asc, self.constraint.clone())
     }
 
     /// 获取最佳索引
     ///
     /// 检索顺序 sort -> conditions -> skip -> limit
-    fn index(&self) -> (bool, Option<Arc<RwLock<dyn TIndex>>>) {
-        match self.index_sort() {
-            Some(index) => match self.constraint.sort.clone() {
-                Some(s) => return (s.asc, Some(index)),
-                None => {}
-            },
+    fn index(&self) -> GeorgeResult<IndexStatus> {
+        let mut oi = self.index_sort()?;
+        match oi {
+            Some(is) => return Ok(is),
             None => {}
         }
-        match self.index_condition() {
-            Some(index) => return (true, Some(index)),
+
+        oi = self.index_condition()?;
+        match oi {
+            Some(is) => return Ok(is),
             None => {}
         }
+
         match self.indexes.read().unwrap().iter().next() {
-            Some(index) => (true, Some(index.1.clone())),
-            None => (true, None),
+            Some(idx) => Ok(IndexStatus {
+                index: idx.1.clone(),
+                asc: true,
+                start: 0,
+                end: 0,
+                level: 0,
+            }),
+            None => Err(err_str("no index found!")),
         }
     }
 
     /// 通过sort所包含参数匹配索引
-    fn index_sort(&self) -> Option<Arc<RwLock<dyn TIndex>>> {
-        // let mut status = IndexStatus::new();
+    fn index_sort(&self) -> GeorgeResult<Option<IndexStatus>> {
         match self.constraint.sort.clone() {
             Some(sort) => {
-                self.index_param(sort.param)
                 // 通过参数匹配到排序索引
-                // let index = self.index_param(sort.param);
-                // status.fit_index(index.clone());
-                // match index.clone() {
-                //     Some(idx) => {
-                //         let idx_r = idx.read().unwrap();
-                //         // 确认排序索引是否存在条件区间
-                //         for condition in self.constraint.conditions.iter() {
-                //             if condition.param.clone() == idx_r.key_structure() {
-                //                 match condition.support() {
-                //                     ConditionSupport::Number => match condition.cond {
-                //                         ConditionType::GT => {
-                //                             status.fit_start(condition.value_f64() as i64)
-                //                         }
-                //                     },
-                //                 }
-                //             }
-                //         }
-                //         index
-                //     }
-                //     _ => index,
-                // }
+                let index = self.index_param(sort.param);
+                match index {
+                    Some(idx) => {
+                        let is = self.index_condition_param(1, sort.asc, idx)?;
+                        Ok(Some(is))
+                    }
+                    None => Ok(None),
+                }
             }
-            None => None,
+            None => Ok(None),
         }
     }
 
     /// 通过condition所包含参数匹配索引
-    fn index_condition(&self) -> Option<Arc<RwLock<dyn TIndex>>> {
+    fn index_condition(&self) -> GeorgeResult<Option<IndexStatus>> {
+        let mut cs: Vec<IndexStatus> = vec![];
         for condition in self.constraint.conditions.iter() {
             match self.index_param(condition.param.clone()) {
-                Some(index) => return Some(index),
+                Some(index) => cs.push(self.index_condition_param(0, true, index)?),
                 None => {}
             }
         }
-        None
+        if cs.is_empty() {
+            Ok(None)
+        } else {
+            cs.sort_by(|a, b| b.level.cmp(&a.level));
+            Ok(Some(cs.get(0).unwrap().clone()))
+        }
+    }
+
+    /// 通过condition所包含参数匹配索引
+    ///
+    /// level 起始分，asc有意义为1，无意义为0
+    fn index_condition_param(
+        &self,
+        level: u8,
+        asc: bool,
+        idx: Arc<RwLock<dyn TIndex>>,
+    ) -> GeorgeResult<IndexStatus> {
+        let mut status = IndexStatus {
+            index: idx.clone(),
+            asc,
+            start: 0,
+            end: 0,
+            level,
+        };
+        let idx_r = idx.read().unwrap();
+        // 确认排序索引是否存在条件区间
+        for condition in self.constraint.conditions.iter() {
+            if condition.param.clone() == idx_r.key_structure() {
+                if !condition.support_check(idx_r.mold()) {
+                    return Err(err_string(format!(
+                        "condition param can't support index {}",
+                        idx_r.key_structure()
+                    )));
+                }
+                match condition.support() {
+                    ConditionSupport::Number => match idx_r.mold() {
+                        IndexMold::U64 => match condition.cond {
+                            ConditionType::GT => match condition.value_u64() {
+                                Ok(res) => status.fit_start(res + 1),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::GE => match condition.value_u64() {
+                                Ok(res) => status.fit_start(res),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::LT => match condition.value_u64() {
+                                Ok(res) => status.fit_end(res - 1),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::LE => match condition.value_u64() {
+                                Ok(res) => status.fit_end(res),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::EQ => match condition.value_u64() {
+                                Ok(res) => {
+                                    status.fit_start(res);
+                                    status.fit_end(res)
+                                }
+                                Err(err) => return Err(err),
+                            },
+                            _ => {}
+                        },
+                        IndexMold::I64 => match condition.cond {
+                            ConditionType::GT => match condition.value_i64() {
+                                Ok(res) => status.fit_start(i64_2_u64(res) + 1),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::GE => match condition.value_i64() {
+                                Ok(res) => status.fit_start(i64_2_u64(res)),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::LT => match condition.value_i64() {
+                                Ok(res) => status.fit_end(i64_2_u64(res) - 1),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::LE => match condition.value_i64() {
+                                Ok(res) => status.fit_end(i64_2_u64(res)),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::EQ => match condition.value_i64() {
+                                Ok(res) => {
+                                    status.fit_start(i64_2_u64(res));
+                                    status.fit_end(i64_2_u64(res))
+                                }
+                                Err(err) => return Err(err),
+                            },
+                            _ => {}
+                        },
+                        IndexMold::U32 => match condition.cond {
+                            ConditionType::GT => match condition.value_u32() {
+                                Ok(res) => status.fit_start(res as u64 + 1),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::GE => match condition.value_u32() {
+                                Ok(res) => status.fit_start(res as u64),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::LT => match condition.value_u32() {
+                                Ok(res) => status.fit_end(res as u64 - 1),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::LE => match condition.value_u32() {
+                                Ok(res) => status.fit_end(res as u64),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::EQ => match condition.value_u32() {
+                                Ok(res) => {
+                                    status.fit_start(res as u64);
+                                    status.fit_end(res as u64)
+                                }
+                                Err(err) => return Err(err),
+                            },
+                            _ => {}
+                        },
+                        IndexMold::I32 => match condition.cond {
+                            ConditionType::GT => match condition.value_i32() {
+                                Ok(res) => status.fit_start(i32_2_u64(res) + 1),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::GE => match condition.value_i32() {
+                                Ok(res) => status.fit_start(i32_2_u64(res)),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::LT => match condition.value_i32() {
+                                Ok(res) => status.fit_end(i32_2_u64(res) - 1),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::LE => match condition.value_i32() {
+                                Ok(res) => status.fit_end(i32_2_u64(res)),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::EQ => match condition.value_i32() {
+                                Ok(res) => {
+                                    status.fit_start(i32_2_u64(res));
+                                    status.fit_end(i32_2_u64(res))
+                                }
+                                Err(err) => return Err(err),
+                            },
+                            _ => {}
+                        },
+                        IndexMold::F64 => match condition.cond {
+                            // ConditionType::GT => status.fit_start(condition.value_f64().to_bits()),
+                            ConditionType::GT => match condition.value_f64() {
+                                Ok(res) => status.fit_start(res.to_bits() + 1),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::GE => match condition.value_f64() {
+                                Ok(res) => status.fit_start(res.to_bits()),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::LT => match condition.value_f64() {
+                                Ok(res) => status.fit_end(res.to_bits() - 1),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::LE => match condition.value_f64() {
+                                Ok(res) => status.fit_end(res.to_bits()),
+                                Err(err) => return Err(err),
+                            },
+                            ConditionType::EQ => match condition.value_f64() {
+                                Ok(res) => {
+                                    status.fit_start(res.to_bits());
+                                    status.fit_end(res.to_bits())
+                                }
+                                Err(err) => return Err(err),
+                            },
+                            _ => {}
+                        },
+                        _ => {
+                            return Err(err_string(format!(
+                                "{} can't parse except Number",
+                                mold_str(idx_r.mold())
+                            )));
+                        }
+                    },
+                    _ => {}
+                }
+            }
+        }
+        Ok(status)
     }
 
     /// 通过param参数匹配获取索引

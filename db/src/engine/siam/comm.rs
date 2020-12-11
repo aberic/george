@@ -1,3 +1,4 @@
+use std::ops::{Add, Sub};
 use std::sync::{Arc, RwLock};
 
 use comm::bytes::create_empty_bytes;
@@ -722,4 +723,20 @@ pub(super) fn read_seed_bytes_from_view(
     let seed_len = trans_bytes_2_u64(seed_len_bytes);
     let seed_bytes = read_sub_bytes(view_file_path, seed_seek + 8, seed_len as usize)?;
     Ok(seed_bytes)
+}
+
+pub fn i64_2_u64(res: i64) -> u64 {
+    if res >= 0 {
+        (res as u64).add(9223372036854775809)
+    } else {
+        (res as u64).sub(9223372036854775807)
+    }
+}
+
+pub fn i32_2_u64(res: i32) -> u64 {
+    if res >= 0 {
+        (res as u64).add(2147483649)
+    } else {
+        (res as u64).sub(2147483647)
+    }
 }
