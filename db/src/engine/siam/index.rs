@@ -197,6 +197,7 @@ impl<N: TNode + Debug> TIndex for Index<N> {
         Ok(Expectation {
             count,
             index_name: self.key_structure(),
+            asc: left,
             values,
         })
     }

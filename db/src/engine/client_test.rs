@@ -551,8 +551,8 @@ fn select(database_name: &str, view_name: &str, constraint_json_bytes: Vec<u8>, 
     ) {
         Ok(e) => {
             println!(
-                "select{},count={},index_name={}",
-                position, e.count, e.index_name
+                "select{},count={},index_name={},asc={}",
+                position, e.count, e.index_name, e.asc
             );
             for value in e.values {
                 println!("value={}", String::from_utf8(value).unwrap());

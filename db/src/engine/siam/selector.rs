@@ -148,6 +148,8 @@ pub struct Expectation {
     pub count: u64,
     ///  使用到的索引名称，如果没用上则为空
     pub index_name: String,
+    /// 索引是否顺序
+    pub asc: bool,
     /// values 检索结果集合
     pub values: Vec<Vec<u8>>,
 }
