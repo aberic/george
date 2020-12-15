@@ -387,10 +387,10 @@ fn select_document1() {
         }
     ],
     "Sort":{
-        "Param":"height",
+        "Param":"age",
         "Asc":false
     },
-    "Skip":5,
+    "Skip":0,
     "Limit":30
   }"#;
     select(
@@ -407,13 +407,18 @@ fn select_document1() {
             "Param":"age",
             "Cond":"gt",
             "Value":3
+        },
+        {
+            "Param":"age",
+            "Cond":"lt",
+            "Value":20
         }
     ],
     "Sort":{
-        "Param":"height",
+        "Param":"age",
         "Asc":true
     },
-    "Skip":5,
+    "Skip":0,
     "Limit":30
   }"#;
     select(

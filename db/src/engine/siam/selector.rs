@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::Add;
 use std::sync::{Arc, RwLock};
 
 use serde_json::{Error, Value};
@@ -9,7 +10,6 @@ use crate::engine::siam::comm::{i32_2_u64, i64_2_u64};
 use crate::engine::traits::TIndex;
 use crate::utils::comm::IndexMold;
 use crate::utils::store::mold_str;
-use std::ops::Add;
 
 /// 条件 gt/ge/lt/le/eq/ne 大于/大于等于/小于/小于等于/等于/不等
 #[derive(Debug, Clone, Copy)]
@@ -413,13 +413,23 @@ impl Selector {
     /// values 检索结果集合
     pub fn exec(&self) -> GeorgeResult<Expectation> {
         let status = self.index()?;
-        // todo status自测，移除多余condition
-        status
-            .index
-            .clone()
-            .read()
-            .unwrap()
-            .select(status.asc, self.constraint.clone())
+        // todo 移除多余condition
+        // status自测
+        if status.start > status.end {
+            Err(err_string(format!(
+                "condition {} end {} can't start from {}",
+                status.index.read().unwrap().key_structure(),
+                status.end,
+                status.start
+            )))
+        } else {
+            status
+                .index
+                .clone()
+                .read()
+                .unwrap()
+                .select(status.asc, self.constraint.clone())
+        }
     }
 
     /// 获取最佳索引

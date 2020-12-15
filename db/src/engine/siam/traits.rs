@@ -5,6 +5,7 @@ use comm::errors::entrances::GeorgeResult;
 use crate::engine::siam::selector::Constraint;
 use crate::engine::traits::TSeed;
 use crate::utils::comm::LevelType;
+use std::fs::File;
 
 /// 结点通用特性，遵循此特性创建结点可以更方便的针对db进行扩展
 ///
@@ -235,6 +236,8 @@ pub trait DiskNode: Send + Sync {
     /// values 检索结果集合
     fn left_query(
         &self,
+        index_file: Arc<RwLock<File>>,
+        view_file: Arc<RwLock<File>>,
         node_bytes: Vec<u8>,
         level: u8,
         level_type: LevelType,
@@ -255,6 +258,8 @@ pub trait DiskNode: Send + Sync {
     /// values 检索结果集合
     fn right_query(
         &self,
+        index_file: Arc<RwLock<File>>,
+        view_file: Arc<RwLock<File>>,
         node_bytes: Vec<u8>,
         level: u8,
         level_type: LevelType,

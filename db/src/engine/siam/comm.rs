@@ -3,8 +3,8 @@ use std::sync::{Arc, RwLock};
 
 use comm::bytes::create_empty_bytes;
 use comm::errors::children::{DataExistError, DataNoExistError, NoneError};
-use comm::errors::entrances::{GeorgeError, GeorgeResult};
-use comm::io::reader::read_sub_bytes;
+use comm::errors::entrances::{err_string, GeorgeError, GeorgeResult};
+use comm::io::reader::{read_sub_bytes, read_sub_bytes_by_file, read_sub_file_bytes};
 use comm::io::writer::write_seek_u8s;
 use comm::trans::{trans_bytes_2_u64, trans_u64_2_bytes};
 use comm::vectors::{find_eq_vec_bytes, find_last_eq_bytes};
@@ -15,6 +15,7 @@ use crate::engine::traits::TSeed;
 use crate::utils::comm::{level_distance_32, level_distance_64, LevelType};
 use crate::utils::store::Tag;
 use crate::utils::writer::GLOBAL_WRITER;
+use std::fs::File;
 
 /// 节点数组二分查找基本方法前置方法
 ///
@@ -615,6 +616,41 @@ pub(super) fn read_next_all_nodes_bytes(
     Ok(nbs)
 }
 
+/// 读取最右叶子节点的字节数组集合记录
+///
+/// node_bytes 当前操作节点的字节数组
+///
+/// next_node_seek 下一节点在文件中的真实起始位置
+///
+/// start 下一节点在node_bytes中的起始位置
+///
+/// root 是否根节点
+///
+/// new 是否插入操作
+///
+/// #return 下一节点状态
+///
+/// 下一节点node_bytes
+///
+/// 下一节点起始坐标seek
+pub(super) fn read_next_all_nodes_bytes_by_file(
+    node_bytes: Vec<u8>,
+    index_file: Arc<RwLock<File>>,
+    level_type: LevelType,
+) -> GeorgeResult<Vec<NodeBytes>> {
+    let mut nbs: Vec<NodeBytes> = vec![];
+    let u82s = find_eq_vec_bytes(node_bytes, 8)?;
+    for u8s in u82s {
+        let next_node_bytes_seek = trans_bytes_2_u64(u8s);
+        nbs.push(read_node_bytes_by_file(
+            index_file.clone(),
+            next_node_bytes_seek,
+            level_type,
+        )?);
+    }
+    Ok(nbs)
+}
+
 /// 读取结点字节数组及该数组的起始偏移量
 ///
 /// 如果子项是32位node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
@@ -635,6 +671,42 @@ fn read_node_bytes(
         }
         LevelType::Large => {
             let next_node_bytes = read_sub_bytes(index_file_path, next_node_bytes_seek, 524288)?;
+            Ok(NodeBytes {
+                bytes: next_node_bytes,
+                seek: next_node_bytes_seek,
+            })
+        }
+    }
+}
+
+/// 读取结点字节数组及该数组的起始偏移量
+///
+/// 如果子项是32位node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
+///
+/// 如果子项是64位node集合，在node集合中每一个node的默认字节长度是8，数量是65536，即一次性读取524288个字节
+fn read_node_bytes_by_file(
+    index_file: Arc<RwLock<File>>,
+    next_node_bytes_seek: u64,
+    level_type: LevelType,
+) -> GeorgeResult<NodeBytes> {
+    match level_type {
+        LevelType::Small => {
+            let next_node_bytes = read_sub_file_bytes(
+                index_file.clone().read().unwrap().try_clone().unwrap(),
+                next_node_bytes_seek,
+                2048,
+            )?;
+            Ok(NodeBytes {
+                bytes: next_node_bytes,
+                seek: next_node_bytes_seek,
+            })
+        }
+        LevelType::Large => {
+            let next_node_bytes = read_sub_file_bytes(
+                index_file.clone().read().unwrap().try_clone().unwrap(),
+                next_node_bytes_seek,
+                524288,
+            )?;
             Ok(NodeBytes {
                 bytes: next_node_bytes,
                 seek: next_node_bytes_seek,
@@ -718,10 +790,28 @@ pub(super) fn read_seed_bytes_from_view(
     view_file_path: String,
     seed_seek: u64,
 ) -> GeorgeResult<Vec<u8>> {
+    match File::open(view_file_path) {
+        Ok(file) => {
+            let file_rw = Arc::new(RwLock::new(file));
+            // 先读取seed的长度
+            let seed_len_bytes = read_sub_bytes_by_file(file_rw.clone(), seed_seek, 8)?;
+            let seed_len = trans_bytes_2_u64(seed_len_bytes);
+            let seed_bytes =
+                read_sub_bytes_by_file(file_rw.clone(), seed_seek + 8, seed_len as usize)?;
+            Ok(seed_bytes)
+        }
+        Err(err) => Err(err_string(err.to_string())),
+    }
+}
+
+pub(super) fn read_seed_bytes_from_view_file(
+    view_file: Arc<RwLock<File>>,
+    seed_seek: u64,
+) -> GeorgeResult<Vec<u8>> {
     // 先读取seed的长度
-    let seed_len_bytes = read_sub_bytes(view_file_path.clone(), seed_seek, 8)?;
+    let seed_len_bytes = read_sub_bytes_by_file(view_file.clone(), seed_seek, 8)?;
     let seed_len = trans_bytes_2_u64(seed_len_bytes);
-    let seed_bytes = read_sub_bytes(view_file_path, seed_seek + 8, seed_len as usize)?;
+    let seed_bytes = read_sub_bytes_by_file(view_file.clone(), seed_seek + 8, seed_len as usize)?;
     Ok(seed_bytes)
 }
 

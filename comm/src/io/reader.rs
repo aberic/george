@@ -1,8 +1,9 @@
-use std::fs::{File, read_to_string};
+use std::fs::{read_to_string, File};
 use std::io::{Read, Seek, SeekFrom};
 
-use crate::errors::entrances::{err_str, err_string};
 use crate::errors::entrances::GeorgeResult;
+use crate::errors::entrances::{err_str, err_string};
+use std::sync::{Arc, RwLock};
 
 pub fn read_all(filepath: &str) -> GeorgeResult<String> {
     match read_to_string(filepath) {
@@ -75,6 +76,19 @@ pub fn read_sub_bytes(filepath: String, start: u64, last: usize) -> GeorgeResult
         Ok(file) => read_sub_file_bytes(file, start, last),
         Err(err) => Err(err_string(err.to_string())),
     }
+}
+
+/// 读取文件部分内容，从start开始，一直持续读取last长度
+pub fn read_sub_bytes_by_file(
+    file: Arc<RwLock<File>>,
+    start: u64,
+    last: usize,
+) -> GeorgeResult<Vec<u8>> {
+    read_sub_file_bytes(
+        file.clone().read().unwrap().try_clone().unwrap(),
+        start,
+        last,
+    )
 }
 
 /// 读取文件部分内容，从start开始，一直持续读取last长度

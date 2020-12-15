@@ -3,20 +3,22 @@ use std::sync::{Arc, RwLock};
 
 use comm::bytes::create_empty_bytes;
 use comm::cryptos::hash::{hashcode32_enhance, hashcode64_enhance};
-use comm::errors::entrances::{err_str, GeorgeResult};
+use comm::errors::entrances::{err_str, err_string_enhance, GeorgeResult};
 use comm::trans::trans_bytes_2_u64;
 use comm::vectors;
 use comm::vectors::find_last_eq_bytes;
 
 use crate::engine::siam::comm::{
-    read_last_nodes_bytes, read_next_all_nodes_bytes, read_next_nodes_bytes, read_seed_bytes,
-    read_seed_bytes_from_view, try_read_next_nodes_bytes, write_seed_bytes,
+    read_last_nodes_bytes, read_next_all_nodes_bytes_by_file, read_next_nodes_bytes,
+    read_seed_bytes, read_seed_bytes_from_view, read_seed_bytes_from_view_file,
+    try_read_next_nodes_bytes, write_seed_bytes,
 };
 use crate::engine::siam::selector::Constraint;
 use crate::engine::siam::traits::{DiskNode, TNode};
 use crate::engine::traits::TSeed;
 use crate::utils::comm::{level_distance_32, level_distance_64, LevelType};
 use crate::utils::path::{index_file_path, view_file_path};
+use std::fs::File;
 
 /// 索引B+Tree结点结构
 ///
@@ -186,10 +188,44 @@ impl TNode for Node {
         level_type: LevelType,
     ) -> GeorgeResult<(u64, Vec<Vec<u8>>)> {
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
-        if left {
-            self.left_query(node_bytes, 1, level_type, constraint)
-        } else {
-            self.right_query(node_bytes, 1, level_type, constraint)
+        match File::open(self.index_file_path()) {
+            Ok(index_file) => match File::open(self.view_file_path()) {
+                Ok(view_file) => {
+                    if left {
+                        self.left_query(
+                            Arc::new(RwLock::new(index_file)),
+                            Arc::new(RwLock::new(view_file)),
+                            node_bytes,
+                            1,
+                            level_type,
+                            constraint,
+                        )
+                    } else {
+                        self.right_query(
+                            Arc::new(RwLock::new(index_file)),
+                            Arc::new(RwLock::new(view_file)),
+                            node_bytes,
+                            1,
+                            level_type,
+                            constraint,
+                        )
+                    }
+                }
+                Err(err) => Err(err_string_enhance(
+                    format!(
+                        "select view file whit path {} error, ",
+                        self.view_file_path()
+                    ),
+                    err.to_string(),
+                )),
+            },
+            Err(err) => Err(err_string_enhance(
+                format!(
+                    "select index file whit path {} error, ",
+                    self.index_file_path()
+                ),
+                err.to_string(),
+            )),
         }
     }
 }
@@ -396,6 +432,8 @@ impl DiskNode for Node {
 
     fn left_query(
         &self,
+        index_file: Arc<RwLock<File>>,
+        view_file: Arc<RwLock<File>>,
         node_bytes: Vec<u8>,
         level: u8,
         level_type: LevelType,
@@ -405,9 +443,9 @@ impl DiskNode for Node {
         let mut res: Vec<Vec<u8>> = vec![];
         if level == 4 {
             let nbs_arr =
-                read_next_all_nodes_bytes(node_bytes, self.index_file_path(), level_type)?;
+                read_next_all_nodes_bytes_by_file(node_bytes, index_file.clone(), level_type)?;
             for nbs in nbs_arr {
-                let bytes = read_seed_bytes_from_view(self.view_file_path(), nbs.seek)?;
+                let bytes = read_seed_bytes_from_view_file(view_file.clone(), nbs.seek)?;
                 if constraint.valid(bytes.clone()) {
                     count += 1;
                     res.push(bytes)
@@ -416,10 +454,16 @@ impl DiskNode for Node {
         } else {
             // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
             let nbs_arr =
-                read_next_all_nodes_bytes(node_bytes, self.index_file_path(), level_type)?;
+                read_next_all_nodes_bytes_by_file(node_bytes, index_file.clone(), level_type)?;
             for nbs in nbs_arr {
-                let mut temp =
-                    self.left_query(nbs.bytes, level + 1, level_type, constraint.clone())?;
+                let mut temp = self.left_query(
+                    index_file.clone(),
+                    view_file.clone(),
+                    nbs.bytes,
+                    level + 1,
+                    level_type,
+                    constraint.clone(),
+                )?;
                 count += temp.0;
                 res.append(&mut temp.1)
             }
@@ -429,6 +473,8 @@ impl DiskNode for Node {
 
     fn right_query(
         &self,
+        index_file: Arc<RwLock<File>>,
+        view_file: Arc<RwLock<File>>,
         node_bytes: Vec<u8>,
         level: u8,
         level_type: LevelType,
@@ -438,12 +484,12 @@ impl DiskNode for Node {
         let mut res: Vec<Vec<u8>> = vec![];
         if level == 4 {
             let nbs_arr =
-                read_next_all_nodes_bytes(node_bytes, self.index_file_path(), level_type)?;
+                read_next_all_nodes_bytes_by_file(node_bytes, index_file.clone(), level_type)?;
             let mut len = nbs_arr.len();
             while len > 0 {
                 match nbs_arr.get(len - 1) {
                     Some(nbs) => {
-                        let bytes = read_seed_bytes_from_view(self.view_file_path(), nbs.seek)?;
+                        let bytes = read_seed_bytes_from_view_file(view_file.clone(), nbs.seek)?;
                         if constraint.valid(bytes.clone()) {
                             count += 1;
                             res.push(bytes)
@@ -456,12 +502,14 @@ impl DiskNode for Node {
         } else {
             // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
             let nbs_arr =
-                read_next_all_nodes_bytes(node_bytes, self.index_file_path(), level_type)?;
+                read_next_all_nodes_bytes_by_file(node_bytes, index_file.clone(), level_type)?;
             let mut len = nbs_arr.len();
             while len > 0 {
                 match nbs_arr.get(len - 1) {
                     Some(nbs) => {
                         let mut temp = self.right_query(
+                            index_file.clone(),
+                            view_file.clone(),
                             nbs.bytes.clone(),
                             level + 1,
                             level_type,
