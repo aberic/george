@@ -130,6 +130,96 @@ impl Condition {
             err,
         )
     }
+    /// 约束是否有效
+    ///
+    /// mold 索引值类型
+    ///
+    /// conditions 条件集合
+    ///
+    /// bytes 检索到的字节数组
+    pub fn validate(mold: IndexMold, conditions: Vec<Condition>, bytes: Vec<u8>) -> bool {
+        match String::from_utf8(bytes.clone()) {
+            Ok(value_str) => {
+                let res: Result<Value, Error> = serde_json::from_str(value_str.as_ref());
+                match res {
+                    Ok(v) => {
+                        for condition in conditions {
+                            if !condition.valid(mold, v.clone()) {
+                                return false;
+                            }
+                        }
+                        true
+                    }
+                    _ => false,
+                }
+            }
+            _ => false,
+        }
+    }
+    /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
+    fn valid(&self, mold: IndexMold, value: Value) -> bool {
+        return match value[self.param()] {
+            Value::Bool(ref val) => match self.support() {
+                ConditionSupport::Bool => val.eq(&self.value_bool()),
+                _ => false,
+            },
+            Value::String(ref val) => match self.support() {
+                ConditionSupport::String => match self.cond() {
+                    ConditionType::EQ => val.eq(&self.value_str()),
+                    _ => false,
+                },
+                _ => false,
+            },
+            Value::Number(ref val) => match self.support() {
+                ConditionSupport::Number => match mold {
+                    IndexMold::U64 => self.match_cond_u64(val.as_u64().unwrap()),
+                    IndexMold::I64 => self.match_cond_i64(val.as_i64().unwrap()),
+                    IndexMold::U32 => self.match_cond_u64(val.as_u64().unwrap()),
+                    IndexMold::I32 => self.match_cond_i64(val.as_i64().unwrap()),
+                    IndexMold::F64 => self.match_cond_f64(val.as_f64().unwrap()),
+                    _ => false,
+                },
+                _ => {
+                    log::debug!("select valid condition does't support");
+                    false
+                }
+            },
+            _ => {
+                log::debug!("select valid constraint value is not bool/string/number");
+                false
+            }
+        };
+    }
+    fn match_cond_u64(&self, val: u64) -> bool {
+        match self.cond() {
+            ConditionType::EQ => val.eq(&self.value_u64().unwrap()),
+            ConditionType::GT => val.gt(&self.value_u64().unwrap()),
+            ConditionType::GE => val.ge(&self.value_u64().unwrap()),
+            ConditionType::LT => val.lt(&self.value_u64().unwrap()),
+            ConditionType::LE => val.le(&self.value_u64().unwrap()),
+            ConditionType::NE => val.ne(&self.value_u64().unwrap()),
+        }
+    }
+    fn match_cond_i64(&self, val: i64) -> bool {
+        match self.cond() {
+            ConditionType::EQ => val.eq(&self.value_i64().unwrap()),
+            ConditionType::GT => val.gt(&self.value_i64().unwrap()),
+            ConditionType::GE => val.ge(&self.value_i64().unwrap()),
+            ConditionType::LT => val.lt(&self.value_i64().unwrap()),
+            ConditionType::LE => val.le(&self.value_i64().unwrap()),
+            ConditionType::NE => val.ne(&self.value_i64().unwrap()),
+        }
+    }
+    fn match_cond_f64(&self, val: f64) -> bool {
+        match self.cond() {
+            ConditionType::EQ => val.eq(&self.value_f64().unwrap()),
+            ConditionType::GT => val.gt(&self.value_f64().unwrap()),
+            ConditionType::GE => val.ge(&self.value_f64().unwrap()),
+            ConditionType::LT => val.lt(&self.value_f64().unwrap()),
+            ConditionType::LE => val.le(&self.value_f64().unwrap()),
+            ConditionType::NE => val.ne(&self.value_f64().unwrap()),
+        }
+    }
 }
 
 /// 排序方式
@@ -144,6 +234,8 @@ struct Sort {
 /// 经由`Selector`后的期望结果
 #[derive(Debug)]
 pub struct Expectation {
+    /// total 检索过程中遍历的总条数（也表示文件读取次数，文件描述符次数远小于该数，一般文件描述符数为1，即共用同一文件描述符）
+    pub total: u64,
     /// 检索结果总条数
     pub count: u64,
     ///  使用到的索引名称，如果没用上则为空
@@ -198,6 +290,18 @@ impl Constraint {
             }
             Err(err) => Err(err_string(err.to_string())),
         }
+    }
+    pub fn conditions(&self) -> Vec<Condition> {
+        self.conditions.clone()
+    }
+    pub fn skip(&self) -> u64 {
+        self.skip
+    }
+    pub fn limit(&self) -> u64 {
+        self.limit
+    }
+    pub fn delete(&self) -> bool {
+        self.delete
     }
     /// 解析`json value`并获取排序索引
     fn fit_sort(&mut self, value: Value) {
@@ -274,65 +378,6 @@ impl Constraint {
                 }
             }
         }
-    }
-
-    /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
-    fn valid_constraint(&self, value: Value, condition: Condition) -> bool {
-        return match value[condition.param()] {
-            Value::Bool(ref val) => match condition.support() {
-                ConditionSupport::Bool => val.eq(&condition.value_bool()),
-                _ => false,
-            },
-            Value::String(ref val) => match condition.support() {
-                ConditionSupport::String => match condition.cond() {
-                    ConditionType::EQ => val.eq(&condition.value_str()),
-                    _ => false,
-                },
-                _ => false,
-            },
-            Value::Number(ref val) => match condition.support() {
-                ConditionSupport::Number => match condition.cond() {
-                    ConditionType::EQ => val.as_f64().unwrap().eq(&condition.value_f64().unwrap()),
-                    ConditionType::GT => val.as_f64().unwrap().gt(&condition.value_f64().unwrap()),
-                    ConditionType::GE => val.as_f64().unwrap().ge(&condition.value_f64().unwrap()),
-                    ConditionType::LT => val.as_f64().unwrap().lt(&condition.value_f64().unwrap()),
-                    ConditionType::LE => val.as_f64().unwrap().le(&condition.value_f64().unwrap()),
-                    ConditionType::NE => val.as_f64().unwrap().ne(&condition.value_f64().unwrap()),
-                },
-                _ => {
-                    log::debug!("select valid condition does't support");
-                    false
-                }
-            },
-            _ => {
-                log::debug!("select valid constraint value is not bool/string/number");
-                false
-            }
-        };
-    }
-
-    /// 约束是否有效
-    pub fn valid(&self, bytes: Vec<u8>) -> bool {
-        let mut b = false;
-        match String::from_utf8(bytes.clone()) {
-            Ok(value_str) => {
-                let res: Result<Value, Error> = serde_json::from_str(value_str.as_ref());
-                match res {
-                    Ok(v) => {
-                        for condition in self.conditions.clone() {
-                            if self.valid_constraint(v.clone(), condition) {
-                                b = true
-                            } else {
-                                return false;
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            _ => {}
-        }
-        b
     }
 }
 

@@ -10,7 +10,7 @@ use crate::engine::siam::comm::{
 use crate::engine::siam::selector::Constraint;
 use crate::engine::siam::traits::TNode;
 use crate::engine::traits::TSeed;
-use crate::utils::comm::LevelType;
+use crate::utils::comm::{IndexMold, LevelType};
 
 /// 索引B+Tree结点结构
 ///
@@ -139,10 +139,11 @@ impl TNode for Node {
     }
     fn select(
         &self,
+        _mold: IndexMold,
         _left: bool,
         _constraint: Constraint,
         _level_type: LevelType,
-    ) -> GeorgeResult<(u64, Vec<Vec<u8>>)> {
+    ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)> {
         Err(err_str("unimplemented!"))
     }
 }

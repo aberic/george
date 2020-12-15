@@ -328,54 +328,49 @@ fn put_document3_index_custom() {
 #[derive(Serialize, Deserialize)]
 struct Teacher {
     name: String,
-    age: u8,
-    height: u8,
+    age: u16,
+    height: u16,
     blog: String,
     married: bool,
 }
 
 #[test]
 fn select_document1() {
-    create_database("select_document1", "comment", 1);
+    let database_name = "select_document1";
+    let view_name = "view1";
+    let comment = "comment";
+    create_database(database_name, comment, 1);
     create_view(
-        "select_document1",
-        "view1",
-        "comment",
+        database_name,
+        view_name,
+        comment,
         IndexType::Siam,
         Category::Document,
         LevelType::Small,
         1,
     );
-    create_index("select_document1", "view1", "age", IndexMold::U64, false, 1);
-    create_index(
-        "select_document1",
-        "view1",
-        "job",
-        IndexMold::String,
-        false,
-        1,
-    );
+    create_index(database_name, view_name, "age", IndexMold::U64, false, 1);
+    create_index(database_name, view_name, "job", IndexMold::String, false, 1);
 
-    let user_str1 = serde_json::to_string(&create_t(10, 102)).unwrap();
-    let user_str2 = serde_json::to_string(&create_t(15, 12)).unwrap();
-    let user_str3 = serde_json::to_string(&create_t(1, 192)).unwrap();
-    let user_str4 = serde_json::to_string(&create_t(7, 82)).unwrap();
-    let user_str5 = serde_json::to_string(&create_t(4, 2)).unwrap();
-    let user_str6 = serde_json::to_string(&create_t(9, 1)).unwrap();
+    // let mut pos: u16 = 0;
+    // while pos < 1000 {
+    //     let user_str = serde_json::to_string(&create_t(pos, 1000 - pos)).unwrap();
+    //     put(
+    //         database_name,
+    //         view_name,
+    //         pos.to_string().as_str(),
+    //         user_str.as_str(),
+    //         pos as usize,
+    //     );
+    //     pos += 1
+    // }
 
-    put("select_document1", "view1", "10", user_str1.as_str(), 1);
-    put("select_document1", "view1", "15", user_str2.as_str(), 2);
-    put("select_document1", "view1", "1", user_str3.as_str(), 3);
-    put("select_document1", "view1", "7", user_str4.as_str(), 4);
-    put("select_document1", "view1", "4", user_str5.as_str(), 5);
-    put("select_document1", "view1", "9", user_str6.as_str(), 6);
-
-    get("select_document1", "view1", "10", 11);
-    get("select_document1", "view1", "15", 12);
-    get("select_document1", "view1", "1", 13);
-    get("select_document1", "view1", "7", 14);
-    get("select_document1", "view1", "4", 15);
-    get("select_document1", "view1", "9", 16);
+    get(database_name, view_name, "10", 11);
+    get(database_name, view_name, "15", 12);
+    get(database_name, view_name, "1", 13);
+    get(database_name, view_name, "7", 14);
+    get(database_name, view_name, "4", 15);
+    get(database_name, view_name, "9", 16);
 
     let cond_str1 = r#"
   {
@@ -383,22 +378,17 @@ fn select_document1() {
         {
             "Param":"age",
             "Cond":"le",
-            "Value":9
+            "Value":849
         }
     ],
     "Sort":{
-        "Param":"age",
+        "Param":"height",
         "Asc":false
     },
     "Skip":0,
     "Limit":30
   }"#;
-    select(
-        "select_document1",
-        "view1",
-        cond_str1.as_bytes().to_vec(),
-        17,
-    );
+    select(database_name, view_name, cond_str1.as_bytes().to_vec(), 17);
 
     let cond_str2 = r#"
   {
@@ -406,30 +396,25 @@ fn select_document1() {
         {
             "Param":"age",
             "Cond":"gt",
-            "Value":3
+            "Value":933
         },
         {
             "Param":"age",
             "Cond":"lt",
-            "Value":20
+            "Value":990
         }
     ],
     "Sort":{
-        "Param":"age",
+        "Param":"height",
         "Asc":true
     },
     "Skip":0,
     "Limit":30
   }"#;
-    select(
-        "select_document1",
-        "view1",
-        cond_str2.as_bytes().to_vec(),
-        18,
-    );
+    select(database_name, view_name, cond_str2.as_bytes().to_vec(), 18);
 }
 
-fn create_t(a: u8, h: u8) -> Teacher {
+fn create_t(a: u16, h: u16) -> Teacher {
     Teacher {
         name: a.to_string(),
         age: a,
@@ -551,8 +536,8 @@ fn select(database_name: &str, view_name: &str, constraint_json_bytes: Vec<u8>, 
     ) {
         Ok(e) => {
             println!(
-                "select{},count={},index_name={},asc={}",
-                position, e.count, e.index_name, e.asc
+                "select{},total={},count={},index_name={},asc={}",
+                position, e.total, e.count, e.index_name, e.asc
             );
             for value in e.values {
                 println!("value={}", String::from_utf8(value).unwrap());

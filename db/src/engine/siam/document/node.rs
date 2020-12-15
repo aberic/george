@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::fs::File;
 use std::sync::{Arc, RwLock};
 
 use comm::bytes::create_empty_bytes;
@@ -13,12 +14,11 @@ use crate::engine::siam::comm::{
     read_seed_bytes, read_seed_bytes_from_view, read_seed_bytes_from_view_file,
     try_read_next_nodes_bytes, write_seed_bytes,
 };
-use crate::engine::siam::selector::Constraint;
+use crate::engine::siam::selector::{Condition, Constraint};
 use crate::engine::siam::traits::{DiskNode, TNode};
 use crate::engine::traits::TSeed;
-use crate::utils::comm::{level_distance_32, level_distance_64, LevelType};
+use crate::utils::comm::{level_distance_32, level_distance_64, IndexMold, LevelType};
 use crate::utils::path::{index_file_path, view_file_path};
-use std::fs::File;
 
 /// 索引B+Tree结点结构
 ///
@@ -183,32 +183,34 @@ impl TNode for Node {
     }
     fn select(
         &self,
+        mold: IndexMold,
         left: bool,
         constraint: Constraint,
         level_type: LevelType,
-    ) -> GeorgeResult<(u64, Vec<Vec<u8>>)> {
+    ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)> {
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
         match File::open(self.index_file_path()) {
-            Ok(index_file) => match File::open(self.view_file_path()) {
-                Ok(view_file) => {
+            Ok(index_file_real) => match File::open(self.view_file_path()) {
+                Ok(view_file_real) => {
+                    let index_file = Arc::new(RwLock::new(index_file_real));
+                    let view_file = Arc::new(RwLock::new(view_file_real));
+                    let level = 1;
+                    let conditions = constraint.conditions();
+                    let skip = constraint.skip();
+                    let limit = constraint.limit();
+                    let delete = constraint.delete();
                     if left {
-                        self.left_query(
-                            Arc::new(RwLock::new(index_file)),
-                            Arc::new(RwLock::new(view_file)),
-                            node_bytes,
-                            1,
-                            level_type,
-                            constraint,
-                        )
+                        let query = self.left_query(
+                            mold, index_file, view_file, node_bytes, level, level_type, conditions,
+                            skip, limit, delete,
+                        )?;
+                        Ok((query.0, query.1, query.4))
                     } else {
-                        self.right_query(
-                            Arc::new(RwLock::new(index_file)),
-                            Arc::new(RwLock::new(view_file)),
-                            node_bytes,
-                            1,
-                            level_type,
-                            constraint,
-                        )
+                        let query = self.right_query(
+                            mold, index_file, view_file, node_bytes, level, level_type, conditions,
+                            skip, limit, delete,
+                        )?;
+                        Ok((query.0, query.1, query.4))
                     }
                 }
                 Err(err) => Err(err_string_enhance(
@@ -432,54 +434,85 @@ impl DiskNode for Node {
 
     fn left_query(
         &self,
+        mold: IndexMold,
         index_file: Arc<RwLock<File>>,
         view_file: Arc<RwLock<File>>,
         node_bytes: Vec<u8>,
         level: u8,
         level_type: LevelType,
-        constraint: Constraint,
-    ) -> GeorgeResult<(u64, Vec<Vec<u8>>)> {
+        conditions: Vec<Condition>,
+        mut skip: u64,
+        mut limit: u64,
+        delete: bool,
+    ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)> {
+        // todo delete
+        let mut total: u64 = 0;
         let mut count: u64 = 0;
         let mut res: Vec<Vec<u8>> = vec![];
         if level == 4 {
             let nbs_arr =
                 read_next_all_nodes_bytes_by_file(node_bytes, index_file.clone(), level_type)?;
+            total += 1;
             for nbs in nbs_arr {
                 let bytes = read_seed_bytes_from_view_file(view_file.clone(), nbs.seek)?;
-                if constraint.valid(bytes.clone()) {
-                    count += 1;
-                    res.push(bytes)
+                total += 1;
+                if Condition::validate(mold, conditions.clone(), bytes.clone()) {
+                    if skip <= 0 {
+                        if limit <= 0 {
+                            break;
+                        }
+                        limit -= 1;
+                        count += 1;
+                        res.push(bytes)
+                    } else {
+                        skip -= 1;
+                    }
                 }
             }
         } else {
             // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
             let nbs_arr =
                 read_next_all_nodes_bytes_by_file(node_bytes, index_file.clone(), level_type)?;
+            total += 1;
             for nbs in nbs_arr {
                 let mut temp = self.left_query(
+                    mold,
                     index_file.clone(),
                     view_file.clone(),
                     nbs.bytes,
                     level + 1,
                     level_type,
-                    constraint.clone(),
+                    conditions.clone(),
+                    skip,
+                    limit,
+                    delete,
                 )?;
-                count += temp.0;
-                res.append(&mut temp.1)
+                total += temp.0;
+                count += temp.1;
+                res.append(&mut temp.4);
+                if temp.3 <= 0 {
+                    break;
+                }
             }
         }
-        Ok((count, res))
+        Ok((total, count, skip, limit, res))
     }
 
     fn right_query(
         &self,
+        mold: IndexMold,
         index_file: Arc<RwLock<File>>,
         view_file: Arc<RwLock<File>>,
         node_bytes: Vec<u8>,
         level: u8,
         level_type: LevelType,
-        constraint: Constraint,
-    ) -> GeorgeResult<(u64, Vec<Vec<u8>>)> {
+        conditions: Vec<Condition>,
+        mut skip: u64,
+        mut limit: u64,
+        delete: bool,
+    ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)> {
+        // todo delete
+        let mut total: u64 = 0;
         let mut count: u64 = 0;
         let mut res: Vec<Vec<u8>> = vec![];
         if level == 4 {
@@ -490,9 +523,19 @@ impl DiskNode for Node {
                 match nbs_arr.get(len - 1) {
                     Some(nbs) => {
                         let bytes = read_seed_bytes_from_view_file(view_file.clone(), nbs.seek)?;
-                        if constraint.valid(bytes.clone()) {
-                            count += 1;
-                            res.push(bytes)
+                        total += 1;
+                        if Condition::validate(mold, conditions.clone(), bytes.clone()) {
+                            if skip <= 0 {
+                                if limit > 0 {
+                                    limit -= 1;
+                                    count += 1;
+                                    res.push(bytes)
+                                } else {
+                                    break;
+                                }
+                            } else {
+                                skip -= 1;
+                            }
                         }
                         len -= 1;
                     }
@@ -503,26 +546,35 @@ impl DiskNode for Node {
             // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
             let nbs_arr =
                 read_next_all_nodes_bytes_by_file(node_bytes, index_file.clone(), level_type)?;
+            total += 1;
             let mut len = nbs_arr.len();
             while len > 0 {
                 match nbs_arr.get(len - 1) {
                     Some(nbs) => {
                         let mut temp = self.right_query(
+                            mold,
                             index_file.clone(),
                             view_file.clone(),
                             nbs.bytes.clone(),
                             level + 1,
                             level_type,
-                            constraint.clone(),
+                            conditions.clone(),
+                            skip,
+                            limit,
+                            delete,
                         )?;
-                        count += temp.0;
-                        res.append(&mut temp.1);
+                        total += temp.0;
+                        count += temp.1;
+                        res.append(&mut temp.4);
+                        if temp.3 <= 0 {
+                            break;
+                        }
                         len -= 1;
                     }
                     None => return Err(err_str("select bytes get none error")),
                 }
             }
         }
-        Ok((count, res))
+        Ok((total, count, skip, limit, res))
     }
 }

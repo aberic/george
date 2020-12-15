@@ -1,8 +1,8 @@
 use std::fs::{read_to_string, File};
 use std::io::{Read, Seek, SeekFrom};
 
+use crate::errors::entrances::err_string;
 use crate::errors::entrances::GeorgeResult;
-use crate::errors::entrances::{err_str, err_string};
 use std::sync::{Arc, RwLock};
 
 pub fn read_all(filepath: &str) -> GeorgeResult<String> {
@@ -93,43 +93,39 @@ pub fn read_sub_bytes_by_file(
 
 /// 读取文件部分内容，从start开始，一直持续读取last长度
 pub fn read_sub_file_bytes(mut file: File, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
-    if file.metadata().unwrap().len() - start < last as u64 {
-        Err(err_str("out of size"))
-    } else {
-        match file.seek(SeekFrom::Start(start)) {
-            Ok(_u) => {
-                let mut buf: Vec<u8> = vec![];
-                let mut buffer = [0u8; 1024];
-                let mut position = 0;
-                while position < last {
-                    match file.read(&mut buffer) {
-                        Ok(_u) => {
-                            if last - position >= 1024 {
-                                for b in buffer.iter() {
-                                    buf.push(*b);
-                                    position += 1
-                                }
-                            } else {
-                                for b in buffer.iter() {
-                                    buf.push(*b);
-                                    position += 1;
-                                    if last - position <= 0 {
-                                        break;
-                                    }
+    match file.seek(SeekFrom::Start(start)) {
+        Ok(_u) => {
+            let mut buf: Vec<u8> = vec![];
+            let mut buffer = [0u8; 1024];
+            let mut position = 0;
+            while position < last {
+                match file.read(&mut buffer) {
+                    Ok(_u) => {
+                        if last - position >= 1024 {
+                            for b in buffer.iter() {
+                                buf.push(*b);
+                                position += 1
+                            }
+                        } else {
+                            for b in buffer.iter() {
+                                buf.push(*b);
+                                position += 1;
+                                if last - position <= 0 {
+                                    break;
                                 }
                             }
                         }
-                        Err(err) => {
-                            return Err(err_string(format!(
-                                "read sub file read failed! error is {}",
-                                err
-                            )));
-                        }
+                    }
+                    Err(err) => {
+                        return Err(err_string(format!(
+                            "read sub file read failed! error is {}",
+                            err
+                        )));
                     }
                 }
-                Ok(buf)
             }
-            Err(err) => Err(err_string(err.to_string())),
+            Ok(buf)
         }
+        Err(err) => Err(err_string(err.to_string())),
     }
 }

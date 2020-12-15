@@ -2,9 +2,9 @@ use std::sync::{Arc, RwLock};
 
 use comm::errors::entrances::GeorgeResult;
 
-use crate::engine::siam::selector::Constraint;
+use crate::engine::siam::selector::{Condition, Constraint};
 use crate::engine::traits::TSeed;
-use crate::utils::comm::LevelType;
+use crate::utils::comm::{IndexMold, LevelType};
 use std::fs::File;
 
 /// 结点通用特性，遵循此特性创建结点可以更方便的针对db进行扩展
@@ -89,15 +89,18 @@ pub trait TNode: Send + Sync {
     ///
     /// ###Return
     ///
+    /// total 检索过程中遍历的总条数
+    ///
     /// count 检索结果过程中遍历的总条数
     ///
     /// values 检索结果集合
     fn select(
         &self,
+        mold: IndexMold,
         left: bool,
         constraint: Constraint,
         level_type: LevelType,
-    ) -> GeorgeResult<(u64, Vec<Vec<u8>>)>;
+    ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)>;
 }
 
 /// 存储文件结点通用特性，遵循此特性创建结点可以更方便的针对db进行扩展
@@ -227,42 +230,74 @@ pub trait DiskNode: Send + Sync {
     ///
     /// node_bytes 当前操作结点的字节数组
     ///
-    /// constraint 查询约束
+    /// conditions 条件集合
+    ///
+    /// skip 结果集跳过数量
+    ///
+    /// limit 结果集限制数量
+    ///
+    /// delete 是否删除检索结果
     ///
     /// ###Return
     ///
+    /// total 检索过程中遍历的总条数（也表示文件读取次数，文件描述符次数远小于该数，一般文件描述符数为1，即共用同一文件描述符）
+    ///
     /// count 检索结果过程中遍历的总条数
+    ///
+    /// skip 检索结果过程中跳过数量
+    ///
+    /// limit 检索结果过程中限制数量
     ///
     /// values 检索结果集合
     fn left_query(
         &self,
+        mold: IndexMold,
         index_file: Arc<RwLock<File>>,
         view_file: Arc<RwLock<File>>,
         node_bytes: Vec<u8>,
         level: u8,
         level_type: LevelType,
-        constraint: Constraint,
-    ) -> GeorgeResult<(u64, Vec<Vec<u8>>)>;
+        conditions: Vec<Condition>,
+        skip: u64,
+        limit: u64,
+        delete: bool,
+    ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)>;
     /// 通过右查询约束获取数据集
     ///
     /// ###Params
     ///
     /// node_bytes 当前操作结点的字节数组
     ///
-    /// constraint 查询约束
+    /// conditions 条件集合
+    ///
+    /// skip 结果集跳过数量
+    ///
+    /// limit 结果集限制数量
+    ///
+    /// delete 是否删除检索结果
     ///
     /// ###Return
     ///
+    /// total 检索过程中遍历的总条数（也表示文件读取次数，文件描述符次数远小于该数，一般文件描述符数为1，即共用同一文件描述符）
+    ///
     /// count 检索结果过程中遍历的总条数
+    ///
+    /// skip 检索结果过程中跳过数量
+    ///
+    /// limit 检索结果过程中限制数量
     ///
     /// values 检索结果集合
     fn right_query(
         &self,
+        mold: IndexMold,
         index_file: Arc<RwLock<File>>,
         view_file: Arc<RwLock<File>>,
         node_bytes: Vec<u8>,
         level: u8,
         level_type: LevelType,
-        constraint: Constraint,
-    ) -> GeorgeResult<(u64, Vec<Vec<u8>>)>;
+        conditions: Vec<Condition>,
+        skip: u64,
+        limit: u64,
+        delete: bool,
+    ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)>;
 }
