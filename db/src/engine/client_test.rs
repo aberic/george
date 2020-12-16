@@ -328,8 +328,8 @@ fn put_document3_index_custom() {
 #[derive(Serialize, Deserialize)]
 struct Teacher {
     name: String,
-    age: u16,
-    height: u16,
+    age: u32,
+    height: u32,
     blog: String,
     married: bool,
 }
@@ -350,11 +350,11 @@ fn select_document1() {
         1,
     );
     create_index(database_name, view_name, "age", IndexMold::U64, false, 1);
-    create_index(database_name, view_name, "job", IndexMold::String, false, 1);
+    // create_index(database_name, view_name, "job", IndexMold::String, false, 1);
 
-    // let mut pos: u16 = 0;
-    // while pos < 1000 {
-    //     let user_str = serde_json::to_string(&create_t(pos, 1000 - pos)).unwrap();
+    // let mut pos: u32 = 0;
+    // while pos < 100000 {
+    //     let user_str = serde_json::to_string(&create_t(pos, 100000 - pos)).unwrap();
     //     put(
     //         database_name,
     //         view_name,
@@ -365,12 +365,12 @@ fn select_document1() {
     //     pos += 1
     // }
 
-    get(database_name, view_name, "10", 11);
-    get(database_name, view_name, "15", 12);
-    get(database_name, view_name, "1", 13);
-    get(database_name, view_name, "7", 14);
-    get(database_name, view_name, "4", 15);
-    get(database_name, view_name, "9", 16);
+    // get(database_name, view_name, "10", 11);
+    // get(database_name, view_name, "15", 12);
+    // get(database_name, view_name, "1", 13);
+    // get(database_name, view_name, "7", 14);
+    // get(database_name, view_name, "4", 15);
+    // get(database_name, view_name, "9", 16);
 
     let cond_str1 = r#"
   {
@@ -378,14 +378,14 @@ fn select_document1() {
         {
             "Param":"age",
             "Cond":"le",
-            "Value":849
+            "Value":99849
         }
     ],
     "Sort":{
         "Param":"height",
         "Asc":false
     },
-    "Skip":0,
+    "Skip":80,
     "Limit":30
   }"#;
     select(database_name, view_name, cond_str1.as_bytes().to_vec(), 17);
@@ -396,12 +396,12 @@ fn select_document1() {
         {
             "Param":"age",
             "Cond":"gt",
-            "Value":933
+            "Value":99933
         },
         {
             "Param":"age",
             "Cond":"lt",
-            "Value":990
+            "Value":99990
         }
     ],
     "Sort":{
@@ -414,7 +414,7 @@ fn select_document1() {
     select(database_name, view_name, cond_str2.as_bytes().to_vec(), 18);
 }
 
-fn create_t(a: u16, h: u16) -> Teacher {
+fn create_t(a: u32, h: u32) -> Teacher {
     Teacher {
         name: a.to_string(),
         age: a,

@@ -454,13 +454,13 @@ impl DiskNode for Node {
                 read_next_all_nodes_bytes_by_file(node_bytes, index_file.clone(), level_type)?;
             total += 1;
             for nbs in nbs_arr {
+                if limit <= 0 {
+                    break;
+                }
                 let bytes = read_seed_bytes_from_view_file(view_file.clone(), nbs.seek)?;
                 total += 1;
                 if Condition::validate(mold, conditions.clone(), bytes.clone()) {
                     if skip <= 0 {
-                        if limit <= 0 {
-                            break;
-                        }
                         limit -= 1;
                         count += 1;
                         res.push(bytes)
@@ -489,8 +489,10 @@ impl DiskNode for Node {
                 )?;
                 total += temp.0;
                 count += temp.1;
+                skip -= temp.2;
+                limit = temp.3;
                 res.append(&mut temp.4);
-                if temp.3 <= 0 {
+                if limit <= 0 {
                     break;
                 }
             }
@@ -520,21 +522,20 @@ impl DiskNode for Node {
                 read_next_all_nodes_bytes_by_file(node_bytes, index_file.clone(), level_type)?;
             let mut len = nbs_arr.len();
             while len > 0 {
+                if limit <= 0 {
+                    break;
+                }
                 match nbs_arr.get(len - 1) {
                     Some(nbs) => {
                         let bytes = read_seed_bytes_from_view_file(view_file.clone(), nbs.seek)?;
                         total += 1;
                         if Condition::validate(mold, conditions.clone(), bytes.clone()) {
-                            if skip <= 0 {
-                                if limit > 0 {
-                                    limit -= 1;
-                                    count += 1;
-                                    res.push(bytes)
-                                } else {
-                                    break;
-                                }
-                            } else {
+                            if skip > 0 {
                                 skip -= 1;
+                            } else {
+                                limit -= 1;
+                                count += 1;
+                                res.push(bytes)
                             }
                         }
                         len -= 1;
@@ -565,8 +566,10 @@ impl DiskNode for Node {
                         )?;
                         total += temp.0;
                         count += temp.1;
+                        skip -= temp.2;
+                        limit = temp.3;
                         res.append(&mut temp.4);
-                        if temp.3 <= 0 {
+                        if limit <= 0 {
                             break;
                         }
                         len -= 1;
