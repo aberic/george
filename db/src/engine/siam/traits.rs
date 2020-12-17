@@ -1,3 +1,4 @@
+use std::fs::File;
 use std::sync::{Arc, RwLock};
 
 use comm::errors::entrances::GeorgeResult;
@@ -5,7 +6,6 @@ use comm::errors::entrances::GeorgeResult;
 use crate::engine::siam::selector::{Condition, Constraint};
 use crate::engine::traits::TSeed;
 use crate::utils::comm::{IndexMold, LevelType};
-use std::fs::File;
 
 /// 结点通用特性，遵循此特性创建结点可以更方便的针对db进行扩展
 ///
@@ -98,6 +98,8 @@ pub trait TNode: Send + Sync {
         &self,
         mold: IndexMold,
         left: bool,
+        start: u64,
+        end: u64,
         constraint: Constraint,
         level_type: LevelType,
     ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)>;
@@ -224,6 +226,36 @@ pub trait DiskNode: Send + Sync {
         level: u8,
         level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>;
+    fn left_32(
+        &self,
+        mold: IndexMold,
+        index_file: Arc<RwLock<File>>,
+        view_file: Arc<RwLock<File>>,
+        node_bytes: Vec<u8>,
+        start_key: u32,
+        end_key: u32,
+        level: u8,
+        level_type: LevelType,
+        conditions: Vec<Condition>,
+        skip: u64,
+        limit: u64,
+        delete: bool,
+    ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)>;
+    fn left_64(
+        &self,
+        mold: IndexMold,
+        index_file: Arc<RwLock<File>>,
+        view_file: Arc<RwLock<File>>,
+        node_bytes: Vec<u8>,
+        start_key: u64,
+        end_key: u64,
+        level: u8,
+        level_type: LevelType,
+        conditions: Vec<Condition>,
+        skip: u64,
+        limit: u64,
+        delete: bool,
+    ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)>;
     /// 通过左查询约束获取数据集
     ///
     /// ###Params
@@ -255,6 +287,36 @@ pub trait DiskNode: Send + Sync {
         index_file: Arc<RwLock<File>>,
         view_file: Arc<RwLock<File>>,
         node_bytes: Vec<u8>,
+        level: u8,
+        level_type: LevelType,
+        conditions: Vec<Condition>,
+        skip: u64,
+        limit: u64,
+        delete: bool,
+    ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)>;
+    fn right_32(
+        &self,
+        mold: IndexMold,
+        index_file: Arc<RwLock<File>>,
+        view_file: Arc<RwLock<File>>,
+        node_bytes: Vec<u8>,
+        start_key: u32,
+        end_key: u32,
+        level: u8,
+        level_type: LevelType,
+        conditions: Vec<Condition>,
+        skip: u64,
+        limit: u64,
+        delete: bool,
+    ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)>;
+    fn right_64(
+        &self,
+        mold: IndexMold,
+        index_file: Arc<RwLock<File>>,
+        view_file: Arc<RwLock<File>>,
+        node_bytes: Vec<u8>,
+        start_key: u64,
+        end_key: u64,
         level: u8,
         level_type: LevelType,
         conditions: Vec<Condition>,

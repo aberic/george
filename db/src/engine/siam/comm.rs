@@ -3,7 +3,7 @@ use std::sync::{Arc, RwLock};
 
 use comm::bytes::create_empty_bytes;
 use comm::errors::children::{DataExistError, DataNoExistError, NoneError};
-use comm::errors::entrances::{err_string, GeorgeError, GeorgeResult};
+use comm::errors::entrances::{err_str, err_string, GeorgeError, GeorgeResult};
 use comm::io::reader::{read_sub_bytes, read_sub_bytes_by_file, read_sub_file_bytes};
 use comm::io::writer::write_seek_u8s;
 use comm::trans::{trans_bytes_2_u64, trans_u64_2_bytes};
@@ -452,11 +452,27 @@ fn put_seed<N: TNode>(node: &N, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> Ge
 // Disk Node Exec After
 
 /// 下一节点信息
-pub(super) struct NodeBytes {
+#[derive(Debug, Clone)]
+pub struct NodeBytes {
     /// 下一节点node_bytes
     pub(super) bytes: Vec<u8>,
     /// 下一节点起始坐标seek
     pub(super) seek: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct QueryNodeData {
+    nb: Option<NodeBytes>,
+    nbs: Vec<NodeBytes>,
+}
+
+impl QueryNodeData {
+    pub fn node_bytes(&self) -> Option<NodeBytes> {
+        self.nb.clone()
+    }
+    pub fn node_bytes_list(&self) -> Vec<NodeBytes> {
+        self.nbs.clone()
+    }
 }
 
 /// 读取下一个节点的字节数组记录，如果不存在，则判断是否为插入操作，如果是插入操作，则新建下一个节点默认数组
@@ -649,6 +665,121 @@ pub(super) fn read_next_all_nodes_bytes_by_file(
         )?);
     }
     Ok(nbs)
+}
+
+/// 读取下一个节点的字节数组记录及其后续字节数组
+///
+/// node_bytes 当前操作节点的字节数组
+///
+/// next_node_seek 下一节点在文件中的真实起始位置
+///
+/// start 下一节点在node_bytes中的起始位置
+///
+/// root 是否根节点
+///
+/// new 是否插入操作
+///
+/// #return 下一节点状态
+///
+/// 下一节点node_bytes
+///
+/// 下一节点起始坐标seek
+pub(super) fn read_next_nodes_and_all_bytes_by_file(
+    node_bytes: Vec<u8>,
+    index_file: Arc<RwLock<File>>,
+    start: u64,
+    level_type: LevelType,
+) -> GeorgeResult<QueryNodeData> {
+    let qnd: QueryNodeData;
+
+    let seek_start = start as usize;
+    let seek_end = seek_start + 8;
+
+    let last_bytes = node_bytes.as_slice()[seek_end..].to_vec();
+    let mut nbs: Vec<NodeBytes> = vec![];
+    let u82s = find_eq_vec_bytes(last_bytes, 8)?;
+    for u8s in u82s {
+        let next_node_bytes_seek = trans_bytes_2_u64(u8s);
+        nbs.push(read_node_bytes_by_file(
+            index_file.clone(),
+            next_node_bytes_seek,
+            level_type,
+        )?);
+    }
+
+    let u8s = node_bytes.as_slice()[seek_start..seek_end].to_vec();
+    let next_node_bytes_seek = trans_bytes_2_u64(u8s);
+    if next_node_bytes_seek == 0 {
+        qnd = QueryNodeData { nb: None, nbs }
+    } else {
+        let nb = read_node_bytes_by_file(index_file.clone(), next_node_bytes_seek, level_type)?;
+        qnd = QueryNodeData { nb: Some(nb), nbs }
+    }
+
+    Ok(qnd)
+}
+
+/// 读取下一个节点的字节数组记录及其之前字节数组
+///
+/// node_bytes 当前操作节点的字节数组
+///
+/// next_node_seek 下一节点在文件中的真实起始位置
+///
+/// start 下一节点在node_bytes中的起始位置
+///
+/// root 是否根节点
+///
+/// new 是否插入操作
+///
+/// #return 下一节点状态
+///
+/// 下一节点node_bytes
+///
+/// 下一节点起始坐标seek
+pub(super) fn read_before_nodes_and_all_bytes_by_file(
+    node_bytes: Vec<u8>,
+    index_file: Arc<RwLock<File>>,
+    start: u64,
+    level_type: LevelType,
+) -> GeorgeResult<QueryNodeData> {
+    let qnd: QueryNodeData;
+
+    let seek_start = start as usize;
+    let seek_end = seek_start + 8;
+
+    let before_bytes = node_bytes.as_slice()[..seek_start].to_vec();
+    let mut nbs: Vec<NodeBytes> = vec![];
+    let u82s = find_eq_vec_bytes(before_bytes, 8)?;
+    let mut len = u82s.len();
+    while len > 0 {
+        match u82s.get(len - 1) {
+            Some(u8s) => {
+                let next_node_bytes_seek = trans_bytes_2_u64(u8s.clone());
+                nbs.push(read_node_bytes_by_file(
+                    index_file.clone(),
+                    next_node_bytes_seek,
+                    level_type,
+                )?);
+                len -= 1;
+            }
+            None => {
+                return Err(err_str(
+                    "read before nodes and all bytes by file get none error",
+                ))
+            }
+        }
+    }
+
+    let u8s = node_bytes.as_slice()[seek_start..seek_end].to_vec();
+    let next_node_bytes_seek = trans_bytes_2_u64(u8s);
+    if next_node_bytes_seek != 0 {
+        let nb = read_node_bytes_by_file(index_file.clone(), next_node_bytes_seek, level_type)?;
+        qnd = QueryNodeData { nb: Some(nb), nbs }
+    } else {
+        qnd = QueryNodeData { nb: None, nbs }
+    }
+
+    Ok(qnd)
 }
 
 /// 读取结点字节数组及该数组的起始偏移量

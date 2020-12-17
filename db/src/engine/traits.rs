@@ -82,7 +82,13 @@ pub trait TIndex: TDescription + Send + Sync + Debug {
     /// ###Return
     ///
     /// Expectation 经由Selector后的期望结果
-    fn select(&self, left: bool, constraint: Constraint) -> GeorgeResult<Expectation>;
+    fn select(
+        &self,
+        left: bool,
+        start: u64,
+        end: u64,
+        constraint: Constraint,
+    ) -> GeorgeResult<Expectation>;
 }
 
 /// 所有生成sr文件的结构都需要实现该特征，如database、view及index

@@ -192,10 +192,16 @@ impl<N: TNode + Debug> TIndex for Index<N> {
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
         self.root.get(key, self.level())
     }
-    fn select(&self, left: bool, constraint: Constraint) -> GeorgeResult<Expectation> {
+    fn select(
+        &self,
+        left: bool,
+        start: u64,
+        end: u64,
+        constraint: Constraint,
+    ) -> GeorgeResult<Expectation> {
         let (total, count, values) =
             self.root
-                .select(self.mold(), left, constraint, self.level())?;
+                .select(self.mold(), left, start, end, constraint, self.level())?;
         Ok(Expectation {
             total,
             count,

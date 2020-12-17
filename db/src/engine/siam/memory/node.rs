@@ -141,6 +141,8 @@ impl TNode for Node {
         &self,
         _mold: IndexMold,
         _left: bool,
+        _start: u64,
+        _end: u64,
         _constraint: Constraint,
         _level_type: LevelType,
     ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)> {

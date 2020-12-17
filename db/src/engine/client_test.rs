@@ -335,42 +335,72 @@ struct Teacher {
 }
 
 #[test]
-fn select_document1() {
+fn select_document1_prepare() {
     let database_name = "select_document1";
-    let view_name = "view1";
+    let view_name1 = "view1";
+    let view_name2 = "view2";
     let comment = "comment";
     create_database(database_name, comment, 1);
     create_view(
         database_name,
-        view_name,
+        view_name1,
         comment,
         IndexType::Siam,
         Category::Document,
         LevelType::Small,
         1,
     );
-    create_index(database_name, view_name, "age", IndexMold::U64, false, 1);
-    // create_index(database_name, view_name, "job", IndexMold::String, false, 1);
+    create_index(database_name, view_name1, "age", IndexMold::U64, false, 1);
+    // create_view(
+    //     database_name,
+    //     view_name2,
+    //     comment,
+    //     IndexType::Siam,
+    //     Category::Document,
+    //     LevelType::Large,
+    //     1,
+    // );
+    // create_index(database_name, view_name2, "age", IndexMold::U64, false, 1);
 
-    // let mut pos: u32 = 0;
-    // while pos < 100000 {
-    //     let user_str = serde_json::to_string(&create_t(pos, 100000 - pos)).unwrap();
+    let mut pos1: u32 = 1;
+    while pos1 <= 100000 {
+        print!("{} ", pos1);
+        let user_str = serde_json::to_string(&create_t(pos1, 100000 - pos1)).unwrap();
+        put(
+            database_name,
+            view_name1,
+            pos1.to_string().as_str(),
+            user_str.as_str(),
+            pos1 as usize,
+        );
+        pos1 += 1
+    }
+    // let mut pos2: u32 = 0;
+    // while pos2 < 100000 {
+    //     let user_str = serde_json::to_string(&create_t(pos2, 100000 - pos2)).unwrap();
     //     put(
     //         database_name,
-    //         view_name,
-    //         pos.to_string().as_str(),
+    //         view_name2,
+    //         pos2.to_string().as_str(),
     //         user_str.as_str(),
-    //         pos as usize,
+    //         pos2 as usize,
     //     );
-    //     pos += 1
+    //     pos2 += 1
     // }
+}
 
-    // get(database_name, view_name, "10", 11);
-    // get(database_name, view_name, "15", 12);
-    // get(database_name, view_name, "1", 13);
-    // get(database_name, view_name, "7", 14);
-    // get(database_name, view_name, "4", 15);
-    // get(database_name, view_name, "9", 16);
+#[test]
+fn select_document1() {
+    let database_name = "select_document1";
+    let view_name1 = "view1";
+    let view_name2 = "view2";
+
+    get(database_name, view_name1, "99968", 11);
+    get(database_name, view_name1, "99969", 12);
+    get(database_name, view_name1, "1", 13);
+    get(database_name, view_name1, "7", 14);
+    get(database_name, view_name1, "4", 15);
+    get(database_name, view_name1, "9", 16);
 
     let cond_str1 = r#"
   {
@@ -388,7 +418,7 @@ fn select_document1() {
     "Skip":80,
     "Limit":30
   }"#;
-    select(database_name, view_name, cond_str1.as_bytes().to_vec(), 17);
+    // select(database_name, view_name1, cond_str1.as_bytes().to_vec(), 17);
 
     let cond_str2 = r#"
   {
@@ -402,6 +432,11 @@ fn select_document1() {
             "Param":"age",
             "Cond":"lt",
             "Value":99990
+        },
+        {
+            "Param":"height",
+            "Cond":"lt",
+            "Value":60
         }
     ],
     "Sort":{
@@ -409,9 +444,10 @@ fn select_document1() {
         "Asc":true
     },
     "Skip":0,
-    "Limit":30
+    "Limit":570
   }"#;
-    select(database_name, view_name, cond_str2.as_bytes().to_vec(), 18);
+    // select18,total=99749,count=56,index_name=age,asc=true
+    select(database_name, view_name1, cond_str2.as_bytes().to_vec(), 18);
 }
 
 fn create_t(a: u32, h: u32) -> Teacher {
