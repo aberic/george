@@ -407,14 +407,13 @@ fn select_document1() {
     "Conditions":[
         {
             "Param":"age",
-            "Cond":"gt",
-            "Value":254
+            "Cond":"ge",
+            "Value":0
         }
     ],
-    "Skip":0,
-    "Limit":10
+    "Skip":280,
+    "Limit":1000
   }"#;
-    // todo 256 511 767 数据丢失
     select(database_name, view_name1, cond_str0.as_bytes().to_vec(), 17);
     get(database_name, view_name1, 255.to_string().as_str(), 255);
     get(database_name, view_name1, 256.to_string().as_str(), 255);
