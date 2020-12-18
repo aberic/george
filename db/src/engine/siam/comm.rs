@@ -667,6 +667,49 @@ pub(super) fn read_next_all_nodes_bytes_by_file(
     Ok(nbs)
 }
 
+/// 读取最右叶子节点的字节数组集合记录
+///
+/// node_bytes 当前操作节点的字节数组
+///
+/// next_node_seek 下一节点在文件中的真实起始位置
+///
+/// start 下一节点在node_bytes中的起始位置
+///
+/// root 是否根节点
+///
+/// new 是否插入操作
+///
+/// #return 下一节点状态
+///
+/// 下一节点node_bytes
+///
+/// 下一节点起始坐标seek
+pub(super) fn read_next_and_all_nodes_bytes_by_file(
+    node_bytes: Vec<u8>,
+    index_file: Arc<RwLock<File>>,
+    start: u64,
+    level_type: LevelType,
+) -> GeorgeResult<Vec<NodeBytes>> {
+    let mut nbs: Vec<NodeBytes> = vec![];
+    let u82s: Vec<Vec<u8>>;
+    if start > 0 {
+        let seek_start = start as usize * 8;
+        let last_bytes = node_bytes.as_slice()[seek_start..].to_vec();
+        u82s = find_eq_vec_bytes(last_bytes, 8)?;
+    } else {
+        u82s = find_eq_vec_bytes(node_bytes, 8)?;
+    }
+    for u8s in u82s {
+        let next_node_bytes_seek = trans_bytes_2_u64(u8s);
+        nbs.push(read_node_bytes_by_file(
+            index_file.clone(),
+            next_node_bytes_seek,
+            level_type,
+        )?);
+    }
+    Ok(nbs)
+}
+
 /// 读取下一个节点的字节数组记录及其后续字节数组
 ///
 /// node_bytes 当前操作节点的字节数组

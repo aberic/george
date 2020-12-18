@@ -11,9 +11,10 @@ use comm::vectors::find_last_eq_bytes;
 
 use crate::engine::siam::comm::{
     read_before_nodes_and_all_bytes_by_file, read_last_nodes_bytes,
-    read_next_all_nodes_bytes_by_file, read_next_nodes_and_all_bytes_by_file,
-    read_next_nodes_bytes, read_seed_bytes, read_seed_bytes_from_view,
-    read_seed_bytes_from_view_file, try_read_next_nodes_bytes, write_seed_bytes,
+    read_next_all_nodes_bytes_by_file, read_next_and_all_nodes_bytes_by_file,
+    read_next_nodes_and_all_bytes_by_file, read_next_nodes_bytes, read_seed_bytes,
+    read_seed_bytes_from_view, read_seed_bytes_from_view_file, try_read_next_nodes_bytes,
+    write_seed_bytes,
 };
 use crate::engine::siam::selector::{Condition, Constraint};
 use crate::engine::siam::traits::{DiskNode, TNode};
@@ -233,7 +234,7 @@ impl TNode for Node {
                             }
                         } else {
                             query = self.left_query(
-                                mold, index_file, view_file, node_bytes, level, level_type,
+                                mold, index_file, view_file, node_bytes, 0, level, level_type,
                                 conditions, skip, limit, delete,
                             )?
                         }
@@ -265,7 +266,7 @@ impl TNode for Node {
                             }
                         } else {
                             query = self.right_query(
-                                mold, index_file, view_file, node_bytes, level, level_type,
+                                mold, index_file, view_file, node_bytes, 0, level, level_type,
                                 conditions, skip, limit, delete,
                             )?
                         }
@@ -511,6 +512,7 @@ impl DiskNode for Node {
                 index_file.clone(),
                 view_file.clone(),
                 node_bytes,
+                start_key as u64,
                 level,
                 level_type,
                 conditions.clone(),
@@ -568,6 +570,7 @@ impl DiskNode for Node {
                         index_file.clone(),
                         view_file.clone(),
                         nbs.bytes,
+                        0,
                         level + 1,
                         level_type,
                         conditions.clone(),
@@ -609,6 +612,7 @@ impl DiskNode for Node {
                 index_file.clone(),
                 view_file.clone(),
                 node_bytes,
+                start_key,
                 level,
                 level_type,
                 conditions.clone(),
@@ -666,6 +670,7 @@ impl DiskNode for Node {
                         index_file.clone(),
                         view_file.clone(),
                         nbs.bytes,
+                        0,
                         level + 1,
                         level_type,
                         conditions.clone(),
@@ -692,6 +697,7 @@ impl DiskNode for Node {
         index_file: Arc<RwLock<File>>,
         view_file: Arc<RwLock<File>>,
         node_bytes: Vec<u8>,
+        start_key: u64,
         level: u8,
         level_type: LevelType,
         conditions: Vec<Condition>,
@@ -704,8 +710,12 @@ impl DiskNode for Node {
         let mut count: u64 = 0;
         let mut res: Vec<Vec<u8>> = vec![];
         if level == 4 {
-            let nbs_arr =
-                read_next_all_nodes_bytes_by_file(node_bytes, index_file.clone(), level_type)?;
+            let nbs_arr = read_next_and_all_nodes_bytes_by_file(
+                node_bytes,
+                index_file.clone(),
+                start_key as u64,
+                level_type,
+            )?;
             total += 1;
             for nbs in nbs_arr {
                 if limit <= 0 {
@@ -734,6 +744,7 @@ impl DiskNode for Node {
                     index_file.clone(),
                     view_file.clone(),
                     nbs.bytes,
+                    start_key,
                     level + 1,
                     level_type,
                     conditions.clone(),
@@ -774,6 +785,7 @@ impl DiskNode for Node {
                 index_file.clone(),
                 view_file.clone(),
                 node_bytes,
+                end_key as u64,
                 level,
                 level_type,
                 conditions.clone(),
@@ -805,6 +817,7 @@ impl DiskNode for Node {
                     index_file.clone(),
                     view_file.clone(),
                     nbs.clone().bytes,
+                    end_key as u64,
                     level + 1,
                     level_type,
                     conditions.clone(),
@@ -872,6 +885,7 @@ impl DiskNode for Node {
                 index_file.clone(),
                 view_file.clone(),
                 node_bytes,
+                end_key,
                 level,
                 level_type,
                 conditions.clone(),
@@ -903,6 +917,7 @@ impl DiskNode for Node {
                     index_file.clone(),
                     view_file.clone(),
                     nbs.bytes,
+                    end_key,
                     level + 1,
                     level_type,
                     conditions.clone(),
@@ -955,6 +970,7 @@ impl DiskNode for Node {
         index_file: Arc<RwLock<File>>,
         view_file: Arc<RwLock<File>>,
         node_bytes: Vec<u8>,
+        end_key: u64,
         level: u8,
         level_type: LevelType,
         conditions: Vec<Condition>,
@@ -1006,6 +1022,7 @@ impl DiskNode for Node {
                             index_file.clone(),
                             view_file.clone(),
                             nbs.bytes.clone(),
+                            end_key,
                             level + 1,
                             level_type,
                             conditions.clone(),

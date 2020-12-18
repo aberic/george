@@ -402,52 +402,77 @@ fn select_document1() {
     get(database_name, view_name1, "4", 15);
     get(database_name, view_name1, "9", 16);
 
-    let cond_str1 = r#"
-  {
-    "Conditions":[
-        {
-            "Param":"age",
-            "Cond":"le",
-            "Value":99849
-        }
-    ],
-    "Sort":{
-        "Param":"height",
-        "Asc":false
-    },
-    "Skip":80,
-    "Limit":30
-  }"#;
-    // select(database_name, view_name1, cond_str1.as_bytes().to_vec(), 17);
-
-    let cond_str2 = r#"
+    let cond_str0 = r#"
   {
     "Conditions":[
         {
             "Param":"age",
             "Cond":"gt",
-            "Value":99933
-        },
-        {
-            "Param":"age",
-            "Cond":"lt",
-            "Value":99990
-        },
-        {
-            "Param":"height",
-            "Cond":"lt",
-            "Value":60
+            "Value":254
         }
     ],
-    "Sort":{
-        "Param":"height",
-        "Asc":true
-    },
     "Skip":0,
-    "Limit":570
+    "Limit":10
   }"#;
-    // select18,total=99749,count=56,index_name=age,asc=true
-    select(database_name, view_name1, cond_str2.as_bytes().to_vec(), 18);
+    // todo 256 511 767 数据丢失
+    select(database_name, view_name1, cond_str0.as_bytes().to_vec(), 17);
+    get(database_name, view_name1, 255.to_string().as_str(), 255);
+    get(database_name, view_name1, 256.to_string().as_str(), 255);
+    get(database_name, view_name1, 511.to_string().as_str(), 511);
+    get(database_name, view_name1, 767.to_string().as_str(), 767);
+
+    //   let cond_str1 = r#"
+    // {
+    //   "Conditions":[
+    //       {
+    //           "Param":"age",
+    //           "Cond":"le",
+    //           "Value":99849
+    //       }
+    //   ],
+    //   "Skip":280,
+    //   "Limit":30
+    // }"#;
+    //   select(database_name, view_name1, cond_str1.as_bytes().to_vec(), 18);
+    //
+    //   let cond_str2 = r#"
+    // {
+    //   "Conditions":[
+    //       {
+    //           "Param":"age",
+    //           "Cond":"gt",
+    //           "Value":99933
+    //       },
+    //       {
+    //           "Param":"age",
+    //           "Cond":"lt",
+    //           "Value":99990
+    //       },
+    //       {
+    //           "Param":"height",
+    //           "Cond":"lt",
+    //           "Value":60
+    //       }
+    //   ],
+    //   "Sort":{
+    //       "Param":"height",
+    //       "Asc":true
+    //   },
+    //   "Skip":0,
+    //   "Limit":570
+    // }"#;
+    //   // select18,total=99749,count=56,index_name=age,asc=true
+    //   select(database_name, view_name1, cond_str2.as_bytes().to_vec(), 19);
+}
+
+#[test]
+fn select_document2() {
+    let database_name = "select_document1";
+    let view_name1 = "view1";
+
+    for i in 0..1000 {
+        get(database_name, view_name1, i.to_string().as_str(), i);
+    }
 }
 
 fn create_t(a: u32, h: u32) -> Teacher {

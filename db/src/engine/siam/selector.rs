@@ -224,11 +224,20 @@ impl Condition {
 
 /// 排序方式
 #[derive(Debug, Clone)]
-struct Sort {
+pub struct Sort {
     /// 参数名，新插入的数据将会尝试将数据对象转成json，并将json中的`param`作为参数使用
     param: String,
     /// 是否升序
     asc: bool,
+}
+
+impl Sort {
+    pub fn param(&self) -> String {
+        self.param.clone()
+    }
+    pub fn asc(&self) -> bool {
+        self.asc
+    }
 }
 
 /// 经由`Selector`后的期望结果
@@ -299,6 +308,9 @@ impl Constraint {
     }
     pub fn skip(&self) -> u64 {
         self.skip
+    }
+    pub fn sort(&self) -> Option<Sort> {
+        self.sort.clone()
     }
     pub fn limit(&self) -> u64 {
         self.limit
