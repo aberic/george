@@ -41,9 +41,9 @@ pub struct Config {
 
 pub static GLOBAL_CONFIG: Lazy<RwLock<Config>> = Lazy::new(|| {
     let config = Config {
-        data_dir: "src/test/db".to_string(),
+        data_dir: "db/src/test/george".to_string(),
         limit_open_file: 100,
-        log_dir: "src/test/db/log".to_string(),
+        log_dir: "db/src/test".to_string(),
         log_level: "debug".to_string(),
         log_file_max_size: 1024,
         log_file_max_count: 7,
