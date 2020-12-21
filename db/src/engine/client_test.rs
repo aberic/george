@@ -395,12 +395,12 @@ fn select_document1() {
     let view_name1 = "view1";
     let view_name2 = "view2";
 
-    get(database_name, view_name1, "99968", 11);
-    get(database_name, view_name1, "99969", 12);
-    get(database_name, view_name1, "1", 13);
-    get(database_name, view_name1, "7", 14);
-    get(database_name, view_name1, "4", 15);
-    get(database_name, view_name1, "9", 16);
+    // get(database_name, view_name1, "99968", 11);
+    // get(database_name, view_name1, "99969", 12);
+    // get(database_name, view_name1, "1", 13);
+    // get(database_name, view_name1, "7", 14);
+    // get(database_name, view_name1, "4", 15);
+    // get(database_name, view_name1, "9", 16);
 
     let cond_str0 = r#"
   {
@@ -411,14 +411,14 @@ fn select_document1() {
             "Value":0
         }
     ],
-    "Skip":280,
+    "Skip":300,
     "Limit":1000
   }"#;
     select(database_name, view_name1, cond_str0.as_bytes().to_vec(), 17);
-    get(database_name, view_name1, 255.to_string().as_str(), 255);
-    get(database_name, view_name1, 256.to_string().as_str(), 255);
-    get(database_name, view_name1, 511.to_string().as_str(), 511);
-    get(database_name, view_name1, 767.to_string().as_str(), 767);
+    // get(database_name, view_name1, 255.to_string().as_str(), 255);
+    // get(database_name, view_name1, 256.to_string().as_str(), 256);
+    // get(database_name, view_name1, 511.to_string().as_str(), 511);
+    // get(database_name, view_name1, 767.to_string().as_str(), 767);
 
     //   let cond_str1 = r#"
     // {

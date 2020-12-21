@@ -507,6 +507,7 @@ impl DiskNode for Node {
         delete: bool,
     ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)> {
         if level == 4 {
+            log::debug!("skip = {}, limit = {}", skip, limit);
             self.left_query(
                 mold,
                 index_file.clone(),
@@ -557,7 +558,7 @@ impl DiskNode for Node {
                     )?;
                     total += temp.0;
                     count += temp.1;
-                    skip -= temp.2;
+                    skip = temp.2;
                     limit = temp.3;
                     res.append(&mut temp.4);
                 }
@@ -581,7 +582,7 @@ impl DiskNode for Node {
                     res.append(&mut temp.4);
                     total += temp.0;
                     count += temp.1;
-                    skip -= temp.2;
+                    skip = temp.2;
                     limit = temp.3;
                     if limit <= 0 {
                         break;
@@ -657,7 +658,7 @@ impl DiskNode for Node {
                     )?;
                     total += temp.0;
                     count += temp.1;
-                    skip -= temp.2;
+                    skip = temp.2;
                     limit = temp.3;
                     res.append(&mut temp.4);
                 }
@@ -680,7 +681,7 @@ impl DiskNode for Node {
                     )?;
                     total += temp.0;
                     count += temp.1;
-                    skip -= temp.2;
+                    skip = temp.2;
                     limit = temp.3;
                     res.append(&mut temp.4);
                     if limit <= 0 {
@@ -710,6 +711,7 @@ impl DiskNode for Node {
         let mut count: u64 = 0;
         let mut res: Vec<Vec<u8>> = vec![];
         if level == 4 {
+            log::debug!("skip = {}, limit = {}", skip, limit);
             let nbs_arr = read_next_and_all_nodes_bytes_by_file(
                 node_bytes,
                 index_file.clone(),
@@ -754,7 +756,7 @@ impl DiskNode for Node {
                 )?;
                 total += temp.0;
                 count += temp.1;
-                skip -= temp.2;
+                skip = temp.2;
                 limit = temp.3;
                 res.append(&mut temp.4);
                 if limit <= 0 {
@@ -827,7 +829,7 @@ impl DiskNode for Node {
                 )?;
                 total += temp.0;
                 count += temp.1;
-                skip -= temp.2;
+                skip = temp.2;
                 limit = temp.3;
                 res.append(&mut temp.4);
                 if limit <= 0 {
@@ -854,7 +856,7 @@ impl DiskNode for Node {
                         )?;
                         total += temp.0;
                         count += temp.1;
-                        skip -= temp.2;
+                        skip = temp.2;
                         limit = temp.3;
                         res.append(&mut temp.4);
                     }
@@ -927,7 +929,7 @@ impl DiskNode for Node {
                 )?;
                 total += temp.0;
                 count += temp.1;
-                skip -= temp.2;
+                skip = temp.2;
                 limit = temp.3;
                 res.append(&mut temp.4);
                 if limit <= 0 {
@@ -954,7 +956,7 @@ impl DiskNode for Node {
                         )?;
                         total += temp.0;
                         count += temp.1;
-                        skip -= temp.2;
+                        skip = temp.2;
                         limit = temp.3;
                         res.append(&mut temp.4);
                     }
@@ -1032,7 +1034,7 @@ impl DiskNode for Node {
                         )?;
                         total += temp.0;
                         count += temp.1;
-                        skip -= temp.2;
+                        skip = temp.2;
                         limit = temp.3;
                         res.append(&mut temp.4);
                         if limit <= 0 {
