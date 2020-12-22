@@ -409,7 +409,7 @@ pub struct IndexStatus {
     end: u64,
     /// 条件查询集合
     conditions: Vec<Condition>,
-    /// 索引评级。asc=1；start=2；end=3。
+    /// 索引评级。asc=1；start=2；end=2。
     level: u8,
 }
 
@@ -485,7 +485,6 @@ impl Selector {
             status.start,
             status.end
         );
-        // todo 移除多余condition
         // status自测
         if status.end != 0 && status.start > status.end {
             Err(err_string(format!(

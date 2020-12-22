@@ -540,7 +540,7 @@ impl DiskNode for Node {
                             } else {
                                 limit -= 1;
                                 count += 1;
-                                res.insert(0, bytes)
+                                res.push(bytes)
                             }
                         }
                         len -= 1;
@@ -627,9 +627,7 @@ impl DiskNode for Node {
                     count += temp.1;
                     skip = temp.2;
                     limit = temp.3;
-                    // res.append(&mut temp.4);
-                    temp.4.append(&mut res);
-                    res = temp.4;
+                    res.append(&mut temp.4);
                     if limit <= 0 {
                         break;
                     }
