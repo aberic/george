@@ -144,17 +144,17 @@ impl TNode for Node {
     {
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
         match level_type {
-            LevelType::Small => self.put_32_in_node(
+            LevelType::Small => self.put_in_node(
                 node_bytes,
                 1,
-                hashcode32_enhance(key),
+                hashcode32_enhance(key) as u64,
                 seed,
                 force,
                 true,
                 description_len as u64,
                 level_type,
             ),
-            LevelType::Large => self.put_64_in_node(
+            LevelType::Large => self.put_in_node(
                 node_bytes,
                 1,
                 hashcode64_enhance(key),
@@ -170,10 +170,10 @@ impl TNode for Node {
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
         match level_type {
             LevelType::Small => {
-                self.get_32_in_node(node_bytes, 1, hashcode32_enhance(key), level_type)
+                self.get_in_node(node_bytes, 1, hashcode32_enhance(key) as u64, level_type)
             }
             LevelType::Large => {
-                self.get_64_in_node(node_bytes, 1, hashcode64_enhance(key), level_type)
+                self.get_in_node(node_bytes, 1, hashcode64_enhance(key), level_type)
             }
         }
     }
@@ -207,37 +207,10 @@ impl TNode for Node {
                     let delete = constraint.delete();
                     let query: (u64, u64, u64, u64, Vec<Vec<u8>>);
                     if left {
-                        if start > 0 {
-                            match level_type {
-                                LevelType::Small => {
-                                    query = self.left_32(
-                                        mold,
-                                        index_file,
-                                        view_file,
-                                        node_bytes,
-                                        start as u32,
-                                        end as u32,
-                                        level,
-                                        level_type,
-                                        conditions,
-                                        skip,
-                                        limit,
-                                        delete,
-                                    )?
-                                }
-                                LevelType::Large => {
-                                    query = self.left_64(
-                                        mold, index_file, view_file, node_bytes, start, end, level,
-                                        level_type, conditions, skip, limit, delete,
-                                    )?
-                                }
-                            }
-                        } else {
-                            query = self.left_query(
-                                mold, index_file, view_file, node_bytes, 0, level, level_type,
-                                conditions, skip, limit, delete,
-                            )?
-                        }
+                        query = self.left_query(
+                            mold, index_file, view_file, node_bytes, start, end, level, level_type,
+                            conditions, skip, limit, delete,
+                        )?
                     } else {
                         if end > 0 {
                             match level_type {
@@ -314,87 +287,7 @@ impl DiskNode for Node {
         let nb_n = vectors::modify(nb_w.to_vec(), vs, start);
         nb_w.copy_from_slice(nb_n.as_slice())
     }
-    fn put_32_in_node(
-        &self,
-        node_bytes: Vec<u8>,
-        level: u8,
-        flexible_key: u32,
-        seed: Arc<RwLock<dyn TSeed>>,
-        force: bool,
-        root: bool,
-        next_node_seek: u64,
-        level_type: LevelType,
-    ) -> GeorgeResult<()>
-    where
-        Self: Sized,
-    {
-        // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
-        let distance = level_distance_32(level);
-        // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数
-        let next_degree = (flexible_key / distance) as u16;
-        // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
-        if level == 4 {
-            write_seed_bytes(
-                node_bytes,
-                self.index_file_path(),
-                self.view_file_path(),
-                next_node_seek,
-                (next_degree * 8) as u64, // 在当前操作结点的字节数组的起始位置
-                force,
-                seed,
-            )
-        } else {
-            // 下一结点状态
-            // 下一结点node_bytes
-            // 下一结点起始坐标seek
-            // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            let nbs = read_next_nodes_bytes(
-                self,
-                node_bytes,
-                self.index_id(),
-                next_node_seek,
-                (next_degree * 8) as u64, // 在当前操作结点的字节数组的起始位置
-                root,
-                level_type,
-            )?;
-            // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
-            let next_flexible_key = flexible_key - next_degree as u32 * distance;
-            self.put_32_in_node(
-                nbs.bytes,
-                level + 1,
-                next_flexible_key,
-                seed,
-                force,
-                false,
-                nbs.seek,
-                level_type,
-            )
-        }
-    }
-    fn get_32_in_node(
-        &self,
-        node_bytes: Vec<u8>,
-        level: u8,
-        flexible_key: u32,
-        level_type: LevelType,
-    ) -> GeorgeResult<Vec<u8>> {
-        let distance = level_distance_32(level);
-        let next_degree = flexible_key / distance;
-        if level == 4 {
-            read_seed_bytes(node_bytes, self.view_file_path(), next_degree as u64 * 8)
-        } else {
-            // 下一结点状态
-            // 下一结点node_bytes
-            // 下一结点起始坐标seek
-            // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            let nbs =
-                try_read_next_nodes_bytes(self, node_bytes, next_degree as u64 * 8, level_type)?;
-            // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
-            let next_flexible_key = flexible_key - next_degree * distance;
-            self.get_32_in_node(nbs.bytes, level + 1, next_flexible_key, level_type)
-        }
-    }
-    fn put_64_in_node(
+    fn put_in_node(
         &self,
         node_bytes: Vec<u8>,
         level: u8,
@@ -409,7 +302,11 @@ impl DiskNode for Node {
         Self: Sized,
     {
         // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
-        let distance = level_distance_64(level);
+        let distance: u64;
+        match level_type {
+            LevelType::Small => distance = level_distance_32(level) as u64,
+            LevelType::Large => distance = level_distance_64(level),
+        }
         // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数
         let next_degree = flexible_key / distance;
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
@@ -439,7 +336,7 @@ impl DiskNode for Node {
             )?;
             // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
             let next_flexible_key = flexible_key - next_degree * distance;
-            self.put_64_in_node(
+            self.put_in_node(
                 nbs.bytes,
                 level + 1,
                 next_flexible_key,
@@ -451,14 +348,18 @@ impl DiskNode for Node {
             )
         }
     }
-    fn get_64_in_node(
+    fn get_in_node(
         &self,
         node_bytes: Vec<u8>,
         level: u8,
         flexible_key: u64,
         level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>> {
-        let distance = level_distance_64(level);
+        let distance: u64;
+        match level_type {
+            LevelType::Small => distance = level_distance_32(level) as u64,
+            LevelType::Large => distance = level_distance_64(level),
+        }
         let next_degree = flexible_key / distance;
         if level == 4 {
             read_seed_bytes(node_bytes, self.view_file_path(), next_degree * 8)
@@ -469,7 +370,7 @@ impl DiskNode for Node {
             // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
             let nbs = try_read_next_nodes_bytes(self, node_bytes, next_degree * 8, level_type)?;
             let next_flexible_key = flexible_key - next_degree * distance;
-            self.get_64_in_node(nbs.bytes, level + 1, next_flexible_key, level_type)
+            self.get_in_node(nbs.bytes, level + 1, next_flexible_key, level_type)
         }
     }
     fn get_last_in_node(
@@ -491,108 +392,7 @@ impl DiskNode for Node {
             self.get_last_in_node(nbs.bytes, level + 1, level_type)
         }
     }
-    fn left_32(
-        &self,
-        mold: IndexMold,
-        index_file: Arc<RwLock<File>>,
-        view_file: Arc<RwLock<File>>,
-        node_bytes: Vec<u8>,
-        start_key: u32,
-        end_key: u32,
-        level: u8,
-        level_type: LevelType,
-        conditions: Vec<Condition>,
-        mut skip: u64,
-        mut limit: u64,
-        delete: bool,
-    ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)> {
-        if level == 4 {
-            log::debug!("skip = {}, limit = {}", skip, limit);
-            self.left_query(
-                mold,
-                index_file.clone(),
-                view_file.clone(),
-                node_bytes,
-                start_key as u64,
-                level,
-                level_type,
-                conditions.clone(),
-                skip,
-                limit,
-                delete,
-            )
-        } else {
-            let mut total: u64 = 0;
-            let mut count: u64 = 0;
-            let mut res: Vec<Vec<u8>> = vec![];
-
-            let distance = level_distance_32(level);
-            let next_degree = start_key / distance;
-            // 下一结点状态
-            // 下一结点node_bytes
-            // 下一结点起始坐标seek
-            // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            let qnd = read_next_nodes_and_all_bytes_by_file(
-                node_bytes,
-                index_file.clone(),
-                next_degree as u64 * 8,
-                level_type,
-            )?;
-            total.add_assign(1 + qnd.node_bytes_list().len() as u64);
-            let next_start_key = start_key - next_degree * distance;
-            match qnd.node_bytes() {
-                Some(nbs) => {
-                    let mut temp = self.left_32(
-                        mold,
-                        index_file.clone(),
-                        view_file.clone(),
-                        nbs.bytes,
-                        next_start_key,
-                        end_key,
-                        level + 1,
-                        level_type,
-                        conditions.clone(),
-                        skip,
-                        limit,
-                        delete,
-                    )?;
-                    total += temp.0;
-                    count += temp.1;
-                    skip = temp.2;
-                    limit = temp.3;
-                    res.append(&mut temp.4);
-                }
-                _ => {}
-            }
-            if limit > 0 {
-                for nbs in qnd.node_bytes_list() {
-                    let mut temp = self.left_query(
-                        mold,
-                        index_file.clone(),
-                        view_file.clone(),
-                        nbs.bytes,
-                        0,
-                        level + 1,
-                        level_type,
-                        conditions.clone(),
-                        skip,
-                        limit,
-                        delete,
-                    )?;
-                    res.append(&mut temp.4);
-                    total += temp.0;
-                    count += temp.1;
-                    skip = temp.2;
-                    limit = temp.3;
-                    if limit <= 0 {
-                        break;
-                    }
-                }
-            }
-            Ok((total, count, skip, limit, res))
-        }
-    }
-    fn left_64(
+    fn left_query(
         &self,
         mold: IndexMold,
         index_file: Arc<RwLock<File>>,
@@ -607,111 +407,11 @@ impl DiskNode for Node {
         mut limit: u64,
         delete: bool,
     ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)> {
-        if level == 4 {
-            self.left_query(
-                mold,
-                index_file.clone(),
-                view_file.clone(),
-                node_bytes,
-                start_key,
-                level,
-                level_type,
-                conditions.clone(),
-                skip,
-                limit,
-                delete,
-            )
-        } else {
-            let mut total: u64 = 0;
-            let mut count: u64 = 0;
-            let mut res: Vec<Vec<u8>> = vec![];
-
-            let distance = level_distance_64(level);
-            let next_degree = start_key / distance;
-            // 下一结点状态
-            // 下一结点node_bytes
-            // 下一结点起始坐标seek
-            // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            let qnd = read_next_nodes_and_all_bytes_by_file(
-                node_bytes,
-                index_file.clone(),
-                next_degree * 8,
-                level_type,
-            )?;
-            total.add_assign(1 + qnd.node_bytes_list().len() as u64);
-            let next_start_key = start_key - next_degree * distance;
-            match qnd.node_bytes() {
-                Some(nbs) => {
-                    let mut temp = self.left_64(
-                        mold,
-                        index_file.clone(),
-                        view_file.clone(),
-                        nbs.bytes,
-                        next_start_key,
-                        end_key,
-                        level + 1,
-                        level_type,
-                        conditions.clone(),
-                        skip,
-                        limit,
-                        delete,
-                    )?;
-                    total += temp.0;
-                    count += temp.1;
-                    skip = temp.2;
-                    limit = temp.3;
-                    res.append(&mut temp.4);
-                }
-                _ => {}
-            }
-            if limit > 0 {
-                for nbs in qnd.node_bytes_list() {
-                    let mut temp = self.left_query(
-                        mold,
-                        index_file.clone(),
-                        view_file.clone(),
-                        nbs.bytes,
-                        0,
-                        level + 1,
-                        level_type,
-                        conditions.clone(),
-                        skip,
-                        limit,
-                        delete,
-                    )?;
-                    total += temp.0;
-                    count += temp.1;
-                    skip = temp.2;
-                    limit = temp.3;
-                    res.append(&mut temp.4);
-                    if limit <= 0 {
-                        break;
-                    }
-                }
-            }
-            Ok((total, count, skip, limit, res))
-        }
-    }
-    fn left_query(
-        &self,
-        mold: IndexMold,
-        index_file: Arc<RwLock<File>>,
-        view_file: Arc<RwLock<File>>,
-        node_bytes: Vec<u8>,
-        start_key: u64,
-        level: u8,
-        level_type: LevelType,
-        conditions: Vec<Condition>,
-        mut skip: u64,
-        mut limit: u64,
-        delete: bool,
-    ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)> {
         // todo delete
         let mut total: u64 = 0;
         let mut count: u64 = 0;
         let mut res: Vec<Vec<u8>> = vec![];
         if level == 4 {
-            log::debug!("skip = {}, limit = {}", skip, limit);
             let nbs_arr = read_next_and_all_nodes_bytes_by_file(
                 node_bytes,
                 index_file.clone(),
@@ -736,31 +436,75 @@ impl DiskNode for Node {
                 }
             }
         } else {
+            let distance: u64;
+            match level_type {
+                LevelType::Small => distance = level_distance_32(level) as u64,
+                LevelType::Large => distance = level_distance_64(level),
+            }
+            let next_start_degree = start_key / distance;
+            let next_end_degree = end_key / distance;
+            // 下一结点状态
+            // 下一结点node_bytes
+            // 下一结点起始坐标seek
             // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            let nbs_arr =
-                read_next_all_nodes_bytes_by_file(node_bytes, index_file.clone(), level_type)?;
-            total += 1;
-            for nbs in nbs_arr {
-                let mut temp = self.left_query(
-                    mold,
-                    index_file.clone(),
-                    view_file.clone(),
-                    nbs.bytes,
-                    start_key,
-                    level + 1,
-                    level_type,
-                    conditions.clone(),
-                    skip,
-                    limit,
-                    delete,
-                )?;
-                total += temp.0;
-                count += temp.1;
-                skip = temp.2;
-                limit = temp.3;
-                res.append(&mut temp.4);
-                if limit <= 0 {
-                    break;
+            let qnd = read_next_nodes_and_all_bytes_by_file(
+                node_bytes,
+                index_file.clone(),
+                next_start_degree as u64 * 8,
+                next_end_degree as u64 * 8,
+                level_type,
+            )?;
+            total.add_assign(1 + qnd.node_bytes_list().len() as u64);
+            let next_start_key = start_key - next_start_degree * distance;
+            let next_end_key = end_key - next_end_degree * distance;
+            match qnd.node_bytes() {
+                Some(nbs) => {
+                    let mut temp = self.left_query(
+                        mold,
+                        index_file.clone(),
+                        view_file.clone(),
+                        nbs.bytes,
+                        next_start_key,
+                        next_end_key,
+                        level + 1,
+                        level_type,
+                        conditions.clone(),
+                        skip,
+                        limit,
+                        delete,
+                    )?;
+                    total += temp.0;
+                    count += temp.1;
+                    skip = temp.2;
+                    limit = temp.3;
+                    res.append(&mut temp.4);
+                }
+                _ => {}
+            }
+            if limit > 0 {
+                for nbs in qnd.node_bytes_list() {
+                    let mut temp = self.left_query(
+                        mold,
+                        index_file.clone(),
+                        view_file.clone(),
+                        nbs.bytes,
+                        0,
+                        0,
+                        level + 1,
+                        level_type,
+                        conditions.clone(),
+                        skip,
+                        limit,
+                        delete,
+                    )?;
+                    res.append(&mut temp.4);
+                    total += temp.0;
+                    count += temp.1;
+                    skip = temp.2;
+                    limit = temp.3;
+                    if limit <= 0 {
+                        break;
+                    }
                 }
             }
         }

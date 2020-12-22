@@ -132,57 +132,7 @@ pub trait DiskNode: Send + Sync {
     /// root 是否根结点
     ///
     /// node_seek 当前操作结点在文件中的真实起始位置
-    fn put_32_in_node(
-        &self,
-        node_bytes: Vec<u8>,
-        level: u8,
-        flexible_key: u32,
-        seed: Arc<RwLock<dyn TSeed>>,
-        force: bool,
-        root: bool,
-        next_node_seek: u64,
-        level_type: LevelType,
-    ) -> GeorgeResult<()>
-    where
-        Self: Sized;
-    /// 获取数据真实操作
-    ///
-    /// node_bytes 当前操作结点的字节数组
-    ///
-    /// level 当前操作结点层
-    ///
-    /// hash_key 存储数据hash
-    ///
-    /// flexible_key 下一级最左最小树所对应真实key
-    ///
-    /// Seed value信息
-    ///
-    /// force 如果存在原值，是否覆盖原结果
-    fn get_32_in_node(
-        &self,
-        node_bytes: Vec<u8>,
-        level: u8,
-        flexible_key: u32,
-        level_type: LevelType,
-    ) -> GeorgeResult<Vec<u8>>;
-    /// 存储数据真实操作
-    ///
-    /// node_bytes 当前操作结点的字节数组
-    ///
-    /// level 当前操作结点层
-    ///
-    /// hash_key 存储数据hash
-    ///
-    /// flexible_key 下一级最左最小树所对应真实key
-    ///
-    /// Seed value信息
-    ///
-    /// force 如果存在原值，是否覆盖原结果
-    ///
-    /// root 是否根结点
-    ///
-    /// node_seek 当前操作结点在文件中的真实起始位置
-    fn put_64_in_node(
+    fn put_in_node(
         &self,
         node_bytes: Vec<u8>,
         level: u8,
@@ -208,7 +158,7 @@ pub trait DiskNode: Send + Sync {
     /// Seed value信息
     ///
     /// force 如果存在原值，是否覆盖原结果
-    fn get_64_in_node(
+    fn get_in_node(
         &self,
         node_bytes: Vec<u8>,
         level: u8,
@@ -226,36 +176,6 @@ pub trait DiskNode: Send + Sync {
         level: u8,
         level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>;
-    fn left_32(
-        &self,
-        mold: IndexMold,
-        index_file: Arc<RwLock<File>>,
-        view_file: Arc<RwLock<File>>,
-        node_bytes: Vec<u8>,
-        start_key: u32,
-        end_key: u32,
-        level: u8,
-        level_type: LevelType,
-        conditions: Vec<Condition>,
-        skip: u64,
-        limit: u64,
-        delete: bool,
-    ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)>;
-    fn left_64(
-        &self,
-        mold: IndexMold,
-        index_file: Arc<RwLock<File>>,
-        view_file: Arc<RwLock<File>>,
-        node_bytes: Vec<u8>,
-        start_key: u64,
-        end_key: u64,
-        level: u8,
-        level_type: LevelType,
-        conditions: Vec<Condition>,
-        skip: u64,
-        limit: u64,
-        delete: bool,
-    ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)>;
     /// 通过左查询约束获取数据集
     ///
     /// ###Params
@@ -288,6 +208,7 @@ pub trait DiskNode: Send + Sync {
         view_file: Arc<RwLock<File>>,
         node_bytes: Vec<u8>,
         start_key: u64,
+        end_key: u64,
         level: u8,
         level_type: LevelType,
         conditions: Vec<Condition>,

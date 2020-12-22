@@ -600,43 +600,19 @@ impl Selector {
                     ConditionSupport::Number => match idx_r.mold() {
                         IndexMold::U64 => match condition.cond {
                             ConditionType::GT => match condition.value_u64() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.fit_start(res + 1)
-                                    } else {
-                                        status.append_condition(condition.clone())
-                                    }
-                                }
+                                Ok(res) => status.fit_start(res + 1),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::GE => match condition.value_u64() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.fit_start(res)
-                                    } else {
-                                        status.append_condition(condition.clone())
-                                    }
-                                }
+                                Ok(res) => status.fit_start(res),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::LT => match condition.value_u64() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.append_condition(condition.clone())
-                                    } else {
-                                        status.fit_end(res - 1)
-                                    }
-                                }
+                                Ok(res) => status.fit_end(res - 1),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::LE => match condition.value_u64() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.append_condition(condition.clone())
-                                    } else {
-                                        status.fit_end(res)
-                                    }
-                                }
+                                Ok(res) => status.fit_end(res),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::EQ => match condition.value_u64() {
@@ -653,43 +629,19 @@ impl Selector {
                         },
                         IndexMold::I64 => match condition.cond {
                             ConditionType::GT => match condition.value_i64() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.fit_start(i64_2_u64(res) + 1)
-                                    } else {
-                                        status.append_condition(condition.clone())
-                                    }
-                                }
+                                Ok(res) => status.fit_start(i64_2_u64(res) + 1),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::GE => match condition.value_i64() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.fit_start(i64_2_u64(res))
-                                    } else {
-                                        status.append_condition(condition.clone())
-                                    }
-                                }
+                                Ok(res) => status.fit_start(i64_2_u64(res)),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::LT => match condition.value_i64() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.append_condition(condition.clone())
-                                    } else {
-                                        status.fit_end(i64_2_u64(res) - 1)
-                                    }
-                                }
+                                Ok(res) => status.fit_end(i64_2_u64(res) - 1),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::LE => match condition.value_i64() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.append_condition(condition.clone())
-                                    } else {
-                                        status.fit_end(i64_2_u64(res))
-                                    }
-                                }
+                                Ok(res) => status.fit_end(i64_2_u64(res)),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::EQ => match condition.value_i64() {
@@ -706,43 +658,19 @@ impl Selector {
                         },
                         IndexMold::U32 => match condition.cond {
                             ConditionType::GT => match condition.value_u32() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.fit_start(res as u64 + 1)
-                                    } else {
-                                        status.append_condition(condition.clone())
-                                    }
-                                }
+                                Ok(res) => status.fit_start(res as u64 + 1),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::GE => match condition.value_u32() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.fit_start(res as u64)
-                                    } else {
-                                        status.append_condition(condition.clone())
-                                    }
-                                }
+                                Ok(res) => status.fit_start(res as u64),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::LT => match condition.value_u32() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.append_condition(condition.clone())
-                                    } else {
-                                        status.fit_end(res as u64 - 1)
-                                    }
-                                }
+                                Ok(res) => status.fit_end(res as u64 - 1),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::LE => match condition.value_u32() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.append_condition(condition.clone())
-                                    } else {
-                                        status.fit_end(res as u64)
-                                    }
-                                }
+                                Ok(res) => status.fit_end(res as u64),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::EQ => match condition.value_u32() {
@@ -759,43 +687,19 @@ impl Selector {
                         },
                         IndexMold::I32 => match condition.cond {
                             ConditionType::GT => match condition.value_i32() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.fit_start(i32_2_u64(res) + 1)
-                                    } else {
-                                        status.append_condition(condition.clone())
-                                    }
-                                }
+                                Ok(res) => status.fit_start(i32_2_u64(res) + 1),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::GE => match condition.value_i32() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.fit_start(i32_2_u64(res))
-                                    } else {
-                                        status.append_condition(condition.clone())
-                                    }
-                                }
+                                Ok(res) => status.fit_start(i32_2_u64(res)),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::LT => match condition.value_i32() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.append_condition(condition.clone())
-                                    } else {
-                                        status.fit_end(i32_2_u64(res) - 1)
-                                    }
-                                }
+                                Ok(res) => status.fit_end(i32_2_u64(res) - 1),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::LE => match condition.value_i32() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.append_condition(condition.clone())
-                                    } else {
-                                        status.fit_end(i32_2_u64(res))
-                                    }
-                                }
+                                Ok(res) => status.fit_end(i32_2_u64(res)),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::EQ => match condition.value_i32() {
@@ -813,43 +717,19 @@ impl Selector {
                         IndexMold::F64 => match condition.cond {
                             // ConditionType::GT => status.fit_start(condition.value_f64().to_bits()),
                             ConditionType::GT => match condition.value_f64() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.fit_start(res.to_bits() + 1)
-                                    } else {
-                                        status.append_condition(condition.clone())
-                                    }
-                                }
+                                Ok(res) => status.fit_start(res.to_bits() + 1),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::GE => match condition.value_f64() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.fit_start(res.to_bits())
-                                    } else {
-                                        status.append_condition(condition.clone())
-                                    }
-                                }
+                                Ok(res) => status.fit_start(res.to_bits()),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::LT => match condition.value_f64() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.append_condition(condition.clone())
-                                    } else {
-                                        status.fit_end(res.to_bits() - 1)
-                                    }
-                                }
+                                Ok(res) => status.fit_end(res.to_bits() - 1),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::LE => match condition.value_f64() {
-                                Ok(res) => {
-                                    if asc {
-                                        status.append_condition(condition.clone())
-                                    } else {
-                                        status.fit_end(res.to_bits())
-                                    }
-                                }
+                                Ok(res) => status.fit_end(res.to_bits()),
                                 Err(err) => return Err(err),
                             },
                             ConditionType::EQ => match condition.value_f64() {

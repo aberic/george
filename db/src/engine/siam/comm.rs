@@ -692,13 +692,10 @@ pub(super) fn read_next_and_all_nodes_bytes_by_file(
 ) -> GeorgeResult<Vec<NodeBytes>> {
     let mut nbs: Vec<NodeBytes> = vec![];
     let u82s: Vec<Vec<u8>>;
-    if start > 0 {
-        let seek_start = start as usize * 8;
-        let last_bytes = node_bytes.as_slice()[seek_start..].to_vec();
-        u82s = find_eq_vec_bytes(last_bytes, 8)?;
-    } else {
-        u82s = find_eq_vec_bytes(node_bytes, 8)?;
-    }
+
+    let seek_start = start as usize * 8;
+    let last_bytes = node_bytes.as_slice()[seek_start..].to_vec();
+    u82s = find_eq_vec_bytes(last_bytes, 8)?;
     for u8s in u82s {
         let next_node_bytes_seek = trans_bytes_2_u64(u8s);
         nbs.push(read_node_bytes_by_file(
@@ -731,14 +728,16 @@ pub(super) fn read_next_nodes_and_all_bytes_by_file(
     node_bytes: Vec<u8>,
     index_file: Arc<RwLock<File>>,
     start: u64,
+    end: u64,
     level_type: LevelType,
 ) -> GeorgeResult<QueryNodeData> {
     let qnd: QueryNodeData;
 
     let seek_start = start as usize;
-    let seek_end = seek_start + 8;
+    let seek_last_start = seek_start + 8;
+    let seek_end = end as usize + 8;
 
-    let last_bytes = node_bytes.as_slice()[seek_end..].to_vec();
+    let last_bytes = node_bytes.as_slice()[seek_last_start..seek_end].to_vec();
     let mut nbs: Vec<NodeBytes> = vec![];
     let u82s = find_eq_vec_bytes(last_bytes, 8)?;
     for u8s in u82s {
@@ -750,7 +749,7 @@ pub(super) fn read_next_nodes_and_all_bytes_by_file(
         )?);
     }
 
-    let u8s = node_bytes.as_slice()[seek_start..seek_end].to_vec();
+    let u8s = node_bytes.as_slice()[seek_start..seek_last_start].to_vec();
     let next_node_bytes_seek = trans_bytes_2_u64(u8s);
     if next_node_bytes_seek == 0 {
         qnd = QueryNodeData { nb: None, nbs }
