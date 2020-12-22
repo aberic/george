@@ -688,13 +688,20 @@ pub(super) fn read_next_and_all_nodes_bytes_by_file(
     node_bytes: Vec<u8>,
     index_file: Arc<RwLock<File>>,
     start: u64,
+    end: u64,
     level_type: LevelType,
 ) -> GeorgeResult<Vec<NodeBytes>> {
     let mut nbs: Vec<NodeBytes> = vec![];
+    let last_bytes: Vec<u8>;
     let u82s: Vec<Vec<u8>>;
 
     let seek_start = start as usize * 8;
-    let last_bytes = node_bytes.as_slice()[seek_start..].to_vec();
+    if end == 0 {
+        last_bytes = node_bytes.as_slice()[seek_start..].to_vec();
+    } else {
+        let seek_end = end as usize * 8;
+        last_bytes = node_bytes.as_slice()[seek_start..seek_end].to_vec();
+    }
     u82s = find_eq_vec_bytes(last_bytes, 8)?;
     for u8s in u82s {
         let next_node_bytes_seek = trans_bytes_2_u64(u8s);

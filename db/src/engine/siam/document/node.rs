@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 use std::fs::File;
+use std::ops::AddAssign;
 use std::sync::{Arc, RwLock};
 
 use comm::bytes::create_empty_bytes;
@@ -21,7 +22,6 @@ use crate::engine::siam::traits::{DiskNode, TNode};
 use crate::engine::traits::TSeed;
 use crate::utils::comm::{level_distance_32, level_distance_64, IndexMold, LevelType};
 use crate::utils::path::{index_file_path, view_file_path};
-use std::ops::AddAssign;
 
 /// 索引B+Tree结点结构
 ///
@@ -415,7 +415,8 @@ impl DiskNode for Node {
             let nbs_arr = read_next_and_all_nodes_bytes_by_file(
                 node_bytes,
                 index_file.clone(),
-                start_key as u64,
+                start_key,
+                end_key,
                 level_type,
             )?;
             total += 1;
@@ -459,13 +460,17 @@ impl DiskNode for Node {
             let next_end_key = end_key - next_end_degree * distance;
             match qnd.node_bytes() {
                 Some(nbs) => {
+                    let mut nek = next_end_key;
+                    if next_start_degree != next_end_degree {
+                        nek = 0;
+                    }
                     let mut temp = self.left_query(
                         mold,
                         index_file.clone(),
                         view_file.clone(),
                         nbs.bytes,
                         next_start_key,
-                        next_end_key,
+                        nek,
                         level + 1,
                         level_type,
                         conditions.clone(),
@@ -482,14 +487,23 @@ impl DiskNode for Node {
                 _ => {}
             }
             if limit > 0 {
-                for nbs in qnd.node_bytes_list() {
+                let mut node_bytes_list_len_check = 0;
+                let node_bytes_list_len = qnd.node_bytes_list().len();
+                if node_bytes_list_len > 0 {
+                    node_bytes_list_len_check = node_bytes_list_len - 1;
+                }
+                for (pos, nbs) in qnd.node_bytes_list().iter().enumerate() {
+                    let mut nek = 0;
+                    if node_bytes_list_len_check == pos {
+                        nek = next_end_key;
+                    }
                     let mut temp = self.left_query(
                         mold,
                         index_file.clone(),
                         view_file.clone(),
-                        nbs.bytes,
+                        nbs.bytes.clone(),
                         0,
-                        0,
+                        nek,
                         level + 1,
                         level_type,
                         conditions.clone(),
