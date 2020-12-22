@@ -216,36 +216,6 @@ pub trait DiskNode: Send + Sync {
         limit: u64,
         delete: bool,
     ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)>;
-    fn right_32(
-        &self,
-        mold: IndexMold,
-        index_file: Arc<RwLock<File>>,
-        view_file: Arc<RwLock<File>>,
-        node_bytes: Vec<u8>,
-        start_key: u32,
-        end_key: u32,
-        level: u8,
-        level_type: LevelType,
-        conditions: Vec<Condition>,
-        skip: u64,
-        limit: u64,
-        delete: bool,
-    ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)>;
-    fn right_64(
-        &self,
-        mold: IndexMold,
-        index_file: Arc<RwLock<File>>,
-        view_file: Arc<RwLock<File>>,
-        node_bytes: Vec<u8>,
-        start_key: u64,
-        end_key: u64,
-        level: u8,
-        level_type: LevelType,
-        conditions: Vec<Condition>,
-        skip: u64,
-        limit: u64,
-        delete: bool,
-    ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)>;
     /// 通过右查询约束获取数据集
     ///
     /// ###Params
@@ -277,6 +247,7 @@ pub trait DiskNode: Send + Sync {
         index_file: Arc<RwLock<File>>,
         view_file: Arc<RwLock<File>>,
         node_bytes: Vec<u8>,
+        start_key: u64,
         end_key: u64,
         level: u8,
         level_type: LevelType,

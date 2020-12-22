@@ -455,9 +455,15 @@ fn put_seed<N: TNode>(node: &N, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> Ge
 #[derive(Debug, Clone)]
 pub struct NodeBytes {
     /// 下一节点node_bytes
-    pub(super) bytes: Vec<u8>,
+    pub bytes: Vec<u8>,
     /// 下一节点起始坐标seek
-    pub(super) seek: u64,
+    pub seek: u64,
+}
+
+impl NodeBytes {
+    pub fn bytes(&self) -> Vec<u8> {
+        self.bytes.clone()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -614,76 +620,6 @@ pub(super) fn read_last_nodes_bytes(
 /// 下一节点node_bytes
 ///
 /// 下一节点起始坐标seek
-pub(super) fn read_next_all_nodes_bytes(
-    node_bytes: Vec<u8>,
-    index_file_path: String,
-    level_type: LevelType,
-) -> GeorgeResult<Vec<NodeBytes>> {
-    let mut nbs: Vec<NodeBytes> = vec![];
-    let u82s = find_eq_vec_bytes(node_bytes, 8)?;
-    for u8s in u82s {
-        let next_node_bytes_seek = trans_bytes_2_u64(u8s);
-        nbs.push(read_node_bytes(
-            index_file_path.clone(),
-            next_node_bytes_seek,
-            level_type,
-        )?);
-    }
-    Ok(nbs)
-}
-
-/// 读取最右叶子节点的字节数组集合记录
-///
-/// node_bytes 当前操作节点的字节数组
-///
-/// next_node_seek 下一节点在文件中的真实起始位置
-///
-/// start 下一节点在node_bytes中的起始位置
-///
-/// root 是否根节点
-///
-/// new 是否插入操作
-///
-/// #return 下一节点状态
-///
-/// 下一节点node_bytes
-///
-/// 下一节点起始坐标seek
-pub(super) fn read_next_all_nodes_bytes_by_file(
-    node_bytes: Vec<u8>,
-    index_file: Arc<RwLock<File>>,
-    level_type: LevelType,
-) -> GeorgeResult<Vec<NodeBytes>> {
-    let mut nbs: Vec<NodeBytes> = vec![];
-    let u82s = find_eq_vec_bytes(node_bytes, 8)?;
-    for u8s in u82s {
-        let next_node_bytes_seek = trans_bytes_2_u64(u8s);
-        nbs.push(read_node_bytes_by_file(
-            index_file.clone(),
-            next_node_bytes_seek,
-            level_type,
-        )?);
-    }
-    Ok(nbs)
-}
-
-/// 读取最右叶子节点的字节数组集合记录
-///
-/// node_bytes 当前操作节点的字节数组
-///
-/// next_node_seek 下一节点在文件中的真实起始位置
-///
-/// start 下一节点在node_bytes中的起始位置
-///
-/// root 是否根节点
-///
-/// new 是否插入操作
-///
-/// #return 下一节点状态
-///
-/// 下一节点node_bytes
-///
-/// 下一节点起始坐标seek
 pub(super) fn read_next_and_all_nodes_bytes_by_file(
     node_bytes: Vec<u8>,
     index_file: Arc<RwLock<File>>,
@@ -740,11 +676,18 @@ pub(super) fn read_next_nodes_and_all_bytes_by_file(
 ) -> GeorgeResult<QueryNodeData> {
     let qnd: QueryNodeData;
 
+    let last_bytes: Vec<u8>;
+
     let seek_start = start as usize;
     let seek_last_start = seek_start + 8;
-    let seek_end = end as usize + 8;
 
-    let last_bytes = node_bytes.as_slice()[seek_last_start..seek_end].to_vec();
+    if end > 0 {
+        let seek_end = end as usize + 8;
+        last_bytes = node_bytes.as_slice()[seek_last_start..seek_end].to_vec();
+    } else {
+        last_bytes = node_bytes.as_slice()[seek_last_start..].to_vec();
+    }
+
     let mut nbs: Vec<NodeBytes> = vec![];
     let u82s = find_eq_vec_bytes(last_bytes, 8)?;
     for u8s in u82s {
@@ -785,18 +728,70 @@ pub(super) fn read_next_nodes_and_all_bytes_by_file(
 /// 下一节点node_bytes
 ///
 /// 下一节点起始坐标seek
+pub(super) fn read_before_and_all_nodes_bytes_by_file(
+    node_bytes: Vec<u8>,
+    index_file: Arc<RwLock<File>>,
+    start: u64,
+    end: u64,
+    level_type: LevelType,
+) -> GeorgeResult<Vec<NodeBytes>> {
+    let mut nbs: Vec<NodeBytes> = vec![];
+    let before_bytes: Vec<u8>;
+    let u82s: Vec<Vec<u8>>;
+
+    let seek_start = start as usize * 8;
+
+    if end > 0 {
+        let seek_end = end as usize * 8;
+        let seek_before_end = seek_end + 8;
+        before_bytes = node_bytes.as_slice()[seek_start..seek_before_end].to_vec();
+    } else {
+        before_bytes = node_bytes.as_slice()[seek_start..].to_vec();
+    }
+
+    u82s = find_eq_vec_bytes(before_bytes, 8)?;
+    for u8s in u82s {
+        let next_node_bytes_seek = trans_bytes_2_u64(u8s);
+        nbs.push(read_node_bytes_by_file(
+            index_file.clone(),
+            next_node_bytes_seek,
+            level_type,
+        )?);
+    }
+    Ok(nbs)
+}
+
+/// 读取下一个节点的字节数组记录及其之前字节数组
+///
+/// node_bytes 当前操作节点的字节数组
+///
+/// next_node_seek 下一节点在文件中的真实起始位置
+///
+/// start 下一节点在node_bytes中的起始位置
+///
+/// root 是否根节点
+///
+/// new 是否插入操作
+///
+/// #return 下一节点状态
+///
+/// 下一节点node_bytes
+///
+/// 下一节点起始坐标seek
 pub(super) fn read_before_nodes_and_all_bytes_by_file(
     node_bytes: Vec<u8>,
     index_file: Arc<RwLock<File>>,
     start: u64,
+    end: u64,
     level_type: LevelType,
 ) -> GeorgeResult<QueryNodeData> {
     let qnd: QueryNodeData;
 
     let seek_start = start as usize;
-    let seek_end = seek_start + 8;
+    let seek_end = end as usize;
+    let seek_before_end = seek_end + 8;
 
-    let before_bytes = node_bytes.as_slice()[..seek_start].to_vec();
+    let before_bytes = node_bytes.as_slice()[seek_start..seek_end].to_vec();
     let mut nbs: Vec<NodeBytes> = vec![];
     let u82s = find_eq_vec_bytes(before_bytes, 8)?;
     let mut len = u82s.len();
@@ -819,7 +814,7 @@ pub(super) fn read_before_nodes_and_all_bytes_by_file(
         }
     }
 
-    let u8s = node_bytes.as_slice()[seek_start..seek_end].to_vec();
+    let u8s = node_bytes.as_slice()[seek_end..seek_before_end].to_vec();
     let next_node_bytes_seek = trans_bytes_2_u64(u8s);
     if next_node_bytes_seek != 0 {
         let nb = read_node_bytes_by_file(index_file.clone(), next_node_bytes_seek, level_type)?;

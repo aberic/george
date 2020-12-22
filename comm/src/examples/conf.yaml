@@ -1,6 +1,6 @@
 conf:
   port: 19877 # 开放端口，便于其它应用访问
-  data_dir: lily/data # DataFileName Lily服务数据默认存储目录名
+  data_dir: src/test/george # DataFileName Lily服务数据默认存储目录名
   limit_open_file: 10000 # LimitOpenFile 限制打开文件描述符次数
   tls: false # 是否开启 TLS
   tls_server_key_file: src/examples/tls/server/server.key # lily服务私钥
@@ -9,8 +9,9 @@ conf:
   limit_millisecond: 3 # 请求限定的时间段（毫秒）
   limit_count: 3 # 请求限定的时间段内允许的请求次数
   limit_interval_microsecond: 150 # 请求允许的最小间隔时间（微秒），0表示不限
-  log_dir: lily/log # LogDir 日志文件目录
+  log_dir: src/test # LogDir 日志文件目录
   log_file_max_size: 1024 # LogFileMaxSize 每个日志文件保存的最大尺寸 单位：M
+  log_file_max_count: 7 # LogFileMaxCount 文件最多保存多少个
   log_file_max_age: 7 # LogFileMaxAge 文件最多保存多少天
   log_utc: false # LogUtc CST & UTC 时间
   log_level: debug # LogLevel 日志级别(debugLevel/infoLevel/warnLevel/ErrorLevel/panicLevel/fatalLevel)

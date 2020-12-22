@@ -408,14 +408,18 @@ fn select_document1() {
         {
             "Param":"age",
             "Cond":"ge",
-            "Value":50000
+            "Value":49900
         },
         {
             "Param":"age",
             "Cond":"le",
-            "Value":61500
+            "Value":90100
         }
     ],
+    "Sort":{
+        "Param":"age",
+        "Asc":true
+    },
     "Skip":100,
     "Limit":1000
   }"#;

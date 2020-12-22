@@ -11,8 +11,8 @@ use comm::vectors;
 use comm::vectors::find_last_eq_bytes;
 
 use crate::engine::siam::comm::{
-    read_before_nodes_and_all_bytes_by_file, read_last_nodes_bytes,
-    read_next_all_nodes_bytes_by_file, read_next_and_all_nodes_bytes_by_file,
+    read_before_and_all_nodes_bytes_by_file, read_before_nodes_and_all_bytes_by_file,
+    read_last_nodes_bytes, read_next_and_all_nodes_bytes_by_file,
     read_next_nodes_and_all_bytes_by_file, read_next_nodes_bytes, read_seed_bytes,
     read_seed_bytes_from_view, read_seed_bytes_from_view_file, try_read_next_nodes_bytes,
     write_seed_bytes,
@@ -212,37 +212,10 @@ impl TNode for Node {
                             conditions, skip, limit, delete,
                         )?
                     } else {
-                        if end > 0 {
-                            match level_type {
-                                LevelType::Small => {
-                                    query = self.right_32(
-                                        mold,
-                                        index_file,
-                                        view_file,
-                                        node_bytes,
-                                        start as u32,
-                                        end as u32,
-                                        level,
-                                        level_type,
-                                        conditions,
-                                        skip,
-                                        limit,
-                                        delete,
-                                    )?
-                                }
-                                LevelType::Large => {
-                                    query = self.right_64(
-                                        mold, index_file, view_file, node_bytes, start, end, level,
-                                        level_type, conditions, skip, limit, delete,
-                                    )?
-                                }
-                            }
-                        } else {
-                            query = self.right_query(
-                                mold, index_file, view_file, node_bytes, 0, level, level_type,
-                                conditions, skip, limit, delete,
-                            )?
-                        }
+                        query = self.right_query(
+                            mold, index_file, view_file, node_bytes, start, end, level, level_type,
+                            conditions, skip, limit, delete,
+                        )?
                     }
                     Ok((query.0, query.1, query.4))
                 }
@@ -337,7 +310,7 @@ impl DiskNode for Node {
             // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
             let next_flexible_key = flexible_key - next_degree * distance;
             self.put_in_node(
-                nbs.bytes,
+                nbs.bytes(),
                 level + 1,
                 next_flexible_key,
                 seed,
@@ -419,7 +392,7 @@ impl DiskNode for Node {
                 end_key,
                 level_type,
             )?;
-            total += 1;
+            total += nbs_arr.len() as u64;
             for nbs in nbs_arr {
                 if limit <= 0 {
                     break;
@@ -468,7 +441,7 @@ impl DiskNode for Node {
                         mold,
                         index_file.clone(),
                         view_file.clone(),
-                        nbs.bytes,
+                        nbs.bytes(),
                         next_start_key,
                         nek,
                         level + 1,
@@ -501,7 +474,7 @@ impl DiskNode for Node {
                         mold,
                         index_file.clone(),
                         view_file.clone(),
-                        nbs.bytes.clone(),
+                        nbs.bytes(),
                         0,
                         nek,
                         level + 1,
@@ -524,107 +497,7 @@ impl DiskNode for Node {
         }
         Ok((total, count, skip, limit, res))
     }
-    fn right_32(
-        &self,
-        mold: IndexMold,
-        index_file: Arc<RwLock<File>>,
-        view_file: Arc<RwLock<File>>,
-        node_bytes: Vec<u8>,
-        start_key: u32,
-        end_key: u32,
-        level: u8,
-        level_type: LevelType,
-        conditions: Vec<Condition>,
-        mut skip: u64,
-        mut limit: u64,
-        delete: bool,
-    ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)> {
-        if level == 4 {
-            self.right_query(
-                mold,
-                index_file.clone(),
-                view_file.clone(),
-                node_bytes,
-                end_key as u64,
-                level,
-                level_type,
-                conditions.clone(),
-                skip,
-                limit,
-                delete,
-            )
-        } else {
-            let mut total: u64 = 0;
-            let mut count: u64 = 0;
-            let mut res: Vec<Vec<u8>> = vec![];
-
-            let distance = level_distance_32(level);
-            let next_degree = end_key / distance;
-            // 下一结点状态
-            // 下一结点node_bytes
-            // 下一结点起始坐标seek
-            // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            let qnd = read_before_nodes_and_all_bytes_by_file(
-                node_bytes,
-                index_file.clone(),
-                next_degree as u64 * 8,
-                level_type,
-            )?;
-            total.add_assign(1 + qnd.node_bytes_list().len() as u64);
-            for nbs in qnd.node_bytes_list().iter() {
-                let mut temp = self.right_query(
-                    mold,
-                    index_file.clone(),
-                    view_file.clone(),
-                    nbs.clone().bytes,
-                    end_key as u64,
-                    level + 1,
-                    level_type,
-                    conditions.clone(),
-                    skip,
-                    limit,
-                    delete,
-                )?;
-                total += temp.0;
-                count += temp.1;
-                skip = temp.2;
-                limit = temp.3;
-                res.append(&mut temp.4);
-                if limit <= 0 {
-                    break;
-                }
-            }
-            if limit > 0 {
-                let next_end_key = end_key - next_degree * distance;
-                match qnd.node_bytes() {
-                    Some(nbs) => {
-                        let mut temp = self.right_32(
-                            mold,
-                            index_file.clone(),
-                            view_file.clone(),
-                            nbs.bytes,
-                            start_key,
-                            next_end_key,
-                            level + 1,
-                            level_type,
-                            conditions.clone(),
-                            skip,
-                            limit,
-                            delete,
-                        )?;
-                        total += temp.0;
-                        count += temp.1;
-                        skip = temp.2;
-                        limit = temp.3;
-                        res.append(&mut temp.4);
-                    }
-                    _ => {}
-                }
-            }
-            Ok((total, count, skip, limit, res))
-        }
-    }
-    fn right_64(
+    fn right_query(
         &self,
         mold: IndexMold,
         index_file: Arc<RwLock<File>>,
@@ -639,112 +512,19 @@ impl DiskNode for Node {
         mut limit: u64,
         delete: bool,
     ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)> {
-        if level == 4 {
-            self.right_query(
-                mold,
-                index_file.clone(),
-                view_file.clone(),
-                node_bytes,
-                end_key,
-                level,
-                level_type,
-                conditions.clone(),
-                skip,
-                limit,
-                delete,
-            )
-        } else {
-            let mut total: u64 = 0;
-            let mut count: u64 = 0;
-            let mut res: Vec<Vec<u8>> = vec![];
-
-            let distance = level_distance_64(level);
-            let next_degree = end_key / distance;
-            // 下一结点状态
-            // 下一结点node_bytes
-            // 下一结点起始坐标seek
-            // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            let qnd = read_before_nodes_and_all_bytes_by_file(
-                node_bytes,
-                index_file.clone(),
-                next_degree * 8,
-                level_type,
-            )?;
-            total.add_assign(1 + qnd.node_bytes_list().len() as u64);
-            for nbs in qnd.node_bytes_list() {
-                let mut temp = self.right_query(
-                    mold,
-                    index_file.clone(),
-                    view_file.clone(),
-                    nbs.bytes,
-                    end_key,
-                    level + 1,
-                    level_type,
-                    conditions.clone(),
-                    skip,
-                    limit,
-                    delete,
-                )?;
-                total += temp.0;
-                count += temp.1;
-                skip = temp.2;
-                limit = temp.3;
-                res.append(&mut temp.4);
-                if limit <= 0 {
-                    break;
-                }
-            }
-            if limit > 0 {
-                let next_end_key = end_key - next_degree * distance;
-                match qnd.node_bytes() {
-                    Some(nbs) => {
-                        let mut temp = self.right_64(
-                            mold,
-                            index_file.clone(),
-                            view_file.clone(),
-                            nbs.bytes,
-                            start_key,
-                            next_end_key,
-                            level + 1,
-                            level_type,
-                            conditions.clone(),
-                            skip,
-                            limit,
-                            delete,
-                        )?;
-                        total += temp.0;
-                        count += temp.1;
-                        skip = temp.2;
-                        limit = temp.3;
-                        res.append(&mut temp.4);
-                    }
-                    _ => {}
-                }
-            }
-            Ok((total, count, skip, limit, res))
-        }
-    }
-    fn right_query(
-        &self,
-        mold: IndexMold,
-        index_file: Arc<RwLock<File>>,
-        view_file: Arc<RwLock<File>>,
-        node_bytes: Vec<u8>,
-        end_key: u64,
-        level: u8,
-        level_type: LevelType,
-        conditions: Vec<Condition>,
-        mut skip: u64,
-        mut limit: u64,
-        delete: bool,
-    ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)> {
         // todo delete
         let mut total: u64 = 0;
         let mut count: u64 = 0;
         let mut res: Vec<Vec<u8>> = vec![];
         if level == 4 {
-            let nbs_arr =
-                read_next_all_nodes_bytes_by_file(node_bytes, index_file.clone(), level_type)?;
+            let nbs_arr = read_before_and_all_nodes_bytes_by_file(
+                node_bytes,
+                index_file.clone(),
+                start_key,
+                end_key,
+                level_type,
+            )?;
+            total += nbs_arr.len() as u64;
             let mut len = nbs_arr.len();
             while len > 0 {
                 if limit <= 0 {
@@ -760,7 +540,7 @@ impl DiskNode for Node {
                             } else {
                                 limit -= 1;
                                 count += 1;
-                                res.push(bytes)
+                                res.insert(0, bytes)
                             }
                         }
                         len -= 1;
@@ -769,38 +549,90 @@ impl DiskNode for Node {
                 }
             }
         } else {
+            let distance: u64;
+            match level_type {
+                LevelType::Small => distance = level_distance_32(level) as u64,
+                LevelType::Large => distance = level_distance_64(level),
+            }
+            let next_start_degree = start_key / distance;
+            let next_end_degree = end_key / distance;
+            // 下一结点状态
+            // 下一结点node_bytes
+            // 下一结点起始坐标seek
             // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            let nbs_arr =
-                read_next_all_nodes_bytes_by_file(node_bytes, index_file.clone(), level_type)?;
-            total += 1;
-            let mut len = nbs_arr.len();
-            while len > 0 {
-                match nbs_arr.get(len - 1) {
-                    Some(nbs) => {
-                        let mut temp = self.right_query(
-                            mold,
-                            index_file.clone(),
-                            view_file.clone(),
-                            nbs.bytes.clone(),
-                            end_key,
-                            level + 1,
-                            level_type,
-                            conditions.clone(),
-                            skip,
-                            limit,
-                            delete,
-                        )?;
-                        total += temp.0;
-                        count += temp.1;
-                        skip = temp.2;
-                        limit = temp.3;
-                        res.append(&mut temp.4);
-                        if limit <= 0 {
-                            break;
-                        }
-                        len -= 1;
+            let qnd = read_before_nodes_and_all_bytes_by_file(
+                node_bytes,
+                index_file.clone(),
+                next_start_degree * 8,
+                next_end_degree * 8,
+                level_type,
+            )?;
+            total.add_assign(1 + qnd.node_bytes_list().len() as u64);
+            let next_start_key = start_key - next_start_degree * distance;
+            let next_end_key = end_key - next_end_degree * distance;
+            match qnd.node_bytes() {
+                Some(nbs) => {
+                    let mut nsk = next_start_key;
+                    if next_start_degree != next_end_degree {
+                        nsk = 0;
                     }
-                    None => return Err(err_str("select bytes get none error")),
+                    let mut temp = self.right_query(
+                        mold,
+                        index_file.clone(),
+                        view_file.clone(),
+                        nbs.bytes(),
+                        nsk,
+                        next_end_key,
+                        level + 1,
+                        level_type,
+                        conditions.clone(),
+                        skip,
+                        limit,
+                        delete,
+                    )?;
+                    total += temp.0;
+                    count += temp.1;
+                    skip = temp.2;
+                    limit = temp.3;
+                    res.append(&mut temp.4);
+                }
+                _ => {}
+            }
+            if limit > 0 {
+                let mut node_bytes_list_len_check = 0;
+                let node_bytes_list_len = qnd.node_bytes_list().len();
+                if node_bytes_list_len > 0 {
+                    node_bytes_list_len_check = node_bytes_list_len - 1;
+                }
+                for (pos, nbs) in qnd.node_bytes_list().iter().enumerate() {
+                    let mut nsk = 0;
+                    if node_bytes_list_len_check == pos {
+                        nsk = next_start_key;
+                    }
+                    let mut temp = self.right_query(
+                        mold,
+                        index_file.clone(),
+                        view_file.clone(),
+                        nbs.bytes(),
+                        nsk,
+                        0,
+                        level + 1,
+                        level_type,
+                        conditions.clone(),
+                        skip,
+                        limit,
+                        delete,
+                    )?;
+                    total += temp.0;
+                    count += temp.1;
+                    skip = temp.2;
+                    limit = temp.3;
+                    // res.append(&mut temp.4);
+                    temp.4.append(&mut res);
+                    res = temp.4;
+                    if limit <= 0 {
+                        break;
+                    }
                 }
             }
         }
