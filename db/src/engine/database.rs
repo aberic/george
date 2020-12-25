@@ -349,7 +349,7 @@ impl Database {
                 Ok(dir) => {
                     if dir.path().is_dir() {
                         let view_dir_name = dir.file_name().to_str().unwrap().to_string();
-                        log::info!("recovery view {}", view_dir_name);
+                        log::debug!("recovery view from {}.sr", view_dir_name);
                         // 恢复view数据
                         self.recovery_view(view_dir_name.clone());
                     }
@@ -383,12 +383,12 @@ impl Database {
                         if self.exist_view(view_name.clone()) {
                             return;
                         }
-                        self.insert_view(view_name, Arc::new(RwLock::new(view)));
+                        self.insert_view(view_name.clone(), Arc::new(RwLock::new(view)));
                         match GLOBAL_WRITER
                             .clone()
                             .insert_view(view_dir_name, view_file_path)
                         {
-                            Ok(()) => {}
+                            Ok(()) => log::info!("recovery view {}.{}", self.name(), view_name),
                             Err(err) => panic!(
                                 "recovery view when writer insert view failed! error is {}",
                                 err

@@ -122,7 +122,7 @@ impl Engine {
                 Ok(dir) => {
                     if dir.path().is_dir() {
                         let database_dir_name = dir.file_name().to_str().unwrap().to_string();
-                        log::info!("recovery database {}", database_dir_name);
+                        log::debug!("recovery database from {}.sr", database_dir_name);
                         self.recovery_database(database_dir_name.clone());
                     }
                 }
@@ -157,6 +157,7 @@ impl Engine {
                             .write()
                             .unwrap()
                             .insert(db_name.clone(), Arc::new(RwLock::new(db)));
+                        log::info!("recovery database {}", db_name.clone());
                     }
                     Err(err) => panic!("recovery database failed! error is {}", err),
                 }

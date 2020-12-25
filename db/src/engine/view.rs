@@ -458,7 +458,7 @@ impl View {
                     if dir.path().is_file() {
                         let index_file_name = dir.file_name().to_str().unwrap().to_string();
                         if index_file_name != "view.sr" {
-                            log::info!("recovery index {}", index_file_name);
+                            log::debug!("recovery index from {}.sr", index_file_name);
                             // 恢复index数据
                             match self.recovery_index(self.database_id(), index_file_name.clone()) {
                                 Ok(index) => {
@@ -474,6 +474,7 @@ impl View {
                                         .write()
                                         .unwrap()
                                         .insert(index_id, index);
+                                    log::info!("recovery index {}.{}", self.name(), idx_r.key_structure());
                                 }
                                 Err(err) => panic!("recovery_index failed while database is {} and index_file_name is {}, error: {}", self.database_id(), index_file_name, err),
                             }
