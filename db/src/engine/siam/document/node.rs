@@ -177,6 +177,10 @@ impl TNode for Node {
             }
         }
     }
+    fn delete(&self, key: String, level_type: LevelType) -> GeorgeResult<Vec<u8>> {
+        // todo
+        unimplemented!()
+    }
     fn get_last(&self, level_type: LevelType) -> GeorgeResult<Vec<u8>>
     where
         Self: Sized,
