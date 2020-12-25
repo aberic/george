@@ -172,7 +172,7 @@ impl Database {
             return Err(GeorgeError::ViewExistError(ViewExistError));
         }
         let view = View::init(
-            self.id.clone(),
+            self.id(),
             name.clone(),
             comment,
             index_type,

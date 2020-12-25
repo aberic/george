@@ -44,7 +44,7 @@ pub(crate) static GLOBAL_CLIENT: Lazy<Arc<Engine>> = Lazy::new(|| {
     let arc_engine = Arc::new(engine);
     // 创建数据根目录
     match file::create_dir(data_path()) {
-        Ok(_file) => println!("load data path success!"),
+        Ok(_file) => log::info!("load data path success!"),
         Err(err) => panic!("create data path failed! error is {}", err),
     }
     // 创建引导文件
@@ -65,7 +65,7 @@ fn init_log() {
         String::from("src/test"),
         1024,
         7,
-        String::from("trace"),
+        String::from("debug"),
     );
 }
 
@@ -76,10 +76,10 @@ impl Engine {
         match read_to_string(bootstrap_file.clone()) {
             Ok(text) => {
                 if text.is_empty() {
-                    println!("initialize new data");
+                    log::info!("initialize new data");
                     self.init()
                 } else {
-                    println!("recovery exist data from bootstrap file {}", bootstrap_file);
+                    log::info!("recovery exist data from bootstrap file {}", bootstrap_file);
                     self.recovery()
                 }
             }
@@ -122,7 +122,7 @@ impl Engine {
                 Ok(dir) => {
                     if dir.path().is_dir() {
                         let database_dir_name = dir.file_name().to_str().unwrap().to_string();
-                        println!("recovery database {}", database_dir_name);
+                        log::info!("recovery database {}", database_dir_name);
                         self.recovery_database(database_dir_name.clone());
                     }
                 }
@@ -136,13 +136,13 @@ impl Engine {
         match recovery_before_content(Tag::Database, database_file_path(database_dir_name.clone()))
         {
             Ok(hd) => {
-                // println!("head = {:#?}", hd.header);
+                log::trace!("head = {:#?}", hd.header);
                 // 恢复database数据
                 let mut db = Database::empty();
                 match db.recover(hd.description) {
                     Ok(()) => {
                         let db_name = db.name();
-                        println!(
+                        log::debug!(
                             "db [id={}, name={}, create time ={}]",
                             db.id(),
                             db_name,
