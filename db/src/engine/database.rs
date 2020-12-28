@@ -58,6 +58,7 @@ impl TDescription for Database {
                         self.create_time = Duration::nanoseconds(
                             split.next().unwrap().to_string().parse::<i64>().unwrap(),
                         );
+                        log::info!("recovery database {}({})", self.name(), self.id());
                         // 读取database目录下所有文件
                         match read_dir(database_path(self.id())) {
                             // 恢复views数据
@@ -388,7 +389,7 @@ impl Database {
                             .clone()
                             .insert_view(view_dir_name, view_file_path)
                         {
-                            Ok(()) => log::info!("recovery view {}.{}", self.name(), view_name),
+                            Ok(_) => {},
                             Err(err) => panic!(
                                 "recovery view when writer insert view failed! error is {}",
                                 err

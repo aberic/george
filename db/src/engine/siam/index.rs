@@ -428,6 +428,7 @@ impl<N: TNode + Debug> Index<N> {
             description_len: 0,
         };
         index.recover(description)?;
+        log::info!("recovery index {}({}.{}.{})", index.key_structure(), index.database_id(), index.view_id(), index.id());
         log::debug!(
             "index [dbID={}, vid={}, id={}, key_structure={}, primary={}, category={:#?}, level={:#?}, create_time={}]",
             index.database_id(),

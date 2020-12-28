@@ -18,11 +18,11 @@ use crate::engine::siam::selector::Expectation;
 use crate::engine::traits::TDescription;
 use crate::engine::view::View;
 use crate::utils::comm::{
-    Category, IndexMold, IndexType, LevelType, GEORGE_DB_CONFIG, INDEX_CATALOG,
+    Category, GEORGE_DB_CONFIG, INDEX_CATALOG, IndexMold, IndexType, LevelType,
 };
 use crate::utils::deploy::init_config;
 use crate::utils::path::{bootstrap_file_path, data_path, database_file_path};
-use crate::utils::store::{head, recovery_before_content, FileHeader, Tag};
+use crate::utils::store::{FileHeader, head, recovery_before_content, Tag};
 
 /// 数据库
 pub(crate) struct Engine {
@@ -79,7 +79,8 @@ impl Engine {
                     log::info!("initialize new data");
                     self.init()
                 } else {
-                    log::info!("recovery exist data from bootstrap file {}", bootstrap_file);
+                    log::info!("recovery exist data from bootstrap");
+                    log::debug!("recovery exist data from bootstrap file {}", bootstrap_file);
                     self.recovery()
                 }
             }
@@ -157,7 +158,6 @@ impl Engine {
                             .write()
                             .unwrap()
                             .insert(db_name.clone(), Arc::new(RwLock::new(db)));
-                        log::info!("recovery database {}", db_name.clone());
                     }
                     Err(err) => panic!("recovery database failed! error is {}", err),
                 }

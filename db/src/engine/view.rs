@@ -88,6 +88,7 @@ impl TDescription for View {
                         self.create_time = Duration::nanoseconds(
                             split.next().unwrap().to_string().parse::<i64>().unwrap(),
                         );
+                        log::info!("recovery view {}({}.{})", self.name(), self.database_id(), self.id());
                         match read_dir(view_path(self.database_id(), self.id())) {
                             // 恢复indexes数据
                             Ok(paths) => {
@@ -474,7 +475,6 @@ impl View {
                                         .write()
                                         .unwrap()
                                         .insert(index_id, index);
-                                    log::info!("recovery index {}.{}", self.name(), idx_r.key_structure());
                                 }
                                 Err(err) => panic!("recovery_index failed while database is {} and index_file_name is {}, error: {}", self.database_id(), index_file_name, err),
                             }
