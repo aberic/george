@@ -62,6 +62,26 @@ fn put_memory() {
 }
 
 #[test]
+fn put_memory1() {
+    create_database("database_m1", "comment", 1);
+    create_view(
+        "database_m1",
+        "view",
+        "comment",
+        IndexType::Siam,
+        Category::Memory,
+        LevelType::Large,
+        1,
+    );
+    put("database_m1", "view", "md516", "database1 tValue", 1);
+    get("database_m1", "view", "md516", 1);
+    put("database_m1", "view", "md516", "database2 tValue", 2);
+    get("database_m1", "view", "md516", 2);
+    set("database_m1", "view", "md516", "database3 tValue", 3);
+    get("database_m1", "view", "md516", 3);
+}
+
+#[test]
 fn put_document() {
     create_database("database", "comment", 1);
     create_database("database", "comment", 2);

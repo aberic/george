@@ -177,7 +177,7 @@ impl TNode for Node {
             }
         }
     }
-    fn delete(&self, key: String, level_type: LevelType) -> GeorgeResult<Vec<u8>> {
+    fn remove(&self, key: String, level_type: LevelType) -> GeorgeResult<Vec<u8>> {
         // todo
         unimplemented!()
     }
@@ -239,6 +239,17 @@ impl TNode for Node {
                 err.to_string(),
             )),
         }
+    }
+    fn delete(
+        &self,
+        mold: IndexMold,
+        left: bool,
+        start: u64,
+        end: u64,
+        constraint: Constraint,
+        level_type: LevelType,
+    ) -> GeorgeResult<(u64, u64)> {
+        unimplemented!()
     }
 }
 

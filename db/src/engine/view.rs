@@ -88,13 +88,35 @@ impl TDescription for View {
                         self.create_time = Duration::nanoseconds(
                             split.next().unwrap().to_string().parse::<i64>().unwrap(),
                         );
-                        log::info!("recovery view {}({}.{})", self.name(), self.database_id(), self.id());
-                        match read_dir(view_path(self.database_id(), self.id())) {
-                            // 恢复indexes数据
-                            Ok(paths) => {
-                                self.recovery_indexes(paths);
+                        log::info!(
+                            "recovery view {}({}.{})",
+                            self.name(),
+                            self.database_id(),
+                            self.id()
+                        );
+                        match self.category() {
+                            Category::Document => {
+                                match read_dir(view_path(self.database_id(), self.id())) {
+                                    // 恢复indexes数据
+                                    Ok(paths) => {
+                                        self.recovery_indexes(paths);
+                                    }
+                                    Err(err) => {
+                                        panic!("recovery view read dir failed! error is {}", err)
+                                    }
+                                }
                             }
-                            Err(err) => panic!("recovery view read dir failed! error is {}", err),
+                            Category::Memory => match self.create_index(
+                                self.database_id(),
+                                INDEX_CATALOG.to_string(),
+                                IndexMold::String,
+                                true,
+                            ) {
+                                Err(err) => {
+                                    panic!("recovery view read dir failed! error is {}", err)
+                                }
+                                _ => {}
+                            },
                         }
                         Ok(())
                     }
