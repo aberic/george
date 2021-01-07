@@ -111,27 +111,17 @@ impl TNode for Node {
         seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
         _description_len: usize,
-        level_type: LevelType,
+        _level_type: LevelType,
     ) -> GeorgeResult<()>
     where
         Self: Sized,
     {
-        match level_type {
-            LevelType::Small => put_in_node_u32(self, 1, hashcode32_enhance(key), seed, force),
-            LevelType::Large => put_in_node_u64(self, 1, hashcode64_enhance(key), seed, force),
-        }
+        put_in_node_u64(self, 1, hashcode64_enhance(key), seed, force)
     }
-    fn get(&self, key: String, level_type: LevelType) -> GeorgeResult<Vec<u8>> {
-        match level_type {
-            LevelType::Small => {
-                get_in_node_u32(self, 1, md516(key.clone()), hashcode32_enhance(key.clone()))
-            }
-            LevelType::Large => {
-                get_in_node_u64(self, 1, md516(key.clone()), hashcode64_enhance(key.clone()))
-            }
-        }
+    fn get(&self, key: String, _level_type: LevelType) -> GeorgeResult<Vec<u8>> {
+        get_in_node_u64(self, 1, md516(key.clone()), hashcode64_enhance(key.clone()))
     }
-    fn remove(&self, key: String, level_type: LevelType) -> GeorgeResult<Vec<u8>> {
+    fn remove(&self, _key: String, _level_type: LevelType) -> GeorgeResult<Vec<u8>> {
         // todo
         unimplemented!()
     }
