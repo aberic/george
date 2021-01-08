@@ -26,22 +26,6 @@ pub trait TNode: Send + Sync {
     /// seed起始坐标，每一个seed都会存储出现hash碰撞的下一seed起始坐标
     fn node_bytes(&self) -> Arc<RwLock<Vec<u8>>>;
     fn set_node_bytes(&self, bytes: Vec<u8>);
-    /// 新建普通结点
-    ///
-    /// 该结点需要定义层和度
-    ///
-    /// 该结点需要指定上一结点，该方法不判断上一结点是否为None，但在检索等操作时可能会造成该结果丢失
-    ///
-    /// 该结点下真实存储数据的集合必然为None
-    fn create_node(degree_index: u16) -> Arc<Self>;
-    /// 新建叶子结点
-    ///
-    /// 该结点需要定义层和度
-    ///
-    /// 该结点需要指定上一结点，该方法不判断上一结点是否为None，但在检索等操作时可能会造成该结果丢失
-    ///
-    /// 该结点的子结点集合必然为None
-    fn create_leaf(degree_index: u16) -> Arc<Self>;
     /// 插入数据<p><p>
     ///
     /// ###Params

@@ -73,12 +73,15 @@ fn put_memory1() {
         LevelType::Large,
         1,
     );
-    put("database_m1", "view", "md516", "database1 tValue", 1);
-    get("database_m1", "view", "md516", 1);
-    put("database_m1", "view", "md516", "database2 tValue", 2);
-    get("database_m1", "view", "md516", 2);
-    set("database_m1", "view", "md516", "database3 tValue", 3);
-    get("database_m1", "view", "md516", 3);
+    put("database_m1", "view", "md516_1", "database1 tValue", 1);
+    get("database_m1", "view", "md516_1", 1);
+    put("database_m1", "view", "md516_2", "database2 tValue", 2);
+    get("database_m1", "view", "md516_2", 2);
+    put("database_m1", "view", "md516_3", "database3 tValue", 3);
+    get("database_m1", "view", "md516_3", 3);
+    set("database_m1", "view", "md516_3", "database4 tValue", 3);
+    put("database_m1", "view", "md516_3", "database5 tValue", 3);
+    get("database_m1", "view", "md516_3", 4);
 }
 
 #[test]

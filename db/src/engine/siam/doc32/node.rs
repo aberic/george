@@ -125,12 +125,6 @@ impl TNode for Node {
         let mut nb_w = node_bytes.write().unwrap();
         nb_w.copy_from_slice(bytes.as_slice())
     }
-    fn create_node(_degree_index: u16) -> Arc<Self> {
-        return Arc::new(create_empty());
-    }
-    fn create_leaf(_degree_index: u16) -> Arc<Self> {
-        return Arc::new(create_empty());
-    }
     fn put(
         &self,
         key: String,
