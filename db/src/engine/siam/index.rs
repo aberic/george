@@ -15,8 +15,8 @@ use crate::engine::traits::{TDescription, TIndex, TSeed};
 use crate::utils::comm::{Category, IndexMold, IndexType, LevelType};
 use crate::utils::path;
 use crate::utils::store::{
-    before_content_bytes_for_index, category, category_u8, head, level, level_u8, mold, mold_u8,
-    save, FileHeader, Tag,
+    before_content_bytes_for_index, category, category_u8, head, mold, mold_u8, save, FileHeader,
+    Tag,
 };
 use serde_json::{Error, Value};
 
@@ -42,8 +42,6 @@ where
     root: Arc<N>,
     /// 类型
     category: Category,
-    /// 规模/级别
-    level: LevelType,
     /// 索引值类型
     mold: IndexMold,
     /// 创建时间
@@ -56,7 +54,7 @@ impl<N: TNode + Debug> TDescription for Index<N> {
     fn description(&mut self) -> Vec<u8> {
         let mut des: Vec<u8> = vec![];
         let mut des_front = hex::encode(format!(
-            "{}/{}/{}/{}/{}/{}/{}/{}/{}",
+            "{}/{}/{}/{}/{}/{}/{}/{}",
             self.database_id,
             self.view_id,
             self.id,
@@ -64,7 +62,6 @@ impl<N: TNode + Debug> TDescription for Index<N> {
             self.name,
             category_u8(self.category),
             mold_u8(self.mold),
-            level_u8(self.level),
             self.create_time.num_nanoseconds().unwrap().to_string(),
         ))
         .into_bytes();
@@ -96,8 +93,6 @@ impl<N: TNode + Debug> TDescription for Index<N> {
                         self.category =
                             category(split.next().unwrap().to_string().parse::<u8>().unwrap());
                         self.mold = mold(split.next().unwrap().to_string().parse::<u8>().unwrap());
-                        self.level =
-                            level(split.next().unwrap().to_string().parse::<u8>().unwrap());
                         self.create_time = Duration::nanoseconds(
                             split.next().unwrap().to_string().parse::<i64>().unwrap(),
                         );
@@ -138,7 +133,6 @@ fn new_index<N: TNode + Debug>(
     root: Arc<N>,
     category: Category,
     mold: IndexMold,
-    level: LevelType,
 ) -> Index<N> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
@@ -151,7 +145,6 @@ fn new_index<N: TNode + Debug>(
         root,
         category,
         mold,
-        level,
         create_time,
         description_len: 0,
     };
@@ -176,9 +169,6 @@ impl<N: TNode + Debug> TIndex for Index<N> {
     }
     fn category(&self) -> Category {
         self.category
-    }
-    fn level(&self) -> LevelType {
-        self.level
     }
     fn mold(&self) -> IndexMold {
         self.mold
@@ -337,7 +327,6 @@ impl<N: TNode + Debug> Index<N> {
         root: Arc<N>,
         category: Category,
         mold: IndexMold,
-        level: LevelType,
     ) -> GeorgeResult<Arc<RwLock<Index<N>>>> {
         let mut index = new_index(
             database_id.clone(),
@@ -348,14 +337,13 @@ impl<N: TNode + Debug> Index<N> {
             root,
             category,
             mold,
-            level,
         );
         let index_file_path = path::index_file_path(database_id, view_id, id.clone());
         let file = create_file(index_file_path.clone(), true)?;
         let mut head = head(FileHeader::create(
             Tag::Index,
             Category::Document,
-            level,
+            LevelType::Small,
             IndexType::Siam,
             0x00,
         ));
@@ -388,7 +376,6 @@ impl<N: TNode + Debug> Index<N> {
         root: Arc<N>,
         category: Category,
         index_mold: IndexMold,
-        level: LevelType,
     ) -> Index<N> {
         new_index(
             database_id,
@@ -399,7 +386,6 @@ impl<N: TNode + Debug> Index<N> {
             root,
             category,
             index_mold,
-            level,
         )
     }
 
@@ -416,7 +402,6 @@ impl<N: TNode + Debug> Index<N> {
             name: "".to_string(),
             root,
             category: Category::Memory,
-            level: LevelType::Large,
             mold: IndexMold::String,
             create_time: Duration::nanoseconds(1),
             description_len: 0,
@@ -430,14 +415,13 @@ impl<N: TNode + Debug> Index<N> {
             index.id()
         );
         log::debug!(
-            "index [dbID={}, vid={}, id={}, index_name={}, primary={}, category={:#?}, level={:#?}, create_time={}]",
+            "index [dbID={}, vid={}, id={}, index_name={}, primary={}, category={:#?}, create_time={}]",
             index.database_id(),
             index.view_id(),
             index.id(),
             index.name(),
             index.is_primary(),
             index.category(),
-            index.level(),
             index.create_time().num_nanoseconds().unwrap().to_string(),
         );
         Ok(Arc::new(RwLock::new(index)))

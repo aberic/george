@@ -98,7 +98,6 @@ fn run_test() {
         Node::create_root(database_id, view_id, index_id.clone(), LevelType::Large),
         Category::Memory,
         IndexMold::String,
-        LevelType::Large,
     );
     indexes
         .clone()

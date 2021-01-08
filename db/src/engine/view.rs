@@ -19,7 +19,7 @@ use crate::engine::siam::memory::seed::Seed as Mem_Seed;
 use crate::engine::siam::selector::{Expectation, Selector};
 use crate::engine::traits::{TDescription, TIndex, TSeed};
 use crate::utils::comm::{
-    category, key_fetch, level, Category, IndexMold, IndexType, LevelType, INDEX_CATALOG,
+    category, key_fetch, Category, IndexMold, IndexType, LevelType, INDEX_CATALOG,
 };
 use crate::utils::path::{index_file_path_yet, view_file_path, view_path};
 use crate::utils::store;
@@ -317,7 +317,6 @@ impl View {
                     Siam_Mem_Node::create_root(),
                     category(self.category),
                     index_mold,
-                    level(self.level),
                 )))),
                 Category::Document => Ok(Siam_Index::init(
                     database_id,
@@ -333,7 +332,6 @@ impl View {
                     ),
                     category(self.category),
                     index_mold,
-                    level(self.level),
                 )?),
             },
         }
