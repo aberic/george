@@ -29,7 +29,7 @@ mod index_test {
         let index = obtain_index();
         // println!("index is {:#?}", index);
         println!("index id = {}", index.id());
-        println!("index key_structure = {}", index.key_structure());
+        println!("index index_name = {}", index.name());
         println!("index is_primary = {}", index.is_primary());
         println!();
     }
@@ -52,7 +52,7 @@ mod index_test {
             "index = {}, {}, {}, {}",
             index.id(),
             index.is_primary(),
-            index.key_structure(),
+            index.name(),
             index.create_time().num_nanoseconds().unwrap().to_string()
         );
         println!("d = {:#?}", d);
@@ -74,7 +74,7 @@ mod index_test {
             "index1 = {}, {}, {}, {}",
             index1.id(),
             index1.is_primary(),
-            index1.key_structure(),
+            index1.name(),
             index1.create_time().num_nanoseconds().unwrap().to_string()
         );
         index1.recover(d).unwrap();
@@ -82,7 +82,7 @@ mod index_test {
             "index1 = {}, {}, {}, {}",
             index1.id(),
             index1.is_primary(),
-            index1.key_structure(),
+            index1.name(),
             index1.create_time().num_nanoseconds().unwrap().to_string()
         );
     }

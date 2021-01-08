@@ -236,7 +236,7 @@ impl Database {
     ///
     /// ###Params
     ///
-    /// key_structure 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`key_structure`作为索引存入
+    /// index_name 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
     ///
     /// primary 是否主键
     ///
@@ -244,7 +244,7 @@ impl Database {
     pub(crate) fn create_index(
         &self,
         view_name: String,
-        key_structure: String,
+        index_name: String,
         primary: bool,
         m: u8,
     ) -> GeorgeResult<()> {
@@ -252,7 +252,7 @@ impl Database {
             Some(view) => {
                 view.write()
                     .unwrap()
-                    .create_index(self.id(), key_structure, mold(m), primary)
+                    .create_index(self.id(), index_name, mold(m), primary)
             }
             _ => Err(GeorgeError::ViewNoExistError(ViewNoExistError)),
         };
@@ -389,7 +389,7 @@ impl Database {
                             .clone()
                             .insert_view(view_dir_name, view_file_path)
                         {
-                            Ok(_) => {},
+                            Ok(_) => {}
                             Err(err) => panic!(
                                 "recovery view when writer insert view failed! error is {}",
                                 err

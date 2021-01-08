@@ -87,13 +87,13 @@ fn run_test() {
         Arc::new(Default::default());
     let database_id = String::from("database_id");
     let view_id = String::from("view_id");
-    let key_structure = String::from("Age");
-    let index_id = md516(key_structure.clone());
+    let index_name = String::from("Age");
+    let index_id = md516(index_name.clone());
     let index = Index::create(
         database_id.clone(),
         view_id.clone(),
         index_id.clone(),
-        key_structure,
+        index_name,
         false,
         Node::create_root(database_id, view_id, index_id.clone(), LevelType::Large),
         Category::Memory,

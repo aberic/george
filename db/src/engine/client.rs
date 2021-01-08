@@ -18,11 +18,11 @@ use crate::engine::siam::selector::Expectation;
 use crate::engine::traits::TDescription;
 use crate::engine::view::View;
 use crate::utils::comm::{
-    Category, GEORGE_DB_CONFIG, INDEX_CATALOG, IndexMold, IndexType, LevelType,
+    Category, IndexMold, IndexType, LevelType, GEORGE_DB_CONFIG, INDEX_CATALOG,
 };
 use crate::utils::deploy::init_config;
 use crate::utils::path::{bootstrap_file_path, data_path, database_file_path};
-use crate::utils::store::{FileHeader, head, recovery_before_content, Tag};
+use crate::utils::store::{head, recovery_before_content, FileHeader, Tag};
 
 /// 数据库
 pub(crate) struct Engine {
@@ -307,14 +307,14 @@ impl Engine {
     ///
     /// ###Params
     ///
-    /// key_structure 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`key_structure`作为索引存入
+    /// index_name 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
     ///
     /// primary 是否主键
     pub(crate) fn create_index(
         &self,
         database_name: String,
         view_name: String,
-        key_structure: String,
+        index_name: String,
         index_mold: IndexMold,
         primary: bool,
     ) -> GeorgeResult<()> {
@@ -324,7 +324,7 @@ impl Engine {
         let view = db_r.view(view_name)?;
         let v = view.clone();
         let v_r = v.read().unwrap();
-        v_r.create_index(db_r.id(), key_structure, index_mold, primary)
+        v_r.create_index(db_r.id(), index_name, index_mold, primary)
     }
     pub(crate) fn modify_view(
         &self,

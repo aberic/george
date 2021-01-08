@@ -553,7 +553,7 @@ fn create_view(
 fn create_index(
     database_name: &str,
     view_name: &str,
-    key_structure: &str,
+    index_name: &str,
     index_mold: IndexMold,
     primary: bool,
     position: usize,
@@ -561,11 +561,11 @@ fn create_index(
     match GLOBAL_CLIENT.create_index(
         database_name.to_string(),
         view_name.to_string(),
-        key_structure.to_string(),
+        index_name.to_string(),
         index_mold,
         primary,
     ) {
-        Err(err) => println!("create_index{} {} = {}", position, key_structure, err),
+        Err(err) => println!("create_index{} {} = {}", position, index_name, err),
         _ => {}
     }
 }

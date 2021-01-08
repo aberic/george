@@ -115,29 +115,29 @@ pub fn level_distance_64(level: u8) -> u64 {
     }
 }
 
-pub fn key_fetch(key_structure: String, value: Vec<u8>) -> GeorgeResult<String> {
+pub fn key_fetch(index_name: String, value: Vec<u8>) -> GeorgeResult<String> {
     match String::from_utf8(value) {
         Ok(value_str) => {
             let res: Result<Value, Error> = serde_json::from_str(value_str.as_ref());
             match res {
-                Ok(v) => match v[key_structure.clone()] {
+                Ok(v) => match v[index_name.clone()] {
                     Value::Null => Err(err_string(format!(
                         "key structure {} do not support none!",
-                        key_structure
+                        index_name
                     ))),
                     Value::Object(..) => Err(err_string(format!(
                         "key structure {} do not support object!",
-                        key_structure
+                        index_name
                     ))),
                     Value::Array(..) => Err(err_string(format!(
                         "key structure {} do not support array!",
-                        key_structure
+                        index_name
                     ))),
                     Value::Bool(..) => Err(err_string(format!(
                         "key structure {} do not support bool!",
-                        key_structure
+                        index_name
                     ))),
-                    _ => Ok(format!("{}", v[key_structure])),
+                    _ => Ok(format!("{}", v[index_name])),
                 },
                 Err(err) => Err(err_string(err.to_string())),
             }

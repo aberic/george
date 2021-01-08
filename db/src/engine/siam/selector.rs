@@ -489,7 +489,7 @@ impl Selector {
         if status.end != 0 && status.start > status.end {
             Err(err_string(format!(
                 "condition {} end {} can't start from {}",
-                status.index.read().unwrap().key_structure(),
+                status.index.read().unwrap().name(),
                 status.end,
                 status.start
             )))
@@ -588,11 +588,11 @@ impl Selector {
         let idx_r = idx.read().unwrap();
         // 确认排序索引是否存在条件区间
         for condition in self.constraint.conditions.iter() {
-            if condition.param.clone() == idx_r.key_structure() {
+            if condition.param.clone() == idx_r.name() {
                 if !condition.support_check(idx_r.mold()) {
                     return Err(err_string(format!(
                         "condition param can't support index {}",
-                        idx_r.key_structure()
+                        idx_r.name()
                     )));
                 }
                 match condition.support() {
@@ -762,8 +762,8 @@ impl Selector {
     /// 通过param参数匹配获取索引
     fn index_param(&self, param: String) -> Option<Arc<RwLock<dyn TIndex>>> {
         for (_str, index) in self.indexes.clone().read().unwrap().iter() {
-            let key_structure = index.clone().read().unwrap().key_structure();
-            if key_structure.eq(&param) {
+            let index_name = index.clone().read().unwrap().name();
+            if index_name.eq(&param) {
                 return Some(index.clone());
             }
         }

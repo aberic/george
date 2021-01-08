@@ -267,24 +267,24 @@ impl View {
     ///
     /// ###Params
     ///
-    /// key_structure 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`key_structure`作为索引存入
+    /// index_name 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
     ///
     /// primary 是否主键
     pub(crate) fn create_index(
         &self,
         database_id: String,
-        key_structure: String,
+        index_name: String,
         index_mold: IndexMold,
         primary: bool,
     ) -> GeorgeResult<()> {
-        let index_id = self.index_id(key_structure.clone());
+        let index_id = self.index_id(index_name.clone());
         if self.exist_index(index_id.clone()) {
             return Err(GeorgeError::IndexExistError(IndexExistError));
         }
         let index = self.index(
             database_id,
             index_id.clone(),
-            key_structure,
+            index_name,
             index_mold,
             primary,
         )?;
@@ -295,14 +295,14 @@ impl View {
             .insert(index_id, index);
         Ok(())
     }
-    fn index_id(&self, key_structure: String) -> String {
-        md516(key_structure.clone())
+    fn index_id(&self, index_name: String) -> String {
+        md516(index_name.clone())
     }
     fn index(
         &self,
         database_id: String,
         index_id: String,
-        key_structure: String,
+        index_name: String,
         index_mold: IndexMold,
         primary: bool,
     ) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
@@ -312,7 +312,7 @@ impl View {
                     database_id,
                     self.id(),
                     index_id,
-                    key_structure,
+                    index_name,
                     primary,
                     Siam_Mem_Node::create_root(),
                     category(self.category),
@@ -323,7 +323,7 @@ impl View {
                     database_id,
                     self.id(),
                     index_id.clone(),
-                    key_structure,
+                    index_name,
                     primary,
                     Siam_Doc_Node::create_root(
                         self.database_id(),
@@ -338,9 +338,9 @@ impl View {
             },
         }
     }
-    fn exist_index(&self, key_structure: String) -> bool {
+    fn exist_index(&self, index_name: String) -> bool {
         for res in self.indexes.clone().read().unwrap().iter() {
-            if res.0.eq(&key_structure) {
+            if res.0.eq(&index_name) {
                 return true;
             }
         }
@@ -440,12 +440,12 @@ impl View {
             let value_clone = value.clone();
             thread::spawn(move || {
                 let index_r = index_clone.read().unwrap();
-                let key_structure = index_r.key_structure();
-                match key_structure.as_str() {
+                let index_name = index_r.name();
+                match index_name.as_str() {
                     INDEX_CATALOG => {
                         sender.send(index_r.put(key_clone.clone(), seed_clone.clone(), force))
                     }
-                    _ => match key_fetch(index_r.key_structure(), value_clone) {
+                    _ => match key_fetch(index_r.name(), value_clone) {
                         Ok(res) => sender.send(index_r.put(res, seed_clone.clone(), force)),
                         Err(err) => {
                             log::debug!("error is {}", err);
@@ -487,7 +487,7 @@ impl View {
                                 Ok(index) => {
                                     let idx = index.clone();
                                     let idx_r = idx.read().unwrap();
-                                    let index_id = self.index_id(idx_r.key_structure());
+                                    let index_id = self.index_id(idx_r.name());
                                     // 如果已存在该view，则不处理
                                     if self.exist_index(index_id.clone()) {
                                         return;

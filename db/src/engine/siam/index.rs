@@ -34,10 +34,10 @@ where
     view_id: String,
     /// 索引唯一ID
     id: String,
+    /// 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
+    name: String,
     /// 是否主键
     primary: bool,
-    /// 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`key_structure`作为索引存入
-    key_structure: String,
     /// 结点
     root: Arc<N>,
     /// 类型
@@ -61,7 +61,7 @@ impl<N: TNode + Debug> TDescription for Index<N> {
             self.view_id,
             self.id,
             self.primary,
-            self.key_structure,
+            self.name,
             category_u8(self.category),
             mold_u8(self.mold),
             level_u8(self.level),
@@ -92,7 +92,7 @@ impl<N: TNode + Debug> TDescription for Index<N> {
                         self.view_id = split.next().unwrap().to_string();
                         self.id = split.next().unwrap().to_string();
                         self.primary = split.next().unwrap().to_string().parse::<bool>().unwrap();
-                        self.key_structure = split.next().unwrap().to_string();
+                        self.name = split.next().unwrap().to_string();
                         self.category =
                             category(split.next().unwrap().to_string().parse::<u8>().unwrap());
                         self.mold = mold(split.next().unwrap().to_string().parse::<u8>().unwrap());
@@ -126,14 +126,14 @@ impl<N: TNode + Debug> TDescription for Index<N> {
 ///
 /// ###Params
 ///
-/// key_structure 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`key_structure`作为索引存入
+/// index_name 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
 ///
 /// primary 是否主键
 fn new_index<N: TNode + Debug>(
     database_id: String,
     view_id: String,
     id: String,
-    key_structure: String,
+    index_name: String,
     primary: bool,
     root: Arc<N>,
     category: Category,
@@ -147,7 +147,7 @@ fn new_index<N: TNode + Debug>(
         view_id,
         id,
         primary,
-        key_structure,
+        name: index_name,
         root,
         category,
         mold,
@@ -171,8 +171,8 @@ impl<N: TNode + Debug> TIndex for Index<N> {
     fn is_primary(&self) -> bool {
         self.primary.clone()
     }
-    fn key_structure(&self) -> String {
-        self.key_structure.clone()
+    fn name(&self) -> String {
+        self.name.clone()
     }
     fn category(&self) -> Category {
         self.category
@@ -204,7 +204,7 @@ impl<N: TNode + Debug> TIndex for Index<N> {
                 .select(self.mold(), left, start, end, constraint.clone())?;
         match constraint.sort() {
             Some(sort) => {
-                if self.key_structure() != sort.param() {
+                if self.name() != sort.param() {
                     values.sort_by(|a, b| match String::from_utf8(a.clone()) {
                         Ok(value_str_a) => match String::from_utf8(b.clone()) {
                             Ok(value_str_b) => {
@@ -307,7 +307,7 @@ impl<N: TNode + Debug> TIndex for Index<N> {
         Ok(Expectation {
             total,
             count,
-            index_name: self.key_structure(),
+            index_name: self.name(),
             asc: left,
             values,
         })
@@ -322,8 +322,8 @@ impl<N: TNode + Debug> Index<N> {
     ///
     /// ###Params
     ///
-    /// key_structure 索引名称，可以自定义；<p>
-    /// siam::Index 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`key_structure`作为索引存入<p><p>
+    /// index_name 索引名称，可以自定义；<p>
+    /// siam::Index 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入<p><p>
     ///
     /// primary 是否主键
     ///
@@ -332,7 +332,7 @@ impl<N: TNode + Debug> Index<N> {
         database_id: String,
         view_id: String,
         id: String,
-        key_structure: String,
+        index_name: String,
         primary: bool,
         root: Arc<N>,
         category: Category,
@@ -343,7 +343,7 @@ impl<N: TNode + Debug> Index<N> {
             database_id.clone(),
             view_id.clone(),
             id.clone(),
-            key_structure.clone(),
+            index_name.clone(),
             primary,
             root,
             category,
@@ -373,8 +373,8 @@ impl<N: TNode + Debug> Index<N> {
     ///
     /// ###Params
     ///
-    /// key_structure 索引名称，可以自定义；<p>
-    /// siam::Index 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`key_structure`作为索引存入<p><p>
+    /// index_name 索引名称，可以自定义；<p>
+    /// siam::Index 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入<p><p>
     ///
     /// primary 是否主键
     ///
@@ -383,7 +383,7 @@ impl<N: TNode + Debug> Index<N> {
         database_id: String,
         view_id: String,
         id: String,
-        key_structure: String,
+        index_name: String,
         primary: bool,
         root: Arc<N>,
         category: Category,
@@ -394,7 +394,7 @@ impl<N: TNode + Debug> Index<N> {
             database_id,
             view_id,
             id,
-            key_structure.clone(),
+            index_name.clone(),
             primary,
             root,
             category,
@@ -413,7 +413,7 @@ impl<N: TNode + Debug> Index<N> {
             view_id: "".to_string(),
             id: "".to_string(),
             primary: false,
-            key_structure: "".to_string(),
+            name: "".to_string(),
             root,
             category: Category::Memory,
             level: LevelType::Large,
@@ -424,17 +424,17 @@ impl<N: TNode + Debug> Index<N> {
         index.recover(description)?;
         log::info!(
             "recovery index {}({}.{}.{})",
-            index.key_structure(),
+            index.name(),
             index.database_id(),
             index.view_id(),
             index.id()
         );
         log::debug!(
-            "index [dbID={}, vid={}, id={}, key_structure={}, primary={}, category={:#?}, level={:#?}, create_time={}]",
+            "index [dbID={}, vid={}, id={}, index_name={}, primary={}, category={:#?}, level={:#?}, create_time={}]",
             index.database_id(),
             index.view_id(),
             index.id(),
-            index.key_structure(),
+            index.name(),
             index.is_primary(),
             index.category(),
             index.level(),
