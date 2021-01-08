@@ -3,8 +3,8 @@ mod node_test {
     use std::sync::{Arc, RwLock};
 
     use crate::engine::siam::comm::add_child_node;
-    use crate::engine::siam::memory::node::Node;
-    use crate::engine::siam::memory::seed::Seed;
+    use crate::engine::siam::mem::node::Node;
+    use crate::engine::siam::mem::seed::Seed;
     use crate::engine::siam::traits::TNode;
     use crate::engine::traits::TSeed;
     use comm::cryptos::hash::md516;

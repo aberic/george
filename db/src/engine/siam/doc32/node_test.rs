@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod node_test {
     use crate::engine::siam::comm::add_child_node;
-    use crate::engine::siam::document::node::Node;
+    use crate::engine::siam::doc32::node::Node;
     use crate::engine::siam::traits::TNode;
     use crate::utils::comm::LevelType;
     use std::sync::Arc;

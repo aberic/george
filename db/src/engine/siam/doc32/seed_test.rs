@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod seed_test {
-    use crate::engine::siam::document::seed::Seed;
+    use crate::engine::siam::doc32::seed::Seed;
     use crate::engine::traits::TSeed;
 
     #[test]

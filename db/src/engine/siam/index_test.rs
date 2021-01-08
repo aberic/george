@@ -4,8 +4,8 @@ mod index_test {
     use std::sync::{Arc, RwLock};
 
     use crate::engine::siam::index::Index;
-    use crate::engine::siam::memory::node::Node;
-    use crate::engine::siam::memory::seed::Seed;
+    use crate::engine::siam::mem::node::Node;
+    use crate::engine::siam::mem::seed::Seed;
     use crate::engine::traits::{TDescription, TIndex, TSeed};
     use crate::utils::comm::{Category, IndexMold};
     use comm::cryptos::hash::md516;

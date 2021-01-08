@@ -1,4 +1,4 @@
-use crate::engine::siam::document::node::Node;
+use crate::engine::siam::doc32::node::Node;
 use crate::engine::siam::index::Index;
 use crate::engine::siam::selector::Selector;
 use crate::engine::traits::TIndex;

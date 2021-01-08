@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod seed_test {
-    use crate::engine::siam::memory::seed::Seed;
+    use crate::engine::siam::mem::seed::Seed;
     use crate::engine::traits::TSeed;
 
     #[test]

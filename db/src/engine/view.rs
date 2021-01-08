@@ -11,11 +11,11 @@ use comm::errors::entrances::GeorgeResult;
 use comm::errors::entrances::{err_string, GeorgeError};
 use comm::io::file::create_file;
 
-use crate::engine::siam::document::node::Node as Siam_Doc_Node;
-use crate::engine::siam::document::seed::Seed as Doc_Seed;
+use crate::engine::siam::doc32::node::Node as Siam_Doc_Node;
+use crate::engine::siam::doc32::seed::Seed as Doc_Seed;
 use crate::engine::siam::index::Index as Siam_Index;
-use crate::engine::siam::memory::node::Node as Siam_Mem_Node;
-use crate::engine::siam::memory::seed::Seed as Mem_Seed;
+use crate::engine::siam::mem::node::Node as Siam_Mem_Node;
+use crate::engine::siam::mem::seed::Seed as Mem_Seed;
 use crate::engine::siam::selector::{Expectation, Selector};
 use crate::engine::traits::{TDescription, TIndex, TSeed};
 use crate::utils::comm::{
