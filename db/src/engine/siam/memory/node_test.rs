@@ -7,7 +7,6 @@ mod node_test {
     use crate::engine::siam::memory::seed::Seed;
     use crate::engine::siam::traits::TNode;
     use crate::engine::traits::TSeed;
-    use crate::utils::comm::LevelType;
     use comm::cryptos::hash::md516;
     use std::error::Error;
 
@@ -63,14 +62,13 @@ mod node_test {
         let key = "test".to_string();
         let seed = Arc::new(RwLock::new(Seed::create(md516(key.clone()))));
         seed.write().unwrap().save("1".as_bytes().to_vec()).unwrap();
-        root.put(key.clone(), seed, false, 0, LevelType::Small)
-            .unwrap();
-        let irg = root.get(key.clone(), LevelType::Small);
+        root.put(key.clone(), seed, false, 0).unwrap();
+        let irg = root.get(key.clone());
         match irg {
             Ok(seed) => println!("u is {:#?}", seed),
             Err(ie) => println!("res is {:#?}", ie.source().unwrap().to_string()),
         }
-        let irg = root.get(key.clone(), LevelType::Large);
+        let irg = root.get(key.clone());
         match irg {
             Ok(seed) => println!("u is {:#?}", seed),
             Err(ie) => println!("res is {:#?}", ie.source().unwrap().to_string()),
@@ -83,14 +81,13 @@ mod node_test {
         let key = "test".to_string();
         let seed = Arc::new(RwLock::new(Seed::create(md516(key.clone()))));
         seed.write().unwrap().save("1".as_bytes().to_vec()).unwrap();
-        root.put(key.clone(), seed, false, 0, LevelType::Large)
-            .unwrap();
-        let irg = root.get(key.clone(), LevelType::Large);
+        root.put(key.clone(), seed, false, 0).unwrap();
+        let irg = root.get(key.clone());
         match irg {
             Ok(seed) => println!("u is {:#?}", seed),
             Err(ie) => println!("res is {:#?}", ie.source().unwrap().to_string()),
         }
-        let irg = root.get(key.clone(), LevelType::Small);
+        let irg = root.get(key.clone());
         match irg {
             Ok(seed) => println!("u is {:#?}", seed),
             Err(ie) => println!("res is {:#?}", ie.source().unwrap().to_string()),

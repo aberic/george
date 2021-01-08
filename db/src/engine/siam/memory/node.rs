@@ -1,16 +1,14 @@
 use std::fmt::Debug;
 use std::sync::{Arc, RwLock};
 
-use comm::cryptos::hash::{hashcode32_enhance, hashcode64_enhance, md516};
+use comm::cryptos::hash::{hashcode64_enhance, md516};
 use comm::errors::entrances::{err_str, GeorgeResult};
 
-use crate::engine::siam::comm::{
-    get_in_node_u32, get_in_node_u64, put_in_node_u32, put_in_node_u64,
-};
+use crate::engine::siam::comm::{get_in_node_u64, put_in_node_u64};
 use crate::engine::siam::selector::Constraint;
 use crate::engine::siam::traits::TNode;
 use crate::engine::traits::TSeed;
-use crate::utils::comm::{IndexMold, LevelType};
+use crate::utils::comm::IndexMold;
 
 /// 索引B+Tree结点结构
 ///
@@ -111,21 +109,20 @@ impl TNode for Node {
         seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
         _description_len: usize,
-        _level_type: LevelType,
     ) -> GeorgeResult<()>
     where
         Self: Sized,
     {
         put_in_node_u64(self, 1, hashcode64_enhance(key), seed, force)
     }
-    fn get(&self, key: String, _level_type: LevelType) -> GeorgeResult<Vec<u8>> {
+    fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
         get_in_node_u64(self, 1, md516(key.clone()), hashcode64_enhance(key.clone()))
     }
-    fn remove(&self, _key: String, _level_type: LevelType) -> GeorgeResult<Vec<u8>> {
+    fn remove(&self, _key: String) -> GeorgeResult<Vec<u8>> {
         // todo
         unimplemented!()
     }
-    fn get_last(&self, _level_type: LevelType) -> GeorgeResult<Vec<u8>>
+    fn get_last(&self) -> GeorgeResult<Vec<u8>>
     where
         Self: Sized,
     {
@@ -138,7 +135,6 @@ impl TNode for Node {
         _start: u64,
         _end: u64,
         _constraint: Constraint,
-        _level_type: LevelType,
     ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)> {
         Err(err_str("unimplemented!"))
     }
@@ -149,7 +145,6 @@ impl TNode for Node {
         _start: u64,
         _end: u64,
         _constraint: Constraint,
-        _level_type: LevelType,
     ) -> GeorgeResult<(u64, u64)> {
         Err(err_str("unimplemented!"))
     }

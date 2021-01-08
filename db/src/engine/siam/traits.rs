@@ -5,7 +5,7 @@ use comm::errors::entrances::GeorgeResult;
 
 use crate::engine::siam::selector::{Condition, Constraint};
 use crate::engine::traits::TSeed;
-use crate::utils::comm::{IndexMold, LevelType};
+use crate::utils::comm::IndexMold;
 
 /// 结点通用特性，遵循此特性创建结点可以更方便的针对db进行扩展
 ///
@@ -61,7 +61,6 @@ pub trait TNode: Send + Sync {
         seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
         description_len: usize,
-        level_type: LevelType,
     ) -> GeorgeResult<()>
     where
         Self: Sized;
@@ -74,7 +73,7 @@ pub trait TNode: Send + Sync {
     /// ###Return
     ///
     /// Seed value信息
-    fn get(&self, key: String, level_type: LevelType) -> GeorgeResult<Vec<u8>>;
+    fn get(&self, key: String) -> GeorgeResult<Vec<u8>>;
     /// 删除数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -84,9 +83,9 @@ pub trait TNode: Send + Sync {
     /// ###Return
     ///
     /// Seed value信息
-    fn remove(&self, key: String, level_type: LevelType) -> GeorgeResult<Vec<u8>>;
+    fn remove(&self, key: String) -> GeorgeResult<Vec<u8>>;
     /// 获取最后一条记录数据，返回存储对象
-    fn get_last(&self, level_type: LevelType) -> GeorgeResult<Vec<u8>>;
+    fn get_last(&self) -> GeorgeResult<Vec<u8>>;
     /// 通过查询约束获取数据集
     ///
     /// ###Params
@@ -109,7 +108,6 @@ pub trait TNode: Send + Sync {
         start: u64,
         end: u64,
         constraint: Constraint,
-        level_type: LevelType,
     ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)>;
     /// 通过查询约束删除数据集
     ///
@@ -131,7 +129,6 @@ pub trait TNode: Send + Sync {
         start: u64,
         end: u64,
         constraint: Constraint,
-        level_type: LevelType,
     ) -> GeorgeResult<(u64, u64)>;
 }
 
@@ -171,7 +168,6 @@ pub trait DiskNode: Send + Sync {
         force: bool,
         root: bool,
         next_node_seek: u64,
-        level_type: LevelType,
     ) -> GeorgeResult<()>
     where
         Self: Sized;
@@ -193,19 +189,13 @@ pub trait DiskNode: Send + Sync {
         node_bytes: Vec<u8>,
         level: u8,
         flexible_key: u64,
-        level_type: LevelType,
     ) -> GeorgeResult<Vec<u8>>;
     /// 获取数据真实操作
     ///
     /// node_bytes 当前操作结点的字节数组
     ///
     /// level 当前操作结点层
-    fn get_last_in_node(
-        &self,
-        node_bytes: Vec<u8>,
-        level: u8,
-        level_type: LevelType,
-    ) -> GeorgeResult<Vec<u8>>;
+    fn get_last_in_node(&self, node_bytes: Vec<u8>, level: u8) -> GeorgeResult<Vec<u8>>;
     /// 通过左查询约束获取数据集
     ///
     /// ###Params
@@ -240,7 +230,6 @@ pub trait DiskNode: Send + Sync {
         start_key: u64,
         end_key: u64,
         level: u8,
-        level_type: LevelType,
         conditions: Vec<Condition>,
         skip: u64,
         limit: u64,
@@ -280,7 +269,6 @@ pub trait DiskNode: Send + Sync {
         start_key: u64,
         end_key: u64,
         level: u8,
-        level_type: LevelType,
         conditions: Vec<Condition>,
         skip: u64,
         limit: u64,

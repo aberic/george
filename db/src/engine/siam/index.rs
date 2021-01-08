@@ -187,11 +187,10 @@ impl<N: TNode + Debug> TIndex for Index<N> {
         self.create_time
     }
     fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
-        self.root
-            .put(key, seed, force, self.description_len, self.level())
+        self.root.put(key, seed, force, self.description_len)
     }
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        self.root.get(key, self.level())
+        self.root.get(key)
     }
     fn select(
         &self,
@@ -200,14 +199,9 @@ impl<N: TNode + Debug> TIndex for Index<N> {
         end: u64,
         constraint: Constraint,
     ) -> GeorgeResult<Expectation> {
-        let (total, count, mut values) = self.root.select(
-            self.mold(),
-            left,
-            start,
-            end,
-            constraint.clone(),
-            self.level(),
-        )?;
+        let (total, count, mut values) =
+            self.root
+                .select(self.mold(), left, start, end, constraint.clone())?;
         match constraint.sort() {
             Some(sort) => {
                 if self.key_structure() != sort.param() {
@@ -428,7 +422,13 @@ impl<N: TNode + Debug> Index<N> {
             description_len: 0,
         };
         index.recover(description)?;
-        log::info!("recovery index {}({}.{}.{})", index.key_structure(), index.database_id(), index.view_id(), index.id());
+        log::info!(
+            "recovery index {}({}.{}.{})",
+            index.key_structure(),
+            index.database_id(),
+            index.view_id(),
+            index.id()
+        );
         log::debug!(
             "index [dbID={}, vid={}, id={}, key_structure={}, primary={}, category={:#?}, level={:#?}, create_time={}]",
             index.database_id(),

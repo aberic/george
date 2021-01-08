@@ -1,3 +1,4 @@
+use std::fs::File;
 use std::ops::{Add, Sub};
 use std::sync::{Arc, RwLock};
 
@@ -12,10 +13,9 @@ use comm::vectors::{find_eq_vec_bytes, find_last_eq_bytes};
 use crate::engine::siam::document::seed::Seed;
 use crate::engine::siam::traits::{DiskNode, TNode};
 use crate::engine::traits::TSeed;
-use crate::utils::comm::{level_distance_32, level_distance_64, LevelType};
+use crate::utils::comm::{level_distance_32, level_distance_64};
 use crate::utils::store::Tag;
 use crate::utils::writer::GLOBAL_WRITER;
-use std::fs::File;
 
 /// 节点数组二分查找基本方法前置方法
 ///
@@ -505,7 +505,6 @@ pub(super) fn read_next_nodes_bytes<N: DiskNode>(
     next_node_seek: u64,
     start: u64,
     root: bool,
-    level_type: LevelType,
 ) -> GeorgeResult<NodeBytes> {
     let seek_start = start as usize;
     let seek_end = seek_start + 8;
@@ -514,11 +513,7 @@ pub(super) fn read_next_nodes_bytes<N: DiskNode>(
     if next_node_bytes_seek == 0 {
         // 如果子项是32位node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
         // 如果子项是64位node集合，在node集合中每一个node的默认字节长度是8，数量是65536，即一次性读取524288个字节
-        let next_node_bytes: Vec<u8>;
-        match level_type {
-            LevelType::Small => next_node_bytes = create_empty_bytes(2048),
-            LevelType::Large => next_node_bytes = create_empty_bytes(524288),
-        }
+        let next_node_bytes = create_empty_bytes(2048);
         let seek = GLOBAL_WRITER.write_append_bytes(
             Tag::Index,
             index_id.clone(),
@@ -538,7 +533,7 @@ pub(super) fn read_next_nodes_bytes<N: DiskNode>(
             seek,
         })
     } else {
-        read_node_bytes(node.index_file_path(), next_node_bytes_seek, level_type)
+        read_node_bytes(node.index_file_path(), next_node_bytes_seek)
     }
 }
 
@@ -563,7 +558,6 @@ pub(super) fn try_read_next_nodes_bytes<N: DiskNode>(
     node: &N,
     node_bytes: Vec<u8>,
     start: u64,
-    level_type: LevelType,
 ) -> GeorgeResult<NodeBytes> {
     let seek_start = start as usize;
     let seek_end = seek_start + 8;
@@ -572,7 +566,7 @@ pub(super) fn try_read_next_nodes_bytes<N: DiskNode>(
     if next_node_bytes_seek == 0 {
         Err(GeorgeError::DataNoExistError(DataNoExistError))
     } else {
-        read_node_bytes(node.index_file_path(), next_node_bytes_seek, level_type)
+        read_node_bytes(node.index_file_path(), next_node_bytes_seek)
     }
 }
 
@@ -596,11 +590,10 @@ pub(super) fn try_read_next_nodes_bytes<N: DiskNode>(
 pub(super) fn read_last_nodes_bytes(
     node_bytes: Vec<u8>,
     index_file_path: String,
-    level_type: LevelType,
 ) -> GeorgeResult<NodeBytes> {
     let u8s = find_last_eq_bytes(node_bytes, 8)?;
     let next_node_bytes_seek = trans_bytes_2_u64(u8s);
-    read_node_bytes(index_file_path, next_node_bytes_seek, level_type)
+    read_node_bytes(index_file_path, next_node_bytes_seek)
 }
 
 /// 读取最右叶子节点的字节数组集合记录
@@ -625,7 +618,6 @@ pub(super) fn read_next_and_all_nodes_bytes_by_file(
     index_file: Arc<RwLock<File>>,
     start: u64,
     end: u64,
-    level_type: LevelType,
 ) -> GeorgeResult<Vec<NodeBytes>> {
     let mut nbs: Vec<NodeBytes> = vec![];
     let last_bytes: Vec<u8>;
@@ -644,7 +636,6 @@ pub(super) fn read_next_and_all_nodes_bytes_by_file(
         nbs.push(read_node_bytes_by_file(
             index_file.clone(),
             next_node_bytes_seek,
-            level_type,
         )?);
     }
     Ok(nbs)
@@ -672,7 +663,6 @@ pub(super) fn read_next_nodes_and_all_bytes_by_file(
     index_file: Arc<RwLock<File>>,
     start: u64,
     end: u64,
-    level_type: LevelType,
 ) -> GeorgeResult<QueryNodeData> {
     let qnd: QueryNodeData;
 
@@ -695,7 +685,6 @@ pub(super) fn read_next_nodes_and_all_bytes_by_file(
         nbs.push(read_node_bytes_by_file(
             index_file.clone(),
             next_node_bytes_seek,
-            level_type,
         )?);
     }
 
@@ -704,7 +693,7 @@ pub(super) fn read_next_nodes_and_all_bytes_by_file(
     if next_node_bytes_seek == 0 {
         qnd = QueryNodeData { nb: None, nbs }
     } else {
-        let nb = read_node_bytes_by_file(index_file.clone(), next_node_bytes_seek, level_type)?;
+        let nb = read_node_bytes_by_file(index_file.clone(), next_node_bytes_seek)?;
         qnd = QueryNodeData { nb: Some(nb), nbs }
     }
 
@@ -733,7 +722,6 @@ pub(super) fn read_before_and_all_nodes_bytes_by_file(
     index_file: Arc<RwLock<File>>,
     start: u64,
     end: u64,
-    level_type: LevelType,
 ) -> GeorgeResult<Vec<NodeBytes>> {
     let mut nbs: Vec<NodeBytes> = vec![];
     let before_bytes: Vec<u8>;
@@ -755,7 +743,6 @@ pub(super) fn read_before_and_all_nodes_bytes_by_file(
         nbs.push(read_node_bytes_by_file(
             index_file.clone(),
             next_node_bytes_seek,
-            level_type,
         )?);
     }
     Ok(nbs)
@@ -783,7 +770,6 @@ pub(super) fn read_before_nodes_and_all_bytes_by_file(
     index_file: Arc<RwLock<File>>,
     start: u64,
     end: u64,
-    level_type: LevelType,
 ) -> GeorgeResult<QueryNodeData> {
     let qnd: QueryNodeData;
 
@@ -802,14 +788,13 @@ pub(super) fn read_before_nodes_and_all_bytes_by_file(
                 nbs.push(read_node_bytes_by_file(
                     index_file.clone(),
                     next_node_bytes_seek,
-                    level_type,
                 )?);
                 len -= 1;
             }
             None => {
                 return Err(err_str(
                     "read before nodes and all bytes by file get none error",
-                ))
+                ));
             }
         }
     }
@@ -817,7 +802,7 @@ pub(super) fn read_before_nodes_and_all_bytes_by_file(
     let u8s = node_bytes.as_slice()[seek_end..seek_before_end].to_vec();
     let next_node_bytes_seek = trans_bytes_2_u64(u8s);
     if next_node_bytes_seek != 0 {
-        let nb = read_node_bytes_by_file(index_file.clone(), next_node_bytes_seek, level_type)?;
+        let nb = read_node_bytes_by_file(index_file.clone(), next_node_bytes_seek)?;
         qnd = QueryNodeData { nb: Some(nb), nbs }
     } else {
         qnd = QueryNodeData { nb: None, nbs }
@@ -831,27 +816,11 @@ pub(super) fn read_before_nodes_and_all_bytes_by_file(
 /// 如果子项是32位node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
 ///
 /// 如果子项是64位node集合，在node集合中每一个node的默认字节长度是8，数量是65536，即一次性读取524288个字节
-fn read_node_bytes(
-    index_file_path: String,
-    next_node_bytes_seek: u64,
-    level_type: LevelType,
-) -> GeorgeResult<NodeBytes> {
-    match level_type {
-        LevelType::Small => {
-            let next_node_bytes = read_sub_bytes(index_file_path, next_node_bytes_seek, 2048)?;
-            Ok(NodeBytes {
-                bytes: next_node_bytes,
-                seek: next_node_bytes_seek,
-            })
-        }
-        LevelType::Large => {
-            let next_node_bytes = read_sub_bytes(index_file_path, next_node_bytes_seek, 524288)?;
-            Ok(NodeBytes {
-                bytes: next_node_bytes,
-                seek: next_node_bytes_seek,
-            })
-        }
-    }
+fn read_node_bytes(index_file_path: String, next_node_bytes_seek: u64) -> GeorgeResult<NodeBytes> {
+    Ok(NodeBytes {
+        bytes: read_sub_bytes(index_file_path, next_node_bytes_seek, 2048)?,
+        seek: next_node_bytes_seek,
+    })
 }
 
 /// 读取结点字节数组及该数组的起始偏移量
@@ -862,32 +831,16 @@ fn read_node_bytes(
 fn read_node_bytes_by_file(
     index_file: Arc<RwLock<File>>,
     next_node_bytes_seek: u64,
-    level_type: LevelType,
 ) -> GeorgeResult<NodeBytes> {
-    match level_type {
-        LevelType::Small => {
-            let next_node_bytes = read_sub_file_bytes(
-                index_file.clone().read().unwrap().try_clone().unwrap(),
-                next_node_bytes_seek,
-                2048,
-            )?;
-            Ok(NodeBytes {
-                bytes: next_node_bytes,
-                seek: next_node_bytes_seek,
-            })
-        }
-        LevelType::Large => {
-            let next_node_bytes = read_sub_file_bytes(
-                index_file.clone().read().unwrap().try_clone().unwrap(),
-                next_node_bytes_seek,
-                524288,
-            )?;
-            Ok(NodeBytes {
-                bytes: next_node_bytes,
-                seek: next_node_bytes_seek,
-            })
-        }
-    }
+    let next_node_bytes = read_sub_file_bytes(
+        index_file.clone().read().unwrap().try_clone().unwrap(),
+        next_node_bytes_seek,
+        2048,
+    )?;
+    Ok(NodeBytes {
+        bytes: next_node_bytes,
+        seek: next_node_bytes_seek,
+    })
 }
 
 /// 读取下一个节点的字节数组记录，如果不存在，则判断是否为插入操作，如果是插入操作，则新建下一个节点默认数组
