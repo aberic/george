@@ -2,7 +2,6 @@
 mod node_test {
     use crate::engine::siam::doc32::node::Node;
     use crate::engine::siam::traits::TNode;
-    use crate::utils::comm::LevelType;
     use std::sync::Arc;
 
     #[test]
@@ -11,7 +10,6 @@ mod node_test {
             "database".to_string(),
             "view".to_string(),
             "index".to_string(),
-            LevelType::Small,
         );
         println!("node is {:#?}", n);
         println!("node degree_index = {}", n.degree_index());

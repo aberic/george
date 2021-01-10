@@ -2,7 +2,7 @@ use crate::engine::siam::doc32::node::Node;
 use crate::engine::siam::index::Index;
 use crate::engine::siam::selector::Selector;
 use crate::engine::traits::TIndex;
-use crate::utils::comm::{Category, IndexMold, LevelType};
+use crate::utils::comm::{Category, IndexMold};
 use comm::cryptos::hash::md516;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
@@ -95,7 +95,7 @@ fn run_test() {
         index_id.clone(),
         index_name,
         false,
-        Node::create_root(database_id, view_id, index_id.clone(), LevelType::Large),
+        Node::create_root(database_id, view_id, index_id.clone()),
         Category::Memory,
         IndexMold::String,
     );

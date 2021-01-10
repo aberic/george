@@ -20,7 +20,7 @@ use crate::engine::siam::comm::{
 use crate::engine::siam::selector::{Condition, Constraint};
 use crate::engine::siam::traits::{DiskNode, TNode};
 use crate::engine::traits::TSeed;
-use crate::utils::comm::{level_distance_32, IndexMold, LevelType};
+use crate::utils::comm::{IndexMold, level_distance_32};
 use crate::utils::path::{index_file_path, view_file_path};
 
 /// 索引B+Tree结点结构
@@ -60,27 +60,14 @@ fn create_root_self(
     database_id: String,
     view_id: String,
     index_id: String,
-    level_type: LevelType,
 ) -> Node {
-    let view_file_path = view_file_path(database_id.clone(), view_id.clone());
-    let index_file_path = index_file_path(database_id.clone(), view_id.clone(), index_id.clone());
-    match level_type {
-        LevelType::Small => Node {
-            database_id,
-            view_id,
-            index_id,
-            view_file_path,
-            index_file_path,
-            node_bytes: Arc::new(RwLock::new(create_empty_bytes(2048))),
-        },
-        LevelType::Large => Node {
-            database_id,
-            view_id,
-            index_id,
-            view_file_path,
-            index_file_path,
-            node_bytes: Arc::new(RwLock::new(create_empty_bytes(524288))),
-        },
+    Node {
+        database_id: database_id.clone(),
+        view_id: view_id.clone(),
+        index_id: index_id.clone(),
+        view_file_path: view_file_path(database_id.clone(), view_id.clone()),
+        index_file_path: index_file_path(database_id.clone(), view_id.clone(), index_id.clone()),
+        node_bytes: Arc::new(RwLock::new(create_empty_bytes(2048))),
     }
 }
 
@@ -100,9 +87,8 @@ impl Node {
         database_id: String,
         view_id: String,
         index_id: String,
-        level_type: LevelType,
     ) -> Arc<Self> {
-        return Arc::new(create_root_self(database_id, view_id, index_id, level_type));
+        return Arc::new(create_root_self(database_id, view_id, index_id));
     }
 }
 
@@ -132,8 +118,8 @@ impl TNode for Node {
         force: bool,
         description_len: usize,
     ) -> GeorgeResult<()>
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
         self.put_in_node(
@@ -155,8 +141,8 @@ impl TNode for Node {
         unimplemented!()
     }
     fn get_last(&self) -> GeorgeResult<Vec<u8>>
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
         self.get_last_in_node(node_bytes, 1)
@@ -256,8 +242,8 @@ impl DiskNode for Node {
         root: bool,
         next_node_seek: u64,
     ) -> GeorgeResult<()>
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
         let distance = level_distance_32(level) as u64;

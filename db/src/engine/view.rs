@@ -328,7 +328,6 @@ impl View {
                         self.database_id(),
                         self.id(),
                         index_id,
-                        self.level(),
                     ),
                     category(self.category),
                     index_mold,
@@ -532,7 +531,6 @@ impl View {
                                 .next()
                                 .unwrap()
                                 .to_string(),
-                            self.level(),
                         ),
                     )?;
                     GLOBAL_WRITER
