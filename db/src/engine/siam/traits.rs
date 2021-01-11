@@ -147,7 +147,7 @@ pub trait DiskNode: Send + Sync {
         &self,
         node_bytes: Vec<u8>,
         level: u8,
-        flexible_key: u64,
+        flexible_key: u32,
         seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
         root: bool,
@@ -172,7 +172,7 @@ pub trait DiskNode: Send + Sync {
         &self,
         node_bytes: Vec<u8>,
         level: u8,
-        flexible_key: u64,
+        flexible_key: u32,
     ) -> GeorgeResult<Vec<u8>>;
     /// 获取数据真实操作
     ///

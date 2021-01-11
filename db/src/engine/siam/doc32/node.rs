@@ -20,7 +20,7 @@ use crate::engine::siam::comm::{
 use crate::engine::siam::selector::{Condition, Constraint};
 use crate::engine::siam::traits::{DiskNode, TNode};
 use crate::engine::traits::TSeed;
-use crate::utils::comm::{IndexMold, level_distance_32};
+use crate::utils::comm::{level_distance_32, IndexMold};
 use crate::utils::path::{index_file_path, view_file_path};
 
 /// 索引B+Tree结点结构
@@ -56,11 +56,7 @@ pub(crate) struct Node {
 /// 新建根结点
 ///
 /// 该结点没有Links，也没有preNode，是B+Tree的创世结点
-fn create_root_self(
-    database_id: String,
-    view_id: String,
-    index_id: String,
-) -> Node {
+fn create_root_self(database_id: String, view_id: String, index_id: String) -> Node {
     Node {
         database_id: database_id.clone(),
         view_id: view_id.clone(),
@@ -83,11 +79,7 @@ fn create_empty() -> Node {
 }
 
 impl Node {
-    pub fn create_root(
-        database_id: String,
-        view_id: String,
-        index_id: String,
-    ) -> Arc<Self> {
+    pub fn create_root(database_id: String, view_id: String, index_id: String) -> Arc<Self> {
         return Arc::new(create_root_self(database_id, view_id, index_id));
     }
 }
@@ -118,14 +110,14 @@ impl TNode for Node {
         force: bool,
         description_len: usize,
     ) -> GeorgeResult<()>
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
         self.put_in_node(
             node_bytes,
             1,
-            hashcode32_enhance(key) as u64,
+            hashcode32_enhance(key),
             seed,
             force,
             true,
@@ -134,15 +126,15 @@ impl TNode for Node {
     }
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
-        self.get_in_node(node_bytes, 1, hashcode32_enhance(key) as u64)
+        self.get_in_node(node_bytes, 1, hashcode32_enhance(key))
     }
     fn remove(&self, _key: String) -> GeorgeResult<Vec<u8>> {
         // todo
         unimplemented!()
     }
     fn get_last(&self) -> GeorgeResult<Vec<u8>>
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
         self.get_last_in_node(node_bytes, 1)
@@ -236,17 +228,17 @@ impl DiskNode for Node {
         &self,
         node_bytes: Vec<u8>,
         level: u8,
-        flexible_key: u64,
+        flexible_key: u32,
         seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
         root: bool,
         next_node_seek: u64,
     ) -> GeorgeResult<()>
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
-        let distance = level_distance_32(level) as u64;
+        let distance = level_distance_32(level);
         // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数
         let next_degree = flexible_key / distance;
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
@@ -256,7 +248,7 @@ impl DiskNode for Node {
                 self.index_file_path(),
                 self.view_file_path(),
                 next_node_seek,
-                next_degree * 8, // 在当前操作结点的字节数组的起始位置
+                (next_degree * 8) as u64, // 在当前操作结点的字节数组的起始位置
                 force,
                 seed,
             )
@@ -270,7 +262,7 @@ impl DiskNode for Node {
                 node_bytes,
                 self.index_id(),
                 next_node_seek,
-                next_degree * 8, // 在当前操作结点的字节数组的起始位置
+                (next_degree * 8) as u64, // 在当前操作结点的字节数组的起始位置
                 root,
             )?;
             // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
@@ -290,18 +282,18 @@ impl DiskNode for Node {
         &self,
         node_bytes: Vec<u8>,
         level: u8,
-        flexible_key: u64,
+        flexible_key: u32,
     ) -> GeorgeResult<Vec<u8>> {
-        let distance = level_distance_32(level) as u64;
+        let distance = level_distance_32(level);
         let next_degree = flexible_key / distance;
         if level == 4 {
-            read_seed_bytes(node_bytes, self.view_file_path(), next_degree * 8)
+            read_seed_bytes(node_bytes, self.view_file_path(), next_degree as u64 * 8)
         } else {
             // 下一结点状态
             // 下一结点node_bytes
             // 下一结点起始坐标seek
             // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            let nbs = try_read_next_nodes_bytes(self, node_bytes, next_degree * 8)?;
+            let nbs = try_read_next_nodes_bytes(self, node_bytes, next_degree as u64 * 8)?;
             let next_flexible_key = flexible_key - next_degree * distance;
             self.get_in_node(nbs.bytes, level + 1, next_flexible_key)
         }
@@ -342,8 +334,8 @@ impl DiskNode for Node {
             let nbs_arr = read_next_and_all_nodes_bytes_by_file(
                 node_bytes,
                 index_file.clone(),
-                start_key,
-                end_key,
+                start_key as usize,
+                end_key as usize,
             )?;
             total += nbs_arr.len() as u64;
             for nbs in nbs_arr {
@@ -465,8 +457,8 @@ impl DiskNode for Node {
             let nbs_arr = read_before_and_all_nodes_bytes_by_file(
                 node_bytes,
                 index_file.clone(),
-                start_key,
-                end_key,
+                start_key as usize,
+                end_key as usize,
             )?;
             total += nbs_arr.len() as u64;
             let mut len = nbs_arr.len();
