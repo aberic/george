@@ -182,11 +182,6 @@ impl<N: TNode + Debug> TIndex for Index<N> {
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
         self.root.get(key)
     }
-
-    fn remove(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        self.root.remove(key)
-    }
-
     fn select(
         &self,
         left: bool,

@@ -58,16 +58,6 @@ pub trait TNode: Send + Sync {
     ///
     /// Seed value信息
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>>;
-    /// 删除数据，返回存储对象<p><p>
-    ///
-    /// ###Params
-    ///
-    /// key string
-    ///
-    /// ###Return
-    ///
-    /// Seed value信息
-    fn remove(&self, key: String) -> GeorgeResult<Vec<u8>>;
     /// 获取最后一条记录数据，返回存储对象
     fn get_last(&self) -> GeorgeResult<Vec<u8>>;
     /// 通过查询约束获取数据集

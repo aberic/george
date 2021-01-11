@@ -312,6 +312,23 @@ impl Database {
             _ => Err(GeorgeError::ViewNoExistError(ViewNoExistError)),
         };
     }
+    /// 删除数据<p><p>
+    ///
+    /// ###Params
+    ///
+    /// view_name 视图名称<p><p>
+    ///
+    /// key string
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    pub(crate) fn remove(&self, view_name: String, key: String) -> GeorgeResult<()> {
+        return match self.views.clone().read().unwrap().get(&view_name) {
+            Some(view) => view.read().unwrap().remove(key),
+            _ => Err(GeorgeError::DataNoExistError(DataNoExistError)),
+        };
+    }
     /// 条件检索
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略

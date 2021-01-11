@@ -96,15 +96,5 @@ mod index_test {
             Ok(seed) => println!("u1 is {:#?}", seed),
             Err(ie) => println!("res1 is {:#?}", ie.source().unwrap().to_string()),
         }
-        let irr = index.remove(key.clone());
-        match irr {
-            Ok(seed) => println!("u2 is {:#?}", seed),
-            Err(ie) => println!("res2 is {:#?}", ie.source().unwrap().to_string()),
-        }
-        let irg = index.get(key.clone());
-        match irg {
-            Ok(seed) => println!("u3 is {:#?}", seed),
-            Err(ie) => println!("res3 is {:#?}", ie.source().unwrap().to_string()),
-        }
     }
 }

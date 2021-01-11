@@ -37,4 +37,9 @@ impl TSeed for Seed {
         self.value = Some(value);
         Ok(())
     }
+
+    fn remove(&mut self) -> GeorgeResult<()> {
+        self.value = None;
+        Ok(())
+    }
 }

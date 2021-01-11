@@ -26,6 +26,8 @@ pub trait TSeed: Send + Sync + Debug {
     fn modify(&mut self, value: Vec<u8>);
     /// 存储操作
     fn save(&mut self, value: Vec<u8>) -> GeorgeResult<()>;
+    /// 删除操作
+    fn remove(&mut self) -> GeorgeResult<()>;
 }
 
 /// 索引通用特性，遵循此特性创建索引可以更方便的针对icdb进行扩展
@@ -69,16 +71,6 @@ pub trait TIndex: TDescription + Send + Sync + Debug {
     ///
     /// Seed value信息
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>>;
-    /// 删除数据，返回存储对象<p><p>
-    ///
-    /// ###Params
-    ///
-    /// key string
-    ///
-    /// ###Return
-    ///
-    /// Seed value信息
-    fn remove(&self, key: String) -> GeorgeResult<Vec<u8>>;
     /// 通过查询约束获取数据集
     ///
     /// ###Params

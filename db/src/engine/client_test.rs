@@ -106,7 +106,9 @@ fn put_memory2() {
     get(database_name, "view", "md516_3", 3);
     set(database_name, "view", "md516_3", "database4 tValue", 3);
     put(database_name, "view", "md516_3", "database5 tValue", 3);
-    get(database_name, "view", "md516_3", 4);
+    get(database_name, "view", "md516_3", 3);
+    remove(database_name, "view", "md516_3", 3);
+    get(database_name, "view", "md516_3", 3);
 }
 
 #[test]
@@ -646,17 +648,17 @@ fn get(database_name: &str, view_name: &str, key: &str, position: usize) {
 }
 
 fn remove(database_name: &str, view_name: &str, key: &str, position: usize) {
-    match GLOBAL_CLIENT.get(
+    match GLOBAL_CLIENT.remove(
         database_name.to_string(),
         view_name.to_string(),
         key.to_string(),
     ) {
-        Ok(vu8) => println!(
-            "get{} is {:#?}",
+        Ok(vu8) => println!("remove{} success!", position),
+        Err(ie) => println!(
+            "remove{} is {:#?}",
             position,
-            String::from_utf8(vu8).unwrap().as_str()
+            ie.source().unwrap().to_string()
         ),
-        Err(ie) => println!("get{} is {:#?}", position, ie.source().unwrap().to_string()),
     }
 }
 

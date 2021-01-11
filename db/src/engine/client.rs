@@ -365,7 +365,6 @@ impl Engine {
             .unwrap()
             .put(view_name, key, value)
     }
-
     /// 插入数据，无论存在与否都会插入或更新数据<p><p>
     ///
     /// ###Params
@@ -391,7 +390,6 @@ impl Engine {
             .unwrap()
             .set(view_name, key, value)
     }
-
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -413,6 +411,29 @@ impl Engine {
             .read()
             .unwrap()
             .get(view_name, key)
+    }
+
+    /// 删除数据<p><p>
+    ///
+    /// ###Params
+    ///
+    /// view_name 视图名称<p><p>
+    ///
+    /// key string
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    pub(crate) fn remove(
+        &self,
+        database_name: String,
+        view_name: String,
+        key: String,
+    ) -> GeorgeResult<()> {
+        self.database(database_name)?
+            .read()
+            .unwrap()
+            .remove(view_name, key)
     }
     /// 条件检索
     ///

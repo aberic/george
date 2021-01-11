@@ -128,10 +128,6 @@ impl TNode for Node {
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
         self.get_in_node(node_bytes, 1, hashcode32_enhance(key))
     }
-    fn remove(&self, _key: String) -> GeorgeResult<Vec<u8>> {
-        // todo
-        unimplemented!()
-    }
     fn get_last(&self) -> GeorgeResult<Vec<u8>>
     where
         Self: Sized,

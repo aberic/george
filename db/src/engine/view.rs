@@ -324,11 +324,7 @@ impl View {
                     index_id.clone(),
                     index_name,
                     primary,
-                    Siam_Doc_Node::create_root(
-                        self.database_id(),
-                        self.id(),
-                        index_id,
-                    ),
+                    Siam_Doc_Node::create_root(self.database_id(), self.id(), index_id),
                     category(self.category),
                     index_mold,
                 )?),
@@ -355,7 +351,7 @@ impl View {
     ///
     /// IndexResult<()>
     pub(crate) fn put(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        self.save(key, value, false)
+        self.save(key, value, false, false)
     }
     /// 插入数据，无论存在与否都会插入或更新数据<p><p>
     ///
@@ -369,7 +365,7 @@ impl View {
     ///
     /// IndexResult<()>
     pub(crate) fn set(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        self.save(key, value, true)
+        self.save(key, value, true, false)
     }
     /// 获取数据，返回存储对象<p><p>
     ///
@@ -391,6 +387,18 @@ impl View {
             Some(index) => index.read().unwrap().get(key.clone()),
             None => Err(GeorgeError::DataNoExistError(DataNoExistError)),
         }
+    }
+    /// 删除数据<p><p>
+    ///
+    /// ###Params
+    ///
+    /// key string<p><p>
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    pub(crate) fn remove(&self, key: String) -> GeorgeResult<()> {
+        self.save(key, vec![], true, true)
     }
     /// 条件检索
     ///
@@ -417,7 +425,7 @@ impl View {
     /// ###Return
     ///
     /// IndexResult<()>
-    fn save(&self, key: String, value: Vec<u8>, force: bool) -> GeorgeResult<()> {
+    fn save(&self, key: String, value: Vec<u8>, force: bool, remove: bool) -> GeorgeResult<()> {
         let seed: Arc<RwLock<dyn TSeed>>;
         match self.category {
             Category::Memory => {
@@ -462,8 +470,12 @@ impl View {
                 Err(err) => return Err(err_string(err.to_string())),
             }
         }
-        // 执行真实存储操作，即索引将seed存入后，允许检索到该结果，但该结果值不存在，仅当所有索引存入都成功，才会执行本方法完成真实存储操作
-        return seed.write().unwrap().save(value);
+        if remove {
+            seed.write().unwrap().remove()
+        } else {
+            // 执行真实存储操作，即索引将seed存入后，允许检索到该结果，但该结果值不存在，仅当所有索引存入都成功，才会执行本方法完成真实存储操作
+            seed.write().unwrap().save(value)
+        }
     }
 }
 

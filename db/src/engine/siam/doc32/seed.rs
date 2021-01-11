@@ -117,4 +117,8 @@ impl TSeed for Seed {
         }
         Ok(())
     }
+
+    fn remove(&mut self) -> GeorgeResult<()> {
+        unimplemented!()
+    }
 }
