@@ -182,6 +182,11 @@ impl<N: TNode + Debug> TIndex for Index<N> {
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
         self.root.get(key)
     }
+
+    fn remove(&self, key: String) -> GeorgeResult<Vec<u8>> {
+        self.root.remove(key)
+    }
+
     fn select(
         &self,
         left: bool,
@@ -301,6 +306,17 @@ impl<N: TNode + Debug> TIndex for Index<N> {
             asc: left,
             values,
         })
+    }
+
+    fn delete(
+        &self,
+        mold: IndexMold,
+        left: bool,
+        start: u64,
+        end: u64,
+        constraint: Constraint,
+    ) -> GeorgeResult<Expectation> {
+        unimplemented!()
     }
 }
 

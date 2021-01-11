@@ -69,6 +69,16 @@ pub trait TIndex: TDescription + Send + Sync + Debug {
     ///
     /// Seed value信息
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>>;
+    /// 删除数据，返回存储对象<p><p>
+    ///
+    /// ###Params
+    ///
+    /// key string
+    ///
+    /// ###Return
+    ///
+    /// Seed value信息
+    fn remove(&self, key: String) -> GeorgeResult<Vec<u8>>;
     /// 通过查询约束获取数据集
     ///
     /// ###Params
@@ -82,6 +92,27 @@ pub trait TIndex: TDescription + Send + Sync + Debug {
     /// Expectation 经由Selector后的期望结果
     fn select(
         &self,
+        left: bool,
+        start: u64,
+        end: u64,
+        constraint: Constraint,
+    ) -> GeorgeResult<Expectation>;
+    /// 通过查询约束删除数据集
+    ///
+    /// ###Params
+    ///
+    /// left 是否左查询
+    ///
+    /// constraint 查询约束
+    ///
+    /// ###Return
+    ///
+    /// total 检索过程中遍历的总条数
+    ///
+    /// count 检索结果过程中遍历的总条数
+    fn delete(
+        &self,
+        mold: IndexMold,
         left: bool,
         start: u64,
         end: u64,

@@ -63,9 +63,10 @@ fn put_memory() {
 
 #[test]
 fn put_memory1() {
-    create_database("database_m1", "comment", 1);
+    let database_name = "database_m1";
+    create_database(database_name, "comment", 1);
     create_view(
-        "database_m1",
+        database_name,
         "view",
         "comment",
         IndexType::Siam,
@@ -73,15 +74,39 @@ fn put_memory1() {
         LevelType::Large,
         1,
     );
-    put("database_m1", "view", "md516_1", "database1 tValue", 1);
-    get("database_m1", "view", "md516_1", 1);
-    put("database_m1", "view", "md516_2", "database2 tValue", 2);
-    get("database_m1", "view", "md516_2", 2);
-    put("database_m1", "view", "md516_3", "database3 tValue", 3);
-    get("database_m1", "view", "md516_3", 3);
-    set("database_m1", "view", "md516_3", "database4 tValue", 3);
-    put("database_m1", "view", "md516_3", "database5 tValue", 3);
-    get("database_m1", "view", "md516_3", 4);
+    put(database_name, "view", "md516_1", "database1 tValue", 1);
+    get(database_name, "view", "md516_1", 1);
+    put(database_name, "view", "md516_2", "database2 tValue", 2);
+    get(database_name, "view", "md516_2", 2);
+    put(database_name, "view", "md516_3", "database3 tValue", 3);
+    get(database_name, "view", "md516_3", 3);
+    set(database_name, "view", "md516_3", "database4 tValue", 3);
+    put(database_name, "view", "md516_3", "database5 tValue", 3);
+    get(database_name, "view", "md516_3", 4);
+}
+
+#[test]
+fn put_memory2() {
+    let database_name = "database_m2";
+    create_database(database_name, "comment", 1);
+    create_view(
+        database_name,
+        "view",
+        "comment",
+        IndexType::Siam,
+        Category::Memory,
+        LevelType::Large,
+        1,
+    );
+    put(database_name, "view", "md516_1", "database1 tValue", 1);
+    get(database_name, "view", "md516_1", 1);
+    put(database_name, "view", "md516_2", "database2 tValue", 2);
+    get(database_name, "view", "md516_2", 2);
+    put(database_name, "view", "md516_3", "database3 tValue", 3);
+    get(database_name, "view", "md516_3", 3);
+    set(database_name, "view", "md516_3", "database4 tValue", 3);
+    put(database_name, "view", "md516_3", "database5 tValue", 3);
+    get(database_name, "view", "md516_3", 4);
 }
 
 #[test]
@@ -606,6 +631,21 @@ fn set(database_name: &str, view_name: &str, key: &str, value: &str, position: u
 }
 
 fn get(database_name: &str, view_name: &str, key: &str, position: usize) {
+    match GLOBAL_CLIENT.get(
+        database_name.to_string(),
+        view_name.to_string(),
+        key.to_string(),
+    ) {
+        Ok(vu8) => println!(
+            "get{} is {:#?}",
+            position,
+            String::from_utf8(vu8).unwrap().as_str()
+        ),
+        Err(ie) => println!("get{} is {:#?}", position, ie.source().unwrap().to_string()),
+    }
+}
+
+fn remove(database_name: &str, view_name: &str, key: &str, position: usize) {
     match GLOBAL_CLIENT.get(
         database_name.to_string(),
         view_name.to_string(),
