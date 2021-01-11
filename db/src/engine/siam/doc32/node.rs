@@ -22,6 +22,7 @@ use crate::engine::siam::traits::{DiskNode, TNode};
 use crate::engine::traits::TSeed;
 use crate::utils::comm::{level_distance_32, IndexMold};
 use crate::utils::path::{index_file_path, view_file_path};
+use crate::utils::store::store_index_id;
 
 /// 索引B+Tree结点结构
 ///
@@ -256,7 +257,7 @@ impl DiskNode for Node {
             let nbs = read_next_nodes_bytes(
                 self,
                 node_bytes,
-                self.index_id(),
+                store_index_id(self.database_id(), self.view_id(), self.index_id()),
                 next_node_seek,
                 (next_degree * 8) as u64, // 在当前操作结点的字节数组的起始位置
                 root,

@@ -16,7 +16,8 @@ use crate::engine::view::View;
 use crate::utils::comm::{Category, IndexType, LevelType};
 use crate::utils::path::{database_file_path, database_path, view_file_path};
 use crate::utils::store::{
-    before_content_bytes, head, modify, mold, recovery_before_content, save, FileHeader, Tag,
+    before_content_bytes, head, modify, mold, recovery_before_content, save, store_view_id,
+    FileHeader, Tag,
 };
 use crate::utils::writer::GLOBAL_WRITER;
 
@@ -404,7 +405,7 @@ impl Database {
                         self.insert_view(view_name.clone(), Arc::new(RwLock::new(view)));
                         match GLOBAL_WRITER
                             .clone()
-                            .insert_view(view_dir_name, view_file_path)
+                            .insert_view(store_view_id(self.id(), view_dir_name), view_file_path)
                         {
                             Ok(_) => {}
                             Err(err) => panic!(

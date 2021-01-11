@@ -73,11 +73,23 @@ impl Writer {
     }
 
     /// 在指定文件中追加数据
+    ///
+    /// 如果是view，则存储id为“database_id+view_id”<p>
+    /// 参考方法`store_view_id(database_id: String, view_id: String) -> String`<p>
+    ///
+    /// 如果是index，则存储id为“database_id+view_id+index_id”<p>
+    /// 参考方法`store_index_id(database_id: String, view_id: String, index_id: String) -> String`
     pub fn write_append_bytes(&self, tag: Tag, id: String, content: Vec<u8>) -> GeorgeResult<u64> {
         self.write_append_u8s(tag, id, content.as_slice())
     }
 
     /// 在指定文件中追加数据
+    ///
+    /// 如果是view，则存储id为“database_id+view_id”<p>
+    /// 参考方法`store_view_id(database_id: String, view_id: String) -> String`<p>
+    ///
+    /// 如果是index，则存储id为“database_id+view_id+index_id”<p>
+    /// 参考方法`store_index_id(database_id: String, view_id: String, index_id: String) -> String`
     pub fn write_append_u8s(&self, tag: Tag, id: String, content: &[u8]) -> GeorgeResult<u64> {
         match self.file(tag, id) {
             Ok(file_arc) => {
@@ -95,6 +107,12 @@ impl Writer {
     }
 
     /// 在指定文件中指定位置后覆盖数据
+    ///
+    /// 如果是view，则存储id为“database_id+view_id”<p>
+    /// 参考方法`store_view_id(database_id: String, view_id: String) -> String`<p>
+    ///
+    /// 如果是index，则存储id为“database_id+view_id+index_id”<p>
+    /// 参考方法`store_index_id(database_id: String, view_id: String, index_id: String) -> String`
     pub fn write_seek_u8s(
         &self,
         tag: Tag,

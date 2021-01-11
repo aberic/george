@@ -5,7 +5,7 @@ use comm::io::writer::write_seek_u8s;
 use comm::trans::{trans_bytes_2_u64, trans_u64_2_bytes};
 
 use crate::engine::traits::TSeed;
-use crate::utils::store::Tag;
+use crate::utils::store::{store_view_id, Tag};
 use crate::utils::writer::GLOBAL_WRITER;
 
 /// B+Tree索引叶子结点内防hash碰撞数组结构中单体结构
@@ -15,6 +15,7 @@ use crate::utils::writer::GLOBAL_WRITER;
 /// 叶子节点下真实存储数据的集合单体结构
 #[derive(Debug)]
 pub struct Seed {
+    database_id: String,
     view_id: String,
     value: Vec<u8>,
     idxes: Vec<Idx>,
@@ -46,8 +47,9 @@ fn seed_bytes(value: Vec<u8>) -> Vec<u8> {
 /// 封装方法函数
 impl Seed {
     /// 新建seed
-    pub fn create(view_id: String, value: Vec<u8>) -> Seed {
+    pub fn create(database_id: String, view_id: String, value: Vec<u8>) -> Seed {
         return Seed {
+            database_id,
             view_id,
             value,
             idxes: Vec::new(),
@@ -55,7 +57,12 @@ impl Seed {
             error: "".to_string(),
         };
     }
-
+    fn database_id(&self) -> String {
+        self.database_id.clone()
+    }
+    fn view_id(&self) -> String {
+        self.view_id.clone()
+    }
     pub fn u8s(index_file_path: String, next_node_seek: u64, start: u64) -> GeorgeResult<Vec<u8>> {
         let trans = Idx {
             index_file_path,
@@ -103,7 +110,7 @@ impl TSeed for Seed {
         // 将数据存入view，返回数据在view中的坐标
         let seek = GLOBAL_WRITER.write_append_bytes(
             Tag::View,
-            self.view_id.clone(),
+            store_view_id(self.database_id(), self.view_id()),
             seed_bytes.clone(),
         )?;
         let seek_v = trans_u64_2_bytes(seek);
@@ -119,6 +126,17 @@ impl TSeed for Seed {
     }
 
     fn remove(&mut self) -> GeorgeResult<()> {
-        unimplemented!()
+        if self.idxes.len() == 0 {
+            return Ok(());
+        }
+        // 将在数据在view中的坐标存入各个index
+        for idx in self.idxes.to_vec() {
+            write_seek_u8s(
+                idx.index_file_path,
+                idx.start + idx.next_node_seek,
+                &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+            )?;
+        }
+        Ok(())
     }
 }

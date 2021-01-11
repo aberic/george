@@ -12,6 +12,7 @@ use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_u16_2_bytes, trans
 use crate::utils::comm::{Category, IndexMold, IndexType, LevelType};
 use crate::utils::deploy::VERSION;
 use crate::utils::writer::GLOBAL_WRITER;
+use std::ops::Add;
 
 /// 标识符
 #[derive(Debug)]
@@ -347,7 +348,21 @@ pub fn recovery_before_content(tag: Tag, filepath: String) -> GeorgeResult<HD> {
     }
 }
 
-/// 存储对应head及文件内容描述
+pub fn store_view_id(database_id: String, view_id: String) -> String {
+    database_id.add(&view_id)
+}
+
+pub fn store_index_id(database_id: String, view_id: String, index_id: String) -> String {
+    database_id.add(&view_id).add(&index_id)
+}
+
+/// 存储对应head及文件内容描述<p>
+///
+/// 如果是view，则存储id为“database_id+view_id”<p>
+/// 参考方法`store_view_id(database_id: String, view_id: String) -> String`<p>
+///
+/// 如果是index，则存储id为“database_id+view_id+index_id”<p>
+/// 参考方法`store_index_id(database_id: String, view_id: String, index_id: String) -> String`
 pub fn save<T>(
     tag: Tag,
     file: File,

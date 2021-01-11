@@ -86,7 +86,7 @@ fn put_memory1() {
 }
 
 #[test]
-fn put_memory2() {
+fn put_memory2_remove() {
     let database_name = "database_m2";
     create_database(database_name, "comment", 1);
     create_view(
@@ -214,6 +214,33 @@ fn put_document2() {
     set("database_test", "view_test_doc_64", "key3", "result 8", 648);
     get("database_test", "view_test_doc_64", "key3", 648);
     get("database_test", "view_test_doc_64", "key11", 6423);
+}
+
+#[test]
+fn put_document3_remove() {
+    let database_name = "database_test_doc_remove";
+    let view_name = "view";
+    create_database(database_name, "comment", 1);
+    create_view(
+        database_name,
+        view_name,
+        "comment",
+        IndexType::Siam,
+        Category::Document,
+        LevelType::Small,
+        1,
+    );
+    put(database_name, view_name, "md516_1", "database1 tValue", 1);
+    get(database_name, view_name, "md516_1", 1);
+    put(database_name, view_name, "md516_2", "database2 tValue", 2);
+    get(database_name, view_name, "md516_2", 2);
+    put(database_name, view_name, "md516_3", "database3 tValue", 3);
+    get(database_name, view_name, "md516_3", 3);
+    set(database_name, view_name, "md516_3", "database4 tValue", 3);
+    put(database_name, view_name, "md516_3", "database5 tValue", 4);
+    get(database_name, view_name, "md516_3", 4);
+    remove(database_name, view_name, "md516_3", 5);
+    get(database_name, view_name, "md516_3", 5);
 }
 
 #[test]

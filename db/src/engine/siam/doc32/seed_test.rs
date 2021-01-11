@@ -6,7 +6,11 @@ mod seed_test {
     #[test]
     fn create_and_modify() {
         println!("Hello, world!");
-        let l = Seed::create("view_id".to_string(), "".as_bytes().to_vec());
+        let l = Seed::create(
+            "database_id".to_string(),
+            "view_id".to_string(),
+            "".as_bytes().to_vec(),
+        );
         println!("seed is {:#?}", l);
         println!("seed md516_key = {}", l.key());
         println!();

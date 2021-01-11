@@ -25,7 +25,7 @@ use crate::utils::path::{index_file_path_yet, view_file_path, view_path};
 use crate::utils::store;
 use crate::utils::store::{
     before_content_bytes, category_u8, head, index_type_u8, level_u8, modify,
-    recovery_before_content, save, FileHeader, Tag,
+    recovery_before_content, save, store_index_id, store_view_id, FileHeader, Tag,
 };
 use crate::utils::writer::GLOBAL_WRITER;
 
@@ -193,7 +193,7 @@ impl View {
             level,
         );
         let view_id = view.id();
-        let view_file_path = view_file_path(database_id, view_id.clone());
+        let view_file_path = view_file_path(database_id.clone(), view_id.clone());
         let file = create_file(view_file_path.clone(), true)?;
         let mut head = head(FileHeader::create(
             Tag::View,
@@ -207,7 +207,14 @@ impl View {
         let mut before_description = before_content_bytes(38, description.len() as u16);
         head.append(&mut before_description);
         head.append(&mut description);
-        save(Tag::View, file, head, view_id, view_file_path, view)
+        save(
+            Tag::View,
+            file,
+            head,
+            store_view_id(database_id, view_id),
+            view_file_path,
+            view,
+        )
     }
     pub(crate) fn create(
         database_id: String,
@@ -432,7 +439,11 @@ impl View {
                 seed = Arc::new(RwLock::new(Mem_Seed::create(md516(key.clone()))));
             }
             Category::Document => {
-                seed = Arc::new(RwLock::new(Doc32_Seed::create(self.id(), value.clone())));
+                seed = Arc::new(RwLock::new(Doc32_Seed::create(
+                    self.database_id(),
+                    self.id(),
+                    value.clone(),
+                )));
             }
         }
         let mut receives = Vec::new();
@@ -545,9 +556,14 @@ impl View {
                                 .to_string(),
                         ),
                     )?;
-                    GLOBAL_WRITER
-                        .clone()
-                        .insert_index(index.clone().read().unwrap().id(), index_file_path)?;
+                    GLOBAL_WRITER.clone().insert_index(
+                        store_index_id(
+                            self.database_id(),
+                            self.id(),
+                            index.clone().read().unwrap().id(),
+                        ),
+                        index_file_path,
+                    )?;
                     Ok(index)
                 }
             },

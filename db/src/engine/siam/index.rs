@@ -15,8 +15,8 @@ use crate::engine::traits::{TDescription, TIndex, TSeed};
 use crate::utils::comm::{Category, IndexMold, IndexType, LevelType};
 use crate::utils::path;
 use crate::utils::store::{
-    before_content_bytes_for_index, category, category_u8, head, mold, mold_u8, save, FileHeader,
-    Tag,
+    before_content_bytes_for_index, category, category_u8, head, mold, mold_u8, save,
+    store_index_id, FileHeader, Tag,
 };
 use serde_json::{Error, Value};
 
@@ -349,7 +349,8 @@ impl<N: TNode + Debug> Index<N> {
             category,
             mold,
         );
-        let index_file_path = path::index_file_path(database_id, view_id, id.clone());
+        let index_file_path =
+            path::index_file_path(database_id.clone(), view_id.clone(), id.clone());
         let file = create_file(index_file_path.clone(), true)?;
         let mut head = head(FileHeader::create(
             Tag::Index,
@@ -363,7 +364,14 @@ impl<N: TNode + Debug> Index<N> {
         let mut before_description = before_content_bytes_for_index(40, description.len() as u32);
         head.append(&mut before_description);
         head.append(&mut description);
-        save(Tag::Index, file, head, id, index_file_path, index)
+        save(
+            Tag::Index,
+            file,
+            head,
+            store_index_id(database_id, view_id, id),
+            index_file_path,
+            index,
+        )
     }
 
     /// 新建索引
