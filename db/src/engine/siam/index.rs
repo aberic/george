@@ -316,17 +316,6 @@ impl<N: TNode + Debug> TIndex for Index<N> {
             values,
         })
     }
-
-    fn delete(
-        &self,
-        mold: IndexMold,
-        left: bool,
-        start: u64,
-        end: u64,
-        constraint: Constraint,
-    ) -> GeorgeResult<Expectation> {
-        unimplemented!()
-    }
 }
 
 /// 封装方法函数

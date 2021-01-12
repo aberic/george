@@ -143,16 +143,6 @@ impl TNode for Node {
     ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)> {
         Err(err_str("unimplemented!"))
     }
-    fn delete(
-        &self,
-        _mold: IndexMold,
-        _left: bool,
-        _start: u64,
-        _end: u64,
-        _constraint: Constraint,
-    ) -> GeorgeResult<(u64, u64)> {
-        Err(err_str("unimplemented!"))
-    }
 }
 
 impl Node {

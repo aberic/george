@@ -97,27 +97,6 @@ pub trait TNode: Send + Sync {
         end: u64,
         constraint: Constraint,
     ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)>;
-    /// 通过查询约束删除数据集
-    ///
-    /// ###Params
-    ///
-    /// left 是否左查询
-    ///
-    /// constraint 查询约束
-    ///
-    /// ###Return
-    ///
-    /// total 检索过程中遍历的总条数
-    ///
-    /// count 检索结果过程中遍历的总条数
-    fn delete(
-        &self,
-        mold: IndexMold,
-        left: bool,
-        start: u64,
-        end: u64,
-        constraint: Constraint,
-    ) -> GeorgeResult<(u64, u64)>;
 }
 
 /// 存储文件结点通用特性，遵循此特性创建结点可以更方便的针对db进行扩展

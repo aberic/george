@@ -201,16 +201,6 @@ impl TNode for Node {
             )),
         }
     }
-    fn delete(
-        &self,
-        _mold: IndexMold,
-        _left: bool,
-        _start: u64,
-        _end: u64,
-        _constraint: Constraint,
-    ) -> GeorgeResult<(u64, u64)> {
-        unimplemented!()
-    }
 }
 
 impl DiskNode for Node {
@@ -298,13 +288,13 @@ impl DiskNode for Node {
         let distance = level_distance_32(level);
         let next_degree = flexible_key / distance;
         if level == 4 {
-            read_seed_bytes(node_bytes, self.view_file_path(), next_degree as u64 * 8)
+            read_seed_bytes(node_bytes, self.view_file_path(), next_degree as usize * 8)
         } else {
             // 下一结点状态
             // 下一结点node_bytes
             // 下一结点起始坐标seek
             // 在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-            let nbs = try_read_next_nodes_bytes(self, node_bytes, next_degree as u64 * 8)?;
+            let nbs = try_read_next_nodes_bytes(self, node_bytes, next_degree as usize * 8)?;
             let next_flexible_key = flexible_key - next_degree * distance;
             self.get_in_node(nbs.bytes, level + 1, next_flexible_key)
         }
@@ -365,6 +355,41 @@ impl DiskNode for Node {
                     }
                 }
             }
+        // if delete {
+        //     for nbs in nbs_arr {
+        //         if limit <= 0 {
+        //             break;
+        //         }
+        //         let bytes = read_seed_bytes_from_view_file(view_file.clone(), nbs.seek)?;
+        //         total += 1;
+        //         if Condition::validate(mold, conditions.clone(), bytes.clone()) {
+        //             if skip <= 0 {
+        //                 limit -= 1;
+        //                 count += 1;
+        //                 res.push(bytes)
+        //             } else {
+        //                 skip -= 1;
+        //             }
+        //         }
+        //     }
+        // } else {
+        //     for nbs in nbs_arr {
+        //         if limit <= 0 {
+        //             break;
+        //         }
+        //         let bytes = read_seed_bytes_from_view_file(view_file.clone(), nbs.seek)?;
+        //         total += 1;
+        //         if Condition::validate(mold, conditions.clone(), bytes.clone()) {
+        //             if skip <= 0 {
+        //                 limit -= 1;
+        //                 count += 1;
+        //                 res.push(bytes)
+        //             } else {
+        //                 skip -= 1;
+        //             }
+        //         }
+        //     }
+        // }
         } else {
             let distance = level_distance_32(level) as u64;
             let next_start_degree = start_key / distance;

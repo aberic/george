@@ -382,7 +382,7 @@ impl Database {
                 Ok(dir) => {
                     if dir.path().is_dir() {
                         let view_dir_name = dir.file_name().to_str().unwrap().to_string();
-                        log::debug!("recovery view from {}.sr", view_dir_name);
+                        log::debug!("recovery view from {}.gge", view_dir_name);
                         // 恢复view数据
                         self.recovery_view(view_dir_name.clone());
                     }

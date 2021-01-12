@@ -514,8 +514,8 @@ impl View {
                 Ok(dir) => {
                     if dir.path().is_file() {
                         let index_file_name = dir.file_name().to_str().unwrap().to_string();
-                        if index_file_name != "view.sr" {
-                            log::debug!("recovery index from {}.sr", index_file_name);
+                        if index_file_name != "view.gge" {
+                            log::debug!("recovery index from {}.gge", index_file_name);
                             // 恢复index数据
                             match self.recovery_index(self.database_id(), index_file_name.clone()) {
                                 Ok(index) => {

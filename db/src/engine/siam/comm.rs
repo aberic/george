@@ -195,11 +195,9 @@ pub(super) fn read_next_nodes_bytes<N: DiskNode>(
 pub(super) fn try_read_next_nodes_bytes<N: DiskNode>(
     node: &N,
     node_bytes: Vec<u8>,
-    start: u64,
+    start: usize,
 ) -> GeorgeResult<NodeBytes> {
-    let seek_start = start as usize;
-    let seek_end = seek_start + 8;
-    let u8s = node_bytes.as_slice()[seek_start..seek_end].to_vec();
+    let u8s = node_bytes.as_slice()[start..start + 8].to_vec();
     let next_node_bytes_seek = trans_bytes_2_u64(u8s);
     if next_node_bytes_seek == 0 {
         Err(GeorgeError::DataNoExistError(DataNoExistError))
@@ -545,11 +543,9 @@ pub(super) fn write_seed_bytes(
 pub(super) fn read_seed_bytes(
     node_bytes: Vec<u8>,
     view_file_path: String,
-    start: u64,
+    start: usize,
 ) -> GeorgeResult<Vec<u8>> {
-    let seek_start = start as usize;
-    let seek_end = seek_start + 8;
-    let u8s = node_bytes.as_slice()[seek_start..seek_end].to_vec();
+    let u8s = node_bytes.as_slice()[start..start + 8].to_vec();
     let seed_seek = trans_bytes_2_u64(u8s);
     if seed_seek == 0 {
         Err(GeorgeError::DataNoExistError(DataNoExistError))

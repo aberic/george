@@ -44,29 +44,29 @@ pub fn view_path(database_id: String, view_id: String) -> String {
     )
 }
 
-/// 引导文件目录 /var/lib/georgedb/data/bootstrap.sr
+/// 引导文件目录 /var/lib/georgedb/data/bootstrap.gge
 pub fn bootstrap_file_path() -> String {
     format!(
         "{}/{}",
         GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
-        "bootstrap.sr"
+        "bootstrap.gge"
     )
 }
 
-/// 库根目录 /var/lib/georgedb/data/database/db.sr
+/// 库根目录 /var/lib/georgedb/data/database/db.gge
 pub fn database_file_path(database_id: String) -> String {
     format!(
-        "{}/{}/{}/db.sr",
+        "{}/{}/{}/db.gge",
         GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
         "data",
         database_id
     )
 }
 
-/// 视图根目录 /var/lib/georgedb/data/database/view/view.sr
+/// 视图根目录 /var/lib/georgedb/data/database/view/view.gge
 pub fn view_file_path(database_id: String, view_id: String) -> String {
     format!(
-        "{}/{}/{}/{}/view.sr",
+        "{}/{}/{}/{}/view.gge",
         GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
         "data",
         database_id,
@@ -74,10 +74,10 @@ pub fn view_file_path(database_id: String, view_id: String) -> String {
     )
 }
 
-/// 索引文件目录 /var/lib/georgedb/data/database/view/index.sr
+/// 索引文件目录 /var/lib/georgedb/data/database/view/index.gge
 pub fn index_file_path(database_id: String, view_id: String, index_name: String) -> String {
     format!(
-        "{}/{}/{}/{}/{}.sr",
+        "{}/{}/{}/{}/{}.gge",
         GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
         "data",
         database_id,
@@ -86,7 +86,7 @@ pub fn index_file_path(database_id: String, view_id: String, index_name: String)
     )
 }
 
-/// 索引文件目录 /var/lib/georgedb/data/database/view/index.sr
+/// 索引文件目录 /var/lib/georgedb/data/database/view/index.gge
 pub fn index_file_path_yet(
     database_id: String,
     view_id: String,

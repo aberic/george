@@ -246,15 +246,17 @@ fn put_document3_remove() {
     );
     put(database_name, view_name, "md516_1", "database1 tValue", 1);
     get(database_name, view_name, "md516_1", 1);
+    get(database_name, view_name, "md516_2", 2);
     put(database_name, view_name, "md516_2", "database2 tValue", 2);
     get(database_name, view_name, "md516_2", 2);
+    get(database_name, view_name, "md516_3", 3);
     put(database_name, view_name, "md516_3", "database3 tValue", 3);
     get(database_name, view_name, "md516_3", 3);
     set(database_name, view_name, "md516_3", "database4 tValue", 3);
-    put(database_name, view_name, "md516_3", "database5 tValue", 4);
-    get(database_name, view_name, "md516_3", 4);
-    remove(database_name, view_name, "md516_3", 5);
-    get(database_name, view_name, "md516_3", 5);
+    put(database_name, view_name, "md516_3", "database5 tValue", 3);
+    get(database_name, view_name, "md516_3", 3);
+    remove(database_name, view_name, "md516_3", 3);
+    get(database_name, view_name, "md516_3", 3);
 }
 
 #[test]
@@ -429,7 +431,7 @@ struct Teacher {
 fn select_document1_prepare() {
     let database_name = "select_document1";
     let view_name1 = "view1";
-    let view_name2 = "view2";
+    // let view_name2 = "view2";
     let comment = "comment";
     create_database(database_name, comment, 1);
     create_view(
@@ -484,7 +486,7 @@ fn select_document1_prepare() {
 fn select_document1() {
     let database_name = "select_document1";
     let view_name1 = "view1";
-    let view_name2 = "view2";
+    // let view_name2 = "view2";
 
     // get(database_name, view_name1, "99968", 11);
     // get(database_name, view_name1, "99969", 12);
@@ -572,6 +574,44 @@ fn select_document2() {
     for i in 0..1000 {
         get(database_name, view_name1, i.to_string().as_str(), i);
     }
+}
+
+#[test]
+fn select_document_remove1() {
+    let database_name = "select_document1";
+    let view_name1 = "view1";
+
+    get(database_name, view_name1, "255", 255);
+    remove(database_name, view_name1, "255", 255);
+    get(database_name, view_name1, "255", 255);
+    get(database_name, view_name1, "254", 254);
+    get(database_name, view_name1, "256", 256);
+    let user_str = serde_json::to_string(&create_t(255, 100000)).unwrap();
+    put(database_name, view_name1, "255", user_str.as_str(), 255);
+    get(database_name, view_name1, "255", 255);
+
+    let cond_str0 = r#"
+  {
+    "Conditions":[
+        {
+            "Param":"age",
+            "Cond":"ge",
+            "Value":150
+        },
+        {
+            "Param":"age",
+            "Cond":"le",
+            "Value":400
+        }
+    ],
+    "Sort":{
+        "Param":"height",
+        "Asc":true
+    },
+    "Skip":100,
+    "Limit":10
+  }"#;
+    select(database_name, view_name1, cond_str0.as_bytes().to_vec(), 17);
 }
 
 fn create_t(a: u32, h: u32) -> Teacher {
@@ -694,7 +734,7 @@ fn remove(database_name: &str, view_name: &str, key: &str, position: usize) {
         view_name.to_string(),
         key.to_string(),
     ) {
-        Ok(vu8) => println!("remove{} success!", position),
+        Ok(_) => println!("remove{} success!", position),
         Err(ie) => println!(
             "remove{} is {:#?}",
             position,

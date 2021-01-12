@@ -137,7 +137,7 @@ impl Engine {
                 Ok(dir) => {
                     if dir.path().is_dir() {
                         let database_dir_name = dir.file_name().to_str().unwrap().to_string();
-                        log::debug!("recovery database from {}.sr", database_dir_name);
+                        log::debug!("recovery database from {}.gge", database_dir_name);
                         self.recovery_database(database_dir_name.clone());
                     }
                 }

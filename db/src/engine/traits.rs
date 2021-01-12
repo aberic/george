@@ -103,27 +103,6 @@ pub trait TIndex: TDescription + Send + Sync + Debug {
         end: u64,
         constraint: Constraint,
     ) -> GeorgeResult<Expectation>;
-    /// 通过查询约束删除数据集
-    ///
-    /// ###Params
-    ///
-    /// left 是否左查询
-    ///
-    /// constraint 查询约束
-    ///
-    /// ###Return
-    ///
-    /// total 检索过程中遍历的总条数
-    ///
-    /// count 检索结果过程中遍历的总条数
-    fn delete(
-        &self,
-        mold: IndexMold,
-        left: bool,
-        start: u64,
-        end: u64,
-        constraint: Constraint,
-    ) -> GeorgeResult<Expectation>;
 }
 
 /// 所有生成sr文件的结构都需要实现该特征，如database、view及index
