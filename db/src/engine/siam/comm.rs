@@ -24,7 +24,7 @@ use comm::io::writer::write_seek_u8s;
 use comm::trans::{trans_bytes_2_u64, trans_u64_2_bytes};
 use comm::vectors::{find_eq_vec_bytes, find_last_eq_bytes};
 
-use crate::engine::siam::doc32::seed::Seed;
+use crate::engine::siam::doc::seed::Seed;
 use crate::engine::siam::traits::{DiskNode, TNode};
 use crate::engine::traits::TSeed;
 use crate::utils::store::Tag;

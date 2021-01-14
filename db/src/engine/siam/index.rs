@@ -209,100 +209,66 @@ impl<N: TNode + Debug> TIndex for Index<N> {
         match constraint.sort() {
             Some(sort) => {
                 if self.name() != sort.param() {
-                    values.sort_by(|a, b| match String::from_utf8(a.clone()) {
-                        Ok(value_str_a) => match String::from_utf8(b.clone()) {
-                            Ok(value_str_b) => {
-                                let res_a: Result<Value, Error> =
-                                    serde_json::from_str(value_str_a.as_ref());
-                                let res_b: Result<Value, Error> =
-                                    serde_json::from_str(value_str_b.as_ref());
-                                match res_a {
-                                    Ok(value_a) => match res_b {
-                                        Ok(value_b) => {
-                                            if sort.asc() {
-                                                if value_a[sort.param()].is_i64()
-                                                    && value_b[sort.param()].is_i64()
-                                                {
-                                                    if value_a[sort.param()].as_i64().unwrap()
-                                                        > value_b[sort.param()].as_i64().unwrap()
-                                                    {
-                                                        a.cmp(b)
-                                                    } else {
-                                                        b.cmp(a)
-                                                    }
-                                                } else if value_a[sort.param()].is_u64()
-                                                    && value_b[sort.param()].is_u64()
-                                                {
-                                                    if value_a[sort.param()].as_u64().unwrap()
-                                                        > value_b[sort.param()].as_u64().unwrap()
-                                                    {
-                                                        a.cmp(b)
-                                                    } else {
-                                                        b.cmp(a)
-                                                    }
-                                                } else if value_a[sort.param()].is_f64()
-                                                    && value_b[sort.param()].is_f64()
-                                                {
-                                                    if value_a[sort.param()].as_f64().unwrap()
-                                                        > value_b[sort.param()].as_f64().unwrap()
-                                                    {
-                                                        a.cmp(b)
-                                                    } else {
-                                                        b.cmp(a)
-                                                    }
-                                                } else {
-                                                    panic!(
-                                                        "{} can't match each other when sort",
-                                                        sort.param()
-                                                    )
-                                                }
-                                            } else {
-                                                if value_a[sort.param()].is_i64()
-                                                    && value_b[sort.param()].is_i64()
-                                                {
-                                                    if value_a[sort.param()].as_i64().unwrap()
-                                                        < value_b[sort.param()].as_i64().unwrap()
-                                                    {
-                                                        a.cmp(b)
-                                                    } else {
-                                                        b.cmp(a)
-                                                    }
-                                                } else if value_a[sort.param()].is_u64()
-                                                    && value_b[sort.param()].is_u64()
-                                                {
-                                                    if value_a[sort.param()].as_u64().unwrap()
-                                                        < value_b[sort.param()].as_u64().unwrap()
-                                                    {
-                                                        a.cmp(b)
-                                                    } else {
-                                                        b.cmp(a)
-                                                    }
-                                                } else if value_a[sort.param()].is_f64()
-                                                    && value_b[sort.param()].is_f64()
-                                                {
-                                                    if value_a[sort.param()].as_f64().unwrap()
-                                                        < value_b[sort.param()].as_f64().unwrap()
-                                                    {
-                                                        a.cmp(b)
-                                                    } else {
-                                                        b.cmp(a)
-                                                    }
-                                                } else {
-                                                    panic!(
-                                                        "{} can't match each other when sort",
-                                                        sort.param()
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        _ => panic!("an unexpected mistake 4"),
-                                    },
-                                    _ => panic!("an unexpected mistake 3"),
-                                }
-                            }
+                    values.sort_by(|a, b| {
+                        let string_a: String;
+                        let string_b: String;
+                        match String::from_utf8(a.clone()) {
+                            Ok(string) => string_a = string,
+                            _ => panic!("an unexpected mistake 1"),
+                        }
+                        match String::from_utf8(b.clone()) {
+                            Ok(string) => string_b = string,
                             _ => panic!("an unexpected mistake 2"),
-                        },
-                        _ => panic!("an unexpected mistake 1"),
+                        }
+                        let value_a: Value;
+                        let value_b: Value;
+                        match serde_json::from_str(string_a.as_ref()) {
+                            Ok(value) => value_a = value,
+                            _ => panic!("an unexpected mistake 3"),
+                        }
+                        match serde_json::from_str(string_b.as_ref()) {
+                            Ok(value) => value_b = value,
+                            _ => panic!("an unexpected mistake 4"),
+                        }
+                        if value_a[sort.param()].is_i64() && value_b[sort.param()].is_i64() {
+                            if (value_a[sort.param()].as_i64().unwrap()
+                                > value_b[sort.param()].as_i64().unwrap()
+                                && sort.asc())
+                                || (value_a[sort.param()].as_i64().unwrap()
+                                    < value_b[sort.param()].as_i64().unwrap()
+                                    && !sort.asc())
+                            {
+                                a.cmp(b)
+                            } else {
+                                b.cmp(a)
+                            }
+                        } else if value_a[sort.param()].is_u64() && value_b[sort.param()].is_u64() {
+                            if (value_a[sort.param()].as_u64().unwrap()
+                                > value_b[sort.param()].as_u64().unwrap()
+                                && sort.asc())
+                                || (value_a[sort.param()].as_u64().unwrap()
+                                    < value_b[sort.param()].as_u64().unwrap()
+                                    && !sort.asc())
+                            {
+                                a.cmp(b)
+                            } else {
+                                b.cmp(a)
+                            }
+                        } else if value_a[sort.param()].is_f64() && value_b[sort.param()].is_f64() {
+                            if (value_a[sort.param()].as_f64().unwrap()
+                                > value_b[sort.param()].as_f64().unwrap()
+                                && sort.asc())
+                                || (value_a[sort.param()].as_f64().unwrap()
+                                    < value_b[sort.param()].as_f64().unwrap()
+                                    && !sort.asc())
+                            {
+                                a.cmp(b)
+                            } else {
+                                b.cmp(a)
+                            }
+                        } else {
+                            panic!("{} can't match each other when sort", sort.param())
+                        }
                     });
                 }
             }

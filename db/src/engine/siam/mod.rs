@@ -14,7 +14,6 @@
 
 pub mod comm;
 pub mod doc;
-pub mod doc32;
 pub mod index;
 mod index_test;
 pub mod mem;

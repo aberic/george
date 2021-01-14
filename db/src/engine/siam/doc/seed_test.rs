@@ -13,21 +13,22 @@
  */
 
 #[cfg(test)]
-mod node_test {
-    use crate::engine::siam::doc32::node::Node;
-    use crate::engine::siam::traits::TNode;
-    use std::sync::Arc;
+mod seed_test {
+    use crate::engine::siam::doc::seed::Seed;
+    use crate::engine::traits::TSeed;
 
     #[test]
-    fn create_root_test() {
-        let n: Arc<Node> = Node::create_root(
-            "database".to_string(),
-            "view".to_string(),
-            "index".to_string(),
+    fn create_and_modify() {
+        println!("Hello, world!");
+        let l = Seed::create(
+            "database_id".to_string(),
+            "view_id".to_string(),
+            "".as_bytes().to_vec(),
         );
-        println!("node is {:#?}", n);
-        println!("node degree_index = {}", n.degree_index());
-        println!("node nodes = {:#?}", n.nodes());
+        println!("seed is {:#?}", l);
+        println!("seed md516_key = {}", l.key());
         println!();
+        println!("seZed is {:#?}", l);
+        println!("seed md516_key = {}", l.key());
     }
 }

@@ -53,6 +53,37 @@ pub struct Config {
     pub production: bool,
 }
 
+impl Config {
+    /// 服务数据存储路径
+    pub fn data_dir(&self) -> String {
+        self.data_dir.clone()
+    }
+    /// 限制打开文件描述符次数
+    pub fn limit_open_file(&self) -> u16 {
+        self.limit_open_file
+    }
+    /// 日志文件目录
+    pub fn log_dir(&self) -> String {
+        self.log_dir.clone()
+    }
+    /// 日志级别(debug/info/warn/Error/panic/fatal)
+    pub fn log_level(&self) -> String {
+        self.log_level.clone()
+    }
+    /// 每个日志文件保存的最大尺寸 单位：M
+    pub fn log_file_max_size(&self) -> u64 {
+        self.log_file_max_size
+    }
+    /// 文件最多保存多少个
+    pub fn log_file_max_count(&self) -> u32 {
+        self.log_file_max_count
+    }
+    /// 是否生产环境，在生产环境下控制台不会输出任何日志
+    pub fn production(&self) -> bool {
+        self.production
+    }
+}
+
 pub static GLOBAL_CONFIG: Lazy<RwLock<Config>> = Lazy::new(|| {
     let config = Config {
         data_dir: "db/src/test/george".to_string(),
