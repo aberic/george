@@ -32,6 +32,8 @@ pub const INDEX_SEQUENCE: &str = "george_db_index_sequence";
 /// 索引类型
 #[derive(Debug, Clone, Copy)]
 pub enum IndexType {
+    /// 占位
+    None,
     /// 静态索引方法(static index access method)
     Siam,
 }
@@ -53,20 +55,29 @@ pub enum IndexMold {
     F64,
 }
 
-/// 存储类型
+/// 存储引擎类型
 #[derive(Debug, Clone, Copy)]
-pub enum Category {
-    /// 内存存储类型
+pub enum EngineType {
+    /// 占位
+    None,
+    /// 内存存储引擎
     Memory,
-    /// 文档存储类型
-    Document,
+    /// 卷宗存储引擎(单文件索引存储-32位)
+    Dossier,
+    /// 文库存储引擎(多文件索引存储-64位)
+    Library,
+    /// 块存储引擎(区块链索引存储-64位)
+    Block,
 }
 
 /// 获取存储类型
-pub(crate) fn category(category: Category) -> Category {
-    match category {
-        Category::Memory => Category::Memory,
-        Category::Document => Category::Document,
+pub(crate) fn engine_type(engine_type: EngineType) -> EngineType {
+    match engine_type {
+        EngineType::None => EngineType::None,
+        EngineType::Memory => EngineType::Memory,
+        EngineType::Dossier => EngineType::Dossier,
+        EngineType::Library => EngineType::Library,
+        EngineType::Block => EngineType::Block,
     }
 }
 
@@ -92,18 +103,21 @@ const LEVEL4DISTANCE64: u64 = 1;
 
 /// 存储量级
 #[derive(Debug, Clone, Copy)]
-pub enum LevelType {
+pub enum Capacity {
+    /// 占位
+    None,
     /// 低级，支持存储2^32个元素
-    Small,
+    U32,
     /// 高级，支持存储2^64个元素
-    Large,
+    U64,
 }
 
 /// 获取存储量级
-pub fn level(level: LevelType) -> LevelType {
-    match level {
-        LevelType::Small => LevelType::Small,
-        LevelType::Large => LevelType::Large,
+pub fn capacity(capacity: Capacity) -> Capacity {
+    match capacity {
+        Capacity::None => Capacity::None,
+        Capacity::U32 => Capacity::U32,
+        Capacity::U64 => Capacity::U64,
     }
 }
 

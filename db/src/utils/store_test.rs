@@ -12,22 +12,22 @@
  * limitations under the License.
  */
 
-use crate::utils::comm::{Category, IndexType, LevelType};
-use crate::utils::store::{head, FileHeader, Tag};
+use crate::utils::comm::{Capacity, EngineType, IndexType};
+use crate::utils::store::{metadata_2_bytes, Metadata, Tag};
 
 #[test]
 fn head_test() {
-    let head1 = head(FileHeader::create(
+    let head1 = metadata_2_bytes(Metadata::create(
         Tag::Bootstrap,
-        Category::Memory,
-        LevelType::Small,
+        EngineType::Memory,
+        Capacity::U32,
         IndexType::Siam,
         0x00,
     ));
-    let head2 = head(FileHeader::create(
+    let head2 = metadata_2_bytes(Metadata::create(
         Tag::Database,
-        Category::Document,
-        LevelType::Large,
+        EngineType::Dossier,
+        Capacity::U64,
         IndexType::Siam,
         0x01,
     ));

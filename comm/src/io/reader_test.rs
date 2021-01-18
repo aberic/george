@@ -26,11 +26,11 @@ mod reader {
     fn read_sub_bytes_test() {
         println!(
             "res1 = {:#?}",
-            read_sub_bytes("src/examples/29f459a44fee58c7.gge".to_string(), 448, 8,)
+            read_sub_bytes("src/examples/29f459a44fee58c7.ge".to_string(), 448, 8,)
         );
         println!(
             "res2 = {:#?}",
-            read_sub_bytes("src/examples/29f459a44fee58c7.gge".to_string(), 0, 2048,)
+            read_sub_bytes("src/examples/29f459a44fee58c7.ge".to_string(), 0, 2048,)
         );
     }
 }

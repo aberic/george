@@ -16,8 +16,8 @@ use std::fs::{File, OpenOptions};
 use std::io::{Seek, SeekFrom, Write};
 use std::sync::{Arc, RwLock};
 
-use crate::errors::entrances::{err_str_enhance, err_string};
 use crate::errors::entrances::GeorgeResult;
+use crate::errors::entrances::{err_str_enhance, err_string};
 use crate::io::file::create_file;
 
 /// 在指定文件中追加数据
@@ -85,11 +85,7 @@ pub fn write_all<T>(file: File, input: String, t: T) -> GeorgeResult<Arc<RwLock<
 }
 
 /// 在指定文件中追加数据
-pub fn write_all_bytes<T>(
-    mut file: File,
-    content: Vec<u8>,
-    t: T,
-) -> GeorgeResult<Arc<RwLock<T>>> {
+pub fn write_all_bytes<T>(mut file: File, content: Vec<u8>, t: T) -> GeorgeResult<Arc<RwLock<T>>> {
     match file.write_all(content.as_slice()) {
         Ok(()) => Ok(Arc::new(RwLock::new(t))),
         Err(err) => Err(err_string(err.to_string())),

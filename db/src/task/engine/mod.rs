@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020. Aberic - All Rights Reserved.
+ * Copyright (c) 2021. Aberic - All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,6 +12,8 @@
  * limitations under the License.
  */
 
-mod examples;
-pub mod task;
-pub mod utils;
+pub(super) mod block;
+pub(super) mod dossier;
+pub(super) mod library;
+pub(super) mod memory;
+pub mod traits;

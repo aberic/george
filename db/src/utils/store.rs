@@ -23,13 +23,13 @@ use comm::io::reader::read_sub_file_bytes;
 use comm::io::writer::{write_all_bytes, write_seek_u8s};
 use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_u16_2_bytes, trans_u32_2_bytes};
 
-use crate::utils::comm::{Category, IndexMold, IndexType, LevelType};
+use crate::utils::comm::{Capacity, EngineType, IndexMold, IndexType};
 use crate::utils::deploy::VERSION;
 use crate::utils::writer::GLOBAL_WRITER;
 use std::ops::Add;
 
 /// 标识符
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Tag {
     /// 引导文件
     Bootstrap,
@@ -47,47 +47,78 @@ const FRONT: [u8; 2] = [0x20, 0x19];
 const END: [u8; 2] = [0x02, 0x19];
 
 /// 文件信息
-#[derive(Debug)]
-pub struct FileHeader {
+#[derive(Debug, Clone)]
+pub struct Metadata {
     /// 标识符
     pub tag: Tag,
-    /// 存储类型
-    pub category: Category,
+    /// 存储引擎类型
+    pub engine_type: EngineType,
     /// 存储容量
-    pub level: LevelType,
+    pub capacity: Capacity,
     /// 索引类型
     pub index_type: IndexType,
+    /// 版本号
+    pub version: [u8; 2],
     /// 序号
     pub sequence: u8,
 }
 
-impl FileHeader {
+impl Metadata {
     pub fn create(
         tag: Tag,
-        category: Category,
-        level: LevelType,
+        engine_type: EngineType,
+        capacity: Capacity,
         index_type: IndexType,
         sequence: u8,
-    ) -> FileHeader {
-        FileHeader {
+    ) -> Metadata {
+        Metadata {
             tag,
-            category,
-            level,
+            engine_type,
+            capacity,
             index_type,
+            version: VERSION,
             sequence,
         }
     }
-    fn from_bytes(head: Vec<u8>) -> GeorgeResult<FileHeader> {
+    pub fn from(
+        tag: Tag,
+        engine_type: EngineType,
+        capacity: Capacity,
+        index_type: IndexType,
+        version: [u8; 2],
+        sequence: u8,
+    ) -> Metadata {
+        Metadata {
+            tag,
+            engine_type,
+            capacity,
+            index_type,
+            version,
+            sequence,
+        }
+    }
+    pub fn default(tag: Tag) -> Metadata {
+        Metadata {
+            tag,
+            engine_type: EngineType::None,
+            capacity: Capacity::None,
+            index_type: IndexType::None,
+            version: VERSION,
+            sequence: 0x00,
+        }
+    }
+    fn from_bytes(head: Vec<u8>) -> GeorgeResult<Metadata> {
         if 0x20 != head.get(0).unwrap().clone() || 0x19 != head.get(1).unwrap().clone() {
             Err(err_str("recovery head failed! because front is invalid!"))
         } else if 0x02 != head.get(30).unwrap().clone() || 0x19 != head.get(31).unwrap().clone() {
             Err(err_str("recovery head failed! because end is invalid!"))
         } else {
-            Ok(FileHeader::create(
+            Ok(Metadata::from(
                 tag(head.get(2).unwrap().clone()),
-                category(head.get(3).unwrap().clone()),
-                level(head.get(4).unwrap().clone()),
+                engine_type(head.get(3).unwrap().clone()),
+                capacity(head.get(4).unwrap().clone()),
                 index_type(head.get(5).unwrap().clone()),
+                [head.get(6).unwrap().clone(), head.get(7).unwrap().clone()],
                 head.get(8).unwrap().clone(),
             ))
         }
@@ -103,17 +134,21 @@ pub fn tag_u8(tag: Tag) -> u8 {
     }
 }
 
-pub fn category_u8(category: Category) -> u8 {
-    match category {
-        Category::Memory => 0x00,
-        Category::Document => 0x01,
+pub fn engine_type_u8(engine_type: EngineType) -> u8 {
+    match engine_type {
+        EngineType::None => 0xff,
+        EngineType::Memory => 0x00,
+        EngineType::Dossier => 0x01,
+        EngineType::Library => 0x02,
+        EngineType::Block => 0x03,
     }
 }
 
-pub fn level_u8(level_type: LevelType) -> u8 {
-    match level_type {
-        LevelType::Small => 0x00,
-        LevelType::Large => 0x01,
+pub fn capacity_u8(capacity: Capacity) -> u8 {
+    match capacity {
+        Capacity::None => 0xff,
+        Capacity::U32 => 0x00,
+        Capacity::U64 => 0x01,
     }
 }
 
@@ -130,6 +165,7 @@ pub fn mold_u8(mold: IndexMold) -> u8 {
 
 pub fn index_type_u8(index_type: IndexType) -> u8 {
     match index_type {
+        IndexType::None => 0xff,
         IndexType::Siam => 0x00,
     }
 }
@@ -144,11 +180,13 @@ pub fn tag(b: u8) -> Tag {
     }
 }
 
-pub fn category(b: u8) -> Category {
+pub fn engine_type(b: u8) -> EngineType {
     match b {
-        0x00 => Category::Memory,
-        0x01 => Category::Document,
-        _ => Category::Memory,
+        0x00 => EngineType::Memory,
+        0x01 => EngineType::Dossier,
+        0x02 => EngineType::Library,
+        0x03 => EngineType::Block,
+        _ => EngineType::Memory,
     }
 }
 
@@ -164,11 +202,11 @@ pub fn mold(b: u8) -> IndexMold {
     }
 }
 
-pub fn level(b: u8) -> LevelType {
+pub fn capacity(b: u8) -> Capacity {
     match b {
-        0x00 => LevelType::Small,
-        0x01 => LevelType::Large,
-        _ => LevelType::Large,
+        0x00 => Capacity::U32,
+        0x01 => Capacity::U64,
+        _ => Capacity::U32,
     }
 }
 
@@ -198,7 +236,7 @@ pub fn mold_str(mold: IndexMold) -> String {
 ///
 /// tag 文件标识符，标识该文件是引导文件、库文件、表文件或是索引文件等，1字节<p>
 ///
-/// category 文件存储类型，如内存类型Memory(0x00)或文档类型Document(0x01)，该参数主要用于库、表和索引数据类型使用，1字节<p>
+/// engine_type 存储引擎类型，如内存类型Memory(0x00)/卷宗存储Dossier(0x01)/文库存储Library(0x02)/块存储Block(0x03)，该参数主要用于库、表和索引数据类型使用，1字节<p>
 ///
 /// level 文件存储容量，如Small(0x00)表示2^32，以及Large(0x01)表示2^64结点个数，该参数主要用于库、表和索引数据类型使用，1字节<p>
 ///
@@ -214,17 +252,17 @@ pub fn mold_str(mold: IndexMold) -> String {
 /// ###Return
 ///
 /// 返回一个拼装完成的文件首部字符串
-pub fn head(header: FileHeader) -> Vec<u8> {
+pub fn metadata_2_bytes(metadata: Metadata) -> Vec<u8> {
     let head: [u8; 32] = [
         FRONT.get(0).unwrap().clone(),
         FRONT.get(1).unwrap().clone(),
-        tag_u8(header.tag),
-        category_u8(header.category),
-        level_u8(header.level),
-        index_type_u8(header.index_type),
-        VERSION.get(0).unwrap().clone(),
-        VERSION.get(1).unwrap().clone(),
-        header.sequence,
+        tag_u8(metadata.tag),
+        engine_type_u8(metadata.engine_type),
+        capacity_u8(metadata.capacity),
+        index_type_u8(metadata.index_type),
+        metadata.version.get(0).unwrap().clone(),
+        metadata.version.get(1).unwrap().clone(),
+        metadata.sequence,
         0x00,
         0x00,
         0x00,
@@ -254,18 +292,13 @@ pub fn head(header: FileHeader) -> Vec<u8> {
 
 /// 正文前所有信息，包括头部信息和正文描述信息
 ///
-/// start 正文描述起始位置，初始化为32 + 6，即head长度加正文描述符长度
+/// start 正文描述起始位置，初始化为32 + 8，即head长度加正文描述符长度
 ///
 /// description_len 正文描述内容持续长度
-pub fn before_content_bytes(start: u32, description_len: u16) -> Vec<u8> {
+pub fn before_content_bytes(start: u32, description_len: u32) -> Vec<u8> {
     let mut start_bytes = trans_u32_2_bytes(start);
-    let mut last_bytes = trans_u16_2_bytes(description_len);
-    // println!(
-    //     "start_bytes = {:#?}, last_bytes = {:#?}",
-    //     start_bytes, last_bytes
-    // );
+    let mut last_bytes = trans_u32_2_bytes(description_len);
     start_bytes.append(&mut last_bytes);
-    // println!("start_bytes = {:#?}", start_bytes);
     start_bytes
 }
 
@@ -290,11 +323,11 @@ pub fn before_content_bytes_for_index(start: u32, description_len: u32) -> Vec<u
 
 #[derive(Debug)]
 pub struct HD {
-    pub header: FileHeader,
+    pub metadata: Metadata,
     pub description: Vec<u8>,
 }
 
-/// 恢复正文内容外的所有首部信息
+/// 恢复首部信息和正文描述信息，即正文内容之前的所有信息
 pub fn recovery_before_content(tag: Tag, filepath: String) -> GeorgeResult<HD> {
     let td: &str;
     match tag {
@@ -303,27 +336,21 @@ pub fn recovery_before_content(tag: Tag, filepath: String) -> GeorgeResult<HD> {
         Tag::View => td = "view",
         Tag::Index => td = "index",
     }
-    // println!("{} recovery before content", td);
-    match File::open(filepath) {
+    log::debug!("{} recovery before content from file {}", td, filepath);
+    match File::open(filepath.clone()) {
         Ok(file) => {
             match file.try_clone() {
-                Ok(f) => {
+                Ok(file_clone) => {
                     // before_content包括head以及正文描述信息
-                    // other head长度已知32，正文描述长度已知6，总长度38
-                    // index head长度已知32，正文描述长度已知8，总长度40
-                    // 从0开始读取，一直读取80个字符
-                    let content: Vec<u8>;
-                    match tag {
-                        Tag::Index => content = read_sub_file_bytes(f, 0, 40)?,
-                        _ => content = read_sub_file_bytes(f, 0, 38)?,
-                    }
-                    let mut head_bytes: Vec<u8> = vec![];
+                    // head长度已知32，正文描述长度已知8，总长度40
+                    let content = read_sub_file_bytes(file_clone, 0, 40)?;
+                    let mut metadata_bytes: Vec<u8> = vec![];
                     let mut start_bytes: Vec<u8> = vec![];
                     let mut last_bytes: Vec<u8> = vec![];
                     let mut position = 0;
                     for b in content {
                         if position < 32 {
-                            head_bytes.push(b)
+                            metadata_bytes.push(b)
                         } else if position >= 36 {
                             last_bytes.push(b)
                         } else {
@@ -332,20 +359,12 @@ pub fn recovery_before_content(tag: Tag, filepath: String) -> GeorgeResult<HD> {
                         position += 1
                     }
                     let start = trans_bytes_2_u32(start_bytes.clone()) as u64;
-                    let last: usize;
-                    match tag {
-                        Tag::Index => last = trans_bytes_2_u32(last_bytes.clone()) as usize,
-                        _ => last = trans_bytes_2_u16(last_bytes.clone()) as usize,
-                    }
-                    // println!(
-                    //     "head_bytes = {:#?}start_bytes = {:#?}\nlast_bytes = {:#?}\nstart = {}\nlast = {}",
-                    //     head_bytes, start_bytes, last_bytes, start, last
-                    // );
-                    let header = FileHeader::from_bytes(head_bytes)?;
+                    let last = trans_bytes_2_u32(last_bytes.clone()) as usize;
+                    let metadata = Metadata::from_bytes(metadata_bytes)?;
                     // 读取正文描述
                     let description = read_sub_file_bytes(file, start, last)?;
                     Ok(HD {
-                        header,
+                        metadata,
                         description,
                     })
                 }
@@ -356,8 +375,8 @@ pub fn recovery_before_content(tag: Tag, filepath: String) -> GeorgeResult<HD> {
             }
         }
         Err(err) => Err(err_string(format!(
-            "recovery {} open failed! error is {}",
-            td, err
+            "recovery {} from path {} open failed! error is {}",
+            td, filepath, err
         ))),
     }
 }
@@ -409,7 +428,7 @@ pub fn modify(filepath: String, description: Vec<u8>) -> GeorgeResult<()> {
     match OpenOptions::new().append(true).open(filepath.clone()) {
         Ok(mut file) => {
             let seek = file.metadata().unwrap().len();
-            let before_description = before_content_bytes(seek as u32, description.len() as u16);
+            let before_description = before_content_bytes(seek as u32, description.len() as u32);
             match file.write_all(description.as_slice()) {
                 Ok(()) => {
                     // 初始化head为32，描述起始4字节，长度2字节

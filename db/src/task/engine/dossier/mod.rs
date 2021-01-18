@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020. Aberic - All Rights Reserved.
+ * Copyright (c) 2021. Aberic - All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,7 +12,4 @@
  * limitations under the License.
  */
 
-pub mod node;
-mod node_test;
-pub mod seed;
-mod seed_test;
+pub(super) mod index;

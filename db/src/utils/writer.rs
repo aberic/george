@@ -25,6 +25,14 @@ use comm::errors::entrances::{err_string, GeorgeError};
 
 use crate::utils::store::Tag;
 
+/// 根据文件路径获取该文件追加写入的写对象
+pub fn obtain_write_append_file(file_path: String) -> GeorgeResult<Arc<RwLock<File>>> {
+    match OpenOptions::new().append(true).open(file_path) {
+        Ok(file) => Ok(Arc::new(RwLock::new(file))),
+        Err(err) => Err(err_string(err.to_string())),
+    }
+}
+
 /// 视图及索引写对象
 pub struct Writer {
     pub views: Arc<RwLock<HashMap<String, Arc<RwLock<File>>>>>,
@@ -32,7 +40,7 @@ pub struct Writer {
 }
 
 /// 视图及索引写全局单例对象
-pub(crate) static GLOBAL_WRITER: Lazy<Arc<Writer>> = Lazy::new(|| {
+pub static GLOBAL_WRITER: Lazy<Arc<Writer>> = Lazy::new(|| {
     let writer = Writer {
         views: Arc::new(Default::default()),
         indexes: Arc::new(Default::default()),
