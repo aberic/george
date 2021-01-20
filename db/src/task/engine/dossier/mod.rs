@@ -12,4 +12,5 @@
  * limitations under the License.
  */
 
-pub(super) mod index;
+pub mod index;
+mod node;

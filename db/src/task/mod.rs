@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 mod database;
-pub(super) mod engine;
-pub mod taskmaster;
-mod taskmaster_test;
+pub mod engine;
+pub mod master;
+mod master_test;
 mod view;

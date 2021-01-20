@@ -19,8 +19,8 @@ use serde::export::fmt::Debug;
 
 use comm::errors::entrances::GeorgeResult;
 
-use crate::utils::comm::{EngineType, IndexMold};
-use crate::utils::store::{Metadata, HD};
+use crate::utils::comm::IndexMold;
+use crate::utils::store::Metadata;
 
 /// 索引通用特性，遵循此特性创建索引可以更方便的针对icdb进行扩展
 ///
@@ -31,6 +31,8 @@ pub trait TIndex: Send + Sync + Debug {
     fn name(&self) -> String;
     /// 当前索引是否为主键
     fn is_primary(&self) -> bool;
+    /// 索引值类型
+    fn mold(&self) -> IndexMold;
     /// 存储引擎类型
     fn metadata(&self) -> Metadata;
     /// 创建时间

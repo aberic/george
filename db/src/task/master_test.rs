@@ -12,7 +12,8 @@
  * limitations under the License.
  */
 
-use crate::task::taskmaster::GLOBAL_MASTER;
+use crate::task::master::GLOBAL_MASTER;
+use crate::utils::comm::{EngineType, IndexMold};
 use chrono::{Duration, NaiveDateTime};
 
 #[test]
@@ -75,6 +76,19 @@ fn view_modify_test() {
     database_map();
 }
 
+#[test]
+fn index_create_test() {
+    create_index(
+        "database_index_create_test",
+        "view_index_create_test",
+        "index_create_test",
+        EngineType::Dossier,
+        IndexMold::String,
+        true,
+    );
+    database_map();
+}
+
 fn database_map() {
     for (database_name, db) in GLOBAL_MASTER
         .database_map()
@@ -114,7 +128,25 @@ fn database_map() {
                 view_r.name(),
                 view_r.create_time(),
                 time_format
-            )
+            );
+
+            for (index_name, index) in view_r.index_map().read().unwrap().iter().into_iter() {
+                let index_c = index.clone();
+                let index_r = index_c.read().unwrap();
+
+                let duration: Duration = index_r.create_time();
+                let time_from_stamp = NaiveDateTime::from_timestamp(duration.num_seconds(), 0);
+
+                let time_format = time_from_stamp.format("%Y-%m-%d %H:%M:%S");
+
+                println!(
+                    "index_map_test {} | {} | {} | {}",
+                    index_name,
+                    index_r.name(),
+                    index_r.create_time(),
+                    time_format
+                )
+            }
         }
     }
 }
@@ -134,10 +166,7 @@ fn modify_database(name: &str, old_name: &str) {
 }
 
 fn create_view(database_name: &str, view_name: &str) {
-    match GLOBAL_MASTER.create_database(String::from(database_name), String::from("comment")) {
-        Ok(()) => println!("create database {}", database_name),
-        Err(err) => println!("create database {} error, {}", database_name, err),
-    }
+    create_database(database_name.clone());
     match GLOBAL_MASTER.create_view(
         String::from(database_name),
         String::from(view_name),
@@ -164,6 +193,34 @@ fn modify_view(database_name: &str, view_name: &str, view_new_name: &str) {
         Err(err) => println!(
             "modify view {} to {} from {} error, {}",
             view_name, view_new_name, database_name, err
+        ),
+    }
+}
+
+fn create_index(
+    database_name: &str,
+    view_name: &str,
+    index_name: &str,
+    engine_type: EngineType,
+    index_mold: IndexMold,
+    primary: bool,
+) {
+    create_view(database_name.clone(), view_name.clone());
+    match GLOBAL_MASTER.create_index(
+        String::from(database_name),
+        String::from(view_name),
+        String::from(index_name),
+        engine_type,
+        index_mold,
+        primary,
+    ) {
+        Ok(()) => println!(
+            "create index {} from database.view {}.{}",
+            index_name, database_name, view_name
+        ),
+        Err(err) => println!(
+            "create index {} from database.view {}.{} error, {}",
+            index_name, database_name, view_name, err
         ),
     }
 }

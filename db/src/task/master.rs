@@ -13,10 +13,10 @@
  */
 
 use crate::task::database::Database;
-use crate::utils::comm::{Capacity, EngineType, IndexType, GEORGE_DB_CONFIG};
+use crate::utils::comm::{EngineType, IndexMold, GEORGE_DB_CONFIG};
 use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
 use crate::utils::path::{bootstrap_file_path, data_path, database_file_path};
-use crate::utils::store::{metadata_2_bytes, recovery_before_content, Metadata, Tag};
+use crate::utils::store::recovery_before_content;
 use chrono::{Duration, Local, NaiveDateTime};
 use comm::env;
 use comm::errors::children::{DatabaseExistError, DatabaseNoExistError};
@@ -30,7 +30,7 @@ use std::fs::{read_dir, read_to_string, ReadDir};
 use std::sync::{Arc, RwLock};
 
 /// 数据库
-pub(crate) struct Master {
+pub(super) struct Master {
     /// 视图索引集合
     databases: Arc<RwLock<HashMap<String, Arc<RwLock<Database>>>>>,
     /// 创建时间
@@ -38,14 +38,14 @@ pub(crate) struct Master {
 }
 
 impl Master {
-    pub fn database_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Database>>>>> {
+    pub(super) fn database_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Database>>>>> {
         self.databases.clone()
     }
-    pub fn create_time(&self) -> Duration {
+    pub(super) fn create_time(&self) -> Duration {
         self.create_time
     }
     /// 创建数据库
-    pub fn create_database(
+    pub(super) fn create_database(
         &self,
         database_name: String,
         _database_comment: String,
@@ -62,7 +62,7 @@ impl Master {
         Ok(())
     }
     /// 修改数据库
-    pub fn modify_database(&self, name: String, new_name: String) -> GeorgeResult<()> {
+    pub(super) fn modify_database(&self, name: String, new_name: String) -> GeorgeResult<()> {
         if !self.exist_database(name.clone()) {
             return Err(GeorgeError::DatabaseNoExistError(DatabaseNoExistError));
         }
@@ -77,19 +77,21 @@ impl Master {
         databases_w.insert(new_name.clone(), database.clone());
         Ok(())
     }
+    /// 根据库name获取库
+    pub(super) fn database(&self, database_name: String) -> GeorgeResult<Arc<RwLock<Database>>> {
+        match self.database_map().read().unwrap().get(&database_name) {
+            Some(database) => Ok(database.clone()),
+            None => Err(GeorgeError::DatabaseNoExistError(DatabaseNoExistError)),
+        }
+    }
     fn exist_database(&self, database_name: String) -> bool {
-        return match self
-            .database_map()
-            .read()
-            .unwrap()
-            .get(database_name.as_str())
-        {
-            Some(_) => true,
-            None => false,
+        return match self.database(database_name) {
+            Ok(_) => true,
+            Err(_) => false,
         };
     }
     /// 创建视图
-    pub(crate) fn create_view(
+    pub(super) fn create_view(
         &self,
         database_name: String,
         view_name: String,
@@ -112,7 +114,7 @@ impl Master {
         Ok(())
     }
     /// 修改视图
-    pub(crate) fn modify_view(
+    pub(super) fn modify_view(
         &self,
         database_name: String,
         view_name: String,
@@ -125,6 +127,30 @@ impl Master {
             }
             None => return Err(GeorgeError::DatabaseNoExistError(DatabaseNoExistError)),
         }
+    }
+    /// 在指定库及视图中创建索引
+    ///
+    /// 该索引需要定义ID，此外索引所表达的字段组成内容也是必须的，并通过primary判断索引类型，具体传参参考如下定义：<p><p>
+    ///
+    /// ###Params
+    ///
+    /// index_name 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
+    ///
+    /// primary 是否主键
+    pub(super) fn create_index(
+        &self,
+        database_name: String,
+        view_name: String,
+        index_name: String,
+        engine_type: EngineType,
+        index_mold: IndexMold,
+        primary: bool,
+    ) -> GeorgeResult<()> {
+        let database = self.database(database_name.clone())?;
+        let database_read = database.read().unwrap();
+        let view = database_read.view(view_name)?;
+        let view_read = view.read().unwrap();
+        view_read.create_index(database_name, index_name, engine_type, index_mold, primary)
     }
 }
 
@@ -187,15 +213,16 @@ impl Master {
 
     /// 恢复database数据
     fn recovery_database(&self, database_name: String) {
-        match recovery_before_content(Tag::Database, database_file_path(database_name)) {
+        match recovery_before_content(database_file_path(database_name)) {
             Ok(hd) => {
                 // 恢复database数据
-                match Database::recover(hd) {
+                match Database::recover(hd.clone()) {
                     Ok(db) => {
                         log::debug!(
-                            "db [name={}, create time ={}]",
+                            "db [name={}, create time = {}, {:#?}]",
                             db.name(),
                             db.create_time().num_nanoseconds().unwrap().to_string(),
+                            hd.metadata()
                         );
                         // 如果已存在该database，则不处理
                         if self.exist_database(db.name()) {
@@ -214,7 +241,7 @@ impl Master {
     }
 }
 
-pub(crate) static GLOBAL_MASTER: Lazy<Arc<Master>> = Lazy::new(|| {
+pub(super) static GLOBAL_MASTER: Lazy<Arc<Master>> = Lazy::new(|| {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
     init_log();

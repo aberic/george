@@ -12,8 +12,10 @@
  * limitations under the License.
  */
 
+use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
+use std::ops::Add;
 use std::sync::{Arc, RwLock};
 
 use comm::errors::children::NoneError;
@@ -21,12 +23,11 @@ use comm::errors::entrances::GeorgeResult;
 use comm::errors::entrances::{err_str, err_string, GeorgeError};
 use comm::io::reader::read_sub_file_bytes;
 use comm::io::writer::{write_all_bytes, write_seek_u8s};
-use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_u16_2_bytes, trans_u32_2_bytes};
+use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_u32_2_bytes};
 
 use crate::utils::comm::{Capacity, EngineType, IndexMold, IndexType};
 use crate::utils::deploy::VERSION;
 use crate::utils::writer::GLOBAL_WRITER;
-use std::ops::Add;
 
 /// 标识符
 #[derive(Debug, Clone)]
@@ -47,7 +48,7 @@ const FRONT: [u8; 2] = [0x20, 0x19];
 const END: [u8; 2] = [0x02, 0x19];
 
 /// 文件信息
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Metadata {
     /// 标识符
     pub tag: Tag,
@@ -61,6 +62,13 @@ pub struct Metadata {
     pub version: [u8; 2],
     /// 序号
     pub sequence: u8,
+}
+
+impl fmt::Debug for Metadata {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let version = vec![self.version[0], self.version[1]];
+        write!(f, "tag = {:#?}, engine_type = {:#?}, capacity = {:#?}, index_type = {:#?}, version = {:#?}, sequence = {:#?}", self.tag, self.engine_type, self.capacity, self.index_type, trans_bytes_2_u16(version), self.sequence)
+    }
 }
 
 impl Metadata {
@@ -107,6 +115,43 @@ impl Metadata {
             sequence: 0x00,
         }
     }
+    pub fn index(engine_type: EngineType) -> GeorgeResult<Metadata> {
+        match engine_type {
+            EngineType::None => Err(err_str("unsupported engine type with none")),
+            EngineType::Memory => Ok(Metadata {
+                tag: Tag::Index,
+                engine_type,
+                capacity: Capacity::U64,
+                index_type: IndexType::Siam,
+                version: VERSION,
+                sequence: 0x00,
+            }),
+            EngineType::Dossier => Ok(Metadata {
+                tag: Tag::Index,
+                engine_type,
+                capacity: Capacity::U32,
+                index_type: IndexType::Siam,
+                version: VERSION,
+                sequence: 0x00,
+            }),
+            EngineType::Library => Ok(Metadata {
+                tag: Tag::Index,
+                engine_type,
+                capacity: Capacity::U64,
+                index_type: IndexType::Siam,
+                version: VERSION,
+                sequence: 0x00,
+            }),
+            EngineType::Block => Ok(Metadata {
+                tag: Tag::Index,
+                engine_type,
+                capacity: Capacity::U64,
+                index_type: IndexType::Siam,
+                version: VERSION,
+                sequence: 0x00,
+            }),
+        }
+    }
     fn from_bytes(head: Vec<u8>) -> GeorgeResult<Metadata> {
         if 0x20 != head.get(0).unwrap().clone() || 0x19 != head.get(1).unwrap().clone() {
             Err(err_str("recovery head failed! because front is invalid!"))
@@ -136,19 +181,19 @@ pub fn tag_u8(tag: Tag) -> u8 {
 
 pub fn engine_type_u8(engine_type: EngineType) -> u8 {
     match engine_type {
-        EngineType::None => 0xff,
-        EngineType::Memory => 0x00,
-        EngineType::Dossier => 0x01,
-        EngineType::Library => 0x02,
-        EngineType::Block => 0x03,
+        EngineType::None => 0x00,
+        EngineType::Memory => 0x01,
+        EngineType::Dossier => 0x02,
+        EngineType::Library => 0x03,
+        EngineType::Block => 0x04,
     }
 }
 
 pub fn capacity_u8(capacity: Capacity) -> u8 {
     match capacity {
-        Capacity::None => 0xff,
-        Capacity::U32 => 0x00,
-        Capacity::U64 => 0x01,
+        Capacity::None => 0x00,
+        Capacity::U32 => 0x01,
+        Capacity::U64 => 0x02,
     }
 }
 
@@ -165,8 +210,8 @@ pub fn mold_u8(mold: IndexMold) -> u8 {
 
 pub fn index_type_u8(index_type: IndexType) -> u8 {
     match index_type {
-        IndexType::None => 0xff,
-        IndexType::Siam => 0x00,
+        IndexType::None => 0x00,
+        IndexType::Siam => 0x01,
     }
 }
 
@@ -182,11 +227,12 @@ pub fn tag(b: u8) -> Tag {
 
 pub fn engine_type(b: u8) -> EngineType {
     match b {
-        0x00 => EngineType::Memory,
-        0x01 => EngineType::Dossier,
-        0x02 => EngineType::Library,
-        0x03 => EngineType::Block,
-        _ => EngineType::Memory,
+        0x00 => EngineType::None,
+        0x01 => EngineType::Memory,
+        0x02 => EngineType::Dossier,
+        0x03 => EngineType::Library,
+        0x04 => EngineType::Block,
+        _ => EngineType::None,
     }
 }
 
@@ -204,15 +250,17 @@ pub fn mold(b: u8) -> IndexMold {
 
 pub fn capacity(b: u8) -> Capacity {
     match b {
-        0x00 => Capacity::U32,
-        0x01 => Capacity::U64,
+        0x00 => Capacity::None,
+        0x01 => Capacity::U32,
+        0x02 => Capacity::U64,
         _ => Capacity::U32,
     }
 }
 
 pub fn index_type(b: u8) -> IndexType {
     match b {
-        0x00 => IndexType::Siam,
+        0x00 => IndexType::None,
+        0x01 => IndexType::Siam,
         _ => IndexType::Siam,
     }
 }
@@ -321,22 +369,23 @@ pub fn before_content_bytes_for_index(start: u32, description_len: u32) -> Vec<u
 
 // pub fn parse_before_content_bytes(bytes: Vec<u8>) -> Vec<u8> {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HD {
     pub metadata: Metadata,
     pub description: Vec<u8>,
 }
 
-/// 恢复首部信息和正文描述信息，即正文内容之前的所有信息
-pub fn recovery_before_content(tag: Tag, filepath: String) -> GeorgeResult<HD> {
-    let td: &str;
-    match tag {
-        Tag::Bootstrap => td = "bootstrap",
-        Tag::Database => td = "database",
-        Tag::View => td = "view",
-        Tag::Index => td = "index",
+impl HD {
+    pub fn metadata(&self) -> Metadata {
+        self.metadata.clone()
     }
-    log::debug!("{} recovery before content from file {}", td, filepath);
+    pub fn description(&self) -> Vec<u8> {
+        self.description.clone()
+    }
+}
+
+/// 恢复首部信息和正文描述信息，即正文内容之前的所有信息
+pub fn recovery_before_content(filepath: String) -> GeorgeResult<HD> {
     match File::open(filepath.clone()) {
         Ok(file) => {
             match file.try_clone() {
@@ -363,20 +412,25 @@ pub fn recovery_before_content(tag: Tag, filepath: String) -> GeorgeResult<HD> {
                     let metadata = Metadata::from_bytes(metadata_bytes)?;
                     // 读取正文描述
                     let description = read_sub_file_bytes(file, start, last)?;
+                    log::debug!(
+                        "{:#?} recovery before content from file {}",
+                        metadata.tag,
+                        filepath
+                    );
                     Ok(HD {
                         metadata,
                         description,
                     })
                 }
                 Err(err) => Err(err_string(format!(
-                    "recovery {} before content file try clone failed! error is {}",
-                    td, err
+                    "recovery before content file {} try clone failed! error is {}",
+                    filepath, err
                 ))),
             }
         }
         Err(err) => Err(err_string(format!(
-            "recovery {} from path {} open failed! error is {}",
-            td, filepath, err
+            "recovery from path {} open failed! error is {}",
+            filepath, err
         ))),
     }
 }

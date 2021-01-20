@@ -12,28 +12,28 @@
  * limitations under the License.
  */
 
+use crate::task::engine::dossier::index::Index;
 use crate::task::engine::traits::TIndex;
-use crate::utils::comm::{Capacity, EngineType, IndexMold, IndexType, INDEX_CATALOG};
-use crate::utils::path::{view_file_path, view_path};
-use crate::utils::store;
+use crate::utils::comm::{EngineType, IndexMold};
+use crate::utils::path::{index_file_path, view_file_path, view_path};
 use crate::utils::store::{
-    before_content_bytes, capacity_u8, engine_type_u8, index_type_u8, metadata_2_bytes, Metadata,
-    Tag, HD,
+    before_content_bytes, metadata_2_bytes, recovery_before_content, Metadata, Tag, HD,
 };
 use crate::utils::writer::obtain_write_append_file;
 use chrono::{Duration, Local, NaiveDateTime};
-use comm::errors::entrances::{err_str_enhance, err_string, GeorgeResult};
+use comm::errors::children::IndexExistError;
+use comm::errors::entrances::{err_str, err_str_enhance, err_string, GeorgeError, GeorgeResult};
 use comm::io::file::create_file;
 use comm::io::reader::read_sub_bytes;
 use comm::io::writer::{write_file_append_bytes, write_seek_u8s};
 use std::collections::HashMap;
 use std::fs::{read_dir, File, ReadDir};
-use std::io::{Seek, SeekFrom, Write};
+use std::io::{Seek, SeekFrom};
 use std::sync::{Arc, RwLock};
 
 /// 视图，类似表
 #[derive(Debug, Clone)]
-pub(super) struct View {
+pub(crate) struct View {
     /// 名称
     name: String,
     /// 创建时间
@@ -77,7 +77,7 @@ fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
 }
 
 impl View {
-    pub(super) fn create(database_name: String, name: String) -> GeorgeResult<Arc<RwLock<View>>> {
+    pub(crate) fn create(database_name: String, name: String) -> GeorgeResult<Arc<RwLock<View>>> {
         create_file(view_file_path(database_name.clone(), name.clone()), true)?;
         let mut view = new_view(database_name.clone(), name)?;
         let mut metadata_bytes = metadata_2_bytes(view.metadata());
@@ -90,15 +90,15 @@ impl View {
         Ok(Arc::new(RwLock::new(view)))
     }
     /// 名称
-    pub(super) fn name(&self) -> String {
+    pub(crate) fn name(&self) -> String {
         self.name.clone()
     }
     /// 创建时间
-    pub(super) fn create_time(&self) -> Duration {
+    pub(crate) fn create_time(&self) -> Duration {
         self.create_time.clone()
     }
     /// 文件信息
-    pub(super) fn metadata(&self) -> Metadata {
+    pub(crate) fn metadata(&self) -> Metadata {
         self.metadata.clone()
     }
     /// 根据文件路径获取该文件追加写入的写对象
@@ -108,11 +108,7 @@ impl View {
     /// #Return
     ///
     /// seek_end_before 写之前文件字节数据长度
-    pub(super) fn file_append(
-        &mut self,
-        database_name: String,
-        content: Vec<u8>,
-    ) -> GeorgeResult<u64> {
+    fn file_append(&mut self, database_name: String, content: Vec<u8>) -> GeorgeResult<u64> {
         let file_append = self.file_append.clone();
         let mut file_write = file_append.write().unwrap();
         match file_write.seek(SeekFrom::End(0)) {
@@ -122,8 +118,8 @@ impl View {
                     Err(_err) => {
                         let file_path = view_file_path(database_name, self.name());
                         self.file_append = obtain_write_append_file(file_path)?;
-                        let file_again = self.file_append.write().unwrap();
-                        write_file_append_bytes(file_again.try_clone().unwrap(), content)?;
+                        let file_write_again = self.file_append.write().unwrap();
+                        write_file_append_bytes(file_write_again.try_clone().unwrap(), content)?;
                         Ok(seek_end_before)
                     }
                 }
@@ -139,7 +135,7 @@ impl View {
         }
     }
     /// 索引集合
-    pub(super) fn indexes(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>> {
+    pub(crate) fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>> {
         self.indexes.clone()
     }
     /// 视图变更
@@ -170,18 +166,52 @@ impl View {
             }
         }
     }
-    pub(super) fn create_index(
+    fn exist_index(&self, index_name: String) -> bool {
+        return match self.index_map().read().unwrap().get(index_name.as_str()) {
+            Some(_) => true,
+            None => false,
+        };
+    }
+    /// 创建索引
+    pub(crate) fn create_index(
         &self,
-        _database_name: String,
-        _index_name: String,
-        _index_mold: IndexMold,
-        _primary: bool,
+        database_name: String,
+        index_name: String,
+        engine_type: EngineType,
+        index_mold: IndexMold,
+        primary: bool,
     ) -> GeorgeResult<()> {
+        if self.exist_index(index_name.clone()) {
+            return Err(GeorgeError::IndexExistError(IndexExistError));
+        }
+        let view_name = self.name();
+        let name = index_name.clone();
+        let index;
+        match engine_type {
+            EngineType::None => return Err(err_str("unsupported engine type with none")),
+            EngineType::Memory => {
+                index = Index::create(database_name, view_name, name, primary, index_mold)?
+            }
+            EngineType::Dossier => {
+                index = Index::create(database_name, view_name, name, primary, index_mold)?
+            }
+            EngineType::Library => {
+                index = Index::create(database_name, view_name, name, primary, index_mold)?
+            }
+            EngineType::Block => {
+                index = Index::create(database_name, view_name, name, primary, index_mold)?
+            }
+        }
+        self.index_map()
+            .write()
+            .unwrap()
+            .insert(index_name, index.clone());
         Ok(())
     }
 }
 
 impl View {
+    /// 生成文件描述
     fn description(&self) -> Vec<u8> {
         hex::encode(format!(
             "{}/{}",
@@ -190,9 +220,9 @@ impl View {
         ))
         .into_bytes()
     }
-
-    pub(super) fn recover(database_name: String, hd: HD) -> GeorgeResult<View> {
-        match String::from_utf8(hd.description) {
+    /// 通过文件描述恢复结构信息
+    pub(crate) fn recover(database_name: String, hd: HD) -> GeorgeResult<View> {
+        match String::from_utf8(hd.description()) {
             Ok(description_str) => match hex::decode(description_str) {
                 Ok(vu8) => match String::from_utf8(vu8) {
                     Ok(real) => {
@@ -206,7 +236,7 @@ impl View {
                         let mut view = View {
                             name,
                             create_time,
-                            metadata: hd.metadata,
+                            metadata: hd.metadata(),
                             file_append,
                             indexes: Arc::new(Default::default()),
                         };
@@ -215,15 +245,15 @@ impl View {
                             view.name(),
                             database_name,
                         );
-                        match read_dir(view_path(database_name, view.name())) {
+                        match read_dir(view_path(database_name.clone(), view.name())) {
                             // 恢复indexes数据
-                            Ok(paths) => view.recovery_indexes(paths),
+                            Ok(paths) => view.recovery_indexes(database_name, paths),
                             Err(err) => panic!("recovery view read dir failed! error is {}", err),
                         }
                         Ok(view)
                     }
                     Err(err) => Err(err_string(format!(
-                        "recovery view from utf8 failed! error is {}",
+                        "recovery index from utf8 2 failed! error is {}",
                         err
                     ))),
                 },
@@ -232,12 +262,71 @@ impl View {
                     err
                 ))),
             },
-            Err(err) => Err(err_string(err.to_string())),
+            Err(err) => Err(err_string(format!(
+                "recovery index from utf8 1 failed! error is {}",
+                err
+            ))),
         }
     }
 }
 
 impl View {
     /// 恢复indexes数据
-    pub(super) fn recovery_indexes(&mut self, paths: ReadDir) {}
+    fn recovery_indexes(&mut self, database_name: String, paths: ReadDir) {
+        // 遍历view目录下文件
+        for path in paths {
+            match path {
+                // 所有目录文件被默认为index根目录
+                Ok(dir) => {
+                    if dir.path().is_dir() {
+                        let index_name = dir.file_name().to_str().unwrap().to_string();
+                        log::debug!("recovery index from {}", index_name);
+                        // 恢复index数据
+                        self.recovery_index(database_name.clone(), index_name.clone());
+                    }
+                }
+                Err(err) => panic!("recovery indexes path failed! error is {}", err),
+            }
+        }
+    }
+
+    /// 恢复view数据
+    fn recovery_index(&self, database_name: String, index_name: String) {
+        let index_file_path =
+            index_file_path(database_name.clone(), self.name(), index_name.clone());
+        match recovery_before_content(index_file_path.clone()) {
+            Ok(hd) => {
+                // 恢复view数据
+                match Index::recover(database_name.clone(), self.name(), hd.clone()) {
+                    Ok(index) => {
+                        log::debug!(
+                            "index [db={}, view={}, name={}, create_time={}, {:#?}]",
+                            database_name.clone(),
+                            self.name(),
+                            index_name.clone(),
+                            index
+                                .clone()
+                                .read()
+                                .unwrap()
+                                .create_time()
+                                .num_nanoseconds()
+                                .unwrap()
+                                .to_string(),
+                            hd.metadata()
+                        );
+                        // 如果已存在该view，则不处理
+                        if self.exist_index(index_name.clone()) {
+                            return;
+                        }
+                        self.index_map().write().unwrap().insert(index_name, index);
+                    }
+                    Err(err) => panic!("recovery index failed! error is {}", err),
+                }
+            }
+            Err(err) => panic!(
+                "recovery index when recovery before content failed! error is {}",
+                err
+            ),
+        }
+    }
 }

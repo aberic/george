@@ -13,7 +13,6 @@
  */
 
 use crate::task::view::View;
-use crate::utils::comm::{Capacity, EngineType, IndexType};
 use crate::utils::path::{database_file_path, database_path, view_file_path};
 use crate::utils::store::{
     before_content_bytes, metadata_2_bytes, recovery_before_content, Metadata, Tag, HD,
@@ -23,16 +22,15 @@ use chrono::{Duration, Local, NaiveDateTime};
 use comm::errors::children::{ViewExistError, ViewNoExistError};
 use comm::errors::entrances::{err_str_enhance, err_string, GeorgeError, GeorgeResult};
 use comm::io::file::create_file;
-use comm::io::reader::{read_sub, read_sub_bytes};
+use comm::io::reader::read_sub_bytes;
 use comm::io::writer::{write_file_append_bytes, write_seek_u8s};
 use std::collections::HashMap;
 use std::fs::{read_dir, File, ReadDir};
-use std::io::{Read, Seek, SeekFrom, Write};
-use std::os::macos::fs::MetadataExt;
+use std::io::{Seek, SeekFrom};
 use std::sync::{Arc, RwLock};
 
 #[derive(Debug, Clone)]
-pub struct Database {
+pub(crate) struct Database {
     /// 名称
     name: String,
     /// 创建时间
@@ -71,28 +69,28 @@ fn new_database(name: String) -> GeorgeResult<Database> {
 }
 
 impl Database {
-    pub(super) fn create(name: String) -> GeorgeResult<Arc<RwLock<Database>>> {
+    pub(crate) fn create(name: String) -> GeorgeResult<Arc<RwLock<Database>>> {
         create_file(database_file_path(name.clone()), true)?;
-        let mut db = new_database(name)?;
-        let mut metadata_bytes = metadata_2_bytes(db.metadata());
-        let mut description = db.description();
+        let mut database = new_database(name)?;
+        let mut metadata_bytes = metadata_2_bytes(database.metadata());
+        let mut description = database.description();
         // 初始化为32 + 8，即head长度加正文描述符长度
         let mut before_description = before_content_bytes(40, description.len() as u32);
         metadata_bytes.append(&mut before_description);
         metadata_bytes.append(&mut description);
-        db.file_append(metadata_bytes)?;
-        Ok(Arc::new(RwLock::new(db)))
+        database.file_append(metadata_bytes)?;
+        Ok(Arc::new(RwLock::new(database)))
     }
     /// 名称
-    pub(super) fn name(&self) -> String {
+    pub(crate) fn name(&self) -> String {
         self.name.clone()
     }
     /// 创建时间
-    pub(super) fn create_time(&self) -> Duration {
+    pub(crate) fn create_time(&self) -> Duration {
         self.create_time.clone()
     }
     /// 文件信息
-    pub(super) fn metadata(&self) -> Metadata {
+    pub(crate) fn metadata(&self) -> Metadata {
         self.metadata.clone()
     }
     /// 根据文件路径获取该文件追加写入的写对象
@@ -102,7 +100,7 @@ impl Database {
     /// #Return
     ///
     /// seek_end_before 写之前文件字节数据长度
-    pub(super) fn file_append(&mut self, content: Vec<u8>) -> GeorgeResult<u64> {
+    fn file_append(&mut self, content: Vec<u8>) -> GeorgeResult<u64> {
         let file_append = self.file_append.clone();
         let mut file_write = file_append.write().unwrap();
         match file_write.seek(SeekFrom::End(0)) {
@@ -112,8 +110,8 @@ impl Database {
                     Err(_err) => {
                         self.file_append =
                             obtain_write_append_file(database_file_path(self.name()))?;
-                        let file_again = self.file_append.write().unwrap();
-                        write_file_append_bytes(file_again.try_clone().unwrap(), content)?;
+                        let file_write_again = self.file_append.write().unwrap();
+                        write_file_append_bytes(file_write_again.try_clone().unwrap(), content)?;
                         Ok(seek_end_before)
                     }
                 }
@@ -128,7 +126,7 @@ impl Database {
         }
     }
     /// 视图索引集合
-    pub(super) fn view_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>> {
+    pub(crate) fn view_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>> {
         self.views.clone()
     }
     pub(crate) fn modify(&mut self, name: String) -> GeorgeResult<()> {
@@ -161,16 +159,21 @@ impl Database {
             }
         }
     }
-    pub(crate) fn exist_view(&self, view_name: String) -> bool {
-        for res in self.views.clone().read().unwrap().iter() {
-            if res.0.eq(&view_name) {
-                return true;
-            }
+    /// 根据视图name获取视图
+    pub(super) fn view(&self, view_name: String) -> GeorgeResult<Arc<RwLock<View>>> {
+        match self.view_map().read().unwrap().get(&view_name) {
+            Some(view) => Ok(view.clone()),
+            None => Err(GeorgeError::ViewNoExistError(ViewNoExistError)),
         }
-        return false;
+    }
+    pub(crate) fn exist_view(&self, view_name: String) -> bool {
+        return match self.view(view_name) {
+            Ok(_) => true,
+            Err(_) => false,
+        };
     }
     /// 创建视图
-    pub(super) fn create_view(&self, name: String) -> GeorgeResult<()> {
+    pub(crate) fn create_view(&self, name: String) -> GeorgeResult<()> {
         if self.exist_view(name.clone()) {
             return Err(GeorgeError::ViewExistError(ViewExistError));
         }
@@ -200,6 +203,7 @@ impl Database {
 }
 
 impl Database {
+    /// 生成文件描述
     fn description(&mut self) -> Vec<u8> {
         hex::encode(format!(
             "{}/{}",
@@ -208,9 +212,9 @@ impl Database {
         ))
         .into_bytes()
     }
-
-    pub(super) fn recover(hd: HD) -> GeorgeResult<Database> {
-        match String::from_utf8(hd.description) {
+    /// 通过文件描述恢复结构信息
+    pub(crate) fn recover(hd: HD) -> GeorgeResult<Database> {
+        match String::from_utf8(hd.description()) {
             Ok(description_str) => match hex::decode(description_str) {
                 Ok(vu8) => match String::from_utf8(vu8) {
                     Ok(real) => {
@@ -224,7 +228,7 @@ impl Database {
                         let database = Database {
                             name,
                             create_time,
-                            metadata: hd.metadata,
+                            metadata: hd.metadata(),
                             file_append,
                             views: Arc::new(Default::default()),
                         };
@@ -242,7 +246,7 @@ impl Database {
                         Ok(database)
                     }
                     Err(err) => Err(err_string(format!(
-                        "recovery database from utf8 failed! error is {}",
+                        "recovery index from utf8 2 failed! error is {}",
                         err
                     ))),
                 },
@@ -251,18 +255,21 @@ impl Database {
                     err
                 ))),
             },
-            Err(err) => Err(err_string(err.to_string())),
+            Err(err) => Err(err_string(format!(
+                "recovery index from utf8 1 failed! error is {}",
+                err
+            ))),
         }
     }
 }
 
 impl Database {
     /// 恢复views数据
-    pub(super) fn recovery_views(&self, paths: ReadDir) {
-        // 遍历data目录下文件
+    pub(crate) fn recovery_views(&self, paths: ReadDir) {
+        // 遍历database目录下文件
         for path in paths {
             match path {
-                // 所有目录文件被默认为database根目录
+                // 所有目录文件被默认为view根目录
                 Ok(dir) => {
                     if dir.path().is_dir() {
                         let view_name = dir.file_name().to_str().unwrap().to_string();
@@ -279,17 +286,17 @@ impl Database {
     /// 恢复view数据
     fn recovery_view(&self, view_name: String) {
         let view_file_path = view_file_path(self.name(), view_name);
-        match recovery_before_content(Tag::View, view_file_path.clone()) {
+        match recovery_before_content(view_file_path.clone()) {
             Ok(hd) => {
-                log::trace!("head = {:#?}", hd.metadata);
                 // 恢复view数据
-                match View::recover(self.name(), hd) {
+                match View::recover(self.name(), hd.clone()) {
                     Ok(view) => {
                         log::debug!(
-                            "view [db={}, name={}, create_time={}]",
+                            "view [db={}, name={}, create_time={}, {:#?}]",
                             self.name(),
                             view.name(),
-                            view.create_time().num_nanoseconds().unwrap().to_string()
+                            view.create_time().num_nanoseconds().unwrap().to_string(),
+                            hd.metadata()
                         );
                         // 如果已存在该view，则不处理
                         if self.exist_view(view.name()) {
