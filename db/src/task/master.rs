@@ -105,13 +105,6 @@ impl Master {
             }
             None => return Err(GeorgeError::from(DatabaseNoExistError)),
         }
-        // self.create_index(
-        //     database_name,
-        //     view_name,
-        //     INDEX_CATALOG.to_string(),
-        //     IndexMold::String,
-        //     true,
-        // ) todo
         Ok(())
     }
     /// 修改视图
