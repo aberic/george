@@ -16,6 +16,7 @@ use std::sync::{Arc, RwLock};
 
 use crate::task::engine::traits::TSeed;
 use comm::bytes::create_empty_bytes;
+use comm::cryptos::hash::hashcode32_enhance;
 use comm::errors::entrances::GeorgeResult;
 
 /// 索引B+Tree结点结构
@@ -68,9 +69,27 @@ impl Node {
         seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
     ) -> GeorgeResult<()> {
-        Ok(())
+        let node_bytes = self.node_bytes().read().unwrap().to_vec();
+        self.put_in_node(node_bytes, 1, hashcode32_enhance(key), seed, force, true)
     }
     pub(crate) fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
         Ok("test".as_bytes().to_vec())
+    }
+}
+
+impl Node {
+    fn put_in_node(
+        &self,
+        node_bytes: Vec<u8>,
+        level: u8,
+        flexible_key: u32,
+        seed: Arc<RwLock<dyn TSeed>>,
+        force: bool,
+        root: bool,
+    ) -> GeorgeResult<()>
+    where
+        Self: Sized,
+    {
+        Ok(())
     }
 }
