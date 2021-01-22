@@ -20,7 +20,7 @@ use crate::utils::store::{before_content_bytes, metadata_2_bytes, mold, mold_u8,
 use crate::utils::writer::obtain_write_append_file;
 use chrono::{Duration, Local, NaiveDateTime};
 use comm::errors::entrances::{err_string, GeorgeResult};
-use comm::io::file::create_file;
+use comm::io::file::{Filer, FilerHandler};
 use comm::io::writer::write_file_append_bytes;
 use comm::vectors::sub;
 use std::fs::File;
@@ -94,10 +94,11 @@ impl Index {
         primary: bool,
         index_mold: IndexMold,
     ) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
-        create_file(
-            index_file_path(database_name.clone(), view_name.clone(), name.clone()),
-            true,
-        )?;
+        Filer::touch(index_file_path(
+            database_name.clone(),
+            view_name.clone(),
+            name.clone(),
+        ))?;
         let mut index = new_index(
             database_name.clone(),
             view_name.clone(),
@@ -154,6 +155,9 @@ impl Index {
             }
         }
     }
+    fn root(&self) -> Arc<RwLock<Node>> {
+        self.root.clone()
+    }
 }
 
 /// 封装方法函数
@@ -173,11 +177,11 @@ impl TIndex for Index {
     fn create_time(&self) -> Duration {
         self.create_time.clone()
     }
-    fn put(&self, _key: String, _seed: Arc<RwLock<dyn TSeed>>, _force: bool) -> GeorgeResult<()> {
-        unimplemented!()
+    fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
+        self.root().write().unwrap().put(key, seed, force)
     }
-    fn get(&self, _key: String) -> GeorgeResult<Vec<u8>> {
-        unimplemented!()
+    fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
+        self.root().read().unwrap().get(key)
     }
 }
 
@@ -185,7 +189,7 @@ impl Index {
     /// 生成文件描述
     fn description(&self) -> Vec<u8> {
         let mut part1 = hex::encode(format!(
-            "{}/{}/{}/{}",
+            "{}:#?{}:#?{}:#?{}",
             self.name,
             self.primary,
             mold_u8(self.mold),
@@ -218,7 +222,7 @@ impl Index {
             Ok(description_str) => match hex::decode(description_str) {
                 Ok(vu8) => match String::from_utf8(vu8) {
                     Ok(real) => {
-                        let mut split = real.split("/");
+                        let mut split = real.split(":#?");
                         let name = split.next().unwrap().to_string();
                         let primary = split.next().unwrap().to_string().parse::<bool>().unwrap();
                         let mold = mold(split.next().unwrap().to_string().parse::<u8>().unwrap());

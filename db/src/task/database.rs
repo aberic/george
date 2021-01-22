@@ -20,8 +20,8 @@ use crate::utils::store::{
 use crate::utils::writer::obtain_write_append_file;
 use chrono::{Duration, Local, NaiveDateTime};
 use comm::errors::children::{ViewExistError, ViewNoExistError};
-use comm::errors::entrances::{err_str_enhance, err_string, GeorgeError, GeorgeResult};
-use comm::io::file::create_file;
+use comm::errors::entrances::{err_string, err_strs, GeorgeError, GeorgeResult};
+use comm::io::file::{Filer, FilerHandler};
 use comm::io::reader::read_sub_bytes;
 use comm::io::writer::{write_file_append_bytes, write_seek_u8s};
 use std::collections::HashMap;
@@ -70,7 +70,7 @@ fn new_database(name: String) -> GeorgeResult<Database> {
 
 impl Database {
     pub(crate) fn create(name: String) -> GeorgeResult<Arc<RwLock<Database>>> {
-        create_file(database_file_path(name.clone()), true)?;
+        Filer::touch(database_file_path(name.clone()))?;
         let mut database = new_database(name)?;
         let mut metadata_bytes = metadata_2_bytes(database.metadata());
         let mut description = database.description();
@@ -155,7 +155,7 @@ impl Database {
             Err(err) => {
                 // 回滚数据
                 write_seek_u8s(filepath, 0, content.as_slice())?;
-                Err(err_str_enhance("file rename error: ", err.to_string()))
+                Err(err_strs("file rename failed", err.to_string()))
             }
         }
     }
@@ -163,7 +163,7 @@ impl Database {
     pub(super) fn view(&self, view_name: String) -> GeorgeResult<Arc<RwLock<View>>> {
         match self.view_map().read().unwrap().get(&view_name) {
             Some(view) => Ok(view.clone()),
-            None => Err(GeorgeError::ViewNoExistError(ViewNoExistError)),
+            None => Err(GeorgeError::from(ViewNoExistError)),
         }
     }
     pub(crate) fn exist_view(&self, view_name: String) -> bool {
@@ -175,19 +175,19 @@ impl Database {
     /// 创建视图
     pub(crate) fn create_view(&self, name: String) -> GeorgeResult<()> {
         if self.exist_view(name.clone()) {
-            return Err(GeorgeError::ViewExistError(ViewExistError));
+            return Err(GeorgeError::from(ViewExistError));
         }
         let view = View::create(self.name(), name.clone())?;
         self.view_map().write().unwrap().insert(name, view.clone());
         Ok(())
     }
     /// 修改视图
-    pub fn modify_view(&self, name: String, new_name: String) -> GeorgeResult<()> {
+    pub(crate) fn modify_view(&self, name: String, new_name: String) -> GeorgeResult<()> {
         if !self.exist_view(name.clone()) {
-            return Err(GeorgeError::ViewNoExistError(ViewNoExistError));
+            return Err(GeorgeError::from(ViewNoExistError));
         }
         if self.exist_view(new_name.clone()) {
-            return Err(GeorgeError::ViewNoExistError(ViewNoExistError));
+            return Err(GeorgeError::from(ViewNoExistError));
         }
         let views = self.view_map();
         let mut views_w = views.write().unwrap();
@@ -200,13 +200,99 @@ impl Database {
         views_w.insert(new_name.clone(), view.clone());
         Ok(())
     }
+    /// 整理归档
+    ///
+    /// archive_file_path 归档路径
+    pub(crate) fn archive_view(
+        &self,
+        view_name: String,
+        archive_file_path: String,
+    ) -> GeorgeResult<()> {
+        self.view(view_name)?
+            .read()
+            .unwrap()
+            .archive(self.name(), archive_file_path)
+    }
+}
+
+impl Database {
+    /// 插入数据，如果存在则返回已存在<p><p>
+    ///
+    /// ###Params
+    ///
+    /// view_name 视图名称<p><p>
+    ///
+    /// key string
+    ///
+    /// value 当前结果value信息<p><p>
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    pub(crate) fn put(&self, view_name: String, key: String, value: Vec<u8>) -> GeorgeResult<()> {
+        self.view(view_name)?
+            .read()
+            .unwrap()
+            .put(self.name(), key, value)
+    }
+    /// 插入数据，无论存在与否都会插入或更新数据<p><p>
+    ///
+    /// ###Params
+    ///
+    /// view_name 视图名称<p><p>
+    ///
+    /// key string
+    ///
+    /// value 当前结果value信息<p><p>
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    pub(crate) fn set(&self, view_name: String, key: String, value: Vec<u8>) -> GeorgeResult<()> {
+        self.view(view_name)?
+            .read()
+            .unwrap()
+            .set(self.name(), key, value)
+    }
+    /// 获取数据，返回存储对象<p><p>
+    ///
+    /// ###Params
+    ///
+    /// view_name 视图名称<p><p>
+    ///
+    /// key string
+    ///
+    /// ###Return
+    ///
+    /// Seed value信息
+    pub(crate) fn get(&self, view_name: String, key: String) -> GeorgeResult<Vec<u8>> {
+        self.view(view_name)?.read().unwrap().get(key)
+    }
+    /// 删除数据<p><p>
+    ///
+    /// ###Params
+    ///
+    /// view_name 视图名称<p><p>
+    ///
+    /// key string
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    pub(crate) fn remove(&self, view_name: String, key: String) -> GeorgeResult<()> {
+        // read trans write can use mut
+        self.view(view_name)?
+            .read()
+            .unwrap()
+            .remove(self.name(), key)
+    }
 }
 
 impl Database {
     /// 生成文件描述
     fn description(&mut self) -> Vec<u8> {
         hex::encode(format!(
-            "{}/{}",
+            "{}:#?{}",
             self.name(),
             self.create_time().num_nanoseconds().unwrap().to_string(),
         ))
@@ -218,7 +304,7 @@ impl Database {
             Ok(description_str) => match hex::decode(description_str) {
                 Ok(vu8) => match String::from_utf8(vu8) {
                     Ok(real) => {
-                        let mut split = real.split("/");
+                        let mut split = real.split(":#?");
                         let name = split.next().unwrap().to_string();
                         let create_time = Duration::nanoseconds(
                             split.next().unwrap().to_string().parse::<i64>().unwrap(),
@@ -261,9 +347,6 @@ impl Database {
             ))),
         }
     }
-}
-
-impl Database {
     /// 恢复views数据
     pub(crate) fn recovery_views(&self, paths: ReadDir) {
         // 遍历database目录下文件
@@ -292,10 +375,11 @@ impl Database {
                 match View::recover(self.name(), hd.clone()) {
                     Ok(view) => {
                         log::debug!(
-                            "view [db={}, name={}, create_time={}, {:#?}]",
+                            "view [db={}, name={}, create_time={}, pigeonhole={:#?}, {:#?}]",
                             self.name(),
                             view.name(),
                             view.create_time().num_nanoseconds().unwrap().to_string(),
+                            view.pigeonhole(),
                             hd.metadata()
                         );
                         // 如果已存在该view，则不处理

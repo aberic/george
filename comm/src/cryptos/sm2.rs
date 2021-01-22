@@ -17,7 +17,7 @@ use std::fs::read_to_string;
 use libsm::sm2::signature::{SigCtx, Signature};
 
 use crate::errors::entrances::GeorgeResult;
-use crate::errors::entrances::{err_str, err_str_enhance};
+use crate::errors::entrances::{err_str, err_strs};
 use crate::io::writer::write_bytes;
 
 pub fn generate() -> (Vec<u8>, Vec<u8>) {
@@ -42,14 +42,14 @@ pub fn generate_pk_from_sk(sk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
 pub fn generate_pk_from_sk_str(sk: String) -> GeorgeResult<Vec<u8>> {
     match hex::decode(sk) {
         Ok(sk_bytes) => generate_pk_from_sk(sk_bytes),
-        Err(err) => Err(err_str_enhance("hex decode", err.to_string())),
+        Err(err) => Err(err_strs("hex decode", err)),
     }
 }
 
 pub fn generate_pk_from_sk_file(sk_filepath: String) -> GeorgeResult<Vec<u8>> {
     match read_to_string(sk_filepath) {
         Ok(sk) => generate_pk_from_sk_str(sk),
-        Err(err) => Err(err_str_enhance("read_to_string", err.to_string())),
+        Err(err) => Err(err_strs("read_to_string", err)),
     }
 }
 
@@ -58,20 +58,12 @@ pub fn generate_in_file(
     pk_filepath: String,
 ) -> GeorgeResult<(Vec<u8>, Vec<u8>)> {
     let (sk_bytes, pk_bytes) = generate();
-    match write_bytes(
-        sk_filepath,
-        hex::encode(sk_bytes.clone()).into_bytes(),
-        true,
-    ) {
-        Err(err) => return Err(err_str_enhance("sk write_bytes", err.to_string())),
+    match write_bytes(sk_filepath, hex::encode(sk_bytes.clone()).into_bytes()) {
+        Err(err) => return Err(err_strs("sk write_bytes", err)),
         _ => {}
     }
-    match write_bytes(
-        pk_filepath,
-        hex::encode(pk_bytes.clone()).into_bytes(),
-        true,
-    ) {
-        Err(err) => return Err(err_str_enhance("pk write_bytes", err.to_string())),
+    match write_bytes(pk_filepath, hex::encode(pk_bytes.clone()).into_bytes()) {
+        Err(err) => return Err(err_strs("pk write_bytes", err)),
         _ => {}
     }
     Ok((sk_bytes, pk_bytes))
@@ -86,12 +78,12 @@ pub fn generate_hex_in_file(
     pk_filepath: String,
 ) -> GeorgeResult<(String, String)> {
     let (sk_str, pk_str) = generate_hex();
-    match write_bytes(sk_filepath, sk_str.clone().into_bytes(), true) {
-        Err(err) => return Err(err_str_enhance("sk write_bytes", err.to_string())),
+    match write_bytes(sk_filepath, sk_str.clone().into_bytes()) {
+        Err(err) => return Err(err_strs("sk write_bytes", err)),
         _ => {}
     }
-    match write_bytes(pk_filepath, pk_str.clone().into_bytes(), true) {
-        Err(err) => return Err(err_str_enhance("pk write_bytes", err.to_string())),
+    match write_bytes(pk_filepath, pk_str.clone().into_bytes()) {
+        Err(err) => return Err(err_strs("pk write_bytes", err)),
         _ => {}
     }
     Ok((sk_str, pk_str))

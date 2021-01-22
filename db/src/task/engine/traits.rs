@@ -128,12 +128,12 @@ pub trait TNode: Send + Sync + Debug {
 pub trait TSeed: Send + Sync + Debug {
     /// 获取当前结果原始key信息
     fn key(&self) -> String;
-    /// value最终存储在文件中的持续长度
-    fn value(&self) -> Option<Vec<u8>>;
     /// 修改value值
-    fn modify(&mut self, value: Vec<u8>);
+    fn modify(&mut self, value: Vec<u8>) -> GeorgeResult<()>;
     /// 存储操作
-    fn save(&mut self, value: Vec<u8>) -> GeorgeResult<()>;
+    ///
+    /// view_seek_end 非内存存储中视图写入数据前的文件末尾偏移量
+    fn save(&mut self, view_seek_end: u64) -> GeorgeResult<()>;
     /// 删除操作
     fn remove(&mut self) -> GeorgeResult<()>;
 }

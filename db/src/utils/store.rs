@@ -27,7 +27,6 @@ use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_u32_2_bytes};
 
 use crate::utils::comm::{Capacity, EngineType, IndexMold, IndexType};
 use crate::utils::deploy::VERSION;
-use crate::utils::writer::GLOBAL_WRITER;
 
 /// 标识符
 #[derive(Debug, Clone)]
@@ -432,65 +431,5 @@ pub fn recovery_before_content(filepath: String) -> GeorgeResult<HD> {
             "recovery from path {} open failed! error is {}",
             filepath, err
         ))),
-    }
-}
-
-pub fn store_view_id(database_id: String, view_id: String) -> String {
-    database_id.add(&view_id)
-}
-
-pub fn store_index_id(database_id: String, view_id: String, index_id: String) -> String {
-    database_id.add(&view_id).add(&index_id)
-}
-
-/// 存储对应head及文件内容描述<p>
-///
-/// 如果是view，则存储id为“database_id+view_id”<p>
-/// 参考方法`store_view_id(database_id: String, view_id: String) -> String`<p>
-///
-/// 如果是index，则存储id为“database_id+view_id+index_id”<p>
-/// 参考方法`store_index_id(database_id: String, view_id: String, index_id: String) -> String`
-pub fn save<T>(
-    tag: Tag,
-    file: File,
-    head: Vec<u8>,
-    id: String,
-    path: String,
-    t: T,
-) -> GeorgeResult<Arc<RwLock<T>>> {
-    match file.try_clone() {
-        Ok(f) => match write_all_bytes(f, head, t) {
-            Ok(i) => match tag {
-                Tag::Database => Ok(i),
-                Tag::View => match GLOBAL_WRITER.clone().insert_view(id, path) {
-                    Ok(()) => Ok(i),
-                    Err(err) => Err(err),
-                },
-                Tag::Index => match GLOBAL_WRITER.clone().insert_index(id, path) {
-                    Ok(()) => Ok(i),
-                    Err(err) => Err(err),
-                },
-                _ => Err(GeorgeError::NoneError(NoneError)),
-            },
-            Err(err) => Err(err),
-        },
-        Err(err) => Err(err_string(err.to_string())),
-    }
-}
-
-pub fn modify(filepath: String, description: Vec<u8>) -> GeorgeResult<()> {
-    match OpenOptions::new().append(true).open(filepath.clone()) {
-        Ok(mut file) => {
-            let seek = file.metadata().unwrap().len();
-            let before_description = before_content_bytes(seek as u32, description.len() as u32);
-            match file.write_all(description.as_slice()) {
-                Ok(()) => {
-                    // 初始化head为32，描述起始4字节，长度2字节
-                    write_seek_u8s(filepath, 32, before_description.as_slice())
-                }
-                Err(err) => Err(err_string(err.to_string())),
-            }
-        }
-        Err(err) => Err(err_string(err.to_string())),
     }
 }

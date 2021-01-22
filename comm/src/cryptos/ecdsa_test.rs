@@ -25,11 +25,11 @@ mod ecdsa {
 
     #[test]
     fn generate_pri_test() {
-        match generate_sk_in_files("src/test/crypto/ecdsa/generate_pri.key.pem", true) {
+        match generate_sk_in_files("src/test/crypto/ecdsa/generate_pri.key.pem") {
             Ok(u8s) => println!("pri = {}", String::from_utf8(u8s).unwrap()),
             Err(err) => println!("err = {}", err),
         }
-        match generate_sk_in_files("src/test/crypto/ecdsa/generate_pri.key.pem", false) {
+        match generate_sk_in_files("src/test/crypto/ecdsa/generate_pri.key.pem") {
             Ok(u8s) => println!("pri = {}", String::from_utf8(u8s).unwrap()),
             Err(err) => println!("err = {}", err),
         }
@@ -44,19 +44,17 @@ mod ecdsa {
                     match generate_pk_in_file_from_sk(
                         key.clone(),
                         "src/test/crypto/ecdsa/generate_pub1.pem".to_string(),
-                        true,
                     ) {
                         Err(err) => println!("generate_pub_in_file_from_pri, {}", err.to_string()),
                         _ => {}
                     }
                     match key.private_key_to_pem() {
                         Ok(u8s) => {
-                            write(pri_filepath.clone(), u8s.clone(), true).unwrap();
+                            write(pri_filepath.clone(), u8s.clone()).unwrap();
                             println!("pri = {}", String::from_utf8(u8s.clone()).unwrap());
                             match generate_pk_in_file_from_sk_bytes(
                                 u8s,
                                 "src/test/crypto/ecdsa/generate_pub2.pem".to_string(),
-                                true,
                             ) {
                                 Err(err) => {
                                     println!("generate_pub_in_file_from_pri, {}", err.to_string())
@@ -74,7 +72,6 @@ mod ecdsa {
         match generate_pk_in_file_from_sk_file(
             pri_filepath,
             "src/test/crypto/ecdsa/generate_pub3.pem".to_string(),
-            true,
         ) {
             Err(err) => println!("generate_pub_in_file_from_pri_file, {}", err.to_string()),
             _ => {}

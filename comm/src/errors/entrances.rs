@@ -20,6 +20,14 @@ use crate::errors::children::{
     IndexNoExistError, NoneError, StringError, ViewExistError, ViewNoExistError,
 };
 
+pub trait GeorgeStringErr<M, N>: Sized {
+    fn string(_: M, _: N) -> Self;
+}
+
+pub trait GeorgeString<M>: Sized {
+    fn string(_: M) -> Self;
+}
+
 /// 自定义Result类型：GeorgeResult
 pub type GeorgeResult<T> = std::result::Result<T, GeorgeError>;
 
@@ -132,6 +140,30 @@ impl From<StringError> for GeorgeError {
     }
 }
 
+impl<T: ToString> GeorgeStringErr<String, T> for GeorgeError {
+    fn string(msg: String, err: T) -> Self {
+        err_strings(msg, err.to_string())
+    }
+}
+
+impl<T: ToString> GeorgeStringErr<&str, T> for GeorgeError {
+    fn string(msg: &str, err: T) -> Self {
+        err_strs(msg, err.to_string())
+    }
+}
+
+impl GeorgeString<String> for GeorgeError {
+    fn string(msg: String) -> Self {
+        err_string(msg)
+    }
+}
+
+impl GeorgeString<&str> for GeorgeError {
+    fn string(msg: &str) -> Self {
+        err_str(msg)
+    }
+}
+
 pub fn err_string(msg: String) -> GeorgeError {
     GeorgeError::StringError(StringError { error_msg: msg })
 }
@@ -142,14 +174,14 @@ pub fn err_str(msg: &str) -> GeorgeError {
     })
 }
 
-pub fn err_str_enhance(msg: &str, err: String) -> GeorgeError {
+pub fn err_strs<Err: ToString>(msg: &str, err: Err) -> GeorgeError {
     GeorgeError::StringError(StringError {
-        error_msg: format!("{}! error is {}", msg, err),
+        error_msg: format!("{} error: {}", msg, err.to_string()),
     })
 }
 
-pub fn err_string_enhance(msg: String, err: String) -> GeorgeError {
+pub fn err_strings<Err: ToString>(msg: String, err: Err) -> GeorgeError {
     GeorgeError::StringError(StringError {
-        error_msg: format!("{}! error is {}", msg, err),
+        error_msg: format!("{} error: {}", msg, err.to_string()),
     })
 }

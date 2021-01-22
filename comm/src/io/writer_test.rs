@@ -14,12 +14,12 @@
 
 #[cfg(test)]
 mod reader {
-    use crate::io::file::create_file_str;
+    use crate::io::file::{Filer, FilerHandler};
     use crate::io::writer::{write_append_bytes, write_seek_u8s};
 
     #[test]
     fn reader_test() {
-        create_file_str("src/test/file/g.txt", true).unwrap();
+        Filer::touch("src/test/file/g.txt").unwrap();
         match write_append_bytes(
             "src/test/file/g.txt".to_string(),
             vec![

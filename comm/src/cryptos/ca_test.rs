@@ -55,7 +55,7 @@ mod ca {
     fn create_cert_request_test() {
         let sk_filepath = "src/test/crypto/ca/create_cert_request/rsa_sk.pem";
         let csr_filepath = "src/test/crypto/ca/create_cert_request/rsa_csr.pem";
-        match rsa::generate_sk_in_files(2048, sk_filepath, true) {
+        match rsa::generate_sk_in_files(2048, sk_filepath) {
             Ok(u8s) => println!("pri = {}", String::from_utf8(u8s).unwrap()),
             Err(err) => {
                 println!("generate_sk_in_files = {}", err);
@@ -66,7 +66,7 @@ mod ca {
             Ok(key) => match create_cert_request(&key, x509_name_info()) {
                 Ok(csr) => match csr.to_pem() {
                     Ok(pem) => {
-                        write(csr_filepath.to_string(), pem, true).unwrap();
+                        write(csr_filepath.to_string(), pem).unwrap();
                     }
                     Err(err) => {
                         println!("to_pem = {}", err);
@@ -86,7 +86,7 @@ mod ca {
     }
 
     fn create_demo(sk_filepath: &str, root_filepath: &str) {
-        match rsa::generate_sk_in_files(2048, sk_filepath, true) {
+        match rsa::generate_sk_in_files(2048, sk_filepath) {
             Ok(u8s) => println!("pri = {}", String::from_utf8(u8s).unwrap()),
             Err(err) => {
                 println!("generate_sk_in_files = {}", err);
@@ -97,7 +97,7 @@ mod ca {
             Ok(key) => match create(128, &key, x509_name_info(), 2, 0, 356) {
                 Ok(x509) => match x509.to_pem() {
                     Ok(pem) => {
-                        write(root_filepath.to_string(), pem, true).unwrap();
+                        write(root_filepath.to_string(), pem).unwrap();
                     }
                     Err(err) => {
                         println!("to_pem = {}", err);
@@ -144,11 +144,11 @@ mod ca {
         let sk_filepath = "src/test/crypto/ca/sign/sk.pem";
         let cert_filepath = "src/test/crypto/ca/sign/cert.pem";
         create_demo(ca_sk_filepath, ca_root_filepath);
-        match rsa::generate_sk_in_files(2048, ca_sk_filepath, true) {
+        match rsa::generate_sk_in_files(2048, ca_sk_filepath) {
             Ok(u8s) => println!("pri = {}", String::from_utf8(u8s).unwrap()),
             Err(err) => println!("err = {}", err),
         }
-        match rsa::generate_sk_in_files(2048, sk_filepath, true) {
+        match rsa::generate_sk_in_files(2048, sk_filepath) {
             Ok(u8s) => println!("pri = {}", String::from_utf8(u8s).unwrap()),
             Err(err) => println!("err = {}", err),
         }
@@ -165,7 +165,7 @@ mod ca {
         ) {
             Ok(x509) => match x509.to_pem() {
                 Ok(pem) => {
-                    write(cert_filepath.to_string(), pem, true).unwrap();
+                    write(cert_filepath.to_string(), pem).unwrap();
                 }
                 Err(err) => {
                     println!("to_pem = {}", err);

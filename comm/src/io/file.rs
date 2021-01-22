@@ -13,40 +13,184 @@
  */
 
 use std::fs;
-use std::fs::File;
 use std::path::Path;
 
-use crate::errors::entrances::err_string;
 use crate::errors::entrances::GeorgeResult;
+use crate::errors::entrances::{err_string, err_strings};
+use crate::io::dir::{Dir, DirHandler};
+use std::fs::File;
 
-/// 创建目录
-pub fn create_dir_str(dir_path: &str) -> GeorgeResult<()> {
-    create_dir(dir_path.to_string())
+pub trait FilerHandler<T>: Sized {
+    fn exist(_: T) -> GeorgeResult<bool>;
+    fn touch(_: T) -> GeorgeResult<()>;
+    fn rm(_: T) -> GeorgeResult<()>;
+    /// 指定路径下文件夹名称
+    fn name(_: T) -> GeorgeResult<String>;
+    /// 拷贝`from`文件至`to`目录下
+    fn cp(_: T, _: T) -> GeorgeResult<()>;
+    /// 移动`from`文件至`to`目录下
+    fn mv(_: T, _: T) -> GeorgeResult<()>;
 }
 
-/// 创建目录
-pub fn create_dir(dir_path: String) -> GeorgeResult<()> {
-    // println!("create filepath = {}", dir_path);
-    let path = Path::new(&dir_path);
-    if path.exists() && path.is_dir() {
-        // println!("file path exists = {}", dir_path);
-        Ok(())
-    } else {
-        // println!("file create path = {}", dir_path);
-        match fs::create_dir_all(dir_path) {
-            Ok(_) => Ok(()),
-            Err(err) => Err(err_string(err.to_string())),
+pub struct Filer {}
+
+impl FilerHandler<String> for Filer {
+    fn exist(path: String) -> GeorgeResult<bool> {
+        file_exist(path)
+    }
+    fn touch(path: String) -> GeorgeResult<()> {
+        file_touch(path)
+    }
+    fn rm(path: String) -> GeorgeResult<()> {
+        file_remove(path)
+    }
+    fn name(path: String) -> GeorgeResult<String> {
+        file_last_name(path)
+    }
+    fn cp(file_from_path: String, file_to_path: String) -> GeorgeResult<()> {
+        file_copy(file_from_path, file_to_path)
+    }
+    fn mv(file_from_path: String, file_to_path: String) -> GeorgeResult<()> {
+        file_move(file_from_path, file_to_path)
+    }
+}
+
+impl FilerHandler<&str> for Filer {
+    fn exist(path: &str) -> GeorgeResult<bool> {
+        file_exist(path.to_string())
+    }
+    fn touch(path: &str) -> GeorgeResult<()> {
+        file_touch(path.to_string())
+    }
+    fn rm(path: &str) -> GeorgeResult<()> {
+        file_remove(path.to_string())
+    }
+    fn name(path: &str) -> GeorgeResult<String> {
+        file_last_name(path.to_string())
+    }
+    fn cp(file_from_path: &str, file_to_path: &str) -> GeorgeResult<()> {
+        file_copy(file_from_path.to_string(), file_to_path.to_string())
+    }
+    fn mv(file_from_path: &str, file_to_path: &str) -> GeorgeResult<()> {
+        file_move(file_from_path.to_string(), file_to_path.to_string())
+    }
+}
+
+/// 判断文件是否存在，如果为文件夹则报错，否则返回判断结果
+fn file_exist(path: String) -> GeorgeResult<bool> {
+    let path_check = Path::new(&path);
+    if path_check.exists() {
+        if path_check.is_dir() {
+            Err(err_string(format!("path {} is dir", path)))
+        } else {
+            Ok(true)
         }
+    } else {
+        Ok(false)
     }
 }
 
 /// 创建文件
+fn file_touch(path: String) -> GeorgeResult<()> {
+    if file_exist(path.clone())? {
+        Err(err_string(format!("file {} already exist!", path)))
+    } else {
+        let path_check = Path::new(&path);
+        match path_check.parent() {
+            Some(p) => {
+                if !p.exists() {
+                    Dir::mk(p.to_str().unwrap())?
+                }
+            }
+            None => {}
+        }
+        match File::create(path.clone()) {
+            Ok(_) => Ok(()),
+            Err(err) => Err(err_strings(format!("path {} touch error: ", path), err)),
+        }
+    }
+}
+
+/// 删除目录
+fn file_remove(path: String) -> GeorgeResult<()> {
+    if file_exist(path.clone())? {
+        match fs::remove_file(path.clone()) {
+            Ok(()) => Ok(()),
+            Err(err) => Err(err_strings(format!("path {} remove error: ", path), err)),
+        }
+    } else {
+        Ok(())
+    }
+}
+
+/// 获取path目录的绝对路径
 ///
-/// filepath 文件路径
+/// 如果存在且为文件夹则报错
+fn file_absolute(path: String) -> GeorgeResult<String> {
+    if file_exist(path.clone())? {
+        match fs::canonicalize(path.clone()) {
+            Ok(path_buf) => Ok(path_buf.to_str().unwrap().to_string()),
+            Err(err) => Err(err_strings(
+                format!("fs {} canonicalize error: ", path),
+                err,
+            )),
+        }
+    } else {
+        Err(err_string(format!("file {} doesn't exist!", path)))
+    }
+}
+
+/// 判断目录是否存在，如果目录为文件夹则报错，否则返回判断结果
+fn file_last_name(path: String) -> GeorgeResult<String> {
+    if file_exist(path.clone())? {
+        Ok(Path::new(&path)
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string())
+    } else {
+        Err(err_string(format!("path {} does't exist!", path)))
+    }
+}
+
+/// 拷贝`from`至`to`
 ///
-/// force 如果存在旧文件，是否删除并新建
-pub fn create_file_str(filepath: &str, force: bool) -> GeorgeResult<File> {
-    create_file(filepath.to_string(), force)
+/// # Examples
+///
+/// ```no_run
+/// use crate::io::file::{File, FileHandler};
+///
+/// fn main() -> std::io::Result<()> {
+///     File::cp("foo.txt", "bar.txt")?;  // Copy foo.txt to bar.txt
+///     Ok(())
+/// }
+/// ```
+fn file_copy(file_from_path: String, file_to_path: String) -> GeorgeResult<()> {
+    match fs::copy(file_from_path.clone(), file_to_path.clone()) {
+        Ok(_) => Ok(()),
+        Err(err) => Err(err_strings(
+            format!("copy {} to {} error: ", file_from_path, file_to_path),
+            err,
+        )),
+    }
+}
+
+/// 移动`from`至`to`
+///
+/// # Examples
+///
+/// ```no_run
+/// use crate::io::file::{File, FileHandler};
+///
+/// fn main() -> std::io::Result<()> {
+///     File::mv("foo.txt", "bar.txt")?;  // Copy foo.txt to bar.txt
+///     Ok(())
+/// }
+/// ```
+fn file_move(file_from_path: String, file_to_path: String) -> GeorgeResult<()> {
+    file_copy(file_from_path.clone(), file_to_path)?;
+    file_remove(file_from_path)
 }
 
 /// 创建文件

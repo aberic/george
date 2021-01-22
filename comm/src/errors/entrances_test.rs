@@ -17,18 +17,19 @@ mod errors_index_test {
     use std::error::Error;
 
     use crate::errors::children::{DataExistError, DataNoExistError};
-    use crate::errors::entrances::{GeorgeResult, GeorgeError};
+    use crate::errors::entrances::{GeorgeError, GeorgeResult, GeorgeStringErr};
+    use crate::io::dir::{Dir, DirHandler};
 
     fn index_ok() -> GeorgeResult<u32> {
         Ok(500)
     }
 
     fn index_exist_err() -> GeorgeResult<u32> {
-        Err(GeorgeError::DataExistError(DataExistError))
+        Err(GeorgeError::from(DataExistError))
     }
 
     fn index_no_exist_err() -> GeorgeResult<u32> {
-        Err(GeorgeError::DataNoExistError(DataNoExistError))
+        Err(GeorgeError::from(DataNoExistError))
     }
 
     fn index_test1() -> GeorgeResult<u32> {
@@ -44,6 +45,22 @@ mod errors_index_test {
     fn index_test3() -> GeorgeResult<u32> {
         // let x = index_no_exist_err()?;
         Ok(100)
+    }
+
+    fn index_test4() -> GeorgeResult<u32> {
+        // let x = index_no_exist_err()?;
+        match Dir::exist("src/cryptos/mod.rs") {
+            Ok(_) => Ok(1),
+            Err(err) => Err(GeorgeError::string("test4", err)),
+        }
+    }
+
+    fn index_test5() -> GeorgeResult<u32> {
+        // let x = index_no_exist_err()?;
+        match Dir::exist("src/cryptos/mod.rs") {
+            Ok(_) => Ok(1),
+            Err(err) => Err(GeorgeError::string("test5".to_string(), err)),
+        }
     }
 
     fn matches(ir: GeorgeResult<u32>) {
@@ -86,6 +103,18 @@ mod errors_index_test {
     #[test]
     fn index3() {
         let res = index_test3();
+        matches(res)
+    }
+
+    #[test]
+    fn index4() {
+        let res = index_test4();
+        matches(res)
+    }
+
+    #[test]
+    fn index5() {
+        let res = index_test4();
         matches(res)
     }
 }

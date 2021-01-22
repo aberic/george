@@ -21,12 +21,13 @@ use chrono::{Duration, Local, NaiveDateTime};
 use comm::env;
 use comm::errors::children::{DatabaseExistError, DatabaseNoExistError};
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
-use comm::io::file::{create_dir, create_file};
+use comm::io::dir::{Dir, DirHandler};
+use comm::io::file::{Filer, FilerHandler};
 use comm::io::writer::write_append_bytes;
 use logs::set_log;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::fs::{read_dir, read_to_string, ReadDir};
+use std::fs::{read_dir, read_to_string, File, ReadDir};
 use std::sync::{Arc, RwLock};
 
 /// 数据库
@@ -51,7 +52,7 @@ impl Master {
         _database_comment: String,
     ) -> GeorgeResult<()> {
         if self.exist_database(database_name.clone()) {
-            return Err(GeorgeError::DatabaseExistError(DatabaseExistError));
+            return Err(GeorgeError::from(DatabaseExistError));
         }
         let db = Database::create(database_name.clone())?;
         self.database_map()
@@ -64,10 +65,10 @@ impl Master {
     /// 修改数据库
     pub(super) fn modify_database(&self, name: String, new_name: String) -> GeorgeResult<()> {
         if !self.exist_database(name.clone()) {
-            return Err(GeorgeError::DatabaseNoExistError(DatabaseNoExistError));
+            return Err(GeorgeError::from(DatabaseNoExistError));
         }
         if self.exist_database(new_name.clone()) {
-            return Err(GeorgeError::DatabaseExistError(DatabaseExistError));
+            return Err(GeorgeError::from(DatabaseExistError));
         }
         let databases = self.database_map();
         let mut databases_w = databases.write().unwrap();
@@ -81,7 +82,7 @@ impl Master {
     pub(super) fn database(&self, database_name: String) -> GeorgeResult<Arc<RwLock<Database>>> {
         match self.database_map().read().unwrap().get(&database_name) {
             Some(database) => Ok(database.clone()),
-            None => Err(GeorgeError::DatabaseNoExistError(DatabaseNoExistError)),
+            None => Err(GeorgeError::from(DatabaseNoExistError)),
         }
     }
     fn exist_database(&self, database_name: String) -> bool {
@@ -102,7 +103,7 @@ impl Master {
                 let database = database_lock.read().unwrap();
                 database.create_view(view_name.clone())?;
             }
-            None => return Err(GeorgeError::DatabaseNoExistError(DatabaseNoExistError)),
+            None => return Err(GeorgeError::from(DatabaseNoExistError)),
         }
         // self.create_index(
         //     database_name,
@@ -125,8 +126,22 @@ impl Master {
                 let database = database_lock.write().unwrap();
                 database.modify_view(view_name, view_new_name)
             }
-            None => return Err(GeorgeError::DatabaseNoExistError(DatabaseNoExistError)),
+            None => return Err(GeorgeError::from(DatabaseNoExistError)),
         }
+    }
+    /// 整理归档
+    ///
+    /// archive_file_path 归档路径
+    pub(super) fn archive_view(
+        &self,
+        database_name: String,
+        view_name: String,
+        archive_file_path: String,
+    ) -> GeorgeResult<()> {
+        self.database(database_name)?
+            .read()
+            .unwrap()
+            .archive_view(view_name, archive_file_path)
     }
     /// 在指定库及视图中创建索引
     ///
@@ -148,9 +163,111 @@ impl Master {
     ) -> GeorgeResult<()> {
         let database = self.database(database_name.clone())?;
         let database_read = database.read().unwrap();
-        let view = database_read.view(view_name)?;
-        let view_read = view.read().unwrap();
-        view_read.create_index(database_name, index_name, engine_type, index_mold, primary)
+        database_read.view(view_name)?.read().unwrap().create_index(
+            database_name,
+            index_name,
+            engine_type,
+            index_mold,
+            primary,
+        )
+    }
+}
+
+impl Master {
+    /// 插入数据，如果存在则返回已存在<p><p>
+    ///
+    /// ###Params
+    ///
+    /// view_name 视图名称<p><p>
+    ///
+    /// key string
+    ///
+    /// value 当前结果value信息<p><p>
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    pub(crate) fn put(
+        &self,
+        database_name: String,
+        view_name: String,
+        key: String,
+        value: Vec<u8>,
+    ) -> GeorgeResult<()> {
+        self.database(database_name)?
+            .read()
+            .unwrap()
+            .put(view_name, key, value)
+    }
+    /// 插入数据，无论存在与否都会插入或更新数据<p><p>
+    ///
+    /// ###Params
+    ///
+    /// view_name 视图名称<p><p>
+    ///
+    /// key string
+    ///
+    /// value 当前结果value信息<p><p>
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    pub(crate) fn set(
+        &self,
+        database_name: String,
+        view_name: String,
+        key: String,
+        value: Vec<u8>,
+    ) -> GeorgeResult<()> {
+        self.database(database_name)?
+            .read()
+            .unwrap()
+            .set(view_name, key, value)
+    }
+    /// 获取数据，返回存储对象<p><p>
+    ///
+    /// ###Params
+    ///
+    /// view_name 视图名称<p><p>
+    ///
+    /// key string
+    ///
+    /// ###Return
+    ///
+    /// Seed value信息
+    pub(crate) fn get(
+        &self,
+        database_name: String,
+        view_name: String,
+        key: String,
+    ) -> GeorgeResult<Vec<u8>> {
+        self.database(database_name)?
+            .read()
+            .unwrap()
+            .get(view_name, key)
+    }
+
+    /// 删除数据<p><p>
+    ///
+    /// ###Params
+    ///
+    /// view_name 视图名称<p><p>
+    ///
+    /// key string
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    pub(crate) fn remove(
+        &self,
+        database_name: String,
+        view_name: String,
+        key: String,
+    ) -> GeorgeResult<()> {
+        self.database(database_name)?
+            .read()
+            .unwrap()
+            .remove(view_name, key)
     }
 }
 
@@ -254,15 +371,24 @@ pub(super) static GLOBAL_MASTER: Lazy<Arc<Master>> = Lazy::new(|| {
     };
     let master_arc = Arc::new(master);
     // 创建数据根目录
-    match create_dir(data_path()) {
+    match Dir::mk(data_path()) {
         Ok(_file) => log::info!("load data path success!"),
         Err(err) => panic!("create data path failed! error is {}", err),
     }
-    // 创建引导文件
-    match create_file(bootstrap_file_path(), false) {
-        Ok(_f) => master_arc.clone().init_or_recovery(),
+    let bootstrap_file_path = bootstrap_file_path();
+    match Filer::exist(bootstrap_file_path.clone()) {
+        Ok(b) => {
+            if !b {
+                // 创建引导文件
+                match Filer::touch(bootstrap_file_path) {
+                    Err(err) => panic!("create bootstrap file failed! error is {}", err),
+                    _ => {}
+                }
+            }
+        }
         Err(err) => panic!("create bootstrap file failed! error is {}", err),
     }
+    master_arc.clone().init_or_recovery();
     master_arc
 });
 

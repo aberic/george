@@ -12,24 +12,30 @@
  * limitations under the License.
  */
 
+use std::collections::HashMap;
+use std::fmt;
+use std::fs::{read_dir, ReadDir};
+use std::ops::Add;
+use std::sync::{mpsc, Arc, RwLock};
+use std::thread;
+
+use chrono::{Duration, Local, NaiveDateTime};
+
+use comm::errors::children::{DataNoExistError, IndexExistError};
+use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeError, GeorgeResult};
+use comm::io::reader::read_sub_bytes;
+use comm::io::writer::write_seek_u8s;
+use comm::trans::trans_u64_2_bytes;
+
 use crate::task::engine::dossier::index::Index;
-use crate::task::engine::traits::TIndex;
-use crate::utils::comm::{EngineType, IndexMold};
+use crate::task::engine::traits::{TIndex, TSeed};
+use crate::task::seed::Seed;
+use crate::utils::comm::{key_fetch, EngineType, IndexMold, INDEX_CATALOG};
 use crate::utils::path::{index_file_path, view_file_path, view_path};
 use crate::utils::store::{
     before_content_bytes, metadata_2_bytes, recovery_before_content, Metadata, Tag, HD,
 };
-use crate::utils::writer::obtain_write_append_file;
-use chrono::{Duration, Local, NaiveDateTime};
-use comm::errors::children::IndexExistError;
-use comm::errors::entrances::{err_str, err_str_enhance, err_string, GeorgeError, GeorgeResult};
-use comm::io::file::create_file;
-use comm::io::reader::read_sub_bytes;
-use comm::io::writer::{write_file_append_bytes, write_seek_u8s};
-use std::collections::HashMap;
-use std::fs::{read_dir, File, ReadDir};
-use std::io::{Seek, SeekFrom};
-use std::sync::{Arc, RwLock};
+use crate::utils::writer::Filed;
 
 /// 视图，类似表
 #[derive(Debug, Clone)]
@@ -41,9 +47,13 @@ pub(crate) struct View {
     /// 文件信息
     metadata: Metadata,
     /// 根据文件路径获取该文件追加写入的写对象
-    file_append: Arc<RwLock<File>>,
+    ///
+    /// 需要借助对象包裹，以便更新file，避免self为mut
+    filer: Arc<RwLock<Filed>>,
     /// 索引集合
     indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
+    /// 当前归档版本信息
+    pigeonhole: Pigeonhole,
 }
 
 /// 新建视图
@@ -64,30 +74,40 @@ pub(crate) struct View {
 fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
-    let file_path = view_file_path(database_name, name.clone());
-    let file_append = obtain_write_append_file(file_path)?;
+    let file_path = view_file_path(database_name.clone(), name.clone());
     let view = View {
         name,
         create_time,
         metadata: Metadata::default(Tag::View),
-        file_append,
+        filer: Filed::create(file_path.clone())?,
         indexes: Default::default(),
+        pigeonhole: Pigeonhole::create(0, file_path, create_time),
     };
+    view.create_index(
+        database_name,
+        INDEX_CATALOG.to_string(),
+        EngineType::Library,
+        IndexMold::String,
+        true,
+    )?;
     Ok(view)
 }
 
 impl View {
     pub(crate) fn create(database_name: String, name: String) -> GeorgeResult<Arc<RwLock<View>>> {
-        create_file(view_file_path(database_name.clone(), name.clone()), true)?;
         let mut view = new_view(database_name.clone(), name)?;
-        let mut metadata_bytes = metadata_2_bytes(view.metadata());
-        let mut description = view.description();
+        view.init(database_name)?;
+        Ok(Arc::new(RwLock::new(view)))
+    }
+    fn init(&self, database_name: String) -> GeorgeResult<()> {
+        let mut metadata_bytes = metadata_2_bytes(self.metadata());
+        let mut description = self.description();
         // 初始化为32 + 8，即head长度加正文描述符长度
         let mut before_description = before_content_bytes(40, description.len() as u32);
         metadata_bytes.append(&mut before_description);
         metadata_bytes.append(&mut description);
-        view.file_append(database_name, metadata_bytes)?;
-        Ok(Arc::new(RwLock::new(view)))
+        self.file_append(database_name, metadata_bytes)?;
+        Ok(())
     }
     /// 名称
     pub(crate) fn name(&self) -> String {
@@ -101,6 +121,14 @@ impl View {
     pub(crate) fn metadata(&self) -> Metadata {
         self.metadata.clone()
     }
+    /// 索引集合
+    pub(crate) fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>> {
+        self.indexes.clone()
+    }
+    /// 当前归档版本信息
+    pub(crate) fn pigeonhole(&self) -> Pigeonhole {
+        self.pigeonhole.clone()
+    }
     /// 根据文件路径获取该文件追加写入的写对象
     ///
     /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
@@ -108,35 +136,8 @@ impl View {
     /// #Return
     ///
     /// seek_end_before 写之前文件字节数据长度
-    fn file_append(&mut self, database_name: String, content: Vec<u8>) -> GeorgeResult<u64> {
-        let file_append = self.file_append.clone();
-        let mut file_write = file_append.write().unwrap();
-        match file_write.seek(SeekFrom::End(0)) {
-            Ok(seek_end_before) => {
-                match write_file_append_bytes(file_write.try_clone().unwrap(), content.clone()) {
-                    Ok(()) => Ok(seek_end_before),
-                    Err(_err) => {
-                        let file_path = view_file_path(database_name, self.name());
-                        self.file_append = obtain_write_append_file(file_path)?;
-                        let file_write_again = self.file_append.write().unwrap();
-                        write_file_append_bytes(file_write_again.try_clone().unwrap(), content)?;
-                        Ok(seek_end_before)
-                    }
-                }
-            }
-            Err(_err) => {
-                let file_path = view_file_path(database_name, self.name());
-                self.file_append = obtain_write_append_file(file_path)?;
-                let mut file_write_again = self.file_append.write().unwrap();
-                let seek_end_before_again = file_write_again.seek(SeekFrom::End(0)).unwrap();
-                write_file_append_bytes(file_write_again.try_clone().unwrap(), content)?;
-                Ok(seek_end_before_again)
-            }
-        }
-    }
-    /// 索引集合
-    pub(crate) fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>> {
-        self.indexes.clone()
+    fn file_append(&self, database_name: String, content: Vec<u8>) -> GeorgeResult<u64> {
+        self.filer.write().unwrap().append(database_name, content)
     }
     /// 视图变更
     pub(crate) fn modify(&mut self, database_name: String, name: String) -> GeorgeResult<()> {
@@ -162,7 +163,7 @@ impl View {
             Err(err) => {
                 // 回滚数据
                 write_seek_u8s(filepath, 0, content_old.as_slice())?;
-                Err(err_str_enhance("file rename error: ", err.to_string()))
+                Err(err_strs("file rename failed", err))
             }
         }
     }
@@ -182,7 +183,7 @@ impl View {
         primary: bool,
     ) -> GeorgeResult<()> {
         if self.exist_index(index_name.clone()) {
-            return Err(GeorgeError::IndexExistError(IndexExistError));
+            return Err(GeorgeError::from(IndexExistError));
         }
         let view_name = self.name();
         let name = index_name.clone();
@@ -211,12 +212,167 @@ impl View {
 }
 
 impl View {
+    /// 插入数据，如果存在则返回已存在<p><p>
+    ///
+    /// ###Params
+    ///
+    /// key string
+    ///
+    /// value 当前结果value信息<p><p>
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    pub(crate) fn put(
+        &self,
+        database_name: String,
+        key: String,
+        value: Vec<u8>,
+    ) -> GeorgeResult<()> {
+        self.save(database_name, key, value, false, false)
+    }
+    /// 插入数据，无论存在与否都会插入或更新数据<p><p>
+    ///
+    /// ###Params
+    ///
+    /// key string
+    ///
+    /// value 当前结果value信息<p><p>
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    pub(crate) fn set(
+        &self,
+        database_name: String,
+        key: String,
+        value: Vec<u8>,
+    ) -> GeorgeResult<()> {
+        self.save(database_name, key, value, true, false)
+    }
+    /// 获取数据，返回存储对象<p><p>
+    ///
+    /// ###Params
+    ///
+    /// key string
+    ///
+    /// ###Return
+    ///
+    /// Seed value信息
+    pub(crate) fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
+        match self.index_map().read().unwrap().get(INDEX_CATALOG) {
+            Some(index) => index.read().unwrap().get(key.clone()),
+            None => Err(GeorgeError::from(DataNoExistError)),
+        }
+    }
+    /// 删除数据<p><p>
+    ///
+    /// ###Params
+    ///
+    /// key string<p><p>
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    pub(crate) fn remove(&self, database_name: String, key: String) -> GeorgeResult<()> {
+        self.save(database_name, key, vec![], true, true)
+    }
+}
+
+impl View {
+    /// 整理归档
+    ///
+    /// archive_file_path 归档路径
+    pub(crate) fn archive(
+        &self,
+        database_name: String,
+        archive_file_path: String,
+    ) -> GeorgeResult<()> {
+        self.filer.write().unwrap().archive(archive_file_path)?;
+        self.init(database_name)
+    }
+    /// 组装写入视图的内容，即持续长度+该长度的原文内容
+    ///
+    /// 将数据存入view，返回数据在view中的起始偏移量坐标
+    fn write_content(&self, database_name: String, mut value: Vec<u8>) -> GeorgeResult<u64> {
+        let mut seed_bytes_len_bytes = trans_u64_2_bytes(value.len() as u64);
+        seed_bytes_len_bytes.append(&mut value);
+        // 将数据存入view，返回数据在view中的坐标
+        self.file_append(database_name, seed_bytes_len_bytes)
+    }
+    /// 插入数据业务方法<p><p>
+    ///
+    /// ###Params
+    ///
+    /// key string
+    ///
+    /// value 当前结果value信息<p><p>
+    ///
+    /// force 如果存在原值，是否覆盖原结果<p><p>
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    fn save(
+        &self,
+        database_name: String,
+        key: String,
+        value: Vec<u8>,
+        force: bool,
+        remove: bool,
+    ) -> GeorgeResult<()> {
+        let seed = Arc::new(RwLock::new(Seed::create(key.clone())));
+        let mut receives = Vec::new();
+        for (index_name, index) in self.index_map().read().unwrap().iter() {
+            let (sender, receive) = mpsc::channel();
+            receives.push(receive);
+            let index_name_clone = index_name.clone();
+            let index_clone = index.clone();
+            let key_clone = key.clone();
+            let value_clone = value.clone();
+            let seed_clone = seed.clone();
+            thread::spawn(move || {
+                let index_read = index_clone.read().unwrap();
+                match index_name_clone.as_str() {
+                    INDEX_CATALOG => sender.send(index_read.put(key_clone, seed_clone, force)),
+                    _ => match key_fetch(index_name_clone, value_clone) {
+                        Ok(res) => sender.send(index_read.put(res, seed_clone, force)),
+                        Err(err) => {
+                            log::debug!("key fetch error: {}", err);
+                            sender.send(Ok(()))
+                        }
+                    },
+                }
+            });
+        }
+        for receive in receives.iter() {
+            let res = receive.recv();
+            match res {
+                Ok(gr) => match gr {
+                    Err(err) => return Err(err),
+                    _ => {}
+                },
+                Err(err) => return Err(err_string(err.to_string())),
+            }
+        }
+        if remove {
+            seed.write().unwrap().remove()
+        } else {
+            // 执行真实存储操作，即索引将seed存入后，允许检索到该结果，但该结果值不存在，仅当所有索引存入都成功，才会执行本方法完成真实存储操作
+            let view_seek_end = self.write_content(database_name, value)?;
+            seed.write().unwrap().save(view_seek_end)
+        }
+    }
+}
+
+impl View {
     /// 生成文件描述
     fn description(&self) -> Vec<u8> {
         hex::encode(format!(
-            "{}/{}",
+            "{}:#?{}:#?{}",
             self.name(),
-            self.create_time().num_nanoseconds().unwrap().to_string()
+            self.create_time().num_nanoseconds().unwrap().to_string(),
+            self.pigeonhole().to_string()
         ))
         .into_bytes()
     }
@@ -226,19 +382,21 @@ impl View {
             Ok(description_str) => match hex::decode(description_str) {
                 Ok(vu8) => match String::from_utf8(vu8) {
                     Ok(real) => {
-                        let mut split = real.split("/");
+                        let mut split = real.split(":#?");
                         let name = split.next().unwrap().to_string();
                         let create_time = Duration::nanoseconds(
                             split.next().unwrap().to_string().parse::<i64>().unwrap(),
                         );
+                        let pigeonhole =
+                            Pigeonhole::from_string(split.next().unwrap().to_string())?;
                         let file_path = view_file_path(database_name.clone(), name.clone());
-                        let file_append = obtain_write_append_file(file_path)?;
                         let mut view = View {
                             name,
                             create_time,
                             metadata: hd.metadata(),
-                            file_append,
+                            filer: Filed::recovery(file_path)?,
                             indexes: Arc::new(Default::default()),
+                            pigeonhole,
                         };
                         log::info!(
                             "recovery view {} from database {}",
@@ -268,9 +426,6 @@ impl View {
             ))),
         }
     }
-}
-
-impl View {
     /// 恢复indexes数据
     fn recovery_indexes(&mut self, database_name: String, paths: ReadDir) {
         // 遍历view目录下文件
@@ -327,6 +482,167 @@ impl View {
                 "recovery index when recovery before content failed! error is {}",
                 err
             ),
+        }
+    }
+}
+
+/// 归档服务
+#[derive(Debug, Clone)]
+pub struct Pigeonhole {
+    now: Record,
+    history: HashMap<u16, Record>,
+}
+
+impl Pigeonhole {
+    fn create(version: u16, file_path: String, create_time: Duration) -> Pigeonhole {
+        Pigeonhole {
+            now: Record {
+                version,
+                file_path,
+                create_time,
+            },
+            history: Default::default(),
+        }
+    }
+    /// 当前归档版本
+    fn now(&self) -> Record {
+        self.now.clone()
+    }
+    /// 历史归档版本
+    fn history(&self) -> HashMap<u16, Record> {
+        self.history.clone()
+    }
+    fn history_to_string(&self) -> String {
+        let mut res = String::from("");
+        for (_, record) in self.history.iter() {
+            if res.is_empty() {
+                res = res.add(&record.to_string());
+            } else {
+                res = res.add("@_@!");
+                res = res.add(&record.to_string());
+            }
+        }
+        res
+    }
+    fn history_from_string(history_desc: String) -> GeorgeResult<HashMap<u16, Record>> {
+        let mut history: HashMap<u16, Record> = Default::default();
+        if !history_desc.is_empty() {
+            let mut split = history_desc.split("$_$!");
+            for record_desc in split.into_iter() {
+                let record = Record::from_string(String::from(record_desc))?;
+                history.insert(record.version, record);
+            }
+        }
+        Ok(history)
+    }
+    /// 生成文件描述
+    fn to_string(&self) -> String {
+        hex::encode(format!(
+            "{}$_$!{}",
+            self.now().to_string(),
+            self.history_to_string()
+        ))
+    }
+    /// 通过文件描述恢复结构信息
+    pub(crate) fn from_string(pigeonhole_desc: String) -> GeorgeResult<Pigeonhole> {
+        match hex::decode(pigeonhole_desc) {
+            Ok(vu8) => match String::from_utf8(vu8) {
+                Ok(real) => {
+                    let mut split = real.split("$_$!");
+                    let now = Record::from_string(split.next().unwrap().to_string())?;
+                    let history =
+                        Pigeonhole::history_from_string(split.next().unwrap().to_string())?;
+                    Ok(Pigeonhole { now, history })
+                }
+                Err(err) => Err(err_string(format!(
+                    "recovery pigeonhole from utf8 2 failed! error is {}",
+                    err
+                ))),
+            },
+            Err(err) => Err(err_string(format!(
+                "recovery pigeonhole from utf8 1 failed! error is {}",
+                err
+            ))),
+        }
+    }
+}
+
+/// 归档记录
+#[derive(Clone)]
+pub struct Record {
+    /// 归档版本，默认新建为[0x00,0x00]，版本每次归档操作递增，最多归档65536次
+    version: u16,
+    /// 当前归档版本文件所处路径
+    file_path: String,
+    /// 归档时间
+    create_time: Duration,
+}
+
+impl fmt::Debug for Record {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let time_from_stamp = NaiveDateTime::from_timestamp(self.create_time().num_seconds(), 0);
+        let time_format = time_from_stamp.format("%Y-%m-%d %H:%M:%S");
+        write!(
+            f,
+            "[version = {:#?}, file_path = {}, create_time = {}]",
+            self.version(),
+            self.file_path(),
+            time_format
+        )
+    }
+}
+
+impl Record {
+    fn create(version: u16, file_path: String, create_time: Duration) -> Record {
+        Record {
+            version,
+            file_path,
+            create_time,
+        }
+    }
+    /// 归档版本，默认新建为[0x00,0x00]，版本每次归档操作递增，最多归档65536次
+    fn version(&self) -> u16 {
+        self.version
+    }
+    /// 当前归档版本文件所处路径
+    fn file_path(&self) -> String {
+        self.file_path.clone()
+    }
+    /// 归档时间
+    pub(crate) fn create_time(&self) -> Duration {
+        self.create_time.clone()
+    }
+    /// 生成文件描述
+    fn to_string(&self) -> String {
+        hex::encode(format!(
+            "{}|{}|{}",
+            self.version(),
+            self.file_path(),
+            self.create_time().num_nanoseconds().unwrap().to_string()
+        ))
+    }
+    /// 通过文件描述恢复结构信息
+    pub(crate) fn from_string(record_desc: String) -> GeorgeResult<Record> {
+        match hex::decode(record_desc) {
+            Ok(vu8) => match String::from_utf8(vu8) {
+                Ok(real) => {
+                    let mut split = real.split("|");
+                    let version = split.next().unwrap().to_string().parse::<u16>().unwrap();
+                    let file_path = split.next().unwrap().to_string();
+                    let create_time = Duration::nanoseconds(
+                        split.next().unwrap().to_string().parse::<i64>().unwrap(),
+                    );
+                    Ok(Record::create(version, file_path, create_time))
+                }
+                Err(err) => Err(err_string(format!(
+                    "recovery pigeonhole from utf8 2 failed! error is {}",
+                    err
+                ))),
+            },
+            Err(err) => Err(err_string(format!(
+                "recovery pigeonhole from utf8 1 failed! error is {}",
+                err
+            ))),
         }
     }
 }

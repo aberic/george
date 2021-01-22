@@ -27,7 +27,7 @@ use openssl::x509::extension::{
 use openssl::x509::{X509Name, X509NameBuilder, X509NameRef, X509Req, X509ReqBuilder, X509};
 
 use crate::cryptos::rsa;
-use crate::errors::entrances::err_str_enhance;
+use crate::errors::entrances::err_strs;
 use crate::errors::entrances::GeorgeResult;
 
 pub struct X509NameInfo {
@@ -95,13 +95,13 @@ pub fn create_cert_request(sk: &PKey<Private>, info: X509NameInfo) -> GeorgeResu
             Ok(()) => match req_builder.set_subject_name(&info.build()) {
                 Ok(()) => match req_builder.sign(&sk, MessageDigest::sha256()) {
                     Ok(()) => Ok(req_builder.build()),
-                    Err(err) => Err(err_str_enhance("sign", err.to_string())),
+                    Err(err) => Err(err_strs("sign", err)),
                 },
-                Err(err) => Err(err_str_enhance("set_subject_name", err.to_string())),
+                Err(err) => Err(err_strs("set_subject_name", err)),
             },
-            Err(err) => Err(err_str_enhance("set_pubkey", err.to_string())),
+            Err(err) => Err(err_strs("set_pubkey", err)),
         },
-        Err(err) => Err(err_str_enhance("X509ReqBuilder_new", err.to_string())),
+        Err(err) => Err(err_strs("X509ReqBuilder_new", err)),
     }
 }
 
@@ -186,7 +186,7 @@ pub fn create(
         not_after_day,
     ) {
         Ok(x509) => Ok(x509),
-        Err(err) => Err(err_str_enhance("create_cert", err.to_string())),
+        Err(err) => Err(err_strs("create_cert", err)),
     }
 }
 
@@ -331,7 +331,7 @@ pub fn sign_csr(
         not_after_day,
     ) {
         Ok(x509) => Ok(x509),
-        Err(err) => Err(err_str_enhance("sign_cert", err.to_string())),
+        Err(err) => Err(err_strs("sign_cert", err)),
     }
 }
 
@@ -373,7 +373,7 @@ pub fn sign_obj(
         not_after_day,
     ) {
         Ok(x509) => Ok(x509),
-        Err(err) => Err(err_str_enhance("sign_cert", err.to_string())),
+        Err(err) => Err(err_strs("sign_cert", err)),
     }
 }
 
@@ -418,20 +418,20 @@ pub fn sign(
         not_after_day,
     ) {
         Ok(x509) => Ok(x509),
-        Err(err) => Err(err_str_enhance("sign", err.to_string())),
+        Err(err) => Err(err_strs("sign", err)),
     }
 }
 
 pub fn load_ca(sk: Vec<u8>) -> GeorgeResult<X509> {
     match X509::from_pem(sk.as_slice()) {
         Ok(key) => Ok(key),
-        Err(err) => Err(err_str_enhance("x509_from_pem", err.to_string())),
+        Err(err) => Err(err_strs("x509_from_pem", err)),
     }
 }
 
 pub fn load_ca_file(filepath: String) -> GeorgeResult<X509> {
     match read(filepath) {
         Ok(u8s) => load_ca(u8s),
-        Err(err) => Err(err_str_enhance("read", err.to_string())),
+        Err(err) => Err(err_strs("read", err)),
     }
 }

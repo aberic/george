@@ -19,142 +19,73 @@ use std::sync::{Arc, RwLock};
 
 use once_cell::sync::Lazy;
 
+use crate::utils::store::Tag;
 use comm::errors::children::NoneError;
 use comm::errors::entrances::GeorgeResult;
 use comm::errors::entrances::{err_string, GeorgeError};
+use comm::io::file::{Filer, FilerHandler};
+use comm::io::writer::write_file_append_bytes;
 
-use crate::utils::store::Tag;
+#[derive(Debug, Clone)]
+pub struct Filed {
+    file_path: String,
+    file_append: Arc<RwLock<File>>,
+}
+
+impl Filed {
+    pub fn create(file_path: String) -> GeorgeResult<Arc<RwLock<Filed>>> {
+        Filer::touch(file_path.clone())?;
+        Filed::recovery(file_path)
+    }
+    pub fn recovery(file_path: String) -> GeorgeResult<Arc<RwLock<Filed>>> {
+        let file_append = obtain_write_append_file(file_path.clone())?;
+        return Ok(Arc::new(RwLock::new(Filed {
+            file_path,
+            file_append,
+        })));
+    }
+    pub fn append(&mut self, file_path: String, content: Vec<u8>) -> GeorgeResult<u64> {
+        let file_append = self.file_append.clone();
+        let mut file_write = file_append.write().unwrap();
+        match file_write.seek(SeekFrom::End(0)) {
+            Ok(seek_end_before) => {
+                match write_file_append_bytes(file_write.try_clone().unwrap(), content.clone()) {
+                    Ok(()) => Ok(seek_end_before),
+                    Err(_err) => {
+                        self.file_append = obtain_write_append_file(file_path)?;
+                        let file_write_again = self.file_append.write().unwrap();
+                        write_file_append_bytes(file_write_again.try_clone().unwrap(), content)?;
+                        Ok(seek_end_before)
+                    }
+                }
+            }
+            Err(_err) => {
+                self.file_append = obtain_write_append_file(file_path)?;
+                let mut file_write_again = self.file_append.write().unwrap();
+                let seek_end_before_again = file_write_again.seek(SeekFrom::End(0)).unwrap();
+                write_file_append_bytes(file_write_again.try_clone().unwrap(), content)?;
+                Ok(seek_end_before_again)
+            }
+        }
+    }
+    fn file_path(&self) -> String {
+        self.file_path.clone()
+    }
+    /// 整理归档
+    ///
+    /// archive_file_path 归档路径
+    pub fn archive(&mut self, archive_file_path: String) -> GeorgeResult<()> {
+        Filer::mv(self.file_path(), archive_file_path)?;
+        Filer::touch(self.file_path())?;
+        self.file_append = obtain_write_append_file(self.file_path())?;
+        Ok(())
+    }
+}
 
 /// 根据文件路径获取该文件追加写入的写对象
 pub fn obtain_write_append_file(file_path: String) -> GeorgeResult<Arc<RwLock<File>>> {
     match OpenOptions::new().append(true).open(file_path) {
         Ok(file) => Ok(Arc::new(RwLock::new(file))),
         Err(err) => Err(err_string(err.to_string())),
-    }
-}
-
-/// 视图及索引写对象
-pub struct Writer {
-    pub views: Arc<RwLock<HashMap<String, Arc<RwLock<File>>>>>,
-    pub indexes: Arc<RwLock<HashMap<String, Arc<RwLock<File>>>>>,
-}
-
-/// 视图及索引写全局单例对象
-pub static GLOBAL_WRITER: Lazy<Arc<Writer>> = Lazy::new(|| {
-    let writer = Writer {
-        views: Arc::new(Default::default()),
-        indexes: Arc::new(Default::default()),
-    };
-    Arc::new(writer)
-});
-
-impl Writer {
-    /// 视图及索引写对象新增视图管理
-    pub fn insert_view(&self, view_id: String, view_file_path: String) -> GeorgeResult<()> {
-        match OpenOptions::new().append(true).open(view_file_path) {
-            Ok(file) => {
-                self.views
-                    .clone()
-                    .write()
-                    .unwrap()
-                    .insert(view_id, Arc::new(RwLock::new(file)));
-                Ok(())
-            }
-            Err(err) => Err(err_string(err.to_string())),
-        }
-    }
-
-    /// 视图及索引写对象新增索引管理
-    pub fn insert_index(&self, index_id: String, index_file_path: String) -> GeorgeResult<()> {
-        match OpenOptions::new().append(true).open(index_file_path) {
-            Ok(file) => {
-                self.indexes
-                    .clone()
-                    .write()
-                    .unwrap()
-                    .insert(index_id, Arc::new(RwLock::new(file)));
-                Ok(())
-            }
-            Err(err) => Err(err_string(err.to_string())),
-        }
-    }
-
-    /// 获取视图或索引写文件对象
-    fn file(&self, tag: Tag, id: String) -> GeorgeResult<Arc<RwLock<File>>> {
-        return match tag {
-            Tag::View => match self.views.clone().read().unwrap().get(&id) {
-                Some(f) => Ok(f.clone()),
-                None => Err(GeorgeError::NoneError(NoneError)),
-            },
-            Tag::Index => match self.indexes.clone().read().unwrap().get(&id) {
-                Some(f) => Ok(f.clone()),
-                None => Err(GeorgeError::NoneError(NoneError)),
-            },
-            _ => Err(GeorgeError::NoneError(NoneError)),
-        };
-    }
-
-    /// 在指定文件中追加数据
-    ///
-    /// 如果是view，则存储id为“database_id+view_id”<p>
-    /// 参考方法`store_view_id(database_id: String, view_id: String) -> String`<p>
-    ///
-    /// 如果是index，则存储id为“database_id+view_id+index_id”<p>
-    /// 参考方法`store_index_id(database_id: String, view_id: String, index_id: String) -> String`
-    pub fn write_append_bytes(&self, tag: Tag, id: String, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.write_append_u8s(tag, id, content.as_slice())
-    }
-
-    /// 在指定文件中追加数据
-    ///
-    /// 如果是view，则存储id为“database_id+view_id”<p>
-    /// 参考方法`store_view_id(database_id: String, view_id: String) -> String`<p>
-    ///
-    /// 如果是index，则存储id为“database_id+view_id+index_id”<p>
-    /// 参考方法`store_index_id(database_id: String, view_id: String, index_id: String) -> String`
-    pub fn write_append_u8s(&self, tag: Tag, id: String, content: &[u8]) -> GeorgeResult<u64> {
-        match self.file(tag, id) {
-            Ok(file_arc) => {
-                let file = file_arc.clone();
-                let mut file_w = file.write().unwrap();
-                // 获取当前文件总长度，并将其作为写的偏移量
-                let seek_start = file_w.metadata().unwrap().len();
-                match file_w.write_all(content) {
-                    Ok(()) => Ok(seek_start),
-                    Err(err) => Err(err_string(err.to_string())),
-                }
-            }
-            Err(err) => Err(err),
-        }
-    }
-
-    /// 在指定文件中指定位置后覆盖数据
-    ///
-    /// 如果是view，则存储id为“database_id+view_id”<p>
-    /// 参考方法`store_view_id(database_id: String, view_id: String) -> String`<p>
-    ///
-    /// 如果是index，则存储id为“database_id+view_id+index_id”<p>
-    /// 参考方法`store_index_id(database_id: String, view_id: String, index_id: String) -> String`
-    pub fn write_seek_u8s(
-        &self,
-        tag: Tag,
-        id: String,
-        seek: u64,
-        content: &[u8],
-    ) -> GeorgeResult<()> {
-        match self.file(tag, id) {
-            Ok(file_arc) => {
-                let file = file_arc.clone();
-                let mut file_w = file.write().unwrap();
-                match file_w.seek(SeekFrom::Start(seek)) {
-                    Ok(_s) => match file_w.write_all(content) {
-                        Ok(()) => Ok(()),
-                        Err(err) => Err(err_string(err.to_string())),
-                    },
-                    Err(err) => Err(err_string(err.to_string())),
-                }
-            }
-            Err(err) => Err(err),
-        }
     }
 }

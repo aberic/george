@@ -15,4 +15,5 @@ mod database;
 pub mod engine;
 pub mod master;
 mod master_test;
+mod seed;
 mod view;

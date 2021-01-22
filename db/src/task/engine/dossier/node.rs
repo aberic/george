@@ -14,6 +14,7 @@
 
 use std::sync::{Arc, RwLock};
 
+use crate::task::engine::traits::TSeed;
 use comm::bytes::create_empty_bytes;
 use comm::errors::entrances::GeorgeResult;
 
@@ -61,92 +62,15 @@ impl Node {
     pub(crate) fn node_bytes(&self) -> Arc<RwLock<Vec<u8>>> {
         self.node_bytes.clone()
     }
-    fn set_node_bytes(&self, bytes: Vec<u8>) {
-        let node_bytes = self.node_bytes();
-        let mut nb_w = node_bytes.write().unwrap();
-        nb_w.copy_from_slice(bytes.as_slice())
+    pub(crate) fn put(
+        &self,
+        key: String,
+        seed: Arc<RwLock<dyn TSeed>>,
+        force: bool,
+    ) -> GeorgeResult<()> {
+        Ok(())
     }
-    // fn put(
-    //     &self,
-    //     key: String,
-    //     seed: Arc<RwLock<dyn TSeed>>,
-    //     force: bool,
-    //     description_len: usize,
-    // ) -> GeorgeResult<()>
-    //     where
-    //         Self: Sized,
-    // {
-    //     let node_bytes = self.node_bytes().read().unwrap().to_vec();
-    //     self.put_in_node(
-    //         node_bytes,
-    //         1,
-    //         hashcode32_enhance(key),
-    //         seed,
-    //         force,
-    //         true,
-    //         description_len as u64,
-    //     )
-    // }
-    // fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-    //     let node_bytes = self.node_bytes().read().unwrap().to_vec();
-    //     self.get_in_node(node_bytes, 1, hashcode32_enhance(key))
-    // }
-    // fn get_last(&self) -> GeorgeResult<Vec<u8>>
-    //     where
-    //         Self: Sized,
-    // {
-    //     let node_bytes = self.node_bytes().read().unwrap().to_vec();
-    //     self.get_last_in_node(node_bytes, 1)
-    // }
-    // fn select(
-    //     &self,
-    //     mold: IndexMold,
-    //     left: bool,
-    //     start: u64,
-    //     end: u64,
-    //     constraint: Constraint,
-    // ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)> {
-    //     let node_bytes = self.node_bytes().read().unwrap().to_vec();
-    //     match File::open(self.index_file_path()) {
-    //         Ok(index_file_real) => match File::open(self.view_file_path()) {
-    //             Ok(view_file_real) => {
-    //                 let index_file = Arc::new(RwLock::new(index_file_real));
-    //                 let view_file = Arc::new(RwLock::new(view_file_real));
-    //                 let level = 1;
-    //                 let conditions = constraint.conditions();
-    //                 log::debug!("conditions length = {}", conditions.len());
-    //                 let skip = constraint.skip();
-    //                 let limit = constraint.limit();
-    //                 let delete = constraint.delete();
-    //                 let query: (u64, u64, u64, u64, Vec<Vec<u8>>);
-    //                 if left {
-    //                     query = self.left_query(
-    //                         mold, index_file, view_file, node_bytes, start, end, level, conditions,
-    //                         skip, limit, delete,
-    //                     )?
-    //                 } else {
-    //                     query = self.right_query(
-    //                         mold, index_file, view_file, node_bytes, start, end, level, conditions,
-    //                         skip, limit, delete,
-    //                     )?
-    //                 }
-    //                 Ok((query.0, query.1, query.4))
-    //             }
-    //             Err(err) => Err(err_string_enhance(
-    //                 format!(
-    //                     "select view file whit path {} error, ",
-    //                     self.view_file_path()
-    //                 ),
-    //                 err.to_string(),
-    //             )),
-    //         },
-    //         Err(err) => Err(err_string_enhance(
-    //             format!(
-    //                 "select index file whit path {} error, ",
-    //                 self.index_file_path()
-    //             ),
-    //             err.to_string(),
-    //         )),
-    //     }
-    // }
+    pub(crate) fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
+        Ok("test".as_bytes().to_vec())
+    }
 }

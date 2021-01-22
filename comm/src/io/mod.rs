@@ -12,6 +12,8 @@
  * limitations under the License.
  */
 
+pub mod dir;
+mod dir_test;
 pub mod file;
 mod file_test;
 pub mod reader;
