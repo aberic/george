@@ -60,17 +60,24 @@ impl Node {
 
 /// 封装方法函数
 impl Node {
+    /// 存储结点所属各子结点坐标顺序字符串
+    ///
+    /// 如果子项是node集合，在node集合中每一个node的默认字节长度是8，数量是65536，即一次性读取524288个字节
     pub(crate) fn node_bytes(&self) -> Arc<RwLock<Vec<u8>>> {
         self.node_bytes.clone()
     }
-    pub(crate) fn put(
-        &self,
-        key: String,
-        seed: Arc<RwLock<dyn TSeed>>,
-        force: bool,
-    ) -> GeorgeResult<()> {
+    /// 插入数据<p><p>
+    ///
+    /// ###Params
+    ///
+    /// key u64
+    ///
+    /// ###Return
+    ///
+    /// EngineResult<()>
+    pub(crate) fn put(&self, key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
         let node_bytes = self.node_bytes().read().unwrap().to_vec();
-        self.put_in_node(node_bytes, 1, hashcode32_enhance(key), seed, force, true)
+        self.put_in_node(node_bytes, 1, key, seed, true)
     }
     pub(crate) fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
         Ok("test".as_bytes().to_vec())
@@ -78,13 +85,25 @@ impl Node {
 }
 
 impl Node {
+    /// 存储数据真实操作
+    ///
+    /// node_bytes 当前操作结点的字节数组
+    ///
+    /// level 当前操作结点层
+    ///
+    /// flexible_key 下一级最左最小树所对应真实key
+    ///
+    /// Seed value信息
+    ///
+    /// root 是否根结点
+    ///
+    /// node_seek 当前操作结点在文件中的真实起始位置
     fn put_in_node(
         &self,
         node_bytes: Vec<u8>,
         level: u8,
-        flexible_key: u32,
+        flexible_key: u64,
         seed: Arc<RwLock<dyn TSeed>>,
-        force: bool,
         root: bool,
     ) -> GeorgeResult<()>
     where

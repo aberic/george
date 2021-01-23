@@ -204,6 +204,8 @@ pub fn mold_u8(mold: IndexMold) -> u8 {
         IndexMold::U32 => 0x03,
         IndexMold::I32 => 0x04,
         IndexMold::F64 => 0x05,
+        IndexMold::F32 => 0x06,
+        IndexMold::Bool => 0x07,
     }
 }
 
@@ -271,7 +273,9 @@ pub fn mold_str(mold: IndexMold) -> String {
         IndexMold::I64 => String::from("i64"),
         IndexMold::U32 => String::from("u32"),
         IndexMold::I32 => String::from("i32"),
-        IndexMold::F64 => String::from("f32"),
+        IndexMold::F64 => String::from("f64"),
+        IndexMold::F32 => String::from("f32"),
+        IndexMold::Bool => String::from("bool"),
     }
 }
 

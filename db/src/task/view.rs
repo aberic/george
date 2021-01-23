@@ -318,7 +318,7 @@ impl View {
         database_name: String,
         key: String,
         value: Vec<u8>,
-        force: bool,
+        _force: bool,
         remove: bool,
     ) -> GeorgeResult<()> {
         let seed = Arc::new(RwLock::new(Seed::create(key.clone())));
@@ -334,9 +334,9 @@ impl View {
             thread::spawn(move || {
                 let index_read = index_clone.read().unwrap();
                 match index_name_clone.as_str() {
-                    INDEX_CATALOG => sender.send(index_read.put(key_clone, seed_clone, force)),
+                    INDEX_CATALOG => sender.send(index_read.put(key_clone, seed_clone)),
                     _ => match key_fetch(index_name_clone, value_clone) {
-                        Ok(res) => sender.send(index_read.put(res, seed_clone, force)),
+                        Ok(res) => sender.send(index_read.put(res, seed_clone)),
                         Err(err) => {
                             log::debug!("key fetch error: {}", err);
                             sender.send(Ok(()))
@@ -360,6 +360,7 @@ impl View {
         } else {
             // 执行真实存储操作，即索引将seed存入后，允许检索到该结果，但该结果值不存在，仅当所有索引存入都成功，才会执行本方法完成真实存储操作
             let view_seek_end = self.write_content(database_name, value)?;
+            // todo force
             seed.write().unwrap().save(view_seek_end)
         }
     }

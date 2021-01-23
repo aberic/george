@@ -16,7 +16,9 @@ use crc32fast::Hasher;
 use crypto::digest::Digest;
 use crypto::md5::Md5;
 
+use crate::errors::entrances::{err_strings, GeorgeResult};
 use crate::strings::sub_string;
+use std::ops::Add;
 
 pub fn md5(comment: String) -> String {
     let mut md5_handler = Md5::new();
@@ -47,20 +49,62 @@ pub fn hashcode64(comment: &[u8]) -> u64 {
     c.sum64()
 }
 
-pub fn hashcode64_enhance(comment: String) -> u64 {
-    return match comment.parse::<u64>() {
-        Ok(su64) => su64,
-        // Ok(si64) => {
-        //     si64.add(9223372036854775807).add(1) as u64
-        // }
-        Err(_err) => hashcode64(comment.as_bytes()),
-    };
+pub fn hashcode64_str(comment: String) -> u64 {
+    hashcode64(comment.as_bytes())
+}
+
+pub fn hashcode64_u64(comment: String) -> GeorgeResult<u64> {
+    match comment.parse::<u64>() {
+        Ok(su64) => Ok(su64),
+        Err(err) => Err(err_strings(format!("{} parse to u64", comment), err)),
+    }
+}
+
+pub fn hashcode64_i64(comment: String) -> GeorgeResult<u64> {
+    match comment.parse::<i64>() {
+        Ok(si64) => {
+            if si64 < 0 {
+                Ok((si64.add(9223372036854775807).add(1) as u64))
+            } else {
+                Ok((si64 as u64).add(9223372036854775807).add(1))
+            }
+        }
+        Err(err) => Err(err_strings(format!("{} parse to i64", comment), err)),
+    }
+}
+
+pub fn hashcode64_f64(comment: String) -> GeorgeResult<u64> {
+    match comment.parse::<f64>() {
+        Ok(sf64) => {
+            if sf64 > 0.0 {
+                Ok(sf64.to_bits().add(9223372036854775808))
+            } else if sf64 < 0.0 {
+                Ok(9223372036854775807 + 9223372036854775807 - sf64.to_bits() + 2)
+            } else {
+                Ok(9223372036854775808)
+            }
+        }
+        Err(err) => Err(err_strings(format!("{} parse to f64", comment), err)),
+    }
+}
+
+pub fn hashcode64_bl(comment: String) -> GeorgeResult<u64> {
+    match comment.parse::<bool>() {
+        Ok(sbl) => {
+            if sbl {
+                Ok(1)
+            } else {
+                Ok(0)
+            }
+        }
+        Err(err) => Err(err_strings(format!("{} parse to bool", comment), err)),
+    }
 }
 
 pub fn hashcode_enhance(u32: bool, comment: String) -> (u32, u64) {
     if u32 {
         (hashcode32_enhance(comment), 0)
     } else {
-        (0, hashcode64_enhance(comment))
+        (0, hashcode64_str(comment))
     }
 }

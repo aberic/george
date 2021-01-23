@@ -19,6 +19,9 @@ use crate::utils::path::index_file_path;
 use crate::utils::store::{before_content_bytes, metadata_2_bytes, mold, mold_u8, Metadata, HD};
 use crate::utils::writer::obtain_write_append_file;
 use chrono::{Duration, Local, NaiveDateTime};
+use comm::cryptos::hash::{
+    hashcode64_bl, hashcode64_f64, hashcode64_i64, hashcode64_str, hashcode64_u64,
+};
 use comm::errors::entrances::{err_string, GeorgeResult};
 use comm::io::file::{Filer, FilerHandler};
 use comm::io::writer::write_file_append_bytes;
@@ -177,8 +180,17 @@ impl TIndex for Index {
     fn create_time(&self) -> Duration {
         self.create_time.clone()
     }
-    fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
-        self.root().write().unwrap().put(key, seed, force)
+    fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
+        match self.mold {
+            IndexMold::String => self.root().write().unwrap().put(hashcode64_str(key), seed),
+            IndexMold::Bool => self.root().write().unwrap().put(hashcode64_bl(key)?, seed),
+            IndexMold::U32 => self.root().write().unwrap().put(hashcode64_u64(key)?, seed),
+            IndexMold::U64 => self.root().write().unwrap().put(hashcode64_u64(key)?, seed),
+            IndexMold::F32 => self.root().write().unwrap().put(hashcode64_f64(key)?, seed),
+            IndexMold::F64 => self.root().write().unwrap().put(hashcode64_f64(key)?, seed),
+            IndexMold::I32 => self.root().write().unwrap().put(hashcode64_i64(key)?, seed),
+            IndexMold::I64 => self.root().write().unwrap().put(hashcode64_i64(key)?, seed),
+        }
     }
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
         self.root().read().unwrap().get(key)

@@ -43,12 +43,10 @@ pub trait TIndex: Send + Sync + Debug {
     ///
     /// key string
     ///
-    /// force 如果存在原值，是否覆盖原结果<p><p>
-    ///
     /// ###Return
     ///
     /// EngineResult<()>
-    fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()>;
+    fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()>;
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
