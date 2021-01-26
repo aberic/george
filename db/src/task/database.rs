@@ -13,17 +13,16 @@
  */
 
 use crate::task::view::View;
+use crate::utils::enums::Tag;
 use crate::utils::path::{database_file_path, database_path, view_file_path};
 use crate::utils::store::{
-    before_content_bytes, metadata_2_bytes, recovery_before_content, Metadata, Tag, HD,
+    before_content_bytes, metadata_2_bytes, recovery_before_content, Metadata, HD,
 };
 use crate::utils::writer::obtain_write_append_file;
 use chrono::{Duration, Local, NaiveDateTime};
 use comm::errors::children::{ViewExistError, ViewNoExistError};
 use comm::errors::entrances::{err_string, err_strs, GeorgeError, GeorgeResult};
-use comm::io::file::{Filer, FilerHandler};
-use comm::io::reader::read_sub_bytes;
-use comm::io::writer::{write_file_append_bytes, write_seek_u8s};
+use comm::io::file::{Filer, FilerExecutor, FilerHandler, FilerReader, FilerWriter};
 use std::collections::HashMap;
 use std::fs::{read_dir, File, ReadDir};
 use std::io::{Seek, SeekFrom};
@@ -105,13 +104,13 @@ impl Database {
         let mut file_write = file_append.write().unwrap();
         match file_write.seek(SeekFrom::End(0)) {
             Ok(seek_end_before) => {
-                match write_file_append_bytes(file_write.try_clone().unwrap(), content.clone()) {
+                match Filer::appends(file_write.try_clone().unwrap(), content.clone()) {
                     Ok(()) => Ok(seek_end_before),
                     Err(_err) => {
                         self.file_append =
                             obtain_write_append_file(database_file_path(self.name()))?;
                         let file_write_again = self.file_append.write().unwrap();
-                        write_file_append_bytes(file_write_again.try_clone().unwrap(), content)?;
+                        Filer::appends(file_write_again.try_clone().unwrap(), content)?;
                         Ok(seek_end_before)
                     }
                 }
@@ -120,7 +119,7 @@ impl Database {
                 self.file_append = obtain_write_append_file(database_file_path(self.name()))?;
                 let mut file_write_again = self.file_append.write().unwrap();
                 let seek_end_before_again = file_write_again.seek(SeekFrom::End(0)).unwrap();
-                write_file_append_bytes(file_write_again.try_clone().unwrap(), content)?;
+                Filer::appends(file_write_again.try_clone().unwrap(), content)?;
                 Ok(seek_end_before_again)
             }
         }
@@ -132,7 +131,7 @@ impl Database {
     pub(crate) fn modify(&mut self, name: String) -> GeorgeResult<()> {
         let old_name = self.name();
         let filepath = database_file_path(old_name.clone());
-        let content = read_sub_bytes(filepath.clone(), 0, 40)?;
+        let content = Filer::read_sub(filepath.clone(), 0, 40)?;
         self.name = name;
         let description = self.description();
         let seek_end = self.file_append(description.clone())?;
@@ -144,7 +143,7 @@ impl Database {
         );
         let content_new = before_content_bytes(seek_end as u32, description.len() as u32);
         // 更新首部信息，初始化head为32，描述起始4字节，长度4字节
-        write_seek_u8s(filepath.clone(), 32, content_new.as_slice())?;
+        Filer::write_seek(filepath.clone(), 32, content_new)?;
         let database_path_old = database_path(old_name);
         let database_path_new = database_path(self.name());
         match std::fs::rename(database_path_old, database_path_new) {
@@ -154,7 +153,7 @@ impl Database {
             }
             Err(err) => {
                 // 回滚数据
-                write_seek_u8s(filepath, 0, content.as_slice())?;
+                Filer::write_seek(filepath, 0, content)?;
                 Err(err_strs("file rename failed", err.to_string()))
             }
         }
@@ -266,7 +265,7 @@ impl Database {
     ///
     /// Seed value信息
     pub(crate) fn get(&self, view_name: String, key: String) -> GeorgeResult<Vec<u8>> {
-        self.view(view_name)?.read().unwrap().get(key)
+        self.view(view_name)?.read().unwrap().get(self.name(), key)
     }
     /// 删除数据<p><p>
     ///

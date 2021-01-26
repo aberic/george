@@ -14,12 +14,12 @@
 
 #[cfg(test)]
 mod strings {
+    use crate::strings::{StringHandler, Strings};
     use crate::trans::{
         trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u64, trans_string64_2_u32,
         trans_string64_2_u64, trans_u16_2_bytes, trans_u32_2_bytes, trans_u32_2_string64,
         trans_u32_2_string64_fit, trans_u64_2_bytes, trans_u64_2_string64,
     };
-    use crate::strings::left_un_fit;
 
     #[test]
     fn trans_test1() {
@@ -73,7 +73,7 @@ mod strings {
         let n = 100;
         let ns = trans_u32_2_string64_fit(n);
         println!("ns = {}", ns);
-        let ns_un = left_un_fit(ns, "*".parse().unwrap());
+        let ns_un = Strings::left_un_fits(ns, "*".parse().unwrap());
         let ns2u = trans_string64_2_u32(ns_un);
         println!("ns2u = {}", ns2u);
     }

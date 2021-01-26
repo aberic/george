@@ -18,7 +18,7 @@ mod ca {
         create, create_cert_request, load_ca_file, sign, AltName, X509NameInfo,
     };
     use crate::cryptos::rsa;
-    use crate::io::writer::write;
+    use crate::io::file::{Filer, FilerWriter};
 
     fn x509_name_info() -> X509NameInfo {
         X509NameInfo {
@@ -66,7 +66,7 @@ mod ca {
             Ok(key) => match create_cert_request(&key, x509_name_info()) {
                 Ok(csr) => match csr.to_pem() {
                     Ok(pem) => {
-                        write(csr_filepath.to_string(), pem).unwrap();
+                        Filer::write(csr_filepath, pem).unwrap();
                     }
                     Err(err) => {
                         println!("to_pem = {}", err);
@@ -97,7 +97,7 @@ mod ca {
             Ok(key) => match create(128, &key, x509_name_info(), 2, 0, 356) {
                 Ok(x509) => match x509.to_pem() {
                     Ok(pem) => {
-                        write(root_filepath.to_string(), pem).unwrap();
+                        Filer::write(root_filepath, pem).unwrap();
                     }
                     Err(err) => {
                         println!("to_pem = {}", err);
@@ -165,7 +165,7 @@ mod ca {
         ) {
             Ok(x509) => match x509.to_pem() {
                 Ok(pem) => {
-                    write(cert_filepath.to_string(), pem).unwrap();
+                    Filer::write(cert_filepath, pem).unwrap();
                 }
                 Err(err) => {
                     println!("to_pem = {}", err);

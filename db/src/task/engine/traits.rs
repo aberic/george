@@ -19,13 +19,14 @@ use serde::export::fmt::Debug;
 
 use comm::errors::entrances::GeorgeResult;
 
-use crate::utils::comm::IndexMold;
+use crate::task::view::{Pigeonhole, View};
+use crate::utils::enums::IndexMold;
 use crate::utils::store::Metadata;
 
 /// 索引通用特性，遵循此特性创建索引可以更方便的针对icdb进行扩展
 ///
 /// 该特性包含了索引的基本方法，理论上都需要进行实现才能使用
-pub trait TIndex: Send + Sync + Debug {
+pub(crate) trait TIndex: Send + Sync + Debug {
     /// 索引名称，可以自定义；<p>
     /// siam::Index 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入<p><p>
     fn name(&self) -> String;
@@ -46,7 +47,13 @@ pub trait TIndex: Send + Sync + Debug {
     /// ###Return
     ///
     /// EngineResult<()>
-    fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()>;
+    fn put(
+        &self,
+        database_name: String,
+        view_name: String,
+        key: String,
+        seed: Arc<RwLock<dyn TSeed>>,
+    ) -> GeorgeResult<()>;
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -56,13 +63,13 @@ pub trait TIndex: Send + Sync + Debug {
     /// ###Return
     ///
     /// Seed value信息
-    fn get(&self, key: String) -> GeorgeResult<Vec<u8>>;
+    fn get(&self, database_name: String, view_name: String, key: String) -> GeorgeResult<Vec<u8>>;
 }
 
 /// 结点通用特性，遵循此特性创建结点可以更方便的针对db进行扩展
 ///
 /// 该特性包含了结点的基本方法，理论上都需要进行实现才能使用
-pub trait TNode: Send + Sync + Debug {
+pub(crate) trait TNode: Send + Sync + Debug {
     /// 当前结点所在集合中的索引下标，该坐标不一定在数组中的正确位置，但一定是逻辑正确的
     fn degree_index(&self) -> u16;
     /// 子结点集合Vec，允许为空Option，多线程共享数据Arc，支持并发操作RWLock，集合内存储指针Box，指针类型为Node
@@ -123,15 +130,27 @@ pub trait TNode: Send + Sync + Debug {
 /// 发送和同步是自动特性。可以添加自动特征到一个dyn特征类型
 ///
 /// 如果要写dyn Trait + Send + Sync到处都是，那么需要声明Send和Sync是Trait的Super Traits
-pub trait TSeed: Send + Sync + Debug {
+pub(crate) trait TSeed: Send + Sync + Debug {
     /// 获取当前结果原始key信息
     fn key(&self) -> String;
     /// 修改value值
     fn modify(&mut self, value: Vec<u8>) -> GeorgeResult<()>;
     /// 存储操作
     ///
-    /// view_seek_end 非内存存储中视图写入数据前的文件末尾偏移量
-    fn save(&mut self, view_seek_end: u64) -> GeorgeResult<()>;
+    /// view View 视图
+    ///
+    /// value 当前结果value信息<p><p>
+    ///
+    /// force 是否强制覆盖
+    fn save(
+        &self,
+        database_name: String,
+        view: View,
+        value: Vec<u8>,
+        force: bool,
+    ) -> GeorgeResult<()>;
     /// 删除操作
-    fn remove(&mut self) -> GeorgeResult<()>;
+    ///
+    /// view View 视图
+    fn remove(&self, database_name: String, view: View) -> GeorgeResult<()>;
 }

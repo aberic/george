@@ -13,8 +13,9 @@
  */
 
 use crate::task::database::Database;
-use crate::utils::comm::{EngineType, IndexMold, GEORGE_DB_CONFIG};
+use crate::utils::comm::GEORGE_DB_CONFIG;
 use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
+use crate::utils::enums::{EngineType, IndexMold};
 use crate::utils::path::{bootstrap_file_path, data_path, database_file_path};
 use crate::utils::store::recovery_before_content;
 use chrono::{Duration, Local, NaiveDateTime};
@@ -22,12 +23,11 @@ use comm::env;
 use comm::errors::children::{DatabaseExistError, DatabaseNoExistError};
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
 use comm::io::dir::{Dir, DirHandler};
-use comm::io::file::{Filer, FilerHandler};
-use comm::io::writer::write_append_bytes;
+use comm::io::file::{Filer, FilerHandler, FilerWriter};
 use logs::set_log;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::fs::{read_dir, read_to_string, File, ReadDir};
+use std::fs::{read_dir, read_to_string, ReadDir};
 use std::sync::{Arc, RwLock};
 
 /// 数据库
@@ -287,7 +287,7 @@ impl Master {
     fn init(&self) {
         log::debug!("bootstrap init!");
         // 创建系统库，用户表(含权限等信息)、库历史记录表(含变更、归档等信息) todo
-        match write_append_bytes(bootstrap_file_path(), vec![0x01]) {
+        match Filer::write(bootstrap_file_path(), vec![0x01]) {
             Err(err) => panic!("init failed! error is {}", err),
             _ => {}
         }

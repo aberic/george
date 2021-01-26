@@ -12,23 +12,25 @@
  * limitations under the License.
  */
 
-use crate::task::engine::dossier::node::Node;
-use crate::task::engine::traits::{TIndex, TSeed};
-use crate::utils::comm::{EngineType, IndexMold};
-use crate::utils::path::index_file_path;
-use crate::utils::store::{before_content_bytes, metadata_2_bytes, mold, mold_u8, Metadata, HD};
-use crate::utils::writer::obtain_write_append_file;
+use std::fs::File;
+use std::io::{Seek, SeekFrom};
+use std::sync::{Arc, RwLock};
+
 use chrono::{Duration, Local, NaiveDateTime};
+
 use comm::cryptos::hash::{
     hashcode64_bl, hashcode64_f64, hashcode64_i64, hashcode64_str, hashcode64_u64,
 };
 use comm::errors::entrances::{err_string, GeorgeResult};
-use comm::io::file::{Filer, FilerHandler};
-use comm::io::writer::write_file_append_bytes;
-use comm::vectors::sub;
-use std::fs::File;
-use std::io::{Seek, SeekFrom};
-use std::sync::{Arc, RwLock};
+use comm::io::file::{Filer, FilerExecutor, FilerHandler};
+
+use crate::task::engine::dossier::node::Node;
+use crate::task::engine::traits::{TIndex, TSeed};
+use crate::utils::enums::{EngineType, Enum, EnumHandler, IndexMold};
+use crate::utils::path::index_file_path;
+use crate::utils::store::{before_content_bytes, metadata_2_bytes, Metadata, HD};
+use crate::utils::writer::obtain_write_append_file;
+use comm::vectors::{Vector, VectorHandler};
 
 /// Siam索引
 ///
@@ -137,13 +139,13 @@ impl Index {
         let mut file_write = file_append.write().unwrap();
         match file_write.seek(SeekFrom::End(0)) {
             Ok(seek_end_before) => {
-                match write_file_append_bytes(file_write.try_clone().unwrap(), content.clone()) {
+                match Filer::appends(file_write.try_clone().unwrap(), content.clone()) {
                     Ok(()) => Ok(seek_end_before),
                     Err(_err) => {
                         let file_path = index_file_path(database_name, view_name, self.name());
                         self.file_append = obtain_write_append_file(file_path)?;
                         let file_write_again = self.file_append.write().unwrap();
-                        write_file_append_bytes(file_write_again.try_clone().unwrap(), content)?;
+                        Filer::appends(file_write_again.try_clone().unwrap(), content)?;
                         Ok(seek_end_before)
                     }
                 }
@@ -153,7 +155,7 @@ impl Index {
                 self.file_append = obtain_write_append_file(file_path)?;
                 let mut file_write_again = self.file_append.write().unwrap();
                 let seek_end_before_again = file_write_again.seek(SeekFrom::End(0)).unwrap();
-                write_file_append_bytes(file_write_again.try_clone().unwrap(), content)?;
+                Filer::appends(file_write_again.try_clone().unwrap(), content)?;
                 Ok(seek_end_before_again)
             }
         }
@@ -180,20 +182,43 @@ impl TIndex for Index {
     fn create_time(&self) -> Duration {
         self.create_time.clone()
     }
-    fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
-        match self.mold {
-            IndexMold::String => self.root().write().unwrap().put(hashcode64_str(key), seed),
-            IndexMold::Bool => self.root().write().unwrap().put(hashcode64_bl(key)?, seed),
-            IndexMold::U32 => self.root().write().unwrap().put(hashcode64_u64(key)?, seed),
-            IndexMold::U64 => self.root().write().unwrap().put(hashcode64_u64(key)?, seed),
-            IndexMold::F32 => self.root().write().unwrap().put(hashcode64_f64(key)?, seed),
-            IndexMold::F64 => self.root().write().unwrap().put(hashcode64_f64(key)?, seed),
-            IndexMold::I32 => self.root().write().unwrap().put(hashcode64_i64(key)?, seed),
-            IndexMold::I64 => self.root().write().unwrap().put(hashcode64_i64(key)?, seed),
-        }
+    fn put(
+        &self,
+        database_name: String,
+        view_name: String,
+        key: String,
+        seed: Arc<RwLock<dyn TSeed>>,
+    ) -> GeorgeResult<()> {
+        self.root().write().unwrap().put(
+            database_name,
+            view_name,
+            self.name(),
+            self.hash_key(key)?,
+            seed,
+        )
     }
-    fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        self.root().read().unwrap().get(key)
+    fn get(&self, database_name: String, view_name: String, key: String) -> GeorgeResult<Vec<u8>> {
+        self.root()
+            .read()
+            .unwrap()
+            .get(database_name, view_name, self.name(), self.hash_key(key)?)
+    }
+}
+
+impl Index {
+    fn hash_key(&self, key: String) -> GeorgeResult<u64> {
+        let mut hash_key: u64 = 0;
+        match self.mold {
+            IndexMold::String => hash_key = hashcode64_str(key),
+            IndexMold::Bool => hash_key = hashcode64_bl(key)?,
+            IndexMold::U32 => hash_key = hashcode64_u64(key)?,
+            IndexMold::U64 => hash_key = hashcode64_u64(key)?,
+            IndexMold::F32 => hash_key = hashcode64_f64(key)?,
+            IndexMold::F64 => hash_key = hashcode64_f64(key)?,
+            IndexMold::I32 => hash_key = hashcode64_i64(key)?,
+            IndexMold::I64 => hash_key = hashcode64_i64(key)?,
+        }
+        Ok(hash_key)
     }
 }
 
@@ -204,7 +229,7 @@ impl Index {
             "{}:#?{}:#?{}:#?{}",
             self.name,
             self.primary,
-            mold_u8(self.mold),
+            Enum::mold_u8(self.mold),
             self.create_time().num_nanoseconds().unwrap().to_string(),
         ))
         .into_bytes();
@@ -228,8 +253,8 @@ impl Index {
     ) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
         let des_len = hd.description().len();
         let middle_pos = des_len - 2048;
-        let part1 = sub(hd.description(), 0, middle_pos);
-        let part2 = sub(hd.description(), middle_pos, des_len);
+        let part1 = Vector::sub(hd.description(), 0, middle_pos);
+        let part2 = Vector::sub(hd.description(), middle_pos, des_len);
         match String::from_utf8(part1) {
             Ok(description_str) => match hex::decode(description_str) {
                 Ok(vu8) => match String::from_utf8(vu8) {
@@ -237,7 +262,8 @@ impl Index {
                         let mut split = real.split(":#?");
                         let name = split.next().unwrap().to_string();
                         let primary = split.next().unwrap().to_string().parse::<bool>().unwrap();
-                        let mold = mold(split.next().unwrap().to_string().parse::<u8>().unwrap());
+                        let mold =
+                            Enum::mold(split.next().unwrap().to_string().parse::<u8>().unwrap());
                         let create_time = Duration::nanoseconds(
                             split.next().unwrap().to_string().parse::<i64>().unwrap(),
                         );

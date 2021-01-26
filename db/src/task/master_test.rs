@@ -15,7 +15,7 @@
 use chrono::{Duration, NaiveDateTime};
 
 use crate::task::master::GLOBAL_MASTER;
-use crate::utils::comm::{EngineType, IndexMold};
+use crate::utils::enums::{EngineType, IndexMold};
 use std::error::Error;
 
 #[test]

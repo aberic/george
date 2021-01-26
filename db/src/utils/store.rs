@@ -13,33 +13,15 @@
  */
 
 use std::fmt;
-use std::fs::{File, OpenOptions};
-use std::io::Write;
-use std::ops::Add;
-use std::sync::{Arc, RwLock};
+use std::fs::File;
 
-use comm::errors::children::NoneError;
 use comm::errors::entrances::GeorgeResult;
-use comm::errors::entrances::{err_str, err_string, GeorgeError};
-use comm::io::reader::read_sub_file_bytes;
-use comm::io::writer::{write_all_bytes, write_seek_u8s};
+use comm::errors::entrances::{err_str, err_string};
 use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_u32_2_bytes};
 
-use crate::utils::comm::{Capacity, EngineType, IndexMold, IndexType};
 use crate::utils::deploy::VERSION;
-
-/// 标识符
-#[derive(Debug, Clone)]
-pub enum Tag {
-    /// 引导文件
-    Bootstrap,
-    /// 数据库文件
-    Database,
-    /// 表数据文件
-    View,
-    /// 索引数据文件
-    Index,
-}
+use crate::utils::enums::{Capacity, EngineType, Enum, EnumHandler, IndexType, Tag};
+use comm::io::file::{Filer, FilerNormal};
 
 /// 起始符
 const FRONT: [u8; 2] = [0x20, 0x19];
@@ -158,124 +140,14 @@ impl Metadata {
             Err(err_str("recovery head failed! because end is invalid!"))
         } else {
             Ok(Metadata::from(
-                tag(head.get(2).unwrap().clone()),
-                engine_type(head.get(3).unwrap().clone()),
-                capacity(head.get(4).unwrap().clone()),
-                index_type(head.get(5).unwrap().clone()),
+                Enum::tag(head.get(2).unwrap().clone()),
+                Enum::engine_type(head.get(3).unwrap().clone()),
+                Enum::capacity(head.get(4).unwrap().clone()),
+                Enum::index_type(head.get(5).unwrap().clone()),
                 [head.get(6).unwrap().clone(), head.get(7).unwrap().clone()],
                 head.get(8).unwrap().clone(),
             ))
         }
-    }
-}
-
-pub fn tag_u8(tag: Tag) -> u8 {
-    match tag {
-        Tag::Bootstrap => 0x00,
-        Tag::Database => 0x01,
-        Tag::View => 0x02,
-        Tag::Index => 0x03,
-    }
-}
-
-pub fn engine_type_u8(engine_type: EngineType) -> u8 {
-    match engine_type {
-        EngineType::None => 0x00,
-        EngineType::Memory => 0x01,
-        EngineType::Dossier => 0x02,
-        EngineType::Library => 0x03,
-        EngineType::Block => 0x04,
-    }
-}
-
-pub fn capacity_u8(capacity: Capacity) -> u8 {
-    match capacity {
-        Capacity::None => 0x00,
-        Capacity::U32 => 0x01,
-        Capacity::U64 => 0x02,
-    }
-}
-
-pub fn mold_u8(mold: IndexMold) -> u8 {
-    match mold {
-        IndexMold::String => 0x00,
-        IndexMold::U64 => 0x01,
-        IndexMold::I64 => 0x02,
-        IndexMold::U32 => 0x03,
-        IndexMold::I32 => 0x04,
-        IndexMold::F64 => 0x05,
-        IndexMold::F32 => 0x06,
-        IndexMold::Bool => 0x07,
-    }
-}
-
-pub fn index_type_u8(index_type: IndexType) -> u8 {
-    match index_type {
-        IndexType::None => 0x00,
-        IndexType::Siam => 0x01,
-    }
-}
-
-pub fn tag(b: u8) -> Tag {
-    match b {
-        0x00 => Tag::Bootstrap,
-        0x01 => Tag::Database,
-        0x02 => Tag::View,
-        0x03 => Tag::Index,
-        _ => Tag::Bootstrap,
-    }
-}
-
-pub fn engine_type(b: u8) -> EngineType {
-    match b {
-        0x00 => EngineType::None,
-        0x01 => EngineType::Memory,
-        0x02 => EngineType::Dossier,
-        0x03 => EngineType::Library,
-        0x04 => EngineType::Block,
-        _ => EngineType::None,
-    }
-}
-
-pub fn mold(b: u8) -> IndexMold {
-    match b {
-        0x00 => IndexMold::String,
-        0x01 => IndexMold::U64,
-        0x02 => IndexMold::I64,
-        0x03 => IndexMold::U32,
-        0x04 => IndexMold::I32,
-        0x05 => IndexMold::F64,
-        _ => IndexMold::String,
-    }
-}
-
-pub fn capacity(b: u8) -> Capacity {
-    match b {
-        0x00 => Capacity::None,
-        0x01 => Capacity::U32,
-        0x02 => Capacity::U64,
-        _ => Capacity::U32,
-    }
-}
-
-pub fn index_type(b: u8) -> IndexType {
-    match b {
-        0x00 => IndexType::None,
-        0x01 => IndexType::Siam,
-        _ => IndexType::Siam,
-    }
-}
-
-pub fn mold_str(mold: IndexMold) -> String {
-    match mold {
-        IndexMold::String => String::from("string"),
-        IndexMold::U64 => String::from("u64"),
-        IndexMold::I64 => String::from("i64"),
-        IndexMold::U32 => String::from("u32"),
-        IndexMold::I32 => String::from("i32"),
-        IndexMold::F64 => String::from("f64"),
-        IndexMold::F32 => String::from("f32"),
-        IndexMold::Bool => String::from("bool"),
     }
 }
 
@@ -307,10 +179,10 @@ pub fn metadata_2_bytes(metadata: Metadata) -> Vec<u8> {
     let head: [u8; 32] = [
         FRONT.get(0).unwrap().clone(),
         FRONT.get(1).unwrap().clone(),
-        tag_u8(metadata.tag),
-        engine_type_u8(metadata.engine_type),
-        capacity_u8(metadata.capacity),
-        index_type_u8(metadata.index_type),
+        Enum::tag_u8(metadata.tag),
+        Enum::engine_type_u8(metadata.engine_type),
+        Enum::capacity_u8(metadata.capacity),
+        Enum::index_type_u8(metadata.index_type),
         metadata.version.get(0).unwrap().clone(),
         metadata.version.get(1).unwrap().clone(),
         metadata.sequence,
@@ -395,7 +267,7 @@ pub fn recovery_before_content(filepath: String) -> GeorgeResult<HD> {
                 Ok(file_clone) => {
                     // before_content包括head以及正文描述信息
                     // head长度已知32，正文描述长度已知8，总长度40
-                    let content = read_sub_file_bytes(file_clone, 0, 40)?;
+                    let content = Filer::read_subs(file_clone, 0, 40)?;
                     let mut metadata_bytes: Vec<u8> = vec![];
                     let mut start_bytes: Vec<u8> = vec![];
                     let mut last_bytes: Vec<u8> = vec![];
@@ -414,7 +286,7 @@ pub fn recovery_before_content(filepath: String) -> GeorgeResult<HD> {
                     let last = trans_bytes_2_u32(last_bytes.clone()) as usize;
                     let metadata = Metadata::from_bytes(metadata_bytes)?;
                     // 读取正文描述
-                    let description = read_sub_file_bytes(file, start, last)?;
+                    let description = Filer::read_subs(file, start, last)?;
                     log::debug!(
                         "{:#?} recovery before content from file {}",
                         metadata.tag,

@@ -29,61 +29,10 @@ pub const INDEX_CATALOG: &str = "george_db_index_catalog";
 /// 默认自增序列ID索引，不保证连续性，只保证有序性
 pub const INDEX_SEQUENCE: &str = "george_db_index_sequence";
 
-/// 索引类型
-#[derive(Debug, Clone, Copy)]
-pub enum IndexType {
-    /// 占位
-    None,
-    /// 静态索引方法(static index access method)
-    Siam,
-}
-
-/// 索引值类型
-#[derive(Debug, Clone, Copy)]
-pub enum IndexMold {
-    /// 字符串索引
-    String,
-    /// 无符号64位整型
-    U64,
-    /// 有符号64位整型
-    I64,
-    /// 无符号64位整型
-    U32,
-    /// 有符号64位整型
-    I32,
-    /// 有符号64位浮点类型
-    F64,
-    /// 有符号32位浮点类型
-    F32,
-    /// bool类型
-    Bool,
-}
-
-/// 存储引擎类型
-#[derive(Debug, Clone, Copy)]
-pub enum EngineType {
-    /// 占位
-    None,
-    /// 内存存储引擎
-    Memory,
-    /// 卷宗存储引擎(单文件索引存储-64位)，最合适用于自增
-    Dossier,
-    /// 文库存储引擎(多文件索引存储-64位)
-    Library,
-    /// 块存储引擎(区块链索引存储-64位)
-    Block,
-}
-
-/// 获取存储类型
-pub(crate) fn engine_type(engine_type: EngineType) -> EngineType {
-    match engine_type {
-        EngineType::None => EngineType::None,
-        EngineType::Memory => EngineType::Memory,
-        EngineType::Dossier => EngineType::Dossier,
-        EngineType::Library => EngineType::Library,
-        EngineType::Block => EngineType::Block,
-    }
-}
+/// 数据结果数据类型，正常数据类型
+pub const VALUE_TYPE_NORMAL: u8 = 0x00;
+/// 数据结果数据类型，碰撞数据类型
+pub const VALUE_TYPE_CRASH: u8 = 0x01;
 
 /// LEVEL1DISTANCE level1间隔 256^3 = 16777216 | 测试 4^3 = 64 | 4294967296
 const LEVEL1DISTANCE32: u32 = 16777216;
@@ -104,26 +53,6 @@ const LEVEL2DISTANCE64: u64 = 4294967296;
 const LEVEL3DISTANCE64: u64 = 65536;
 /// LEVEL4DISTANCE level4间隔 65536^0 = 1 | 测试 4^0 = 1
 const LEVEL4DISTANCE64: u64 = 1;
-
-/// 存储量级
-#[derive(Debug, Clone, Copy)]
-pub enum Capacity {
-    /// 占位
-    None,
-    /// 低级，支持存储2^32个元素
-    U32,
-    /// 高级，支持存储2^64个元素
-    U64,
-}
-
-/// 获取存储量级
-pub fn capacity(capacity: Capacity) -> Capacity {
-    match capacity {
-        Capacity::None => Capacity::None,
-        Capacity::U32 => Capacity::U32,
-        Capacity::U64 => Capacity::U64,
-    }
-}
 
 /// 获取在2^32量级组成树的指定层中元素的间隔数，即每一度中存在的元素数量
 pub fn level_distance_32(level: u8) -> u32 {
@@ -176,4 +105,17 @@ pub fn key_fetch(index_name: String, value: Vec<u8>) -> GeorgeResult<String> {
         }
         Err(err) => Err(err_string(err.to_string())),
     }
+}
+
+/// 检查字节数组是否已有数据，即不为空且每一个字节都不是0x00
+pub fn is_bytes_fill(bs: Vec<u8>) -> bool {
+    let bs_len = bs.len();
+    let mut i = 0;
+    while i < bs_len {
+        if bs[i].ne(&0x00) {
+            return true;
+        }
+        i += 1;
+    }
+    false
 }

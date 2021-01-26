@@ -12,8 +12,8 @@
  * limitations under the License.
  */
 
-use crate::utils::comm::{Capacity, EngineType, IndexType};
-use crate::utils::store::{metadata_2_bytes, Metadata, Tag};
+use crate::utils::enums::{Capacity, EngineType, IndexType, Tag};
+use crate::utils::store::{metadata_2_bytes, Metadata};
 
 #[test]
 fn head_test() {

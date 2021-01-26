@@ -16,6 +16,7 @@ pub mod comm;
 mod comm_test;
 pub mod deploy;
 mod deploy_test;
+pub mod enums;
 pub mod path;
 mod path_test;
 pub mod store;

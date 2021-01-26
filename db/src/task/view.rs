@@ -23,19 +23,20 @@ use chrono::{Duration, Local, NaiveDateTime};
 
 use comm::errors::children::{DataNoExistError, IndexExistError};
 use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeError, GeorgeResult};
-use comm::io::reader::read_sub_bytes;
-use comm::io::writer::write_seek_u8s;
-use comm::trans::trans_u64_2_bytes;
+use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u64, trans_u32_2_bytes};
 
 use crate::task::engine::dossier::index::Index;
 use crate::task::engine::traits::{TIndex, TSeed};
 use crate::task::seed::Seed;
-use crate::utils::comm::{key_fetch, EngineType, IndexMold, INDEX_CATALOG};
+use crate::utils::comm::{key_fetch, INDEX_CATALOG};
+use crate::utils::enums::{EngineType, IndexMold, Tag};
 use crate::utils::path::{index_file_path, view_file_path, view_path};
 use crate::utils::store::{
-    before_content_bytes, metadata_2_bytes, recovery_before_content, Metadata, Tag, HD,
+    before_content_bytes, metadata_2_bytes, recovery_before_content, Metadata, HD,
 };
 use crate::utils::writer::Filed;
+use comm::io::file::{Filer, FilerReader, FilerWriter};
+use comm::vectors::{Vector, VectorHandler};
 
 /// 视图，类似表
 #[derive(Debug, Clone)]
@@ -95,7 +96,7 @@ fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
 
 impl View {
     pub(crate) fn create(database_name: String, name: String) -> GeorgeResult<Arc<RwLock<View>>> {
-        let mut view = new_view(database_name.clone(), name)?;
+        let view = new_view(database_name.clone(), name)?;
         view.init(database_name)?;
         Ok(Arc::new(RwLock::new(view)))
     }
@@ -129,6 +130,23 @@ impl View {
     pub(crate) fn pigeonhole(&self) -> Pigeonhole {
         self.pigeonhole.clone()
     }
+    /// 当前视图版本号
+    pub(crate) fn version(&self) -> u16 {
+        self.pigeonhole().now().version()
+    }
+    /// 当前归档版本信息
+    pub(crate) fn record(&self, version: u16) -> GeorgeResult<Record> {
+        if self.pigeonhole().now().version.eq(&version) {
+            Ok(self.pigeonhole().now())
+        } else {
+            for (ver, record) in self.pigeonhole().history().iter() {
+                if version.eq(ver) {
+                    return Ok(record.clone());
+                }
+            }
+            Err(err_str("no view version found"))
+        }
+    }
     /// 根据文件路径获取该文件追加写入的写对象
     ///
     /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
@@ -143,7 +161,7 @@ impl View {
     pub(crate) fn modify(&mut self, database_name: String, name: String) -> GeorgeResult<()> {
         let old_name = self.name();
         let filepath = view_file_path(database_name.clone(), old_name.clone());
-        let content_old = read_sub_bytes(filepath.clone(), 0, 40)?;
+        let content_old = Filer::read_sub(filepath.clone(), 0, 40)?;
         self.name = name;
         let description = self.description();
         let seek_end = self.file_append(database_name.clone(), description.clone())?;
@@ -155,14 +173,14 @@ impl View {
         );
         let content_new = before_content_bytes(seek_end as u32, description.len() as u32);
         // 更新首部信息，初始化head为32，描述起始4字节，长度4字节
-        write_seek_u8s(filepath.clone(), 32, content_new.as_slice())?;
+        Filer::write_seek(filepath.clone(), 32, content_new)?;
         let view_path_old = view_path(database_name.clone(), old_name);
         let view_path_new = view_path(database_name.clone(), self.name());
         match std::fs::rename(view_path_old, view_path_new) {
             Ok(_) => Ok(()),
             Err(err) => {
                 // 回滚数据
-                write_seek_u8s(filepath, 0, content_old.as_slice())?;
+                Filer::write_seek(filepath, 0, content_old)?;
                 Err(err_strs("file rename failed", err))
             }
         }
@@ -259,9 +277,20 @@ impl View {
     /// ###Return
     ///
     /// Seed value信息
-    pub(crate) fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
+    pub(crate) fn get(&self, database_name: String, key: String) -> GeorgeResult<Vec<u8>> {
         match self.index_map().read().unwrap().get(INDEX_CATALOG) {
-            Some(index) => index.read().unwrap().get(key.clone()),
+            Some(index) => {
+                let view_value_seek_bytes =
+                    index
+                        .read()
+                        .unwrap()
+                        .get(database_name, self.name(), key.clone())?;
+                let version = trans_bytes_2_u16(Vector::sub(view_value_seek_bytes.clone(), 0, 2));
+                let seek = trans_bytes_2_u64(Vector::sub(view_value_seek_bytes, 2, 8));
+                let record = self.record(version)?;
+                // todo view read method!
+                Ok(vec![])
+            }
             None => Err(GeorgeError::from(DataNoExistError)),
         }
     }
@@ -294,10 +323,16 @@ impl View {
     /// 组装写入视图的内容，即持续长度+该长度的原文内容
     ///
     /// 将数据存入view，返回数据在view中的起始偏移量坐标
-    fn write_content(&self, database_name: String, mut value: Vec<u8>) -> GeorgeResult<u64> {
-        let mut seed_bytes_len_bytes = trans_u64_2_bytes(value.len() as u64);
+    pub(crate) fn write_content(
+        &self,
+        database_name: String,
+        mut value: Vec<u8>,
+    ) -> GeorgeResult<u64> {
+        // 内容持续长度(4字节)
+        let mut seed_bytes_len_bytes = trans_u32_2_bytes(value.len() as u32);
+        // 真实存储内容，内容持续长度(4字节)+内容字节数组
         seed_bytes_len_bytes.append(&mut value);
-        // 将数据存入view，返回数据在view中的坐标
+        // 将数据存入view，返回数据在view中的起始坐标
         self.file_append(database_name, seed_bytes_len_bytes)
     }
     /// 插入数据业务方法<p><p>
@@ -318,7 +353,7 @@ impl View {
         database_name: String,
         key: String,
         value: Vec<u8>,
-        _force: bool,
+        force: bool,
         remove: bool,
     ) -> GeorgeResult<()> {
         let seed = Arc::new(RwLock::new(Seed::create(key.clone())));
@@ -326,6 +361,8 @@ impl View {
         for (index_name, index) in self.index_map().read().unwrap().iter() {
             let (sender, receive) = mpsc::channel();
             receives.push(receive);
+            let database_name_clone = database_name.clone();
+            let view_name = self.name();
             let index_name_clone = index_name.clone();
             let index_clone = index.clone();
             let key_clone = key.clone();
@@ -334,9 +371,19 @@ impl View {
             thread::spawn(move || {
                 let index_read = index_clone.read().unwrap();
                 match index_name_clone.as_str() {
-                    INDEX_CATALOG => sender.send(index_read.put(key_clone, seed_clone)),
+                    INDEX_CATALOG => sender.send(index_read.put(
+                        database_name_clone,
+                        view_name,
+                        key_clone,
+                        seed_clone,
+                    )),
                     _ => match key_fetch(index_name_clone, value_clone) {
-                        Ok(res) => sender.send(index_read.put(res, seed_clone)),
+                        Ok(res) => sender.send(index_read.put(
+                            database_name_clone,
+                            view_name,
+                            res,
+                            seed_clone,
+                        )),
                         Err(err) => {
                             log::debug!("key fetch error: {}", err);
                             sender.send(Ok(()))
@@ -356,12 +403,11 @@ impl View {
             }
         }
         if remove {
-            seed.write().unwrap().remove()
+            seed.write().unwrap().remove(database_name, self.clone())
         } else {
-            // 执行真实存储操作，即索引将seed存入后，允许检索到该结果，但该结果值不存在，仅当所有索引存入都成功，才会执行本方法完成真实存储操作
-            let view_seek_end = self.write_content(database_name, value)?;
-            // todo force
-            seed.write().unwrap().save(view_seek_end)
+            seed.write()
+                .unwrap()
+                .save(database_name, self.clone(), value, force)
         }
     }
 }
@@ -489,7 +535,7 @@ impl View {
 
 /// 归档服务
 #[derive(Debug, Clone)]
-pub struct Pigeonhole {
+pub(crate) struct Pigeonhole {
     now: Record,
     history: HashMap<u16, Record>,
 }
@@ -506,11 +552,11 @@ impl Pigeonhole {
         }
     }
     /// 当前归档版本
-    fn now(&self) -> Record {
+    pub(crate) fn now(&self) -> Record {
         self.now.clone()
     }
     /// 历史归档版本
-    fn history(&self) -> HashMap<u16, Record> {
+    pub(crate) fn history(&self) -> HashMap<u16, Record> {
         self.history.clone()
     }
     fn history_to_string(&self) -> String {
@@ -528,7 +574,7 @@ impl Pigeonhole {
     fn history_from_string(history_desc: String) -> GeorgeResult<HashMap<u16, Record>> {
         let mut history: HashMap<u16, Record> = Default::default();
         if !history_desc.is_empty() {
-            let mut split = history_desc.split("$_$!");
+            let split = history_desc.split("$_$!");
             for record_desc in split.into_iter() {
                 let record = Record::from_string(String::from(record_desc))?;
                 history.insert(record.version, record);
@@ -570,7 +616,7 @@ impl Pigeonhole {
 
 /// 归档记录
 #[derive(Clone)]
-pub struct Record {
+pub(crate) struct Record {
     /// 归档版本，默认新建为[0x00,0x00]，版本每次归档操作递增，最多归档65536次
     version: u16,
     /// 当前归档版本文件所处路径
@@ -602,11 +648,11 @@ impl Record {
         }
     }
     /// 归档版本，默认新建为[0x00,0x00]，版本每次归档操作递增，最多归档65536次
-    fn version(&self) -> u16 {
+    pub(crate) fn version(&self) -> u16 {
         self.version
     }
     /// 当前归档版本文件所处路径
-    fn file_path(&self) -> String {
+    pub(crate) fn file_path(&self) -> String {
         self.file_path.clone()
     }
     /// 归档时间

@@ -17,7 +17,7 @@ use crypto::digest::Digest;
 use crypto::md5::Md5;
 
 use crate::errors::entrances::{err_strings, GeorgeResult};
-use crate::strings::sub_string;
+use crate::strings::{StringHandler, Strings};
 use std::ops::Add;
 
 pub fn md5(comment: String) -> String {
@@ -27,7 +27,7 @@ pub fn md5(comment: String) -> String {
 }
 
 pub fn md516(comment: String) -> String {
-    sub_string(md5(comment), 8, 24)
+    Strings::subs(md5(comment), 8, 24)
 }
 
 pub fn hashcode32(comment: &[u8]) -> u32 {

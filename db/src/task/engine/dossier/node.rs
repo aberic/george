@@ -15,9 +15,14 @@
 use std::sync::{Arc, RwLock};
 
 use crate::task::engine::traits::TSeed;
+use crate::task::seed::IndexPolicy;
+use crate::utils::comm::level_distance_64;
+use crate::utils::path::{index_path, node_file_path};
 use comm::bytes::create_empty_bytes;
-use comm::cryptos::hash::hashcode32_enhance;
 use comm::errors::entrances::GeorgeResult;
+use comm::io::file::{Filer, FilerReader};
+use comm::strings::{StringHandler, Strings};
+use std::ops::Add;
 
 /// 索引B+Tree结点结构
 ///
@@ -75,12 +80,26 @@ impl Node {
     /// ###Return
     ///
     /// EngineResult<()>
-    pub(crate) fn put(&self, key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
-        let node_bytes = self.node_bytes().read().unwrap().to_vec();
-        self.put_in_node(node_bytes, 1, key, seed, true)
+    pub(crate) fn put(
+        &self,
+        database_name: String,
+        view_name: String,
+        index_name: String,
+        key: u64,
+        seed: Arc<RwLock<dyn TSeed>>,
+    ) -> GeorgeResult<()> {
+        let index_path = index_path(database_name, view_name, index_name);
+        self.put_in_node(index_path, String::from(""), 1, key, seed)
     }
-    pub(crate) fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        Ok("test".as_bytes().to_vec())
+    pub(crate) fn get(
+        &self,
+        database_name: String,
+        view_name: String,
+        index_name: String,
+        key: u64,
+    ) -> GeorgeResult<Vec<u8>> {
+        let index_path = index_path(database_name, view_name, index_name);
+        self.get_in_node(index_path, String::from(""), 1, key)
     }
 }
 
@@ -100,15 +119,76 @@ impl Node {
     /// node_seek 当前操作结点在文件中的真实起始位置
     fn put_in_node(
         &self,
-        node_bytes: Vec<u8>,
+        index_path: String,
+        mut index_file_name: String,
         level: u8,
         flexible_key: u64,
         seed: Arc<RwLock<dyn TSeed>>,
-        root: bool,
     ) -> GeorgeResult<()>
     where
         Self: Sized,
     {
-        Ok(())
+        // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
+        let distance = level_distance_64(level);
+        // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数
+        let next_degree = flexible_key / distance;
+        // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
+        if level == 4 {
+            let index_file_path = node_file_path(index_path, index_file_name);
+            log::debug!(
+                "node_file_path = {}, degree = {}",
+                index_file_path,
+                next_degree
+            );
+            seed.write()
+                .unwrap()
+                .modify(IndexPolicy::bytes(index_file_path, next_degree)?)
+        } else {
+            index_file_name = index_file_name.add(&Strings::left_fits(
+                next_degree.to_string(),
+                "0".parse().unwrap(),
+                5,
+            ));
+            // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
+            let next_flexible_key = flexible_key - next_degree * distance;
+            self.put_in_node(
+                index_path,
+                index_file_name,
+                level + 1,
+                next_flexible_key,
+                seed,
+            )
+        }
+    }
+    fn get_in_node(
+        &self,
+        index_path: String,
+        mut index_file_name: String,
+        level: u8,
+        flexible_key: u64,
+    ) -> GeorgeResult<Vec<u8>> {
+        // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
+        let distance = level_distance_64(level);
+        // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数
+        let next_degree = flexible_key / distance;
+        // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
+        if level == 4 {
+            let index_file_path = node_file_path(index_path, index_file_name);
+            log::debug!(
+                "node_file_path = {}, degree = {}",
+                index_file_path,
+                next_degree
+            );
+            Filer::read_sub(index_file_path, next_degree, 8)
+        } else {
+            index_file_name = index_file_name.add(&Strings::left_fits(
+                next_degree.to_string(),
+                "0".parse().unwrap(),
+                5,
+            ));
+            // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
+            let next_flexible_key = flexible_key - next_degree * distance;
+            self.get_in_node(index_path, index_file_name, level + 1, next_flexible_key)
+        }
     }
 }

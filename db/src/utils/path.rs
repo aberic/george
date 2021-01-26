@@ -98,6 +98,11 @@ pub fn index_file_path(database_name: String, view_name: String, index_name: Str
     )
 }
 
+/// 索引文件目录 /var/lib/georgedb/data/database_name/view_name/index_name/index_file_name.ge
+pub fn node_file_path(index_path: String, index_file_name: String) -> String {
+    format!("{}/{}.ge", index_path, index_file_name)
+}
+
 /// 索引文件目录 /var/lib/georgedb/data/database/view/index.ge
 pub fn index_file_path_yet(
     database_id: String,

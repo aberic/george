@@ -12,19 +12,13 @@
  * limitations under the License.
  */
 
-use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
-use std::io::{Seek, SeekFrom, Write};
+use std::io::{Seek, SeekFrom};
 use std::sync::{Arc, RwLock};
 
-use once_cell::sync::Lazy;
-
-use crate::utils::store::Tag;
-use comm::errors::children::NoneError;
+use comm::errors::entrances::err_string;
 use comm::errors::entrances::GeorgeResult;
-use comm::errors::entrances::{err_string, GeorgeError};
-use comm::io::file::{Filer, FilerHandler};
-use comm::io::writer::write_file_append_bytes;
+use comm::io::file::{Filer, FilerExecutor, FilerHandler};
 
 #[derive(Debug, Clone)]
 pub struct Filed {
@@ -49,12 +43,12 @@ impl Filed {
         let mut file_write = file_append.write().unwrap();
         match file_write.seek(SeekFrom::End(0)) {
             Ok(seek_end_before) => {
-                match write_file_append_bytes(file_write.try_clone().unwrap(), content.clone()) {
+                match Filer::appends(file_write.try_clone().unwrap(), content.clone()) {
                     Ok(()) => Ok(seek_end_before),
                     Err(_err) => {
                         self.file_append = obtain_write_append_file(file_path)?;
                         let file_write_again = self.file_append.write().unwrap();
-                        write_file_append_bytes(file_write_again.try_clone().unwrap(), content)?;
+                        Filer::appends(file_write_again.try_clone().unwrap(), content)?;
                         Ok(seek_end_before)
                     }
                 }
@@ -63,7 +57,7 @@ impl Filed {
                 self.file_append = obtain_write_append_file(file_path)?;
                 let mut file_write_again = self.file_append.write().unwrap();
                 let seek_end_before_again = file_write_again.seek(SeekFrom::End(0)).unwrap();
-                write_file_append_bytes(file_write_again.try_clone().unwrap(), content)?;
+                Filer::appends(file_write_again.try_clone().unwrap(), content)?;
                 Ok(seek_end_before_again)
             }
         }

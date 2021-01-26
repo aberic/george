@@ -21,7 +21,7 @@ mod ecdsa {
         generate_pk_in_file_from_sk, generate_pk_in_file_from_sk_bytes,
         generate_pk_in_file_from_sk_file, generate_sk_in_files,
     };
-    use crate::io::writer::write;
+    use crate::io::file::{Filer, FilerWriter};
 
     #[test]
     fn generate_pri_test() {
@@ -50,7 +50,7 @@ mod ecdsa {
                     }
                     match key.private_key_to_pem() {
                         Ok(u8s) => {
-                            write(pri_filepath.clone(), u8s.clone()).unwrap();
+                            Filer::write(pri_filepath.clone(), u8s.clone()).unwrap();
                             println!("pri = {}", String::from_utf8(u8s.clone()).unwrap());
                             match generate_pk_in_file_from_sk_bytes(
                                 u8s,

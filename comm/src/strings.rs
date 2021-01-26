@@ -12,7 +12,95 @@
  * limitations under the License.
  */
 
-pub(crate) fn sub_string(comment: String, begin: usize, end: usize) -> String {
+pub trait StringHandler {
+    fn sub(comment: &str, begin: usize, end: usize) -> String;
+    fn subs(comment: String, begin: usize, end: usize) -> String;
+    /// 字符串左边补齐字符，长度为len
+    ///
+    /// comment 待补齐字符串
+    ///
+    /// ch 补齐字符
+    ///
+    /// len 期望补齐后的总长度
+    fn left_fit(comment: &str, ch: char, len: usize) -> String;
+    /// 字符串左边补齐字符，长度为len
+    ///
+    /// comment 待补齐字符串
+    ///
+    /// ch 补齐字符
+    ///
+    /// len 期望补齐后的总长度
+    fn left_fits(comment: String, ch: char, len: usize) -> String;
+    /// 字符串左边删除字符
+    ///
+    /// comment 待操作字符串
+    ///
+    /// ch 待删除字符
+    fn left_un_fit(comment: &str, ch: char) -> String;
+    /// 字符串左边删除字符
+    ///
+    /// comment 待操作字符串
+    ///
+    /// ch 待删除字符
+    fn left_un_fits(comment: String, ch: char) -> String;
+    /// 字符串右边补齐字符，长度为len
+    ///
+    /// comment 待补齐字符串
+    ///
+    /// ch 补齐字符
+    ///
+    /// len 期望补齐后的总长度
+    fn right_fit(comment: &str, ch: char, len: usize) -> String;
+    /// 字符串右边补齐字符，长度为len
+    ///
+    /// comment 待补齐字符串
+    ///
+    /// ch 补齐字符
+    ///
+    /// len 期望补齐后的总长度
+    fn right_fits(comment: String, ch: char, len: usize) -> String;
+    /// 获取重复len次repeated的字符串
+    fn repeater(repeated: &str, len: usize) -> String;
+    /// 获取重复len次repeated的字符串
+    fn repeaters(repeated: String, len: usize) -> String;
+}
+
+pub struct Strings {}
+
+impl StringHandler for Strings {
+    fn sub(comment: &str, begin: usize, end: usize) -> String {
+        sub_string(comment.to_string(), begin, end)
+    }
+    fn subs(comment: String, begin: usize, end: usize) -> String {
+        sub_string(comment, begin, end)
+    }
+    fn left_fit(comment: &str, ch: char, len: usize) -> String {
+        left_fit_string(comment.to_string(), ch, len)
+    }
+    fn left_fits(comment: String, ch: char, len: usize) -> String {
+        left_fit_string(comment, ch, len)
+    }
+    fn left_un_fit(comment: &str, ch: char) -> String {
+        left_un_fit_string(comment.to_string(), ch)
+    }
+    fn left_un_fits(comment: String, ch: char) -> String {
+        left_un_fit_string(comment, ch)
+    }
+    fn right_fit(comment: &str, ch: char, len: usize) -> String {
+        right_fit_string(comment.to_string(), ch, len)
+    }
+    fn right_fits(comment: String, ch: char, len: usize) -> String {
+        right_fit_string(comment, ch, len)
+    }
+    fn repeater(repeated: &str, len: usize) -> String {
+        repeated_string(repeated, len)
+    }
+    fn repeaters(repeated: String, len: usize) -> String {
+        repeated_string(repeated.as_str(), len)
+    }
+}
+
+fn sub_string(comment: String, begin: usize, end: usize) -> String {
     let mut s = String::new();
     let mut position: usize = 0;
     let chs = comment.chars();
@@ -25,8 +113,8 @@ pub(crate) fn sub_string(comment: String, begin: usize, end: usize) -> String {
     s
 }
 
-/// 字符串左边补齐0，长度为len
-pub(crate) fn left_fit(mut comment: String, ch: char, len: usize) -> String {
+/// 字符串左边补齐字符，长度为len
+fn left_fit_string(mut comment: String, ch: char, len: usize) -> String {
     let mut comment_len = comment.len();
     if comment_len < len {
         while comment_len < len {
@@ -37,8 +125,8 @@ pub(crate) fn left_fit(mut comment: String, ch: char, len: usize) -> String {
     comment
 }
 
-/// 字符串左边删除0
-pub(crate) fn left_un_fit(comment: String, ch: char) -> String {
+/// 字符串左边删除字符
+fn left_un_fit_string(comment: String, ch: char) -> String {
     let mut s = String::new();
     let mut end = false;
     let chs = comment.chars();
@@ -56,12 +144,12 @@ pub(crate) fn left_un_fit(comment: String, ch: char) -> String {
     s
 }
 
-/// 字符串右边补齐0，长度为len
-pub(crate) fn right_zero(mut comment: String, len: usize) -> String {
+/// 字符串右边补齐字符，长度为len
+fn right_fit_string(mut comment: String, ch: char, len: usize) -> String {
     let mut comment_len = comment.len();
     if comment_len < len {
         while comment_len < len {
-            comment.push_str("0");
+            comment.push(ch);
             comment_len += 1
         }
     }
@@ -69,7 +157,7 @@ pub(crate) fn right_zero(mut comment: String, len: usize) -> String {
 }
 
 /// 获取重复len次repeated的字符串
-pub fn repeated_string(repeated: &str, len: usize) -> String {
+fn repeated_string(repeated: &str, len: usize) -> String {
     let mut res = String::new();
     let mut position = 0;
     while position < len {

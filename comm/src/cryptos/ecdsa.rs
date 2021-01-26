@@ -20,7 +20,7 @@ use openssl::pkey::{Private, Public};
 
 use crate::errors::entrances::err_strs;
 use crate::errors::entrances::GeorgeResult;
-use crate::io::writer::write;
+use crate::io::file::{Filer, FilerWriter};
 
 /// 生成ECDSA私钥，默认PRIME256V1
 pub fn generate_sk() -> GeorgeResult<Vec<u8>> {
@@ -41,7 +41,10 @@ pub fn generate_sk() -> GeorgeResult<Vec<u8>> {
 /// 如果已存在，删除重写
 pub fn generate_sk_in_file(filepath: String) -> GeorgeResult<Vec<u8>> {
     match generate_sk() {
-        Ok(u8s) => write(filepath, u8s.clone()),
+        Ok(u8s) => {
+            Filer::write(filepath, u8s.clone())?;
+            Ok(u8s)
+        }
         Err(err) => Err(err_strs("generate_sk", err)),
     }
 }
@@ -98,7 +101,10 @@ pub fn generate_pk_from_sk_file(filepath: String) -> GeorgeResult<Vec<u8>> {
 /// 如果已存在，删除重写
 pub fn generate_pk_in_file_from_sk(sk: EcKey<Private>, filepath: String) -> GeorgeResult<Vec<u8>> {
     match generate_pk_from_sk(sk) {
-        Ok(u8s) => write(filepath, u8s.clone()),
+        Ok(u8s) => {
+            Filer::write(filepath, u8s.clone())?;
+            Ok(u8s)
+        }
         Err(err) => Err(err_strs("generate_pk_from_sk", err)),
     }
 }
@@ -108,7 +114,10 @@ pub fn generate_pk_in_file_from_sk(sk: EcKey<Private>, filepath: String) -> Geor
 /// 如果已存在，删除重写
 pub fn generate_pk_in_file_from_sk_bytes(sk: Vec<u8>, filepath: String) -> GeorgeResult<Vec<u8>> {
     match generate_pk_from_sk_bytes(sk) {
-        Ok(u8s) => write(filepath, u8s.clone()),
+        Ok(u8s) => {
+            Filer::write(filepath, u8s.clone())?;
+            Ok(u8s)
+        }
         Err(err) => Err(err_strs("generate_pk_from_sk_bytes", err)),
     }
 }
@@ -121,7 +130,10 @@ pub fn generate_pk_in_file_from_sk_file(
     pk_filepath: String,
 ) -> GeorgeResult<Vec<u8>> {
     match generate_pk_from_sk_file(sk_filepath) {
-        Ok(u8s) => write(pk_filepath, u8s.clone()),
+        Ok(u8s) => {
+            Filer::write(pk_filepath, u8s.clone())?;
+            Ok(u8s)
+        }
         Err(err) => Err(err_strs("generate_pk_from_sk_file", err)),
     }
 }

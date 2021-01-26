@@ -16,7 +16,7 @@ use std::collections::HashMap;
 
 use phf::{phf_map, Map};
 
-use crate::strings::{left_fit, left_un_fit};
+use crate::strings::{StringHandler, Strings};
 
 /// 十进制对应64进制映射
 static STRING_2_U64_MAP: Map<&'static str, u64> = phf_map! {
@@ -161,14 +161,14 @@ pub fn trans_string64_2_u32(string64: String) -> u32 {
 ///
 /// 左侧补齐，保证总长度是6
 pub fn trans_u32_2_string64_fit(uint32: u32) -> String {
-    left_fit(trans_u32_2_string64(uint32), "*".parse().unwrap(), 6)
+    Strings::left_fits(trans_u32_2_string64(uint32), "*".parse().unwrap(), 6)
 }
 
 /// 64进制字符串转u32
 ///
 /// 删除左侧多余
 pub fn trans_string64_2_u32_fit(string64: String) -> u32 {
-    trans_string64_2_u64(left_un_fit(string64, "*".parse().unwrap())) as u32
+    trans_string64_2_u64(Strings::left_un_fits(string64, "*".parse().unwrap())) as u32
 }
 
 /// u64转16进制数组

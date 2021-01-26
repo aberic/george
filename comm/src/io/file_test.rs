@@ -14,8 +14,8 @@
 
 #[cfg(test)]
 mod file {
-    use crate::io::file::{Filer, FilerHandler};
-    use crate::trans::trans_u64_2_string64;
+    use crate::io::file::{Filer, FilerHandler, FilerReader, FilerWriter};
+    use crate::trans::{trans_bytes_2_u64, trans_u64_2_string64};
     use std::fs;
     use std::io::{Read, Write};
 
@@ -103,5 +103,90 @@ mod file {
             Err(err) => println!("file_move err = {}", err),
             _ => {}
         }
+    }
+
+    #[test]
+    fn writer_append_test() {
+        Filer::touch("src/test/file/g.txt").unwrap();
+        match Filer::append(
+            "src/test/file/g.txt",
+            vec![
+                0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
+            ],
+        ) {
+            Ok(()) => {
+                let vs: Vec<u8> = vec![0x0b, 0x0c, 0x0d, 0x0e];
+                match Filer::write_seek("src/test/file/g.txt", 3, vs) {
+                    Err(err) => println!("err = {}", err),
+                    _ => {}
+                }
+            }
+            Err(err) => println!("err = {}", err),
+        }
+    }
+
+    #[test]
+    fn writer_seek_test() {
+        Filer::touch("src/test/file/seek.txt").unwrap();
+        let u8s1 = "hello world!".as_bytes();
+        match Filer::write_seek("src/test/file/seek.txt", 100000000, u8s1) {
+            Err(err) => println!("err = {}", err),
+            _ => {}
+        }
+        let u8s2 = "success!".as_bytes();
+        match Filer::write_seek("src/test/file/seek.txt", 300000000, u8s2) {
+            Err(err) => println!("err = {}", err),
+            _ => {}
+        }
+        let u8s3 = "failed!".as_bytes();
+        match Filer::write_seek("src/test/file/seek.txt", 150000000, u8s3) {
+            Err(err) => println!("err = {}", err),
+            _ => {}
+        }
+
+        let x1 = Filer::read_sub("src/test/file/seek.txt", 150000000, 7).unwrap();
+        println!("x = {}", String::from_utf8(x1).unwrap());
+    }
+
+    #[test]
+    fn reader_test1() {
+        let x1 = Filer::read_sub("src/test/file/seek.txt", 150000000, 7).unwrap();
+        println!("x1 is empty = {}", is_bytes_fill(x1.clone()));
+        println!("x1 = {}", String::from_utf8(x1).unwrap());
+
+        let x2 = Filer::read_sub("src/test/file/seek.txt", 160000000, 8).unwrap();
+        println!("x2 is empty = {}", is_bytes_fill(x2.clone()));
+        println!("x2 = {}", String::from_utf8(x2).unwrap());
+    }
+
+    /// 检查字节数组是否已有数据，即不为空且每一个字节都不是0x00
+    pub fn is_bytes_fill(bs: Vec<u8>) -> bool {
+        let bs_len = bs.len();
+        let mut i = 0;
+        while i < bs_len {
+            if bs[i].ne(&0x00) {
+                return true;
+            }
+            i += 1;
+        }
+        false
+    }
+
+    #[test]
+    fn reader_test2() {
+        let s = Filer::read("src/examples/conf.yaml");
+        println!("s = {:#?}", s);
+    }
+
+    #[test]
+    fn read_sub_bytes_test() {
+        println!(
+            "res1 = {:#?}",
+            Filer::read_sub("src/examples/29f459a44fee58c7.ge".to_string(), 448, 8,).unwrap()
+        );
+        println!(
+            "res2 = {:#?}",
+            Filer::read_sub("src/examples/29f459a44fee58c7.ge".to_string(), 0, 2048,).unwrap()
+        );
     }
 }

@@ -18,12 +18,12 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 use comm::env;
-use comm::io::reader::read_all_string;
 
 use crate::utils::comm::{
     GEORGE_DB_DATA_DIR, GEORGE_DB_LIMIT_OPEN_FILE, GEORGE_DB_LOG_DIR, GEORGE_DB_LOG_FILE_MAX_COUNT,
     GEORGE_DB_LOG_FILE_MAX_SIZE, GEORGE_DB_LOG_LEVEL, GEORGE_DB_PRODUCTION,
 };
+use comm::io::file::{Filer, FilerReader};
 
 pub const VERSION: [u8; 2] = [0x00, 0x00];
 
@@ -98,7 +98,7 @@ pub static GLOBAL_CONFIG: Lazy<RwLock<Config>> = Lazy::new(|| {
 });
 
 pub fn init_config(filepath: String) {
-    match read_all_string(filepath.clone()) {
+    match Filer::read(filepath.clone()) {
         Ok(config_yaml_str_res) => {
             let conf: Conf;
             match serde_yaml::from_str(&config_yaml_str_res) {
