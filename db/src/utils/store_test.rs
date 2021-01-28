@@ -21,14 +21,14 @@ fn head_test() {
         Tag::Bootstrap,
         EngineType::Memory,
         Capacity::U32,
-        IndexType::Siam,
+        IndexType::Normal,
         0x00,
     ));
     let head2 = metadata_2_bytes(Metadata::create(
         Tag::Database,
         EngineType::Dossier,
         Capacity::U64,
-        IndexType::Siam,
+        IndexType::None,
         0x01,
     ));
     println!("head1 = {:#?}", head1);

@@ -26,7 +26,7 @@ use comm::io::file::{Filer, FilerExecutor, FilerHandler};
 
 use crate::task::engine::dossier::node::Node;
 use crate::task::engine::traits::{TIndex, TSeed};
-use crate::utils::enums::{EngineType, Enum, EnumHandler, IndexMold};
+use crate::utils::enums::{EngineType, Enum, EnumHandler, IndexMold, IndexType};
 use crate::utils::path::index_file_path;
 use crate::utils::store::{before_content_bytes, metadata_2_bytes, Metadata, HD};
 use crate::utils::writer::obtain_write_append_file;
@@ -97,6 +97,7 @@ impl Index {
         view_name: String,
         name: String,
         primary: bool,
+        index_type: IndexType,
         index_mold: IndexMold,
     ) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
         Filer::touch(index_file_path(
@@ -110,8 +111,8 @@ impl Index {
             name,
             primary,
             index_mold,
-            Node::create_root(),
-            Metadata::index(EngineType::Dossier)?,
+            Node::create_root(index_type.clone()),
+            Metadata::index(EngineType::Dossier, index_type)?,
         )?;
         let mut metadata_bytes = metadata_2_bytes(index.metadata());
         let mut description = index.description();
@@ -190,6 +191,7 @@ impl TIndex for Index {
         seed: Arc<RwLock<dyn TSeed>>,
     ) -> GeorgeResult<()> {
         self.root().write().unwrap().put(
+            key.clone(),
             database_name,
             view_name,
             self.name(),
@@ -253,8 +255,8 @@ impl Index {
     ) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
         let des_len = hd.description().len();
         let middle_pos = des_len - 2048;
-        let part1 = Vector::sub(hd.description(), 0, middle_pos);
-        let part2 = Vector::sub(hd.description(), middle_pos, des_len);
+        let part1 = Vector::sub(hd.description(), 0, middle_pos)?;
+        let part2 = Vector::sub(hd.description(), middle_pos, des_len)?;
         match String::from_utf8(part1) {
             Ok(description_str) => match hex::decode(description_str) {
                 Ok(vu8) => match String::from_utf8(vu8) {
@@ -276,7 +278,7 @@ impl Index {
                             create_time,
                             metadata: hd.metadata(),
                             file_append,
-                            root: Node::recovery_root(part2),
+                            root: Node::recovery_root(hd.index_type(), part2),
                             mold,
                         };
                         log::info!(

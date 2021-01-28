@@ -17,6 +17,7 @@ use std::sync::{Arc, RwLock};
 use crate::task::engine::traits::TSeed;
 use crate::task::seed::IndexPolicy;
 use crate::utils::comm::level_distance_64;
+use crate::utils::enums::IndexType;
 use crate::utils::path::{index_path, node_file_path};
 use comm::bytes::create_empty_bytes;
 use comm::errors::entrances::GeorgeResult;
@@ -31,6 +32,7 @@ use std::ops::Add;
 /// 叶子结点中才会存在Link，其余结点Link为None
 #[derive(Debug, Clone)]
 pub(crate) struct Node {
+    index_type: IndexType,
     /// 存储结点所属各子结点坐标顺序字符串
     ///
     /// 如果子项是32位node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
@@ -40,24 +42,20 @@ pub(crate) struct Node {
     node_bytes: Arc<RwLock<Vec<u8>>>,
 }
 
-fn create_empty() -> Node {
-    return Node {
-        node_bytes: Arc::new(Default::default()),
-    };
-}
-
 impl Node {
     /// 新建根结点
     ///
     /// 该结点没有Links，也没有preNode，是B+Tree的创世结点
-    pub fn create_root() -> Arc<RwLock<Self>> {
+    pub fn create_root(index_type: IndexType) -> Arc<RwLock<Self>> {
         return Arc::new(RwLock::new(Node {
+            index_type,
             node_bytes: Arc::new(RwLock::new(create_empty_bytes(2048))),
         }));
     }
     /// 恢复根结点
-    pub fn recovery_root(v8s: Vec<u8>) -> Arc<RwLock<Self>> {
+    pub fn recovery_root(index_type: IndexType, v8s: Vec<u8>) -> Arc<RwLock<Self>> {
         return Arc::new(RwLock::new(Node {
+            index_type,
             node_bytes: Arc::new(RwLock::new(v8s)),
         }));
     }
@@ -65,6 +63,9 @@ impl Node {
 
 /// 封装方法函数
 impl Node {
+    pub(crate) fn index_type(&self) -> IndexType {
+        self.index_type.clone()
+    }
     /// 存储结点所属各子结点坐标顺序字符串
     ///
     /// 如果子项是node集合，在node集合中每一个node的默认字节长度是8，数量是65536，即一次性读取524288个字节
@@ -75,6 +76,8 @@ impl Node {
     ///
     /// ###Params
     ///
+    /// original_key 使用当前索引的原始key
+    ///
     /// key u64
     ///
     /// ###Return
@@ -82,6 +85,7 @@ impl Node {
     /// EngineResult<()>
     pub(crate) fn put(
         &self,
+        original_key: String,
         database_name: String,
         view_name: String,
         index_name: String,
@@ -89,7 +93,7 @@ impl Node {
         seed: Arc<RwLock<dyn TSeed>>,
     ) -> GeorgeResult<()> {
         let index_path = index_path(database_name, view_name, index_name);
-        self.put_in_node(index_path, String::from(""), 1, key, seed)
+        self.put_in_node(original_key, index_path, String::from(""), 1, key, seed)
     }
     pub(crate) fn get(
         &self,
@@ -106,6 +110,8 @@ impl Node {
 impl Node {
     /// 存储数据真实操作
     ///
+    /// key 使用当前索引的原始key
+    ///
     /// node_bytes 当前操作结点的字节数组
     ///
     /// level 当前操作结点层
@@ -119,6 +125,7 @@ impl Node {
     /// node_seek 当前操作结点在文件中的真实起始位置
     fn put_in_node(
         &self,
+        key: String,
         index_path: String,
         mut index_file_name: String,
         level: u8,
@@ -140,9 +147,12 @@ impl Node {
                 index_file_path,
                 next_degree
             );
-            seed.write()
-                .unwrap()
-                .modify(IndexPolicy::bytes(index_file_path, next_degree)?)
+            seed.write().unwrap().modify(IndexPolicy::bytes(
+                self.index_type(),
+                key,
+                index_file_path,
+                next_degree * 8,
+            )?)
         } else {
             index_file_name = index_file_name.add(&Strings::left_fits(
                 next_degree.to_string(),
@@ -152,6 +162,7 @@ impl Node {
             // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
             let next_flexible_key = flexible_key - next_degree * distance;
             self.put_in_node(
+                key,
                 index_path,
                 index_file_name,
                 level + 1,

@@ -14,7 +14,7 @@
 
 use std::collections::HashMap;
 use std::fmt;
-use std::fs::{read_dir, ReadDir};
+use std::fs::{read_dir, File, OpenOptions, ReadDir};
 use std::ops::Add;
 use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
@@ -22,21 +22,23 @@ use std::thread;
 use chrono::{Duration, Local, NaiveDateTime};
 
 use comm::errors::children::{DataNoExistError, IndexExistError};
-use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeError, GeorgeResult};
-use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u64, trans_u32_2_bytes};
+use comm::errors::entrances::{
+    err_str, err_string, err_strings, err_strs, GeorgeError, GeorgeResult,
+};
+use comm::io::file::{Filer, FilerNormal, FilerReader, FilerWriter};
+use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u64, trans_u32_2_bytes};
+use comm::vectors::{Vector, VectorHandler};
 
 use crate::task::engine::dossier::index::Index;
 use crate::task::engine::traits::{TIndex, TSeed};
-use crate::task::seed::Seed;
-use crate::utils::comm::{key_fetch, INDEX_CATALOG};
-use crate::utils::enums::{EngineType, IndexMold, Tag};
+use crate::task::seed::{IndexData, Seed};
+use crate::utils::comm::{key_fetch, INDEX_CATALOG, VALUE_TYPE_NORMAL};
+use crate::utils::enums::{EngineType, IndexMold, IndexType, Tag};
 use crate::utils::path::{index_file_path, view_file_path, view_path};
 use crate::utils::store::{
     before_content_bytes, metadata_2_bytes, recovery_before_content, Metadata, HD,
 };
 use crate::utils::writer::Filed;
-use comm::io::file::{Filer, FilerReader, FilerWriter};
-use comm::vectors::{Vector, VectorHandler};
 
 /// 视图，类似表
 #[derive(Debug, Clone)]
@@ -88,6 +90,7 @@ fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
         database_name,
         INDEX_CATALOG.to_string(),
         EngineType::Library,
+        IndexType::Normal,
         IndexMold::String,
         true,
     )?;
@@ -126,6 +129,13 @@ impl View {
     pub(crate) fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>> {
         self.indexes.clone()
     }
+    /// 获取默认索引
+    pub(crate) fn index_catalog(&self) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
+        match self.index_map().read().unwrap().get(INDEX_CATALOG) {
+            Some(idx) => Ok(idx.clone()),
+            None => Err(err_str("index catalog does't found")),
+        }
+    }
     /// 当前归档版本信息
     pub(crate) fn pigeonhole(&self) -> Pigeonhole {
         self.pigeonhole.clone()
@@ -133,6 +143,10 @@ impl View {
     /// 当前视图版本号
     pub(crate) fn version(&self) -> u16 {
         self.pigeonhole().now().version()
+    }
+    /// 当前视图文件地址
+    pub(crate) fn file_path(&self) -> String {
+        self.pigeonhole().now().file_path()
     }
     /// 当前归档版本信息
     pub(crate) fn record(&self, version: u16) -> GeorgeResult<Record> {
@@ -197,6 +211,7 @@ impl View {
         database_name: String,
         index_name: String,
         engine_type: EngineType,
+        index_type: IndexType,
         index_mold: IndexMold,
         primary: bool,
     ) -> GeorgeResult<()> {
@@ -209,16 +224,44 @@ impl View {
         match engine_type {
             EngineType::None => return Err(err_str("unsupported engine type with none")),
             EngineType::Memory => {
-                index = Index::create(database_name, view_name, name, primary, index_mold)?
+                index = Index::create(
+                    database_name,
+                    view_name,
+                    name,
+                    primary,
+                    index_type,
+                    index_mold,
+                )?
             }
             EngineType::Dossier => {
-                index = Index::create(database_name, view_name, name, primary, index_mold)?
+                index = Index::create(
+                    database_name,
+                    view_name,
+                    name,
+                    primary,
+                    index_type,
+                    index_mold,
+                )?
             }
             EngineType::Library => {
-                index = Index::create(database_name, view_name, name, primary, index_mold)?
+                index = Index::create(
+                    database_name,
+                    view_name,
+                    name,
+                    primary,
+                    index_type,
+                    index_mold,
+                )?
             }
             EngineType::Block => {
-                index = Index::create(database_name, view_name, name, primary, index_mold)?
+                index = Index::create(
+                    database_name,
+                    view_name,
+                    name,
+                    primary,
+                    index_type,
+                    index_mold,
+                )?
             }
         }
         self.index_map()
@@ -278,21 +321,18 @@ impl View {
     ///
     /// Seed value信息
     pub(crate) fn get(&self, database_name: String, key: String) -> GeorgeResult<Vec<u8>> {
-        match self.index_map().read().unwrap().get(INDEX_CATALOG) {
-            Some(index) => {
-                let view_value_seek_bytes =
-                    index
-                        .read()
-                        .unwrap()
-                        .get(database_name, self.name(), key.clone())?;
-                let version = trans_bytes_2_u16(Vector::sub(view_value_seek_bytes.clone(), 0, 2));
-                let seek = trans_bytes_2_u64(Vector::sub(view_value_seek_bytes, 2, 8));
-                let record = self.record(version)?;
-                // todo view read method!
-                Ok(vec![])
+        let index = self.index_catalog()?;
+        let view_info_index = index
+            .read()
+            .unwrap()
+            .get(database_name, self.name(), key.clone())?;
+        let index_data_list = self.fetch_view_info_index(IndexType::Major, view_info_index)?;
+        for index_data in index_data_list {
+            if index_data.equal_key(key.clone()) {
+                return Ok(index_data.value());
             }
-            None => Err(GeorgeError::from(DataNoExistError)),
         }
+        Err(GeorgeError::from(DataNoExistError))
     }
     /// 删除数据<p><p>
     ///
@@ -319,6 +359,76 @@ impl View {
     ) -> GeorgeResult<()> {
         self.filer.write().unwrap().archive(archive_file_path)?;
         self.init(database_name)
+    }
+    /// 取出表记录表内容索引
+    ///
+    /// 索引属性，主键溯源；主键不溯源；普通索引
+    ///
+    /// index_info_index 索引记录表内容索引，记录表文件属性(数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
+    ///
+    /// key 原始key
+    pub(crate) fn fetch_view_info_index(
+        &self,
+        index_type: IndexType,
+        index_info_index: Vec<u8>,
+    ) -> GeorgeResult<Vec<IndexData>> {
+        let mut index_data_list: Vec<IndexData> = vec![];
+        // 当前记录数据所属视图文件版本信息
+        let version = trans_bytes_2_u16(Vector::sub(index_info_index.clone(), 0, 2)?);
+        // 根据版本信息获取当前视图文件路径
+        let filepath = self.path(version)?;
+        // 当前记录数据数据在视图文件中起始偏移量p(6字节)
+        let offset = trans_bytes_2_u64(Vector::sub(index_info_index, 2, 8)?);
+        // 当前数据所在文件对象
+        let file = Filer::reader(filepath.clone())?;
+        // 定位数据字节数组=数据类型(1字节)+持续长度(4字节)
+        let pos_bytes: Vec<u8>;
+        match file.try_clone() {
+            Ok(f) => pos_bytes = Filer::read_subs(f, offset, 5)?,
+            Err(err) => return Err(err_strs("view fetch file try clone1", err)),
+        }
+        // 定位文件持续长度(4字节)
+        let data_len = trans_bytes_2_u32(Vector::sub(pos_bytes.clone(), 1, 5)?);
+        // 定位文件数据类型(1字节)
+        let value_type_bytes: &u8;
+        // 获取数据类型(1字节)
+        match pos_bytes.get(0) {
+            Some(vtb) => value_type_bytes = vtb,
+            None => return Err(err_str("pos bytes get none")),
+        }
+        // 定位文件数据起始偏移量
+        let offset_data = offset + 5;
+        let view_info_index: Vec<u8>;
+        match file.try_clone() {
+            Ok(f) => view_info_index = Filer::read_subs(f, offset_data, data_len as usize)?,
+            Err(err) => return Err(err_strs("view fetch file try clone1", err)),
+        }
+        // 正常数据类型
+        if VALUE_TYPE_NORMAL.eq(value_type_bytes) {
+            index_data_list.push(IndexData::create(
+                self.clone(),
+                index_type,
+                view_info_index,
+            )?)
+        } else {
+            // 碰撞数据类型
+        }
+        Ok(index_data_list)
+    }
+    /// 取出可用数据集合
+    ///
+    /// data_info 记录表文件属性(数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
+    ///
+    /// key 原始key
+    pub(crate) fn path(&self, version: u16) -> GeorgeResult<String> {
+        if self.version() == version {
+            Ok(self.file_path())
+        } else {
+            match self.pigeonhole().history().get(&version) {
+                Some(record) => Ok(record.file_path()),
+                None => Err(err_str("index exist but value is none!")),
+            }
+        }
     }
     /// 组装写入视图的内容，即持续长度+该长度的原文内容
     ///

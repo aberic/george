@@ -96,14 +96,14 @@ impl Metadata {
             sequence: 0x00,
         }
     }
-    pub fn index(engine_type: EngineType) -> GeorgeResult<Metadata> {
+    pub fn index(engine_type: EngineType, index_type: IndexType) -> GeorgeResult<Metadata> {
         match engine_type {
             EngineType::None => Err(err_str("unsupported engine type with none")),
             EngineType::Memory => Ok(Metadata {
                 tag: Tag::Index,
                 engine_type,
                 capacity: Capacity::U64,
-                index_type: IndexType::Siam,
+                index_type,
                 version: VERSION,
                 sequence: 0x00,
             }),
@@ -111,7 +111,7 @@ impl Metadata {
                 tag: Tag::Index,
                 engine_type,
                 capacity: Capacity::U32,
-                index_type: IndexType::Siam,
+                index_type,
                 version: VERSION,
                 sequence: 0x00,
             }),
@@ -119,7 +119,7 @@ impl Metadata {
                 tag: Tag::Index,
                 engine_type,
                 capacity: Capacity::U64,
-                index_type: IndexType::Siam,
+                index_type,
                 version: VERSION,
                 sequence: 0x00,
             }),
@@ -127,7 +127,7 @@ impl Metadata {
                 tag: Tag::Index,
                 engine_type,
                 capacity: Capacity::U64,
-                index_type: IndexType::Siam,
+                index_type,
                 version: VERSION,
                 sequence: 0x00,
             }),
@@ -253,6 +253,9 @@ pub struct HD {
 impl HD {
     pub fn metadata(&self) -> Metadata {
         self.metadata.clone()
+    }
+    pub fn index_type(&self) -> IndexType {
+        self.metadata.clone().index_type.clone()
     }
     pub fn description(&self) -> Vec<u8> {
         self.description.clone()

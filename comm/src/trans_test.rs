@@ -131,4 +131,14 @@ mod strings {
         let a5u16_2 = trans_bytes_2_u16(a5u16bs2bs);
         println!("a5u16_2 = {}", a5u16_2);
     }
+
+    #[test]
+    fn trans_test5() {
+        let a1 = vec![0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
+        let a1u64 = trans_bytes_2_u64(a1);
+        println!("a1u64 = {}", a1u64);
+        let a2 = vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
+        let a2u64 = trans_bytes_2_u64(a2);
+        println!("a2u64 = {}", a2u64);
+    }
 }

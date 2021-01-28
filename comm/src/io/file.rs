@@ -23,6 +23,11 @@ use std::io::{Read, Seek, SeekFrom, Write};
 
 pub trait FilerNormal {
     fn read_subs(file: File, start: u64, last: usize) -> GeorgeResult<Vec<u8>>;
+    fn reader(filepath: String) -> GeorgeResult<File>;
+    fn writer(filepath: String) -> GeorgeResult<File>;
+    fn appender(filepath: String) -> GeorgeResult<File>;
+    fn reader_writer(filepath: String) -> GeorgeResult<File>;
+    fn reader_appender(filepath: String) -> GeorgeResult<File>;
 }
 
 pub trait FilerHandler<T>: Sized {
@@ -59,6 +64,21 @@ pub struct Filer {}
 impl FilerNormal for Filer {
     fn read_subs(file: File, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         read_subs(file, start, last)
+    }
+    fn reader(filepath: String) -> GeorgeResult<File> {
+        r_file(filepath)
+    }
+    fn writer(filepath: String) -> GeorgeResult<File> {
+        w_file(filepath)
+    }
+    fn appender(filepath: String) -> GeorgeResult<File> {
+        a_file(filepath)
+    }
+    fn reader_writer(filepath: String) -> GeorgeResult<File> {
+        rw_file(filepath)
+    }
+    fn reader_appender(filepath: String) -> GeorgeResult<File> {
+        ra_file(filepath)
     }
 }
 
@@ -449,7 +469,7 @@ fn file_write_seeks(mut file: File, seek: u64, content: &[u8]) -> GeorgeResult<(
     }
 }
 
-pub fn file_read(filepath: String) -> GeorgeResult<String> {
+fn file_read(filepath: String) -> GeorgeResult<String> {
     match read_to_string(filepath) {
         Ok(s) => Ok(s),
         Err(err) => Err(err_strs("file read to string", err)),
@@ -457,7 +477,7 @@ pub fn file_read(filepath: String) -> GeorgeResult<String> {
 }
 
 /// 读取文件部分内容，从start开始，一直持续读取last长度
-pub fn file_read_sub(filepath: String, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
+fn file_read_sub(filepath: String, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
     match File::open(filepath) {
         Ok(file) => read_subs(file, start, last),
         Err(err) => Err(err_string(err.to_string())),
@@ -465,7 +485,7 @@ pub fn file_read_sub(filepath: String, start: u64, last: usize) -> GeorgeResult<
 }
 
 /// 读取文件部分内容，从start开始，一直持续读取last长度
-pub fn read_subs(mut file: File, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
+fn read_subs(mut file: File, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
     let file_len = file.try_clone().unwrap().seek(SeekFrom::End(0)).unwrap();
     if file_len < start + last as u64 {
         Ok(vec![0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
@@ -538,5 +558,40 @@ pub fn read_subs(mut file: File, start: u64, last: usize) -> GeorgeResult<Vec<u8
             }
             Err(err) => Err(err_string(err.to_string())),
         }
+    }
+}
+
+fn rw_file(filepath: String) -> GeorgeResult<File> {
+    match OpenOptions::new().read(true).write(true).open(filepath) {
+        Ok(file) => Ok(file),
+        Err(err) => Err(err_strs("open read&write file", err)),
+    }
+}
+
+fn ra_file(filepath: String) -> GeorgeResult<File> {
+    match OpenOptions::new().read(true).append(true).open(filepath) {
+        Ok(file) => Ok(file),
+        Err(err) => Err(err_strs("open read&write file", err)),
+    }
+}
+
+fn r_file(filepath: String) -> GeorgeResult<File> {
+    match OpenOptions::new().read(true).open(filepath) {
+        Ok(file) => Ok(file),
+        Err(err) => Err(err_strs("open read file", err)),
+    }
+}
+
+fn w_file(filepath: String) -> GeorgeResult<File> {
+    match OpenOptions::new().write(true).open(filepath) {
+        Ok(file) => Ok(file),
+        Err(err) => Err(err_strs("open write file", err)),
+    }
+}
+
+fn a_file(filepath: String) -> GeorgeResult<File> {
+    match OpenOptions::new().append(true).open(filepath) {
+        Ok(file) => Ok(file),
+        Err(err) => Err(err_strs("open append file", err)),
     }
 }

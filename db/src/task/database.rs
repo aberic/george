@@ -103,23 +103,32 @@ impl Database {
         let file_append = self.file_append.clone();
         let mut file_write = file_append.write().unwrap();
         match file_write.seek(SeekFrom::End(0)) {
-            Ok(seek_end_before) => {
-                match Filer::appends(file_write.try_clone().unwrap(), content.clone()) {
+            Ok(seek_end_before) => match file_write.try_clone() {
+                Ok(f) => match Filer::appends(f, content.clone()) {
                     Ok(()) => Ok(seek_end_before),
                     Err(_err) => {
                         self.file_append =
                             obtain_write_append_file(database_file_path(self.name()))?;
                         let file_write_again = self.file_append.write().unwrap();
-                        Filer::appends(file_write_again.try_clone().unwrap(), content)?;
+                        match file_write_again.try_clone() {
+                            Ok(f) => Filer::appends(f, content)?,
+                            Err(err) => {
+                                return Err(err_strs("database append file try clone2", err))
+                            }
+                        }
                         Ok(seek_end_before)
                     }
-                }
-            }
+                },
+                Err(err) => Err(err_strs("database append file try clone1", err)),
+            },
             Err(_err) => {
                 self.file_append = obtain_write_append_file(database_file_path(self.name()))?;
                 let mut file_write_again = self.file_append.write().unwrap();
                 let seek_end_before_again = file_write_again.seek(SeekFrom::End(0)).unwrap();
-                Filer::appends(file_write_again.try_clone().unwrap(), content)?;
+                match file_write_again.try_clone() {
+                    Ok(f) => Filer::appends(file_write_again.try_clone().unwrap(), content)?,
+                    Err(err) => return Err(err_strs("database append file try clone3", err)),
+                }
                 Ok(seek_end_before_again)
             }
         }

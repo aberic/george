@@ -16,7 +16,7 @@ use crate::errors::entrances::{err_str, err_string, GeorgeResult};
 
 pub trait VectorHandler {
     fn modify<T: Clone>(source: Vec<T>, target: Vec<T>, start: usize) -> Vec<T>;
-    fn sub<T: Clone>(source: Vec<T>, start: usize, end: usize) -> Vec<T>;
+    fn sub<T: Clone>(source: Vec<T>, start: usize, end: usize) -> GeorgeResult<Vec<T>>;
     fn find_last_eq_bytes(bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<u8>>;
     fn find_eq_vec_bytes(bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<Vec<u8>>>;
 }
@@ -27,7 +27,7 @@ impl VectorHandler for Vector {
     fn modify<T: Clone>(source: Vec<T>, target: Vec<T>, start: usize) -> Vec<T> {
         vector_modify(source, target, start)
     }
-    fn sub<T: Clone>(source: Vec<T>, start: usize, end: usize) -> Vec<T> {
+    fn sub<T: Clone>(source: Vec<T>, start: usize, end: usize) -> GeorgeResult<Vec<T>> {
         vector_sub(source, start, end)
     }
     fn find_last_eq_bytes(bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<u8>> {
@@ -64,11 +64,16 @@ fn vector_modify<T: Clone>(mut source: Vec<T>, target: Vec<T>, mut start: usize)
 /// start 截取起始下标
 ///
 /// end 截取终止下标
-fn vector_sub<T: Clone>(source: Vec<T>, start: usize, end: usize) -> Vec<T> {
-    let mut s1 = source.to_vec();
-    let mut s2 = s1.split_off(start);
-    let _x = s2.split_off(end - start);
-    s2
+fn vector_sub<T: Clone>(source: Vec<T>, start: usize, end: usize) -> GeorgeResult<Vec<T>> {
+    let source_len = source.len();
+    if source_len < end {
+        Err(err_str("source array type out of bounds"))
+    } else {
+        let mut s1 = source.to_vec();
+        let mut s2 = s1.split_off(start);
+        let _x = s2.split_off(end - start);
+        Ok(s2)
+    }
 }
 
 /// 从可被`eq`整除的bytes长度的字节数组中查找最后不为0的`eq`个字节组成新的数组

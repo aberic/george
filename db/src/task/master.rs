@@ -15,7 +15,7 @@
 use crate::task::database::Database;
 use crate::utils::comm::GEORGE_DB_CONFIG;
 use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
-use crate::utils::enums::{EngineType, IndexMold};
+use crate::utils::enums::{EngineType, IndexMold, IndexType};
 use crate::utils::path::{bootstrap_file_path, data_path, database_file_path};
 use crate::utils::store::recovery_before_content;
 use chrono::{Duration, Local, NaiveDateTime};
@@ -151,6 +151,7 @@ impl Master {
         view_name: String,
         index_name: String,
         engine_type: EngineType,
+        index_type: IndexType,
         index_mold: IndexMold,
         primary: bool,
     ) -> GeorgeResult<()> {
@@ -160,6 +161,7 @@ impl Master {
             database_name,
             index_name,
             engine_type,
+            index_type,
             index_mold,
             primary,
         )

@@ -12,6 +12,8 @@
  * limitations under the License.
  */
 
+use serde::{Deserialize, Serialize};
+
 pub trait EnumHandler {
     fn tag_u8(tag: Tag) -> u8;
     fn engine_type_u8(engine_type: EngineType) -> u8;
@@ -78,12 +80,18 @@ pub enum Tag {
 }
 
 /// 索引类型
-#[derive(Debug, Clone, Copy)]
+///
+/// 主键溯源；主键不溯源；普通索引
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum IndexType {
     /// 占位
     None,
-    /// 静态索引方法(static index access method)
-    Siam,
+    /// 普通索引
+    Normal,
+    /// 主键不溯源
+    Major,
+    /// 主键溯源
+    Trace,
 }
 
 /// 索引值类型
@@ -173,10 +181,12 @@ fn mold_u8(mold: IndexMold) -> u8 {
     }
 }
 
-fn index_type_u8(index_type: IndexType) -> u8 {
-    match index_type {
+fn index_type_u8(index_class: IndexType) -> u8 {
+    match index_class {
         IndexType::None => 0x00,
-        IndexType::Siam => 0x01,
+        IndexType::Normal => 0x01,
+        IndexType::Major => 0x02,
+        IndexType::Trace => 0x03,
     }
 }
 
@@ -225,8 +235,10 @@ fn capacity(b: u8) -> Capacity {
 fn index_type(b: u8) -> IndexType {
     match b {
         0x00 => IndexType::None,
-        0x01 => IndexType::Siam,
-        _ => IndexType::Siam,
+        0x01 => IndexType::Normal,
+        0x02 => IndexType::Major,
+        0x03 => IndexType::Trace,
+        _ => IndexType::None,
     }
 }
 
