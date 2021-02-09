@@ -91,54 +91,54 @@ mod strings {
     #[test]
     fn trans_test4() {
         let a1: [u8; 8] = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
-        let a1u64 = trans_bytes_2_u64(a1.to_vec());
+        let a1u64 = trans_bytes_2_u64(a1.to_vec()).unwrap();
         let a1u64bs = hex::encode(trans_u64_2_bytes(a1u64));
         println!("a1u64 = {}, a1u64bs = {}", a1u64, a1u64bs);
         println!();
 
         let a2: [u8; 8] = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff];
-        let a2u64 = trans_bytes_2_u64(a2.to_vec());
+        let a2u64 = trans_bytes_2_u64(a2.to_vec()).unwrap();
         let a2u64bs = hex::encode(trans_u64_2_bytes(a2u64));
         println!("a2u64 = {}, a2u64bs = {}", a2u64, a2u64bs);
         println!();
 
         let a3: [u8; 8] = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff];
-        let a3u64 = trans_bytes_2_u64(a3.to_vec());
+        let a3u64 = trans_bytes_2_u64(a3.to_vec()).unwrap();
         let a3u64bs = hex::encode(trans_u64_2_bytes(a3u64));
         println!("a3u64 = {}, a3u64bs = {}", a3u64, a3u64bs);
         let a3u64bs2bs = hex::decode(a3u64bs).unwrap();
         println!("a3u64bs2bs = {:#?}", a3u64bs2bs);
-        let a3u64_2 = trans_bytes_2_u64(a3u64bs2bs);
+        let a3u64_2 = trans_bytes_2_u64(a3u64bs2bs).unwrap();
         println!("a3u64_2 = {}", a3u64_2);
         println!();
 
         let a4: [u8; 4] = [0x00, 0x00, 0x1f, 0xff];
-        let a4u32 = trans_bytes_2_u32(a4.to_vec());
+        let a4u32 = trans_bytes_2_u32(a4.to_vec()).unwrap();
         let a4u32bs = hex::encode(trans_u32_2_bytes(a4u32));
         println!("a4u32 = {}, a4u32bs = {}", a4u32, a4u32bs);
         let a4u32bs2bs = hex::decode(a4u32bs).unwrap();
         println!("a4u32bs2bs = {:#?}", a4u32bs2bs);
-        let a4u32_2 = trans_bytes_2_u32(a4u32bs2bs);
+        let a4u32_2 = trans_bytes_2_u32(a4u32bs2bs).unwrap();
         println!("a4u32_2 = {}", a4u32_2);
         println!();
 
         let a5: [u8; 2] = [0xff, 0xff];
-        let a5u16 = trans_bytes_2_u16(a5.to_vec());
+        let a5u16 = trans_bytes_2_u16(a5.to_vec()).unwrap();
         let a5u16bs = hex::encode(trans_u16_2_bytes(a5u16));
         println!("a5u16 = {}, a5u16bs = {}", a5u16, a5u16bs);
         let a5u16bs2bs = hex::decode(a5u16bs).unwrap();
         println!("a5u16bs2bs = {:#?}", a5u16bs2bs);
-        let a5u16_2 = trans_bytes_2_u16(a5u16bs2bs);
+        let a5u16_2 = trans_bytes_2_u16(a5u16bs2bs).unwrap();
         println!("a5u16_2 = {}", a5u16_2);
     }
 
     #[test]
     fn trans_test5() {
         let a1 = vec![0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
-        let a1u64 = trans_bytes_2_u64(a1);
+        let a1u64 = trans_bytes_2_u64(a1).unwrap();
         println!("a1u64 = {}", a1u64);
         let a2 = vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
-        let a2u64 = trans_bytes_2_u64(a2);
+        let a2u64 = trans_bytes_2_u64(a2).unwrap();
         println!("a2u64 = {}", a2u64);
     }
 }

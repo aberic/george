@@ -38,6 +38,8 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     fn metadata(&self) -> Metadata;
     /// 创建时间
     fn create_time(&self) -> Duration;
+    /// 获取索引类型
+    fn index_type(&self) -> IndexType;
     /// 插入数据<p><p>
     ///
     /// ###Params
@@ -131,8 +133,6 @@ pub(crate) trait TNode: Send + Sync + Debug {
 ///
 /// 如果要写dyn Trait + Send + Sync到处都是，那么需要声明Send和Sync是Trait的Super Traits
 pub(crate) trait TSeed: Send + Sync + Debug {
-    /// 获取当前结果原始key信息
-    fn key(&self) -> String;
     /// 修改value值
     fn modify(&mut self, value: Vec<u8>) -> GeorgeResult<()>;
     /// 存储操作
@@ -146,6 +146,26 @@ pub(crate) trait TSeed: Send + Sync + Debug {
         &self,
         database_name: String,
         view: View,
+        value: Vec<u8>,
+        force: bool,
+    ) -> GeorgeResult<()>;
+    /// 存储操作，存储Block数据，主键可溯源
+    ///
+    /// view View 视图
+    ///
+    /// value 当前结果value信息<p><p>
+    ///
+    /// block_height 区块高度
+    ///
+    /// tx_no 交易序号(可以是默克尔树序号/交易高度/交易自增ID等自定义可识别编号)
+    ///
+    /// force 是否强制覆盖
+    fn save_trace(
+        &self,
+        database_name: String,
+        view: View,
+        block_height: u64,
+        tx_no: u16,
         value: Vec<u8>,
         force: bool,
     ) -> GeorgeResult<()>;

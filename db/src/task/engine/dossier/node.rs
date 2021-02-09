@@ -19,10 +19,10 @@ use crate::task::seed::IndexPolicy;
 use crate::utils::comm::level_distance_64;
 use crate::utils::enums::IndexType;
 use crate::utils::path::{index_path, node_file_path};
-use comm::bytes::create_empty_bytes;
 use comm::errors::entrances::GeorgeResult;
 use comm::io::file::{Filer, FilerReader};
 use comm::strings::{StringHandler, Strings};
+use comm::vectors::{Vector, VectorHandler};
 use std::ops::Add;
 
 /// 索引B+Tree结点结构
@@ -35,10 +35,7 @@ pub(crate) struct Node {
     index_type: IndexType,
     /// 存储结点所属各子结点坐标顺序字符串
     ///
-    /// 如果子项是32位node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-    ///
-    /// 如果子项是seed集合，在seed集合中每一个seed的默认字符长度是6，当前叶子node会存储叶子中首个出现hash碰撞的
-    /// seed起始坐标，每一个seed都会存储出现hash碰撞的下一seed起始坐标
+    /// 子项是64位node集合，在node集合中每一个node的默认字节长度是8，数量是524288，即一次性读取524288个字节
     node_bytes: Arc<RwLock<Vec<u8>>>,
 }
 
@@ -49,7 +46,7 @@ impl Node {
     pub fn create_root(index_type: IndexType) -> Arc<RwLock<Self>> {
         return Arc::new(RwLock::new(Node {
             index_type,
-            node_bytes: Arc::new(RwLock::new(create_empty_bytes(2048))),
+            node_bytes: Arc::new(RwLock::new(Vector::create_empty_bytes(524288))),
         }));
     }
     /// 恢复根结点

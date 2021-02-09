@@ -12,6 +12,8 @@
  * limitations under the License.
  */
 
+use crate::errors::entrances::{err_strs, GeorgeResult};
+
 pub trait StringHandler {
     fn sub(comment: &str, begin: usize, end: usize) -> String;
     fn subs(comment: String, begin: usize, end: usize) -> String;
@@ -63,6 +65,7 @@ pub trait StringHandler {
     fn repeater(repeated: &str, len: usize) -> String;
     /// 获取重复len次repeated的字符串
     fn repeaters(repeated: String, len: usize) -> String;
+    fn from_utf8(data: Vec<u8>) -> GeorgeResult<String>;
 }
 
 pub struct Strings {}
@@ -97,6 +100,9 @@ impl StringHandler for Strings {
     }
     fn repeaters(repeated: String, len: usize) -> String {
         repeated_string(repeated.as_str(), len)
+    }
+    fn from_utf8(data: Vec<u8>) -> GeorgeResult<String> {
+        from_utf8(data)
     }
 }
 
@@ -165,4 +171,11 @@ fn repeated_string(repeated: &str, len: usize) -> String {
         position += 1
     }
     res
+}
+
+fn from_utf8(data: Vec<u8>) -> GeorgeResult<String> {
+    match String::from_utf8(data) {
+        Ok(res) => Ok(res),
+        Err(err) => Err(err_strs("string from utf8", err)),
+    }
 }

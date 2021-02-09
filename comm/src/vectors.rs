@@ -15,10 +15,28 @@
 use crate::errors::entrances::{err_str, err_string, GeorgeResult};
 
 pub trait VectorHandler {
+    /// 变更数组内容
+    ///
+    /// source 原始数组
+    ///
+    /// target 变更内容
+    ///
+    /// start 起始下标
     fn modify<T: Clone>(source: Vec<T>, target: Vec<T>, start: usize) -> Vec<T>;
+    /// 截取数组
+    ///
+    /// source 原始数组
+    ///
+    /// start 截取起始下标
+    ///
+    /// end 截取终止下标
     fn sub<T: Clone>(source: Vec<T>, start: usize, end: usize) -> GeorgeResult<Vec<T>>;
+    /// 从可被`eq`整除的bytes长度的字节数组中查找最后不为0的`eq`个字节组成新的数组
     fn find_last_eq_bytes(bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<u8>>;
+    /// 从可被`eq`整除的bytes长度的字节数组中查找所有与`eq`长度相同的不为0的字节数组集合
     fn find_eq_vec_bytes(bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<Vec<u8>>>;
+    /// 创建长度为len且字节均为0x00的字节数组
+    fn create_empty_bytes(len: usize) -> Vec<u8>;
 }
 
 pub struct Vector {}
@@ -35,6 +53,9 @@ impl VectorHandler for Vector {
     }
     fn find_eq_vec_bytes(bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<Vec<u8>>> {
         vector_find_eq_vec_bytes(bytes, eq)
+    }
+    fn create_empty_bytes(len: usize) -> Vec<u8> {
+        create_empty_bytes(len)
     }
 }
 
@@ -147,4 +168,15 @@ fn vector_find_eq_vec_bytes(mut bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<V
         }
     }
     Ok(res)
+}
+
+/// 创建长度为len且字节均为0x00的字节数组
+fn create_empty_bytes(len: usize) -> Vec<u8> {
+    let mut res: Vec<u8> = vec![];
+    let mut position = 0;
+    while position < len {
+        res.push(0x00);
+        position += 1
+    }
+    res
 }

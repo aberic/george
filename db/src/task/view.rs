@@ -32,13 +32,14 @@ use comm::vectors::{Vector, VectorHandler};
 use crate::task::engine::dossier::index::Index;
 use crate::task::engine::traits::{TIndex, TSeed};
 use crate::task::seed::{IndexData, Seed};
-use crate::utils::comm::{key_fetch, INDEX_CATALOG, VALUE_TYPE_NORMAL};
+use crate::utils::comm::{key_fetch, INDEX_CATALOG, VALUE_TYPE_CRASH, VALUE_TYPE_NORMAL};
 use crate::utils::enums::{EngineType, IndexMold, IndexType, Tag};
 use crate::utils::path::{index_file_path, view_file_path, view_path};
 use crate::utils::store::{
     before_content_bytes, metadata_2_bytes, recovery_before_content, Metadata, HD,
 };
 use crate::utils::writer::Filed;
+use comm::strings::{StringHandler, Strings};
 
 /// 视图，类似表
 #[derive(Debug, Clone)]
@@ -74,7 +75,7 @@ pub(crate) struct View {
 /// category 视图类型
 ///
 /// level 视图规模/级别
-fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
+fn new_view(database_name: String, name: String, index_type: IndexType) -> GeorgeResult<View> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
     let file_path = view_file_path(database_name.clone(), name.clone());
@@ -90,7 +91,7 @@ fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
         database_name,
         INDEX_CATALOG.to_string(),
         EngineType::Library,
-        IndexType::Normal,
+        index_type,
         IndexMold::String,
         true,
     )?;
@@ -98,8 +99,12 @@ fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
 }
 
 impl View {
-    pub(crate) fn create(database_name: String, name: String) -> GeorgeResult<Arc<RwLock<View>>> {
-        let view = new_view(database_name.clone(), name)?;
+    pub(crate) fn create(
+        database_name: String,
+        name: String,
+        index_type: IndexType,
+    ) -> GeorgeResult<Arc<RwLock<View>>> {
+        let view = new_view(database_name.clone(), name, index_type)?;
         view.init(database_name)?;
         Ok(Arc::new(RwLock::new(view)))
     }
@@ -134,6 +139,13 @@ impl View {
         match self.index_map().read().unwrap().get(INDEX_CATALOG) {
             Some(idx) => Ok(idx.clone()),
             None => Err(err_str("index catalog does't found")),
+        }
+    }
+    /// 获取索引
+    pub(crate) fn index(&self, index_name: &str) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
+        match self.index_map().read().unwrap().get(index_name) {
+            Some(idx) => Ok(idx.clone()),
+            None => Err(err_string(format!("index {} does't found", index_name))),
         }
     }
     /// 当前归档版本信息
@@ -315,18 +327,23 @@ impl View {
     ///
     /// ###Params
     ///
+    /// index_name 索引名称
+    ///
     /// key string
     ///
     /// ###Return
     ///
     /// Seed value信息
-    pub(crate) fn get(&self, database_name: String, key: String) -> GeorgeResult<Vec<u8>> {
-        let index = self.index_catalog()?;
-        let view_info_index = index
-            .read()
-            .unwrap()
-            .get(database_name, self.name(), key.clone())?;
-        let index_data_list = self.fetch_view_info_index(IndexType::Major, view_info_index)?;
+    pub(crate) fn get(
+        &self,
+        database_name: String,
+        index_name: &str,
+        key: String,
+    ) -> GeorgeResult<Vec<u8>> {
+        let index = self.index(index_name)?;
+        let idx = index.read().unwrap();
+        let view_info_index = idx.get(database_name, self.name(), key.clone())?;
+        let index_data_list = self.fetch_view_info_index(idx.index_type(), view_info_index)?;
         for index_data in index_data_list {
             if index_data.equal_key(key.clone()) {
                 return Ok(index_data.value());
@@ -367,18 +384,18 @@ impl View {
     /// index_info_index 索引记录表内容索引，记录表文件属性(数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
     ///
     /// key 原始key
-    pub(crate) fn fetch_view_info_index(
+    fn fetch_view_info_index(
         &self,
         index_type: IndexType,
         index_info_index: Vec<u8>,
     ) -> GeorgeResult<Vec<IndexData>> {
         let mut index_data_list: Vec<IndexData> = vec![];
         // 当前记录数据所属视图文件版本信息
-        let version = trans_bytes_2_u16(Vector::sub(index_info_index.clone(), 0, 2)?);
+        let version = trans_bytes_2_u16(Vector::sub(index_info_index.clone(), 0, 2)?)?;
         // 根据版本信息获取当前视图文件路径
         let filepath = self.path(version)?;
         // 当前记录数据数据在视图文件中起始偏移量p(6字节)
-        let offset = trans_bytes_2_u64(Vector::sub(index_info_index, 2, 8)?);
+        let offset = trans_bytes_2_u64(Vector::sub(index_info_index, 2, 8)?)?;
         // 当前数据所在文件对象
         let file = Filer::reader(filepath.clone())?;
         // 定位数据字节数组=数据类型(1字节)+持续长度(4字节)
@@ -388,7 +405,7 @@ impl View {
             Err(err) => return Err(err_strs("view fetch file try clone1", err)),
         }
         // 定位文件持续长度(4字节)
-        let data_len = trans_bytes_2_u32(Vector::sub(pos_bytes.clone(), 1, 5)?);
+        let data_len = trans_bytes_2_u32(Vector::sub(pos_bytes.clone(), 1, 5)?)?;
         // 定位文件数据类型(1字节)
         let value_type_bytes: &u8;
         // 获取数据类型(1字节)
@@ -415,6 +432,26 @@ impl View {
         }
         Ok(index_data_list)
     }
+    // /// 循环定位文件内容，(表内容索引(8字节)+原始key长度(2字节)+原始key)(循环)
+    // ///
+    // /// 找出与'key'相同的原始key数据
+    // fn traverse(&self, key: String, value_type_bytes: &u8, data_bytes: Vec<u8>) -> GeorgeResult<Vec<u8>> {
+    //     // 判断数据类型
+    //     if VALUE_TYPE_NORMAL.eq(value_type_bytes) { // 正常数据类型，只有一条数据
+    //         let original_key = Strings::from_utf8(Vector::sub(data_bytes.clone(), 10, data_bytes.len())?)?;
+    //         if original_key.eq(&key) {
+    //
+    //         }
+    //     } else if VALUE_TYPE_CRASH.eq(value_type_bytes) { // 碰撞数据类型，有多条循环数据
+    //         let original_key_len = trans_bytes_2_u16(Vector::sub(data_bytes.clone(), 8, 10)?)?;
+    //         let original_key = Vector::sub(data_bytes.clone(), original_key_len as usize, )
+    //     } else {
+    //     }
+    //     Ok(vec![])
+    // }
+    // fn value_from(&self, value_bytes: Vec<u8>) -> GeorgeResult<IndexData> {
+    //
+    // }
     /// 取出可用数据集合
     ///
     /// data_info 记录表文件属性(数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
@@ -535,50 +572,39 @@ impl View {
     }
     /// 通过文件描述恢复结构信息
     pub(crate) fn recover(database_name: String, hd: HD) -> GeorgeResult<View> {
-        match String::from_utf8(hd.description()) {
-            Ok(description_str) => match hex::decode(description_str) {
-                Ok(vu8) => match String::from_utf8(vu8) {
-                    Ok(real) => {
-                        let mut split = real.split(":#?");
-                        let name = split.next().unwrap().to_string();
-                        let create_time = Duration::nanoseconds(
-                            split.next().unwrap().to_string().parse::<i64>().unwrap(),
-                        );
-                        let pigeonhole =
-                            Pigeonhole::from_string(split.next().unwrap().to_string())?;
-                        let file_path = view_file_path(database_name.clone(), name.clone());
-                        let mut view = View {
-                            name,
-                            create_time,
-                            metadata: hd.metadata(),
-                            filer: Filed::recovery(file_path)?,
-                            indexes: Arc::new(Default::default()),
-                            pigeonhole,
-                        };
-                        log::info!(
-                            "recovery view {} from database {}",
-                            view.name(),
-                            database_name,
-                        );
-                        match read_dir(view_path(database_name.clone(), view.name())) {
-                            // 恢复indexes数据
-                            Ok(paths) => view.recovery_indexes(database_name, paths),
-                            Err(err) => panic!("recovery view read dir failed! error is {}", err),
-                        }
-                        Ok(view)
-                    }
-                    Err(err) => Err(err_string(format!(
-                        "recovery index from utf8 2 failed! error is {}",
-                        err
-                    ))),
-                },
-                Err(err) => Err(err_string(format!(
-                    "recovery view decode failed! error is {}",
-                    err
-                ))),
-            },
+        let description_str = Strings::from_utf8(hd.description())?;
+        match hex::decode(description_str) {
+            Ok(vu8) => {
+                let real = Strings::from_utf8(vu8)?;
+                let mut split = real.split(":#?");
+                let name = split.next().unwrap().to_string();
+                let create_time = Duration::nanoseconds(
+                    split.next().unwrap().to_string().parse::<i64>().unwrap(),
+                );
+                let pigeonhole = Pigeonhole::from_string(split.next().unwrap().to_string())?;
+                let file_path = view_file_path(database_name.clone(), name.clone());
+                let mut view = View {
+                    name,
+                    create_time,
+                    metadata: hd.metadata(),
+                    filer: Filed::recovery(file_path)?,
+                    indexes: Arc::new(Default::default()),
+                    pigeonhole,
+                };
+                log::info!(
+                    "recovery view {} from database {}",
+                    view.name(),
+                    database_name,
+                );
+                match read_dir(view_path(database_name.clone(), view.name())) {
+                    // 恢复indexes数据
+                    Ok(paths) => view.recovery_indexes(database_name, paths),
+                    Err(err) => panic!("recovery view read dir failed! error is {}", err),
+                }
+                Ok(view)
+            }
             Err(err) => Err(err_string(format!(
-                "recovery index from utf8 1 failed! error is {}",
+                "recovery view decode failed! error is {}",
                 err
             ))),
         }
@@ -703,19 +729,13 @@ impl Pigeonhole {
     /// 通过文件描述恢复结构信息
     pub(crate) fn from_string(pigeonhole_desc: String) -> GeorgeResult<Pigeonhole> {
         match hex::decode(pigeonhole_desc) {
-            Ok(vu8) => match String::from_utf8(vu8) {
-                Ok(real) => {
-                    let mut split = real.split("$_$!");
-                    let now = Record::from_string(split.next().unwrap().to_string())?;
-                    let history =
-                        Pigeonhole::history_from_string(split.next().unwrap().to_string())?;
-                    Ok(Pigeonhole { now, history })
-                }
-                Err(err) => Err(err_string(format!(
-                    "recovery pigeonhole from utf8 2 failed! error is {}",
-                    err
-                ))),
-            },
+            Ok(vu8) => {
+                let real = Strings::from_utf8(vu8)?;
+                let mut split = real.split("$_$!");
+                let now = Record::from_string(split.next().unwrap().to_string())?;
+                let history = Pigeonhole::history_from_string(split.next().unwrap().to_string())?;
+                Ok(Pigeonhole { now, history })
+            }
             Err(err) => Err(err_string(format!(
                 "recovery pigeonhole from utf8 1 failed! error is {}",
                 err
@@ -781,21 +801,16 @@ impl Record {
     /// 通过文件描述恢复结构信息
     pub(crate) fn from_string(record_desc: String) -> GeorgeResult<Record> {
         match hex::decode(record_desc) {
-            Ok(vu8) => match String::from_utf8(vu8) {
-                Ok(real) => {
-                    let mut split = real.split("|");
-                    let version = split.next().unwrap().to_string().parse::<u16>().unwrap();
-                    let file_path = split.next().unwrap().to_string();
-                    let create_time = Duration::nanoseconds(
-                        split.next().unwrap().to_string().parse::<i64>().unwrap(),
-                    );
-                    Ok(Record::create(version, file_path, create_time))
-                }
-                Err(err) => Err(err_string(format!(
-                    "recovery pigeonhole from utf8 2 failed! error is {}",
-                    err
-                ))),
-            },
+            Ok(vu8) => {
+                let real = Strings::from_utf8(vu8)?;
+                let mut split = real.split("|");
+                let version = split.next().unwrap().to_string().parse::<u16>().unwrap();
+                let file_path = split.next().unwrap().to_string();
+                let create_time = Duration::nanoseconds(
+                    split.next().unwrap().to_string().parse::<i64>().unwrap(),
+                );
+                Ok(Record::create(version, file_path, create_time))
+            }
             Err(err) => Err(err_string(format!(
                 "recovery pigeonhole from utf8 1 failed! error is {}",
                 err

@@ -285,8 +285,8 @@ pub fn recovery_before_content(filepath: String) -> GeorgeResult<HD> {
                         }
                         position += 1
                     }
-                    let start = trans_bytes_2_u32(start_bytes.clone()) as u64;
-                    let last = trans_bytes_2_u32(last_bytes.clone()) as usize;
+                    let start = trans_bytes_2_u32(start_bytes.clone())? as u64;
+                    let last = trans_bytes_2_u32(last_bytes.clone())? as usize;
                     let metadata = Metadata::from_bytes(metadata_bytes)?;
                     // 读取正文描述
                     let description = Filer::read_subs(file, start, last)?;

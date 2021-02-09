@@ -30,6 +30,7 @@ use crate::utils::enums::{EngineType, Enum, EnumHandler, IndexMold, IndexType};
 use crate::utils::path::index_file_path;
 use crate::utils::store::{before_content_bytes, metadata_2_bytes, Metadata, HD};
 use crate::utils::writer::obtain_write_append_file;
+use comm::strings::{StringHandler, Strings};
 use comm::vectors::{Vector, VectorHandler};
 
 /// Siam索引
@@ -183,6 +184,9 @@ impl TIndex for Index {
     fn create_time(&self) -> Duration {
         self.create_time.clone()
     }
+    fn index_type(&self) -> IndexType {
+        self.metadata.clone().index_type.clone()
+    }
     fn put(
         &self,
         database_name: String,
@@ -257,50 +261,39 @@ impl Index {
         let middle_pos = des_len - 2048;
         let part1 = Vector::sub(hd.description(), 0, middle_pos)?;
         let part2 = Vector::sub(hd.description(), middle_pos, des_len)?;
-        match String::from_utf8(part1) {
-            Ok(description_str) => match hex::decode(description_str) {
-                Ok(vu8) => match String::from_utf8(vu8) {
-                    Ok(real) => {
-                        let mut split = real.split(":#?");
-                        let name = split.next().unwrap().to_string();
-                        let primary = split.next().unwrap().to_string().parse::<bool>().unwrap();
-                        let mold =
-                            Enum::mold(split.next().unwrap().to_string().parse::<u8>().unwrap());
-                        let create_time = Duration::nanoseconds(
-                            split.next().unwrap().to_string().parse::<i64>().unwrap(),
-                        );
-                        let file_path =
-                            index_file_path(database_name.clone(), view_name.clone(), name.clone());
-                        let file_append = obtain_write_append_file(file_path)?;
-                        let index = Index {
-                            name,
-                            primary,
-                            create_time,
-                            metadata: hd.metadata(),
-                            file_append,
-                            root: Node::recovery_root(hd.index_type(), part2),
-                            mold,
-                        };
-                        log::info!(
-                            "recovery index {} from database.view {}.{}",
-                            index.name(),
-                            database_name,
-                            view_name
-                        );
-                        Ok(Arc::new(RwLock::new(index)))
-                    }
-                    Err(err) => Err(err_string(format!(
-                        "recovery index from utf8 2 failed! error is {}",
-                        err
-                    ))),
-                },
-                Err(err) => Err(err_string(format!(
-                    "recovery index decode failed! error is {}",
-                    err
-                ))),
-            },
+        let description_str = Strings::from_utf8(part1)?;
+        match hex::decode(description_str) {
+            Ok(vu8) => {
+                let real = Strings::from_utf8(vu8)?;
+                let mut split = real.split(":#?");
+                let name = split.next().unwrap().to_string();
+                let primary = split.next().unwrap().to_string().parse::<bool>().unwrap();
+                let mold = Enum::mold(split.next().unwrap().to_string().parse::<u8>().unwrap());
+                let create_time = Duration::nanoseconds(
+                    split.next().unwrap().to_string().parse::<i64>().unwrap(),
+                );
+                let file_path =
+                    index_file_path(database_name.clone(), view_name.clone(), name.clone());
+                let file_append = obtain_write_append_file(file_path)?;
+                let index = Index {
+                    name,
+                    primary,
+                    create_time,
+                    metadata: hd.metadata(),
+                    file_append,
+                    root: Node::recovery_root(hd.index_type(), part2),
+                    mold,
+                };
+                log::info!(
+                    "recovery index {} from database.view {}.{}",
+                    index.name(),
+                    database_name,
+                    view_name
+                );
+                Ok(Arc::new(RwLock::new(index)))
+            }
             Err(err) => Err(err_string(format!(
-                "recovery index from utf8 1 failed! error is {}",
+                "recovery index decode failed! error is {}",
                 err
             ))),
         }

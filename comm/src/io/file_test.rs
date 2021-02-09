@@ -15,7 +15,6 @@
 #[cfg(test)]
 mod file {
     use crate::io::file::{Filer, FilerHandler, FilerReader, FilerWriter};
-    use crate::trans::{trans_bytes_2_u64, trans_u64_2_string64};
     use std::fs;
     use std::io::{Read, Write};
 

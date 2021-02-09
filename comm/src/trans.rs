@@ -16,6 +16,7 @@ use std::collections::HashMap;
 
 use phf::{phf_map, Map};
 
+use crate::errors::entrances::{err_string, GeorgeResult};
 use crate::strings::{StringHandler, Strings};
 
 /// 十进制对应64进制映射
@@ -188,15 +189,55 @@ pub fn trans_u64_2_bytes(uint64: u64) -> Vec<u8> {
 /// 16进制数组转u64
 ///
 /// 字节数组长度不得超过8，超过将溢出
-pub fn trans_bytes_2_u64(bs: Vec<u8>) -> u64 {
+pub fn trans_bytes_2_u64(bs: Vec<u8>) -> GeorgeResult<u64> {
     let bs_len = bs.len();
-    let mut res: u64 = 0;
-    let mut i = 0;
-    while i < bs_len {
-        res += (bs[i] as u64) * 1 << (8 * (bs_len - i - 1));
-        i += 1;
+    if bs_len > 8 {
+        Err(err_string(format!(
+            "trans bytes 2 u16 out of bounds, except le 8, but receive {}",
+            bs_len
+        )))
+    } else {
+        let mut res: u64 = 0;
+        let mut i = 0;
+        while i < bs_len {
+            res += (bs[i] as u64) * 1 << (8 * (bs_len - i - 1));
+            i += 1;
+        }
+        Ok(res)
     }
-    res
+}
+
+/// u48转16进制数组
+pub fn trans_u48_2_bytes(uint64: u64) -> Vec<u8> {
+    let mut bs: Vec<u8> = vec![];
+    bs.push(((uint64 >> 40) & 0xFF) as u8);
+    bs.push(((uint64 >> 32) & 0xFF) as u8);
+    bs.push(((uint64 >> 24) & 0xFF) as u8);
+    bs.push(((uint64 >> 16) & 0xFF) as u8);
+    bs.push(((uint64 >> 8) & 0xFF) as u8);
+    bs.push((uint64 & 0xFF) as u8);
+    bs
+}
+
+/// 16进制数组转u48
+///
+/// 字节数组长度不得超过6，超过将溢出
+pub fn trans_bytes_2_u48(bs: Vec<u8>) -> GeorgeResult<u64> {
+    let bs_len = bs.len();
+    if bs_len > 6 {
+        Err(err_string(format!(
+            "trans bytes 2 u16 out of bounds, except le 6, but receive {}",
+            bs_len
+        )))
+    } else {
+        let mut res: u64 = 0;
+        let mut i = 0;
+        while i < bs_len {
+            res += (bs[i] as u64) * 1 << (8 * (bs_len - i - 1));
+            i += 1;
+        }
+        Ok(res)
+    }
 }
 
 /// u32转16进制数组
@@ -212,15 +253,22 @@ pub fn trans_u32_2_bytes(uint32: u32) -> Vec<u8> {
 /// 16进制数组转u32
 ///
 /// 字节数组长度不得超过4，超过将溢出
-pub fn trans_bytes_2_u32(bs: Vec<u8>) -> u32 {
+pub fn trans_bytes_2_u32(bs: Vec<u8>) -> GeorgeResult<u32> {
     let bs_len = bs.len();
-    let mut res: u32 = 0;
-    let mut i = 0;
-    while i < bs_len {
-        res += (bs[i] as u32) * 1 << (8 * (bs_len - i - 1));
-        i += 1;
+    if bs_len > 4 {
+        Err(err_string(format!(
+            "trans bytes 2 u16 out of bounds, except le 4, but receive {}",
+            bs_len
+        )))
+    } else {
+        let mut res: u32 = 0;
+        let mut i = 0;
+        while i < bs_len {
+            res += (bs[i] as u32) * 1 << (8 * (bs_len - i - 1));
+            i += 1;
+        }
+        Ok(res)
     }
-    res
 }
 
 /// u16转16进制数组
@@ -233,14 +281,21 @@ pub fn trans_u16_2_bytes(uint16: u16) -> Vec<u8> {
 
 /// 16进制数组转u16
 ///
-/// 字节数组长度不得超过4，超过将溢出
-pub fn trans_bytes_2_u16(bs: Vec<u8>) -> u16 {
+/// 字节数组长度不得超过2，超过将溢出
+pub fn trans_bytes_2_u16(bs: Vec<u8>) -> GeorgeResult<u16> {
     let bs_len = bs.len();
-    let mut res: u16 = 0;
-    let mut i = 0;
-    while i < bs_len {
-        res += (bs[i] as u16) * 1 << (8 * (bs_len - i - 1));
-        i += 1;
+    if bs_len > 2 {
+        Err(err_string(format!(
+            "trans bytes 2 u16 out of bounds, except le 2, but receive {}",
+            bs_len
+        )))
+    } else {
+        let mut res: u16 = 0;
+        let mut i = 0;
+        while i < bs_len {
+            res += (bs[i] as u16) * 1 << (8 * (bs_len - i - 1));
+            i += 1;
+        }
+        Ok(res)
     }
-    res
 }

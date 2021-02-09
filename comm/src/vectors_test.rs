@@ -14,7 +14,6 @@
 
 #[cfg(test)]
 mod vectors {
-    use crate::bytes::create_empty_bytes;
     use crate::vectors::{Vector, VectorHandler};
 
     #[test]
@@ -29,21 +28,21 @@ mod vectors {
     #[test]
     fn sub_test() {
         let vec = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
-        println!("sub = {:#?}", Vector::sub(vec, 2, 5)?);
+        println!("sub = {:#?}", Vector::sub(vec, 2, 5).unwrap());
 
         let x: Vec<u8> = vec![0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x10];
-        println!("sub = {:#?}", Vector::sub(x.clone(), 2, 5)?);
+        println!("sub = {:#?}", Vector::sub(x.clone(), 2, 5).unwrap());
         println!("x = {:#?}", x);
     }
 
     #[test]
     fn find_last_eq_bytes_test() {
         let mut a: Vec<u8> = vec![0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07];
-        let mut b = create_empty_bytes(8);
+        let mut b = Vector::create_empty_bytes(8);
         let mut c = vec![0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x10];
-        let mut d = create_empty_bytes(8);
+        let mut d = Vector::create_empty_bytes(8);
         let mut e = vec![0x03, 0x04, 0x05, 0x06, 0x01, 0x02, 0x08, 0x10];
-        let mut f = create_empty_bytes(8);
+        let mut f = Vector::create_empty_bytes(8);
         a.append(&mut b);
         a.append(&mut c);
         a.append(&mut d);
@@ -57,11 +56,11 @@ mod vectors {
     #[test]
     fn find_eq_vec_bytes_test() {
         let mut a: Vec<u8> = vec![0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07];
-        let mut b = create_empty_bytes(8);
+        let mut b = Vector::create_empty_bytes(8);
         let mut c = vec![0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x10];
-        let mut d = create_empty_bytes(8);
+        let mut d = Vector::create_empty_bytes(8);
         let mut e = vec![0x03, 0x04, 0x05, 0x06, 0x01, 0x02, 0x08, 0x10];
-        let mut f = create_empty_bytes(8);
+        let mut f = Vector::create_empty_bytes(8);
         a.append(&mut b);
         a.append(&mut c);
         a.append(&mut d);

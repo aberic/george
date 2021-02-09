@@ -13,7 +13,7 @@
  */
 
 use crate::task::database::Database;
-use crate::utils::comm::GEORGE_DB_CONFIG;
+use crate::utils::comm::{GEORGE_DB_CONFIG, INDEX_CATALOG};
 use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
 use crate::utils::enums::{EngineType, IndexMold, IndexType};
 use crate::utils::path::{bootstrap_file_path, data_path, database_file_path};
@@ -101,7 +101,24 @@ impl Master {
         match self.database_map().read().unwrap().get(&database_name) {
             Some(database_lock) => {
                 let database = database_lock.read().unwrap();
-                database.create_view(view_name.clone())?;
+                database.create_view(view_name.clone(), IndexType::Major)?;
+            }
+            None => return Err(GeorgeError::from(DatabaseNoExistError)),
+        }
+        Ok(())
+    }
+    /// 创建视图
+    pub(super) fn create_view_custom(
+        &self,
+        database_name: String,
+        view_name: String,
+        _view_comment: String,
+        index_type: IndexType,
+    ) -> GeorgeResult<()> {
+        match self.database_map().read().unwrap().get(&database_name) {
+            Some(database_lock) => {
+                let database = database_lock.read().unwrap();
+                database.create_view(view_name.clone(), index_type)?;
             }
             None => return Err(GeorgeError::from(DatabaseNoExistError)),
         }
@@ -223,7 +240,7 @@ impl Master {
     ///
     /// ###Params
     ///
-    /// view_name 视图名称<p><p>
+    /// view_name 视图名称
     ///
     /// key string
     ///
@@ -239,7 +256,32 @@ impl Master {
         self.database(database_name)?
             .read()
             .unwrap()
-            .get(view_name, key)
+            .get(view_name, INDEX_CATALOG, key)
+    }
+    /// 获取数据，返回存储对象<p><p>
+    ///
+    /// ###Params
+    ///
+    /// view_name 视图名称
+    ///
+    /// index_name 索引名称
+    ///
+    /// key string
+    ///
+    /// ###Return
+    ///
+    /// Seed value信息
+    pub(crate) fn get_by_index(
+        &self,
+        database_name: String,
+        view_name: String,
+        index_name: String,
+        key: String,
+    ) -> GeorgeResult<Vec<u8>> {
+        self.database(database_name)?
+            .read()
+            .unwrap()
+            .get(view_name, index_name.as_str(), key)
     }
 
     /// 删除数据<p><p>

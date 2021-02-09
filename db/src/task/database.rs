@@ -13,7 +13,7 @@
  */
 
 use crate::task::view::View;
-use crate::utils::enums::Tag;
+use crate::utils::enums::{IndexType, Tag};
 use crate::utils::path::{database_file_path, database_path, view_file_path};
 use crate::utils::store::{
     before_content_bytes, metadata_2_bytes, recovery_before_content, Metadata, HD,
@@ -23,6 +23,7 @@ use chrono::{Duration, Local, NaiveDateTime};
 use comm::errors::children::{ViewExistError, ViewNoExistError};
 use comm::errors::entrances::{err_string, err_strs, GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerExecutor, FilerHandler, FilerReader, FilerWriter};
+use comm::strings::{StringHandler, Strings};
 use std::collections::HashMap;
 use std::fs::{read_dir, File, ReadDir};
 use std::io::{Seek, SeekFrom};
@@ -181,11 +182,11 @@ impl Database {
         };
     }
     /// 创建视图
-    pub(crate) fn create_view(&self, name: String) -> GeorgeResult<()> {
+    pub(crate) fn create_view(&self, name: String, index_type: IndexType) -> GeorgeResult<()> {
         if self.exist_view(name.clone()) {
             return Err(GeorgeError::from(ViewExistError));
         }
-        let view = View::create(self.name(), name.clone())?;
+        let view = View::create(self.name(), name.clone(), index_type)?;
         self.view_map().write().unwrap().insert(name, view.clone());
         Ok(())
     }
@@ -268,13 +269,23 @@ impl Database {
     ///
     /// view_name 视图名称<p><p>
     ///
+    /// index_name 索引名称
+    ///
     /// key string
     ///
     /// ###Return
     ///
     /// Seed value信息
-    pub(crate) fn get(&self, view_name: String, key: String) -> GeorgeResult<Vec<u8>> {
-        self.view(view_name)?.read().unwrap().get(self.name(), key)
+    pub(crate) fn get(
+        &self,
+        view_name: String,
+        index_name: &str,
+        key: String,
+    ) -> GeorgeResult<Vec<u8>> {
+        self.view(view_name)?
+            .read()
+            .unwrap()
+            .get(self.name(), index_name, key)
     }
     /// 删除数据<p><p>
     ///
@@ -308,49 +319,37 @@ impl Database {
     }
     /// 通过文件描述恢复结构信息
     pub(crate) fn recover(hd: HD) -> GeorgeResult<Database> {
-        match String::from_utf8(hd.description()) {
-            Ok(description_str) => match hex::decode(description_str) {
-                Ok(vu8) => match String::from_utf8(vu8) {
-                    Ok(real) => {
-                        let mut split = real.split(":#?");
-                        let name = split.next().unwrap().to_string();
-                        let create_time = Duration::nanoseconds(
-                            split.next().unwrap().to_string().parse::<i64>().unwrap(),
-                        );
-                        let file_path = database_file_path(name.clone());
-                        let file_append = obtain_write_append_file(file_path)?;
-                        let database = Database {
-                            name,
-                            create_time,
-                            metadata: hd.metadata(),
-                            file_append,
-                            views: Arc::new(Default::default()),
-                        };
-                        log::info!("recovery database {}", database.name());
-                        // 读取database目录下所有文件
-                        match read_dir(database_path(database.name())) {
-                            // 恢复views数据
-                            Ok(paths) => {
-                                database.recovery_views(paths);
-                            }
-                            Err(err) => {
-                                panic!("recovery databases read dir failed! error is {}", err)
-                            }
-                        }
-                        Ok(database)
+        let description_str = Strings::from_utf8(hd.description())?;
+        match hex::decode(description_str) {
+            Ok(vu8) => {
+                let real = Strings::from_utf8(vu8)?;
+                let mut split = real.split(":#?");
+                let name = split.next().unwrap().to_string();
+                let create_time = Duration::nanoseconds(
+                    split.next().unwrap().to_string().parse::<i64>().unwrap(),
+                );
+                let file_path = database_file_path(name.clone());
+                let file_append = obtain_write_append_file(file_path)?;
+                let database = Database {
+                    name,
+                    create_time,
+                    metadata: hd.metadata(),
+                    file_append,
+                    views: Arc::new(Default::default()),
+                };
+                log::info!("recovery database {}", database.name());
+                // 读取database目录下所有文件
+                match read_dir(database_path(database.name())) {
+                    // 恢复views数据
+                    Ok(paths) => {
+                        database.recovery_views(paths);
                     }
-                    Err(err) => Err(err_string(format!(
-                        "recovery index from utf8 2 failed! error is {}",
-                        err
-                    ))),
-                },
-                Err(err) => Err(err_string(format!(
-                    "recovery database decode failed! error is {}",
-                    err
-                ))),
-            },
+                    Err(err) => panic!("recovery databases read dir failed! error is {}", err),
+                }
+                Ok(database)
+            }
             Err(err) => Err(err_string(format!(
-                "recovery index from utf8 1 failed! error is {}",
+                "recovery database decode failed! error is {}",
                 err
             ))),
         }

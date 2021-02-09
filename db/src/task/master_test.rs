@@ -16,6 +16,7 @@ use chrono::{Duration, NaiveDateTime};
 
 use crate::task::master::GLOBAL_MASTER;
 use crate::utils::enums::{EngineType, IndexMold, IndexType};
+use comm::strings::{StringHandler, Strings};
 use std::error::Error;
 
 #[test]
@@ -320,7 +321,7 @@ fn get(database_name: &str, view_name: &str, key: &str, position: usize) {
         Ok(vu8) => println!(
             "get{} is {:#?}",
             position,
-            String::from_utf8(vu8).unwrap().as_str()
+            Strings::from_utf8(vu8).unwrap().as_str()
         ),
         Err(ie) => println!("get{} is {:#?}", position, ie.source().unwrap().to_string()),
     }
