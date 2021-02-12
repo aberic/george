@@ -15,7 +15,7 @@
 use crate::task::database::Database;
 use crate::utils::comm::{GEORGE_DB_CONFIG, INDEX_CATALOG};
 use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
-use crate::utils::enums::{EngineType, IndexMold, IndexType};
+use crate::utils::enums::{EngineType, IndexMold};
 use crate::utils::path::{bootstrap_file_path, data_path, database_file_path};
 use crate::utils::store::recovery_before_content;
 use chrono::{Duration, Local, NaiveDateTime};
@@ -101,24 +101,7 @@ impl Master {
         match self.database_map().read().unwrap().get(&database_name) {
             Some(database_lock) => {
                 let database = database_lock.read().unwrap();
-                database.create_view(view_name.clone(), IndexType::Major)?;
-            }
-            None => return Err(GeorgeError::from(DatabaseNoExistError)),
-        }
-        Ok(())
-    }
-    /// 创建视图
-    pub(super) fn create_view_custom(
-        &self,
-        database_name: String,
-        view_name: String,
-        _view_comment: String,
-        index_type: IndexType,
-    ) -> GeorgeResult<()> {
-        match self.database_map().read().unwrap().get(&database_name) {
-            Some(database_lock) => {
-                let database = database_lock.read().unwrap();
-                database.create_view(view_name.clone(), index_type)?;
+                database.create_view(view_name.clone())?;
             }
             None => return Err(GeorgeError::from(DatabaseNoExistError)),
         }
@@ -168,7 +151,6 @@ impl Master {
         view_name: String,
         index_name: String,
         engine_type: EngineType,
-        index_type: IndexType,
         index_mold: IndexMold,
         primary: bool,
     ) -> GeorgeResult<()> {
@@ -178,7 +160,6 @@ impl Master {
             database_name,
             index_name,
             engine_type,
-            index_type,
             index_mold,
             primary,
         )

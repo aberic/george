@@ -20,7 +20,7 @@ use serde::export::fmt::Debug;
 use comm::errors::entrances::GeorgeResult;
 
 use crate::task::view::{Pigeonhole, View};
-use crate::utils::enums::{IndexMold, IndexType};
+use crate::utils::enums::IndexMold;
 use crate::utils::store::Metadata;
 
 /// 索引通用特性，遵循此特性创建索引可以更方便的针对icdb进行扩展
@@ -38,8 +38,6 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     fn metadata(&self) -> Metadata;
     /// 创建时间
     fn create_time(&self) -> Duration;
-    /// 获取索引类型
-    fn index_type(&self) -> IndexType;
     /// 插入数据<p><p>
     ///
     /// ###Params

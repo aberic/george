@@ -29,11 +29,14 @@ use comm::io::file::{Filer, FilerNormal, FilerReader, FilerWriter};
 use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u64, trans_u32_2_bytes};
 use comm::vectors::{Vector, VectorHandler};
 
-use crate::task::engine::dossier::index::Index;
+use crate::task::engine::block::index::Index as IndexBlock;
+use crate::task::engine::dossier::index::Index as IndexDossier;
+use crate::task::engine::library::index::Index as IndexLibrary;
+// use crate::task::engine::memory::index::Index as IndexMemory;
 use crate::task::engine::traits::{TIndex, TSeed};
 use crate::task::seed::{IndexData, Seed};
 use crate::utils::comm::{key_fetch, INDEX_CATALOG, VALUE_TYPE_CRASH, VALUE_TYPE_NORMAL};
-use crate::utils::enums::{EngineType, IndexMold, IndexType, Tag};
+use crate::utils::enums::{EngineType, IndexMold, Tag};
 use crate::utils::path::{index_file_path, view_file_path, view_path};
 use crate::utils::store::{
     before_content_bytes, metadata_2_bytes, recovery_before_content, Metadata, HD,
@@ -75,7 +78,7 @@ pub(crate) struct View {
 /// category 视图类型
 ///
 /// level 视图规模/级别
-fn new_view(database_name: String, name: String, index_type: IndexType) -> GeorgeResult<View> {
+fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
     let file_path = view_file_path(database_name.clone(), name.clone());
@@ -91,7 +94,6 @@ fn new_view(database_name: String, name: String, index_type: IndexType) -> Georg
         database_name,
         INDEX_CATALOG.to_string(),
         EngineType::Library,
-        index_type,
         IndexMold::String,
         true,
     )?;
@@ -99,12 +101,8 @@ fn new_view(database_name: String, name: String, index_type: IndexType) -> Georg
 }
 
 impl View {
-    pub(crate) fn create(
-        database_name: String,
-        name: String,
-        index_type: IndexType,
-    ) -> GeorgeResult<Arc<RwLock<View>>> {
-        let view = new_view(database_name.clone(), name, index_type)?;
+    pub(crate) fn create(database_name: String, name: String) -> GeorgeResult<Arc<RwLock<View>>> {
+        let view = new_view(database_name.clone(), name)?;
         view.init(database_name)?;
         Ok(Arc::new(RwLock::new(view)))
     }
@@ -223,7 +221,6 @@ impl View {
         database_name: String,
         index_name: String,
         engine_type: EngineType,
-        index_type: IndexType,
         index_mold: IndexMold,
         primary: bool,
     ) -> GeorgeResult<()> {
@@ -236,44 +233,16 @@ impl View {
         match engine_type {
             EngineType::None => return Err(err_str("unsupported engine type with none")),
             EngineType::Memory => {
-                index = Index::create(
-                    database_name,
-                    view_name,
-                    name,
-                    primary,
-                    index_type,
-                    index_mold,
-                )?
+                index = IndexDossier::create(database_name, view_name, name, primary, index_mold)?
             }
             EngineType::Dossier => {
-                index = Index::create(
-                    database_name,
-                    view_name,
-                    name,
-                    primary,
-                    index_type,
-                    index_mold,
-                )?
+                index = IndexDossier::create(database_name, view_name, name, primary, index_mold)?
             }
             EngineType::Library => {
-                index = Index::create(
-                    database_name,
-                    view_name,
-                    name,
-                    primary,
-                    index_type,
-                    index_mold,
-                )?
+                index = IndexLibrary::create(database_name, view_name, name, primary, index_mold)?
             }
             EngineType::Block => {
-                index = Index::create(
-                    database_name,
-                    view_name,
-                    name,
-                    primary,
-                    index_type,
-                    index_mold,
-                )?
+                index = IndexBlock::create(database_name, view_name, name, primary, index_mold)?
             }
         }
         self.index_map()
@@ -343,7 +312,7 @@ impl View {
         let index = self.index(index_name)?;
         let idx = index.read().unwrap();
         let view_info_index = idx.get(database_name, self.name(), key.clone())?;
-        let index_data_list = self.fetch_view_info_index(idx.index_type(), view_info_index)?;
+        let index_data_list = self.fetch_view_info_index(view_info_index)?;
         for index_data in index_data_list {
             if index_data.equal_key(key.clone()) {
                 return Ok(index_data.value());
@@ -384,11 +353,7 @@ impl View {
     /// index_info_index 索引记录表内容索引，记录表文件属性(数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
     ///
     /// key 原始key
-    fn fetch_view_info_index(
-        &self,
-        index_type: IndexType,
-        index_info_index: Vec<u8>,
-    ) -> GeorgeResult<Vec<IndexData>> {
+    fn fetch_view_info_index(&self, index_info_index: Vec<u8>) -> GeorgeResult<Vec<IndexData>> {
         let mut index_data_list: Vec<IndexData> = vec![];
         // 当前记录数据所属视图文件版本信息
         let version = trans_bytes_2_u16(Vector::sub(index_info_index.clone(), 0, 2)?)?;
@@ -422,11 +387,7 @@ impl View {
         }
         // 正常数据类型
         if VALUE_TYPE_NORMAL.eq(value_type_bytes) {
-            index_data_list.push(IndexData::create(
-                self.clone(),
-                index_type,
-                view_info_index,
-            )?)
+            index_data_list.push(IndexData::create(self.clone(), view_info_index)?)
         } else {
             // 碰撞数据类型
         }
@@ -634,31 +595,93 @@ impl View {
             index_file_path(database_name.clone(), self.name(), index_name.clone());
         match recovery_before_content(index_file_path.clone()) {
             Ok(hd) => {
-                // 恢复view数据
-                match Index::recover(database_name.clone(), self.name(), hd.clone()) {
-                    Ok(index) => {
-                        log::debug!(
-                            "index [db={}, view={}, name={}, create_time={}, {:#?}]",
-                            database_name.clone(),
-                            self.name(),
-                            index_name.clone(),
-                            index
-                                .clone()
-                                .read()
-                                .unwrap()
-                                .create_time()
-                                .num_nanoseconds()
-                                .unwrap()
-                                .to_string(),
-                            hd.metadata()
-                        );
-                        // 如果已存在该view，则不处理
-                        if self.exist_index(index_name.clone()) {
-                            return;
+                // 恢复index数据
+                match hd.metadata.engine_type {
+                    EngineType::Dossier => {
+                        match IndexDossier::recover(database_name.clone(), self.name(), hd.clone())
+                        {
+                            Ok(index) => {
+                                log::debug!(
+                                    "index [db={}, view={}, name={}, create_time={}, {:#?}]",
+                                    database_name.clone(),
+                                    self.name(),
+                                    index_name.clone(),
+                                    index
+                                        .clone()
+                                        .read()
+                                        .unwrap()
+                                        .create_time()
+                                        .num_nanoseconds()
+                                        .unwrap()
+                                        .to_string(),
+                                    hd.metadata()
+                                );
+                                // 如果已存在该view，则不处理
+                                if self.exist_index(index_name.clone()) {
+                                    return;
+                                }
+                                self.index_map().write().unwrap().insert(index_name, index);
+                            }
+                            Err(err) => panic!("recovery index failed! error is {}", err),
                         }
-                        self.index_map().write().unwrap().insert(index_name, index);
                     }
-                    Err(err) => panic!("recovery index failed! error is {}", err),
+                    EngineType::Library => {
+                        match IndexLibrary::recover(database_name.clone(), self.name(), hd.clone())
+                        {
+                            Ok(index) => {
+                                log::debug!(
+                                    "index [db={}, view={}, name={}, create_time={}, {:#?}]",
+                                    database_name.clone(),
+                                    self.name(),
+                                    index_name.clone(),
+                                    index
+                                        .clone()
+                                        .read()
+                                        .unwrap()
+                                        .create_time()
+                                        .num_nanoseconds()
+                                        .unwrap()
+                                        .to_string(),
+                                    hd.metadata()
+                                );
+                                // 如果已存在该view，则不处理
+                                if self.exist_index(index_name.clone()) {
+                                    return;
+                                }
+                                self.index_map().write().unwrap().insert(index_name, index);
+                            }
+                            Err(err) => panic!("recovery index failed! error is {}", err),
+                        }
+                    }
+                    EngineType::Block => {
+                        match IndexBlock::recover(database_name.clone(), self.name(), hd.clone()) {
+                            Ok(index) => {
+                                log::debug!(
+                                    "index [db={}, view={}, name={}, create_time={}, {:#?}]",
+                                    database_name.clone(),
+                                    self.name(),
+                                    index_name.clone(),
+                                    index
+                                        .clone()
+                                        .read()
+                                        .unwrap()
+                                        .create_time()
+                                        .num_nanoseconds()
+                                        .unwrap()
+                                        .to_string(),
+                                    hd.metadata()
+                                );
+                                // 如果已存在该view，则不处理
+                                if self.exist_index(index_name.clone()) {
+                                    return;
+                                }
+                                self.index_map().write().unwrap().insert(index_name, index);
+                            }
+                            Err(err) => panic!("recovery index failed! error is {}", err),
+                        }
+                    }
+                    // todo
+                    _ => panic!("index engine type error"),
                 }
             }
             Err(err) => panic!(

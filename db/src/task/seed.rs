@@ -28,7 +28,7 @@ use comm::vectors::{Vector, VectorHandler};
 use crate::task::engine::traits::TSeed;
 use crate::task::view::{Pigeonhole, View};
 use crate::utils::comm::{is_bytes_fill, VALUE_TYPE_NORMAL};
-use crate::utils::enums::{Enum, EnumHandler, IndexType};
+use crate::utils::enums::{Enum, EnumHandler};
 use comm::strings::{StringHandler, Strings};
 
 /// B+Tree索引叶子结点内防hash碰撞数组结构中单体结构
@@ -40,8 +40,6 @@ use comm::strings::{StringHandler, Strings};
 pub(crate) struct Seed {
     /// 获取当前结果原始key信息，用于内存版索引
     key: String,
-    /// 主键索引策略
-    policy: Option<IndexPolicy>,
     /// 除主键索引外的其它索引操作策略集合
     policies: Vec<IndexPolicy>,
 }
@@ -55,8 +53,6 @@ pub(crate) struct IndexData {
     data_seek: u64,
     /// 使用当前索引的原始key
     original_key: String,
-    /// 索引属性，主键溯源；主键不溯源；普通索引
-    index_type: IndexType,
     /// 真实存储数据内容
     value: Vec<u8>,
 }
@@ -64,14 +60,8 @@ pub(crate) struct IndexData {
 impl IndexData {
     /// 创建视图索引内容
     ///
-    /// 索引属性，主键溯源；主键不溯源；普通索引
-    ///
     /// view_index_info 循环定位记录使用文件属性
-    pub(crate) fn create(
-        view: View,
-        index_type: IndexType,
-        view_info_index: Vec<u8>,
-    ) -> GeorgeResult<IndexData> {
+    pub(crate) fn create(view: View, view_info_index: Vec<u8>) -> GeorgeResult<IndexData> {
         let version = trans_bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
         let path = view.path(version)?;
         let original_key_len = trans_bytes_2_u64(Vector::sub(view_info_index.clone(), 8, 10)?)?;
@@ -99,7 +89,6 @@ impl IndexData {
             version,
             data_seek,
             original_key,
-            index_type,
             value,
         })
     }
@@ -126,7 +115,6 @@ impl IndexData {
 /// 待处理索引操作策略
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct IndexPolicy {
-    index_type: IndexType,
     /// 使用当前索引的原始key
     original_key: String,
     /// 待处理索引文件路径
@@ -142,14 +130,8 @@ impl IndexPolicy {
             Err(err) => Err(err_string(err.to_string())),
         }
     }
-    pub fn bytes(
-        index_type: IndexType,
-        key: String,
-        index_file_path: String,
-        seek: u64,
-    ) -> GeorgeResult<Vec<u8>> {
+    pub fn bytes(key: String, index_file_path: String, seek: u64) -> GeorgeResult<Vec<u8>> {
         let policy = IndexPolicy {
-            index_type,
             original_key: key,
             index_file_path,
             seek,
@@ -159,20 +141,11 @@ impl IndexPolicy {
             Err(err) => Err(err_string(err.to_string())),
         }
     }
-    fn index_type(&self) -> IndexType {
-        self.index_type.clone()
-    }
     fn index_file_path(&self) -> String {
         self.index_file_path.clone()
     }
     fn original_key(&self) -> String {
         self.original_key.clone()
-    }
-    fn is_trace(&self) -> bool {
-        match self.index_type {
-            IndexType::Trace => true,
-            _ => false,
-        }
     }
     /// 检出索引记录表文档属性
     ///
@@ -236,8 +209,6 @@ impl IndexPolicy {
     ///
     /// view_seek_start_bytes 数据在视图文件中起始偏移量p(8字节)
     fn view_info_index_data(&self, key: String, mut view_index_info: Vec<u8>) -> Vec<u8> {
-        // 索引属性 todo
-        let index_type_byte = Enum::index_type_u8(self.index_type());
         // 原始key字节数组
         let mut key_bytes = key.into_bytes();
         // 原始key字节数组长度
@@ -295,7 +266,6 @@ impl Seed {
     pub fn create(key: String) -> Seed {
         return Seed {
             key,
-            policy: None,
             policies: Vec::new(),
         };
     }
@@ -303,36 +273,13 @@ impl Seed {
     fn key(&self) -> String {
         self.key.clone()
     }
-    fn index_policy(&self) -> Option<IndexPolicy> {
-        self.policy.clone()
-    }
-    /// 上一数据表内容索引(8字节)
-    ///
-    /// view_version_bytes 视图文件属性，版本号(2字节)
-    fn last_view_index(
-        &self,
-        view_name: String,
-        view_version_bytes: Vec<u8>,
-    ) -> GeorgeResult<Vec<u8>> {
-        match self.index_policy() {
-            Some(policy) => policy.check_out_bytes(view_version_bytes),
-            None => Err(err_string(format!(
-                "no trace index found in this view {}",
-                view_name
-            ))),
-        }
-    }
 }
 
 /// 封装方法函数
 impl TSeed for Seed {
     fn modify(&mut self, value: Vec<u8>) -> GeorgeResult<()> {
         let index_policy = IndexPolicy::from(value)?;
-        if index_policy.is_trace() {
-            self.policy = Some(index_policy);
-        } else {
-            self.policies.push(index_policy);
-        }
+        self.policies.push(index_policy);
         Ok(())
     }
     fn save(
@@ -343,7 +290,7 @@ impl TSeed for Seed {
         force: bool,
     ) -> GeorgeResult<()> {
         // todo 失败回滚
-        if self.policy.is_none() && self.policies.len() == 0 {
+        if self.policies.len() == 0 {
             return Err(err_string(format!(
                 "no index found in this view {}",
                 view.name()
@@ -388,8 +335,6 @@ impl TSeed for Seed {
         // todo 失败回滚
         // 生成视图文件属性，版本号(2字节)
         let view_version_bytes = trans_u16_2_bytes(view.version());
-        let last_view_index_bytes =
-            self.last_view_index(view.name(), view_version_bytes.clone())?;
         let value_len = value.len() as u32;
         let mut value_bytes = trans_u32_2_bytes(value_len);
         value_bytes.append(&mut value);

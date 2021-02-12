@@ -17,14 +17,10 @@ use serde::{Deserialize, Serialize};
 pub trait EnumHandler {
     fn tag_u8(tag: Tag) -> u8;
     fn engine_type_u8(engine_type: EngineType) -> u8;
-    fn capacity_u8(capacity: Capacity) -> u8;
     fn mold_u8(mold: IndexMold) -> u8;
-    fn index_type_u8(index_type: IndexType) -> u8;
     fn tag(b: u8) -> Tag;
     fn engine_type(b: u8) -> EngineType;
     fn mold(b: u8) -> IndexMold;
-    fn capacity(b: u8) -> Capacity;
-    fn index_type(b: u8) -> IndexType;
     fn mold_str(mold: IndexMold) -> String;
 }
 
@@ -37,14 +33,8 @@ impl EnumHandler for Enum {
     fn engine_type_u8(engine_type: EngineType) -> u8 {
         engine_type_u8(engine_type)
     }
-    fn capacity_u8(capacity: Capacity) -> u8 {
-        capacity_u8(capacity)
-    }
     fn mold_u8(mold: IndexMold) -> u8 {
         mold_u8(mold)
-    }
-    fn index_type_u8(index_type: IndexType) -> u8 {
-        index_type_u8(index_type)
     }
     fn tag(b: u8) -> Tag {
         tag(b)
@@ -54,12 +44,6 @@ impl EnumHandler for Enum {
     }
     fn mold(b: u8) -> IndexMold {
         mold(b)
-    }
-    fn capacity(b: u8) -> Capacity {
-        capacity(b)
-    }
-    fn index_type(b: u8) -> IndexType {
-        index_type(b)
     }
     fn mold_str(mold: IndexMold) -> String {
         mold_str(mold)
@@ -77,21 +61,6 @@ pub enum Tag {
     View,
     /// 索引数据文件
     Index,
-}
-
-/// 索引类型
-///
-/// 主键溯源；主键不溯源；普通索引
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum IndexType {
-    /// 占位
-    None,
-    /// 普通索引
-    Normal,
-    /// 主键不溯源
-    Major,
-    /// 主键溯源
-    Trace,
 }
 
 /// 索引值类型
@@ -130,17 +99,6 @@ pub enum EngineType {
     Block,
 }
 
-/// 存储量级
-#[derive(Debug, Clone, Copy)]
-pub enum Capacity {
-    /// 占位
-    None,
-    /// 低级，支持存储2^32个元素
-    U32,
-    /// 高级，支持存储2^64个元素
-    U64,
-}
-
 fn tag_u8(tag: Tag) -> u8 {
     match tag {
         Tag::Bootstrap => 0x00,
@@ -160,14 +118,6 @@ fn engine_type_u8(engine_type: EngineType) -> u8 {
     }
 }
 
-fn capacity_u8(capacity: Capacity) -> u8 {
-    match capacity {
-        Capacity::None => 0x00,
-        Capacity::U32 => 0x01,
-        Capacity::U64 => 0x02,
-    }
-}
-
 fn mold_u8(mold: IndexMold) -> u8 {
     match mold {
         IndexMold::String => 0x00,
@@ -178,15 +128,6 @@ fn mold_u8(mold: IndexMold) -> u8 {
         IndexMold::F64 => 0x05,
         IndexMold::F32 => 0x06,
         IndexMold::Bool => 0x07,
-    }
-}
-
-fn index_type_u8(index_class: IndexType) -> u8 {
-    match index_class {
-        IndexType::None => 0x00,
-        IndexType::Normal => 0x01,
-        IndexType::Major => 0x02,
-        IndexType::Trace => 0x03,
     }
 }
 
@@ -220,25 +161,6 @@ fn mold(b: u8) -> IndexMold {
         0x04 => IndexMold::I32,
         0x05 => IndexMold::F64,
         _ => IndexMold::String,
-    }
-}
-
-fn capacity(b: u8) -> Capacity {
-    match b {
-        0x00 => Capacity::None,
-        0x01 => Capacity::U32,
-        0x02 => Capacity::U64,
-        _ => Capacity::U32,
-    }
-}
-
-fn index_type(b: u8) -> IndexType {
-    match b {
-        0x00 => IndexType::None,
-        0x01 => IndexType::Normal,
-        0x02 => IndexType::Major,
-        0x03 => IndexType::Trace,
-        _ => IndexType::None,
     }
 }
 

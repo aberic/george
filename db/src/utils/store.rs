@@ -20,7 +20,7 @@ use comm::errors::entrances::{err_str, err_string};
 use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_u32_2_bytes};
 
 use crate::utils::deploy::VERSION;
-use crate::utils::enums::{Capacity, EngineType, Enum, EnumHandler, IndexType, Tag};
+use crate::utils::enums::{EngineType, Enum, EnumHandler, Tag};
 use comm::io::file::{Filer, FilerNormal};
 
 /// 起始符
@@ -35,10 +35,6 @@ pub struct Metadata {
     pub tag: Tag,
     /// 存储引擎类型
     pub engine_type: EngineType,
-    /// 存储容量
-    pub capacity: Capacity,
-    /// 索引类型
-    pub index_type: IndexType,
     /// 版本号
     pub version: [u8; 2],
     /// 序号
@@ -48,40 +44,30 @@ pub struct Metadata {
 impl fmt::Debug for Metadata {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let version = vec![self.version[0], self.version[1]];
-        write!(f, "tag = {:#?}, engine_type = {:#?}, capacity = {:#?}, index_type = {:#?}, version = {:#?}, sequence = {:#?}", self.tag, self.engine_type, self.capacity, self.index_type, trans_bytes_2_u16(version), self.sequence)
+        write!(
+            f,
+            "tag = {:#?}, engine_type = {:#?}, version = {:#?}, sequence = {:#?}",
+            self.tag,
+            self.engine_type,
+            trans_bytes_2_u16(version),
+            self.sequence
+        )
     }
 }
 
 impl Metadata {
-    pub fn create(
-        tag: Tag,
-        engine_type: EngineType,
-        capacity: Capacity,
-        index_type: IndexType,
-        sequence: u8,
-    ) -> Metadata {
+    pub fn create(tag: Tag, engine_type: EngineType, sequence: u8) -> Metadata {
         Metadata {
             tag,
             engine_type,
-            capacity,
-            index_type,
             version: VERSION,
             sequence,
         }
     }
-    pub fn from(
-        tag: Tag,
-        engine_type: EngineType,
-        capacity: Capacity,
-        index_type: IndexType,
-        version: [u8; 2],
-        sequence: u8,
-    ) -> Metadata {
+    pub fn from(tag: Tag, engine_type: EngineType, version: [u8; 2], sequence: u8) -> Metadata {
         Metadata {
             tag,
             engine_type,
-            capacity,
-            index_type,
             version,
             sequence,
         }
@@ -90,44 +76,34 @@ impl Metadata {
         Metadata {
             tag,
             engine_type: EngineType::None,
-            capacity: Capacity::None,
-            index_type: IndexType::None,
             version: VERSION,
             sequence: 0x00,
         }
     }
-    pub fn index(engine_type: EngineType, index_type: IndexType) -> GeorgeResult<Metadata> {
+    pub fn index(engine_type: EngineType) -> GeorgeResult<Metadata> {
         match engine_type {
             EngineType::None => Err(err_str("unsupported engine type with none")),
             EngineType::Memory => Ok(Metadata {
                 tag: Tag::Index,
                 engine_type,
-                capacity: Capacity::U64,
-                index_type,
                 version: VERSION,
                 sequence: 0x00,
             }),
             EngineType::Dossier => Ok(Metadata {
                 tag: Tag::Index,
                 engine_type,
-                capacity: Capacity::U32,
-                index_type,
                 version: VERSION,
                 sequence: 0x00,
             }),
             EngineType::Library => Ok(Metadata {
                 tag: Tag::Index,
                 engine_type,
-                capacity: Capacity::U64,
-                index_type,
                 version: VERSION,
                 sequence: 0x00,
             }),
             EngineType::Block => Ok(Metadata {
                 tag: Tag::Index,
                 engine_type,
-                capacity: Capacity::U64,
-                index_type,
                 version: VERSION,
                 sequence: 0x00,
             }),
@@ -142,10 +118,8 @@ impl Metadata {
             Ok(Metadata::from(
                 Enum::tag(head.get(2).unwrap().clone()),
                 Enum::engine_type(head.get(3).unwrap().clone()),
-                Enum::capacity(head.get(4).unwrap().clone()),
-                Enum::index_type(head.get(5).unwrap().clone()),
-                [head.get(6).unwrap().clone(), head.get(7).unwrap().clone()],
-                head.get(8).unwrap().clone(),
+                [head.get(4).unwrap().clone(), head.get(5).unwrap().clone()],
+                head.get(6).unwrap().clone(),
             ))
         }
     }
@@ -181,11 +155,11 @@ pub fn metadata_2_bytes(metadata: Metadata) -> Vec<u8> {
         FRONT.get(1).unwrap().clone(),
         Enum::tag_u8(metadata.tag),
         Enum::engine_type_u8(metadata.engine_type),
-        Enum::capacity_u8(metadata.capacity),
-        Enum::index_type_u8(metadata.index_type),
         metadata.version.get(0).unwrap().clone(),
         metadata.version.get(1).unwrap().clone(),
         metadata.sequence,
+        0x00,
+        0x00,
         0x00,
         0x00,
         0x00,
@@ -253,9 +227,6 @@ pub struct HD {
 impl HD {
     pub fn metadata(&self) -> Metadata {
         self.metadata.clone()
-    }
-    pub fn index_type(&self) -> IndexType {
-        self.metadata.clone().index_type.clone()
     }
     pub fn description(&self) -> Vec<u8> {
         self.description.clone()

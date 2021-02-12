@@ -24,7 +24,7 @@ use comm::cryptos::hash::{
 use comm::errors::entrances::{err_string, GeorgeResult};
 use comm::io::file::{Filer, FilerExecutor, FilerHandler};
 
-use crate::task::engine::dossier::node::Node;
+use crate::task::engine::block::node::Node;
 use crate::task::engine::traits::{TIndex, TSeed};
 use crate::utils::enums::{EngineType, Enum, EnumHandler, IndexMold};
 use crate::utils::path::index_file_path;

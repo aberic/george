@@ -15,7 +15,7 @@
 use chrono::{Duration, NaiveDateTime};
 
 use crate::task::master::GLOBAL_MASTER;
-use crate::utils::enums::{EngineType, IndexMold, IndexType};
+use crate::utils::enums::{EngineType, IndexMold};
 use comm::strings::{StringHandler, Strings};
 use std::error::Error;
 
@@ -55,7 +55,6 @@ fn base_test() {
         view_name,
         index_name,
         EngineType::Dossier,
-        IndexType::Normal,
         IndexMold::String,
         true,
     );
@@ -110,7 +109,6 @@ fn index_create_test() {
         "view_index_create_test",
         "index_create_test",
         EngineType::Dossier,
-        IndexType::Normal,
         IndexMold::String,
         true,
     );
@@ -255,7 +253,6 @@ fn create_index(
     view_name: &str,
     index_name: &str,
     engine_type: EngineType,
-    index_type: IndexType,
     index_mold: IndexMold,
     primary: bool,
 ) {
@@ -265,7 +262,6 @@ fn create_index(
         String::from(view_name),
         String::from(index_name),
         engine_type,
-        index_type,
         index_mold,
         primary,
     ) {

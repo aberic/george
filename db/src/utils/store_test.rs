@@ -12,25 +12,13 @@
  * limitations under the License.
  */
 
-use crate::utils::enums::{Capacity, EngineType, IndexType, Tag};
+use crate::utils::enums::{EngineType, Tag};
 use crate::utils::store::{metadata_2_bytes, Metadata};
 
 #[test]
 fn head_test() {
-    let head1 = metadata_2_bytes(Metadata::create(
-        Tag::Bootstrap,
-        EngineType::Memory,
-        Capacity::U32,
-        IndexType::Normal,
-        0x00,
-    ));
-    let head2 = metadata_2_bytes(Metadata::create(
-        Tag::Database,
-        EngineType::Dossier,
-        Capacity::U64,
-        IndexType::None,
-        0x01,
-    ));
+    let head1 = metadata_2_bytes(Metadata::create(Tag::Bootstrap, EngineType::Memory, 0x00));
+    let head2 = metadata_2_bytes(Metadata::create(Tag::Database, EngineType::Dossier, 0x01));
     println!("head1 = {:#?}", head1);
     println!("head2 = {:#?}", head2);
 

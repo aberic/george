@@ -13,7 +13,7 @@
  */
 
 use crate::task::view::View;
-use crate::utils::enums::{IndexType, Tag};
+use crate::utils::enums::Tag;
 use crate::utils::path::{database_file_path, database_path, view_file_path};
 use crate::utils::store::{
     before_content_bytes, metadata_2_bytes, recovery_before_content, Metadata, HD,
@@ -182,11 +182,11 @@ impl Database {
         };
     }
     /// 创建视图
-    pub(crate) fn create_view(&self, name: String, index_type: IndexType) -> GeorgeResult<()> {
+    pub(crate) fn create_view(&self, name: String) -> GeorgeResult<()> {
         if self.exist_view(name.clone()) {
             return Err(GeorgeError::from(ViewExistError));
         }
-        let view = View::create(self.name(), name.clone(), index_type)?;
+        let view = View::create(self.name(), name.clone())?;
         self.view_map().write().unwrap().insert(name, view.clone());
         Ok(())
     }
