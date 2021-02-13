@@ -228,6 +228,9 @@ impl HD {
     pub fn metadata(&self) -> Metadata {
         self.metadata.clone()
     }
+    pub fn engine_type(&self) -> EngineType {
+        self.metadata().engine_type.clone()
+    }
     pub fn description(&self) -> Vec<u8> {
         self.description.clone()
     }

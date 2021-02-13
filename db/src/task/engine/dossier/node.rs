@@ -14,7 +14,7 @@
 
 use std::sync::{Arc, RwLock};
 
-use crate::task::engine::traits::TSeed;
+use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::seed::IndexPolicy;
 use crate::utils::comm::level_distance_64;
 use crate::utils::path::{index_path, node_file_path};
@@ -55,11 +55,11 @@ impl Node {
 }
 
 /// 封装方法函数
-impl Node {
+impl TNode for Node {
     /// 存储结点所属各子结点坐标顺序字符串
     ///
     /// 如果子项是node集合，在node集合中每一个node的默认字节长度是8，数量是65536，即一次性读取524288个字节
-    pub(crate) fn node_bytes(&self) -> Arc<RwLock<Vec<u8>>> {
+    fn node_bytes(&self) -> Arc<RwLock<Vec<u8>>> {
         self.node_bytes.clone()
     }
     /// 插入数据<p><p>
@@ -73,7 +73,7 @@ impl Node {
     /// ###Return
     ///
     /// EngineResult<()>
-    pub(crate) fn put(
+    fn put(
         &self,
         original_key: String,
         database_name: String,
@@ -85,7 +85,7 @@ impl Node {
         let index_path = index_path(database_name, view_name, index_name);
         self.put_in_node(original_key, index_path, String::from(""), 1, key, seed)
     }
-    pub(crate) fn get(
+    fn get(
         &self,
         database_name: String,
         view_name: String,

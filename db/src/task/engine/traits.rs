@@ -19,7 +19,7 @@ use serde::export::fmt::Debug;
 
 use comm::errors::entrances::GeorgeResult;
 
-use crate::task::view::{Pigeonhole, View};
+use crate::task::view::View;
 use crate::utils::enums::IndexMold;
 use crate::utils::store::Metadata;
 
@@ -30,8 +30,6 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     /// 索引名称，可以自定义；<p>
     /// siam::Index 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入<p><p>
     fn name(&self) -> String;
-    /// 当前索引是否为主键
-    fn is_primary(&self) -> bool;
     /// 索引值类型
     fn mold(&self) -> IndexMold;
     /// 存储引擎类型
@@ -70,13 +68,6 @@ pub(crate) trait TIndex: Send + Sync + Debug {
 ///
 /// 该特性包含了结点的基本方法，理论上都需要进行实现才能使用
 pub(crate) trait TNode: Send + Sync + Debug {
-    /// 当前结点所在集合中的索引下标，该坐标不一定在数组中的正确位置，但一定是逻辑正确的
-    fn degree_index(&self) -> u16;
-    /// 子结点集合Vec，允许为空Option，多线程共享数据Arc，支持并发操作RWLock，集合内存储指针Box，指针类型为Node
-    fn nodes(&self) -> Option<Arc<RwLock<Vec<Arc<Self>>>>>;
-    /// 叶子结点下真实存储数据的集合，该集合主要目的在于解决Hash碰撞，允许为空Option，多线程共享数据Arc，
-    /// 支持并发操作RWLock，集合内存储指针Box，指针类型为Seed
-    fn seeds(&self) -> Option<Arc<RwLock<Vec<Arc<RwLock<dyn TSeed>>>>>>;
     /// 存储结点所属各子结点坐标顺序字符串
     ///
     /// 如果子项是node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
@@ -84,7 +75,6 @@ pub(crate) trait TNode: Send + Sync + Debug {
     /// 如果子项是seed集合，在seed集合中每一个seed的默认字符长度是6，当前叶子node会存储叶子中首个出现hash碰撞的
     /// seed起始坐标，每一个seed都会存储出现hash碰撞的下一seed起始坐标
     fn node_bytes(&self) -> Arc<RwLock<Vec<u8>>>;
-    fn set_node_bytes(&self, bytes: Vec<u8>);
     /// 插入数据<p><p>
     ///
     /// ###Params
@@ -100,13 +90,13 @@ pub(crate) trait TNode: Send + Sync + Debug {
     /// EngineResult<()>
     fn put(
         &self,
-        key: String,
+        original_key: String,
+        database_name: String,
+        view_name: String,
+        index_name: String,
+        key: u64,
         seed: Arc<RwLock<dyn TSeed>>,
-        force: bool,
-        description_len: usize,
-    ) -> GeorgeResult<()>
-    where
-        Self: Sized;
+    ) -> GeorgeResult<()>;
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -116,9 +106,13 @@ pub(crate) trait TNode: Send + Sync + Debug {
     /// ###Return
     ///
     /// Seed value信息
-    fn get(&self, key: String) -> GeorgeResult<Vec<u8>>;
-    /// 获取最后一条记录数据，返回存储对象
-    fn get_last(&self) -> GeorgeResult<Vec<u8>>;
+    fn get(
+        &self,
+        database_name: String,
+        view_name: String,
+        index_name: String,
+        key: u64,
+    ) -> GeorgeResult<Vec<u8>>;
 }
 
 /// B+Tree索引叶子结点内防hash碰撞数组对象中对象特性
@@ -131,44 +125,22 @@ pub(crate) trait TNode: Send + Sync + Debug {
 ///
 /// 如果要写dyn Trait + Send + Sync到处都是，那么需要声明Send和Sync是Trait的Super Traits
 pub(crate) trait TSeed: Send + Sync + Debug {
+    /// 获取当前结果原始key信息
+    fn key(&self) -> String;
+    /// value最终存储在文件中的内容
+    fn value(&self) -> Vec<u8>;
+    /// 值是否为空
+    fn is_none(&self) -> bool;
     /// 修改value值
     fn modify(&mut self, value: Vec<u8>) -> GeorgeResult<()>;
     /// 存储操作
     ///
-    /// view View 视图
-    ///
-    /// value 当前结果value信息<p><p>
+    /// view View 视图<p><p>
     ///
     /// force 是否强制覆盖
-    fn save(
-        &self,
-        database_name: String,
-        view: View,
-        value: Vec<u8>,
-        force: bool,
-    ) -> GeorgeResult<()>;
-    /// 存储操作，存储Block数据，主键可溯源
-    ///
-    /// view View 视图
-    ///
-    /// value 当前结果value信息<p><p>
-    ///
-    /// block_height 区块高度
-    ///
-    /// tx_no 交易序号(可以是默克尔树序号/交易高度/交易自增ID等自定义可识别编号)
-    ///
-    /// force 是否强制覆盖
-    fn save_trace(
-        &self,
-        database_name: String,
-        view: View,
-        block_height: u64,
-        tx_no: u16,
-        value: Vec<u8>,
-        force: bool,
-    ) -> GeorgeResult<()>;
+    fn save(&mut self, database_name: String, view: View, force: bool) -> GeorgeResult<()>;
     /// 删除操作
     ///
     /// view View 视图
-    fn remove(&self, database_name: String, view: View) -> GeorgeResult<()>;
+    fn remove(&mut self, database_name: String, view: View) -> GeorgeResult<()>;
 }

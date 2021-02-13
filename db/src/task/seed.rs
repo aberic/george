@@ -12,23 +12,22 @@
  * limitations under the License.
  */
 
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 
 use serde::{Deserialize, Serialize};
 
 use comm::errors::children::DataExistError;
-use comm::errors::entrances::{err_string, err_strings, err_strs, GeorgeError, GeorgeResult};
-use comm::io::file::{Filer, FilerExecutor, FilerHandler, FilerNormal, FilerWriter};
+use comm::errors::entrances::{err_string, err_strs, GeorgeError, GeorgeResult};
+use comm::io::file::{Filer, FilerExecutor, FilerHandler, FilerNormal};
 use comm::trans::{
     trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u64, trans_u16_2_bytes, trans_u32_2_bytes,
-    trans_u48_2_bytes, trans_u64_2_bytes,
+    trans_u48_2_bytes,
 };
 use comm::vectors::{Vector, VectorHandler};
 
 use crate::task::engine::traits::TSeed;
-use crate::task::view::{Pigeonhole, View};
+use crate::task::view::View;
 use crate::utils::comm::{is_bytes_fill, VALUE_TYPE_NORMAL};
-use crate::utils::enums::{Enum, EnumHandler};
 use comm::strings::{StringHandler, Strings};
 
 /// B+Tree索引叶子结点内防hash碰撞数组结构中单体结构
@@ -40,6 +39,7 @@ use comm::strings::{StringHandler, Strings};
 pub(crate) struct Seed {
     /// 获取当前结果原始key信息，用于内存版索引
     key: String,
+    value: Vec<u8>,
     /// 除主键索引外的其它索引操作策略集合
     policies: Vec<IndexPolicy>,
 }
@@ -263,9 +263,10 @@ impl IndexPolicy {
 /// 封装方法函数
 impl Seed {
     /// 新建seed
-    pub fn create(key: String) -> Seed {
+    pub fn create(key: String, value: Vec<u8>) -> Seed {
         return Seed {
             key,
+            value,
             policies: Vec::new(),
         };
     }
@@ -277,18 +278,21 @@ impl Seed {
 
 /// 封装方法函数
 impl TSeed for Seed {
+    fn key(&self) -> String {
+        self.key.clone()
+    }
+    fn value(&self) -> Vec<u8> {
+        self.value.clone()
+    }
+    fn is_none(&self) -> bool {
+        self.value.is_empty()
+    }
     fn modify(&mut self, value: Vec<u8>) -> GeorgeResult<()> {
         let index_policy = IndexPolicy::from(value)?;
         self.policies.push(index_policy);
         Ok(())
     }
-    fn save(
-        &self,
-        database_name: String,
-        view: View,
-        mut value: Vec<u8>,
-        force: bool,
-    ) -> GeorgeResult<()> {
+    fn save(&mut self, database_name: String, view: View, force: bool) -> GeorgeResult<()> {
         // todo 失败回滚
         if self.policies.len() == 0 {
             return Err(err_string(format!(
@@ -296,6 +300,7 @@ impl TSeed for Seed {
                 view.name()
             )));
         }
+        let mut value = self.value();
         let value_len = value.len() as u32;
         let mut value_bytes = trans_u32_2_bytes(value_len);
         value_bytes.append(&mut value);
@@ -323,44 +328,7 @@ impl TSeed for Seed {
         }
         Ok(())
     }
-    fn save_trace(
-        &self,
-        database_name: String,
-        view: View,
-        block_height: u64,
-        tx_no: u16,
-        mut value: Vec<u8>,
-        force: bool,
-    ) -> GeorgeResult<()> {
-        // todo 失败回滚
-        // 生成视图文件属性，版本号(2字节)
-        let view_version_bytes = trans_u16_2_bytes(view.version());
-        let value_len = value.len() as u32;
-        let mut value_bytes = trans_u32_2_bytes(value_len);
-        value_bytes.append(&mut value);
-        // 执行真实存储操作，即索引将seed存入后，允许检索到该结果，但该结果值不存在，仅当所有索引存入都成功，才会执行本方法完成真实存储操作
-        let view_seek_start = view.write_content(database_name.clone(), value_bytes)?;
-        // 记录视图文件属性(版本号/数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
-        // 数据在视图文件中起始偏移量p(6字节)
-        let mut view_seek_start_bytes = trans_u48_2_bytes(view_seek_start);
-        // 循环定位记录使用文件属性
-        let mut view_info_index = view_version_bytes.clone();
-        // 记录表文件属性(版本/数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
-        view_info_index.append(&mut view_seek_start_bytes);
-
-        // 将在数据在view中的坐标存入各个index
-        for policy in self.policies.to_vec() {
-            policy.exec(
-                database_name.clone(),
-                view.clone(),
-                view_version_bytes.clone(),
-                view_info_index.clone(),
-                force,
-            )?
-        }
-        Ok(())
-    }
-    fn remove(&self, database_name: String, view: View) -> GeorgeResult<()> {
+    fn remove(&mut self, database_name: String, view: View) -> GeorgeResult<()> {
         if self.policies.len() == 0 {
             return Ok(());
         }

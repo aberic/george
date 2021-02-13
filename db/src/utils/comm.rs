@@ -12,6 +12,10 @@
  * limitations under the License.
  */
 
+use crate::utils::enums::IndexMold;
+use comm::cryptos::hash::{
+    hashcode64_bl, hashcode64_f64, hashcode64_i64, hashcode64_str, hashcode64_u64,
+};
 use comm::errors::entrances::{err_string, GeorgeResult};
 use comm::strings::{StringHandler, Strings};
 use serde_json::{Error, Value};
@@ -115,4 +119,19 @@ pub fn is_bytes_fill(bs: Vec<u8>) -> bool {
         i += 1;
     }
     false
+}
+
+pub fn hash_key(mold: IndexMold, key: String) -> GeorgeResult<u64> {
+    let mut hash_key: u64 = 0;
+    match mold {
+        IndexMold::String => hash_key = hashcode64_str(key),
+        IndexMold::Bool => hash_key = hashcode64_bl(key)?,
+        IndexMold::U32 => hash_key = hashcode64_u64(key)?,
+        IndexMold::U64 => hash_key = hashcode64_u64(key)?,
+        IndexMold::F32 => hash_key = hashcode64_f64(key)?,
+        IndexMold::F64 => hash_key = hashcode64_f64(key)?,
+        IndexMold::I32 => hash_key = hashcode64_i64(key)?,
+        IndexMold::I64 => hash_key = hashcode64_i64(key)?,
+    }
+    Ok(hash_key)
 }

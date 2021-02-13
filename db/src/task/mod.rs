@@ -13,6 +13,7 @@
  */
 mod database;
 pub mod engine;
+mod index;
 pub mod master;
 mod master_test;
 mod seed;

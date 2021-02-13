@@ -12,5 +12,4 @@
  * limitations under the License.
  */
 
-pub mod index;
-mod node;
+pub(crate) mod node;

@@ -12,8 +12,6 @@
  * limitations under the License.
  */
 
-use serde::{Deserialize, Serialize};
-
 pub trait EnumHandler {
     fn tag_u8(tag: Tag) -> u8;
     fn engine_type_u8(engine_type: EngineType) -> u8;

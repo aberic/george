@@ -64,7 +64,7 @@ pub fn hashcode64_i64(comment: String) -> GeorgeResult<u64> {
     match comment.parse::<i64>() {
         Ok(si64) => {
             if si64 < 0 {
-                Ok((si64.add(9223372036854775807).add(1) as u64))
+                Ok(si64.add(9223372036854775807).add(1) as u64)
             } else {
                 Ok((si64 as u64).add(9223372036854775807).add(1))
             }

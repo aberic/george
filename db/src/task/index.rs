@@ -18,20 +18,20 @@ use std::sync::{Arc, RwLock};
 
 use chrono::{Duration, Local, NaiveDateTime};
 
-use comm::cryptos::hash::{
-    hashcode64_bl, hashcode64_f64, hashcode64_i64, hashcode64_str, hashcode64_u64,
-};
-use comm::errors::entrances::{err_string, GeorgeResult};
+use comm::errors::entrances::{err_str, err_string, GeorgeResult};
 use comm::io::file::{Filer, FilerExecutor, FilerHandler};
+use comm::strings::{StringHandler, Strings};
+use comm::vectors::{Vector, VectorHandler};
 
-use crate::task::engine::block::node::Node;
-use crate::task::engine::traits::{TIndex, TSeed};
+use crate::task::engine::block::node::Node as NodeBlock;
+use crate::task::engine::dossier::node::Node as NodeDossier;
+use crate::task::engine::library::node::Node as NodeLibrary;
+use crate::task::engine::traits::{TIndex, TNode, TSeed};
+use crate::utils::comm::hash_key;
 use crate::utils::enums::{EngineType, Enum, EnumHandler, IndexMold};
 use crate::utils::path::index_file_path;
 use crate::utils::store::{before_content_bytes, metadata_2_bytes, Metadata, HD};
 use crate::utils::writer::obtain_write_append_file;
-use comm::strings::{StringHandler, Strings};
-use comm::vectors::{Vector, VectorHandler};
 
 /// Siam索引
 ///
@@ -45,7 +45,7 @@ pub(crate) struct Index {
     /// 索引值类型
     mold: IndexMold,
     /// 结点
-    root: Arc<RwLock<Node>>,
+    root: Arc<RwLock<dyn TNode>>,
     /// 文件信息
     metadata: Metadata,
     /// 创建时间
@@ -73,7 +73,7 @@ fn new_index(
     name: String,
     primary: bool,
     mold: IndexMold,
-    root: Arc<RwLock<Node>>,
+    root: Arc<RwLock<dyn TNode>>,
     metadata: Metadata,
 ) -> GeorgeResult<Index> {
     let now: NaiveDateTime = Local::now().naive_local();
@@ -97,6 +97,7 @@ impl Index {
         database_name: String,
         view_name: String,
         name: String,
+        engine_type: EngineType,
         primary: bool,
         index_mold: IndexMold,
     ) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
@@ -105,14 +106,21 @@ impl Index {
             view_name.clone(),
             name.clone(),
         ))?;
+        let root: Arc<RwLock<dyn TNode>>;
+        match engine_type {
+            EngineType::Dossier => root = NodeDossier::create_root(),
+            EngineType::Library => root = NodeLibrary::create_root(),
+            EngineType::Block => root = NodeBlock::create_root(),
+            _ => return Err(err_str("unsupported engine type with none")),
+        }
         let mut index = new_index(
             database_name.clone(),
             view_name.clone(),
             name,
             primary,
             index_mold,
-            Node::create_root(),
-            Metadata::index(EngineType::Dossier)?,
+            root,
+            Metadata::index(engine_type)?,
         )?;
         let mut metadata_bytes = metadata_2_bytes(index.metadata());
         let mut description = index.description();
@@ -161,18 +169,12 @@ impl Index {
             }
         }
     }
-    fn root(&self) -> Arc<RwLock<Node>> {
-        self.root.clone()
-    }
 }
 
 /// 封装方法函数
 impl TIndex for Index {
     fn name(&self) -> String {
         self.name.clone()
-    }
-    fn is_primary(&self) -> bool {
-        self.primary.clone()
     }
     fn mold(&self) -> IndexMold {
         self.mold.clone()
@@ -190,37 +192,22 @@ impl TIndex for Index {
         key: String,
         seed: Arc<RwLock<dyn TSeed>>,
     ) -> GeorgeResult<()> {
-        self.root().write().unwrap().put(
+        self.root.write().unwrap().put(
             key.clone(),
             database_name,
             view_name,
             self.name(),
-            self.hash_key(key)?,
+            hash_key(self.mold(), key)?,
             seed,
         )
     }
     fn get(&self, database_name: String, view_name: String, key: String) -> GeorgeResult<Vec<u8>> {
-        self.root()
-            .read()
-            .unwrap()
-            .get(database_name, view_name, self.name(), self.hash_key(key)?)
-    }
-}
-
-impl Index {
-    fn hash_key(&self, key: String) -> GeorgeResult<u64> {
-        let mut hash_key: u64 = 0;
-        match self.mold {
-            IndexMold::String => hash_key = hashcode64_str(key),
-            IndexMold::Bool => hash_key = hashcode64_bl(key)?,
-            IndexMold::U32 => hash_key = hashcode64_u64(key)?,
-            IndexMold::U64 => hash_key = hashcode64_u64(key)?,
-            IndexMold::F32 => hash_key = hashcode64_f64(key)?,
-            IndexMold::F64 => hash_key = hashcode64_f64(key)?,
-            IndexMold::I32 => hash_key = hashcode64_i64(key)?,
-            IndexMold::I64 => hash_key = hashcode64_i64(key)?,
-        }
-        Ok(hash_key)
+        self.root.read().unwrap().get(
+            database_name,
+            view_name,
+            self.name(),
+            hash_key(self.mold(), key)?,
+        )
     }
 }
 
@@ -271,13 +258,20 @@ impl Index {
                 let file_path =
                     index_file_path(database_name.clone(), view_name.clone(), name.clone());
                 let file_append = obtain_write_append_file(file_path)?;
+                let root: Arc<RwLock<dyn TNode>>;
+                match hd.engine_type() {
+                    EngineType::Dossier => root = NodeDossier::recovery_root(part2),
+                    EngineType::Library => root = NodeLibrary::recovery_root(part2),
+                    EngineType::Block => root = NodeBlock::recovery_root(part2),
+                    _ => return Err(err_str("unsupported engine type")),
+                }
                 let index = Index {
                     name,
                     primary,
                     create_time,
                     metadata: hd.metadata(),
                     file_append,
-                    root: Node::recovery_root(part2),
+                    root,
                     mold,
                 };
                 log::info!(
