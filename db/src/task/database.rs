@@ -282,10 +282,7 @@ impl Database {
         index_name: &str,
         key: String,
     ) -> GeorgeResult<Vec<u8>> {
-        self.view(view_name)?
-            .read()
-            .unwrap()
-            .get(self.name(), index_name, key)
+        self.view(view_name)?.read().unwrap().get(index_name, key)
     }
     /// 删除数据<p><p>
     ///

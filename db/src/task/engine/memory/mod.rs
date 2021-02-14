@@ -13,5 +13,6 @@
  */
 
 pub(crate) mod index;
+mod index_test;
 pub(crate) mod node;
 pub(crate) mod seed;

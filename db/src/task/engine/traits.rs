@@ -45,23 +45,17 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     /// ###Return
     ///
     /// EngineResult<()>
-    fn put(
-        &self,
-        database_name: String,
-        view_name: String,
-        key: String,
-        seed: Arc<RwLock<dyn TSeed>>,
-    ) -> GeorgeResult<()>;
+    fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()>;
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
     ///
-    /// key string
+    /// key strings
     ///
     /// ###Return
     ///
     /// Seed value信息
-    fn get(&self, database_name: String, view_name: String, key: String) -> GeorgeResult<Vec<u8>>;
+    fn get(&self, key: String) -> GeorgeResult<Vec<u8>>;
 }
 
 /// 结点通用特性，遵循此特性创建结点可以更方便的针对db进行扩展

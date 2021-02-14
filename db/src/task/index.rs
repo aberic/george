@@ -38,6 +38,8 @@ use crate::utils::writer::obtain_write_append_file;
 /// 5位key及16位md5后key及5位起始seek和4位持续seek
 #[derive(Debug)]
 pub(crate) struct Index {
+    database_name: String,
+    view_name: String,
     /// 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
     name: String,
     /// 是否主键
@@ -78,9 +80,10 @@ fn new_index(
 ) -> GeorgeResult<Index> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
-    let file_path = index_file_path(database_name, view_name, name.clone());
+    let file_path = index_file_path(database_name.clone(), view_name.clone(), name.clone());
     let file_append = obtain_write_append_file(file_path)?;
     let index = Index {
+        database_name,
         primary,
         name,
         root,
@@ -88,6 +91,7 @@ fn new_index(
         create_time,
         file_append,
         mold,
+        view_name,
     };
     Ok(index)
 }
@@ -169,9 +173,15 @@ impl Index {
             }
         }
     }
+    fn database_name(&self) -> String {
+        self.database_name.clone()
+    }
+    fn view_name(&self) -> String {
+        self.view_name.clone()
+    }
 }
 
-/// 封装方法函数
+/// 封装方法函数w
 impl TIndex for Index {
     fn name(&self) -> String {
         self.name.clone()
@@ -185,26 +195,20 @@ impl TIndex for Index {
     fn create_time(&self) -> Duration {
         self.create_time.clone()
     }
-    fn put(
-        &self,
-        database_name: String,
-        view_name: String,
-        key: String,
-        seed: Arc<RwLock<dyn TSeed>>,
-    ) -> GeorgeResult<()> {
+    fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
         self.root.write().unwrap().put(
             key.clone(),
-            database_name,
-            view_name,
+            self.database_name(),
+            self.view_name(),
             self.name(),
             hash_key(self.mold(), key)?,
             seed,
         )
     }
-    fn get(&self, database_name: String, view_name: String, key: String) -> GeorgeResult<Vec<u8>> {
+    fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
         self.root.read().unwrap().get(
-            database_name,
-            view_name,
+            self.database_name(),
+            self.view_name(),
             self.name(),
             hash_key(self.mold(), key)?,
         )
@@ -265,7 +269,15 @@ impl Index {
                     EngineType::Block => root = NodeBlock::recovery_root(part2),
                     _ => return Err(err_str("unsupported engine type")),
                 }
+                log::info!(
+                    "recovery index {} from database.view {}.{}",
+                    name.clone(),
+                    database_name.clone(),
+                    view_name.clone()
+                );
                 let index = Index {
+                    database_name,
+                    view_name,
                     name,
                     primary,
                     create_time,
@@ -274,12 +286,6 @@ impl Index {
                     root,
                     mold,
                 };
-                log::info!(
-                    "recovery index {} from database.view {}.{}",
-                    index.name(),
-                    database_name,
-                    view_name
-                );
                 Ok(Arc::new(RwLock::new(index)))
             }
             Err(err) => Err(err_string(format!(
