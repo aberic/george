@@ -213,6 +213,9 @@ impl TIndex for Index {
             hash_key(self.mold(), key)?,
         )
     }
+    fn del(&self, key: String) -> GeorgeResult<()> {
+        unimplemented!()
+    }
 }
 
 impl Index {

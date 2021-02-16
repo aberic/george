@@ -56,6 +56,16 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     ///
     /// Seed value信息
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>>;
+    /// 删除数据<p><p>
+    ///
+    /// ###Params
+    ///
+    /// key strings
+    ///
+    /// ###Return
+    ///
+    /// Seed value信息
+    fn del(&self, key: String) -> GeorgeResult<()>;
 }
 
 /// 结点通用特性，遵循此特性创建结点可以更方便的针对db进行扩展

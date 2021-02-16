@@ -90,4 +90,7 @@ impl TIndex for Index {
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
         self.root.get(key)
     }
+    fn del(&self, key: String) -> GeorgeResult<()> {
+        self.root.del(key)
+    }
 }

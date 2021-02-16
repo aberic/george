@@ -15,7 +15,7 @@
 use std::fmt::Debug;
 use std::sync::{Arc, RwLock};
 
-use comm::cryptos::hash::{hashcode64_str, md516};
+use comm::cryptos::hash::hashcode64_str;
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
 
 use crate::task::engine::traits::TSeed;
@@ -123,7 +123,8 @@ impl Node {
     ///
     /// EngineResult<()>
     pub(super) fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
-        self.put_in_node(1, hashcode64_str(key), seed, true)
+        let flexible_key = hashcode64_str(key.clone());
+        self.put_in_node(1, flexible_key, seed, true)
     }
     /// 获取数据，返回存储对象<p><p>
     ///
@@ -135,7 +136,21 @@ impl Node {
     ///
     /// Seed value信息
     pub(super) fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        self.get_in_node(1, md516(key.clone()), hashcode64_str(key.clone()))
+        let flexible_key = hashcode64_str(key.clone());
+        self.get_in_node(1, key, flexible_key)
+    }
+    /// 删除数据<p><p>
+    ///
+    /// ###Params
+    ///
+    /// key string
+    ///
+    /// ###Return
+    ///
+    /// Seed value信息
+    pub(super) fn del(&self, key: String) -> GeorgeResult<()> {
+        let flexible_key = hashcode64_str(key.clone());
+        self.del_in_node(1, key, flexible_key)
     }
 }
 
@@ -174,9 +189,8 @@ impl Node {
         force: bool,
     ) -> GeorgeResult<()> {
         let next_flexible_key: u64;
-        let next_degree: u16;
         let distance = level_distance_64(level);
-        next_degree = (flexible_key / distance) as u16;
+        let next_degree = (flexible_key / distance) as u16;
         next_flexible_key = flexible_key - next_degree as u64 * distance;
         let node_next: Arc<Node>;
         let node_next_level = level + 1;
@@ -318,10 +332,10 @@ impl Node {
             }
         };
     }
-    /// 指定节点中是否存在匹配md516_key的seed
+    /// 指定节点中是否存在匹配key的seed
     ///
     /// 该方法用于put类型，即如果存在，则返回已存在值，没有额外操作
-    fn exist_seed(&self, md516_key: String) -> bool {
+    fn exist_seed(&self, key: String) -> bool {
         let arc = self.seeds().clone().unwrap().clone();
         let seeds = arc.read().unwrap();
         let mut seeds_rm_position = vec![];
@@ -334,7 +348,7 @@ impl Node {
                 position += 1;
                 continue;
             }
-            if seed_r.key().eq(&md516_key) {
+            if seed_r.key().eq(&key) {
                 res = true;
             }
             position += 1;
@@ -396,12 +410,7 @@ impl Node {
     /// ###Return
     ///
     /// Seed value信息
-    fn get_in_node(
-        &self,
-        level: u8,
-        md516_key: String,
-        flexible_key: u64,
-    ) -> GeorgeResult<Vec<u8>> {
+    fn get_in_node(&self, level: u8, key: String, flexible_key: u64) -> GeorgeResult<Vec<u8>> {
         let next_flexible_key: u64;
         let next_degree: u16;
         if level.lt(&5) {
@@ -410,16 +419,15 @@ impl Node {
             next_flexible_key = flexible_key - next_degree as u64 * distance;
         } else {
             // 获取seed叶子，如果存在，则判断版本号，如果不存在，则新建一个空并返回
-            return self.get_seed_value(md516_key);
+            return self.get_seed_value(key);
         };
         let node_next = self.binary_match_data_pre(next_degree)?;
-        node_next.get_in_node(level + 1, md516_key, next_flexible_key)
+        node_next.get_in_node(level + 1, key, next_flexible_key)
     }
-
     /// 指定节点中是否存在匹配md516_key的seed
     ///
     /// 该方法用于get类型，在检索的同时会删除已发现的空seed
-    fn get_seed_value(&self, md516_key: String) -> GeorgeResult<Vec<u8>> {
+    fn get_seed_value(&self, key: String) -> GeorgeResult<Vec<u8>> {
         let arc = self.seeds().clone().unwrap().clone();
         let mut seeds = arc.write().unwrap();
         let mut seeds_rm_position = vec![];
@@ -431,7 +439,7 @@ impl Node {
                 seeds_rm_position.push(position);
                 continue;
             }
-            if seed_r.key().eq(&md516_key) {
+            if seed_r.key().eq(&key) {
                 exist = true;
                 vu8 = seed_r.value();
             }
@@ -445,9 +453,48 @@ impl Node {
             Err(GeorgeError::from(DataNoExistError))
         }
     }
-
+    /// 删除数据<p><p>
+    ///
+    /// ###Params
+    ///
+    /// hash_key 索引key，可通过hash转换string生成，如果是自增ID则自动生成，长度为无符号64位整型，是数据存放于
+    /// 索引树中的坐标
+    ///
+    /// md516_key 有一部分是通过将hash_key字符串化后再经过md5处理并取8-24位字符获取；也有可能是在hash_key取得
+    /// 基础值后，还没有得到最终值前的过渡值经过md5处理并取8-24位字符获取；获取方式不定，但总归是通过hash_key进行
+    /// 处理获取。该值用于解决B+Tree中hash碰撞的问题，在每一个叶子结点处都会进行数组对象存储，数组中存储的对象结构
+    /// 如下所示：
+    ///
+    /// ```
+    /// struct Seed {
+    ///     key: String, // 当前结果原始key信息
+    ///     value: Vec<u8>, // 当前结果value信息
+    /// }
+    /// ```
+    ///
+    /// flexible_key 下一级最左最小树所对应真实key<p><p>
+    ///
+    /// ###Return
+    ///
+    /// Seed value信息
+    fn del_in_node(&self, level: u8, key: String, flexible_key: u64) -> GeorgeResult<()> {
+        let next_flexible_key: u64;
+        let next_degree: u16;
+        if level.lt(&5) {
+            let distance = level_distance_64(level);
+            next_degree = (flexible_key / distance) as u16;
+            next_flexible_key = flexible_key - next_degree as u64 * distance;
+        } else {
+            // 获取seed叶子，如果存在，则判断版本号，如果不存在，则新建一个空并返回
+            return self.remove_seed_value(key);
+        };
+        match self.binary_match_data_pre(next_degree) {
+            Ok(node_next) => node_next.del_in_node(level + 1, key, next_flexible_key),
+            _ => Ok(()),
+        }
+    }
     /// 删除指定节点中存在匹配md516_key的seed
-    fn remove_seed_value(&self, md516_key: String) -> GeorgeResult<Vec<u8>> {
+    fn remove_seed_value(&self, key: String) -> GeorgeResult<()> {
         let arc = self.seeds().clone().unwrap().clone();
         let mut seeds = arc.write().unwrap();
         let mut seeds_rm_position = vec![];
@@ -457,7 +504,7 @@ impl Node {
                 seeds_rm_position.push(position);
                 continue;
             }
-            if seed_r.key().eq(&md516_key) {
+            if seed_r.key().eq(&key) {
                 seeds_rm_position.push(position);
                 break;
             }
@@ -465,6 +512,6 @@ impl Node {
         for position in seeds_rm_position {
             seeds.remove(position);
         }
-        Ok(vec![])
+        Ok(())
     }
 }

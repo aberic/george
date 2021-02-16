@@ -28,7 +28,18 @@ fn put_get() {
     index.write().unwrap().put(key.clone(), seed).unwrap();
     let irg = index.read().unwrap().get(key.clone());
     match irg {
-        Ok(seed) => println!("u1 is {:#?}", seed),
+        Ok(seed) => println!("u1 is {:#?}", String::from_utf8(seed).unwrap()),
+        Err(ie) => println!("res1 is {:#?}", ie.source().unwrap().to_string()),
+    }
+    let irg = index.read().unwrap().get(key.clone());
+    match irg {
+        Ok(seed) => println!("u1 is {:#?}", String::from_utf8(seed).unwrap()),
+        Err(ie) => println!("res1 is {:#?}", ie.source().unwrap().to_string()),
+    }
+    index.write().unwrap().del(key.clone()).unwrap();
+    let irg = index.read().unwrap().get(key.clone());
+    match irg {
+        Ok(seed) => println!("u1 is {:#?}", String::from_utf8(seed).unwrap()),
         Err(ie) => println!("res1 is {:#?}", ie.source().unwrap().to_string()),
     }
 }

@@ -314,6 +314,29 @@ impl Master {
         // 创建系统库，用户表(含权限等信息)、库历史记录表(含变更、归档等信息) todo
         match Filer::write(bootstrap_file_path(), vec![0x01]) {
             Err(err) => panic!("init failed! error is {}", err),
+            _ => self.init_default(),
+        }
+    }
+
+    fn init_default(&self) {
+        let database_name = String::from("sys");
+        let view_name = String::from("memory");
+        let index_name = String::from("default");
+        let comment = String::from("system default");
+        match self.create_database(database_name.clone(), comment.clone()) {
+            _ => {}
+        }
+        match self.create_view(database_name.clone(), view_name.clone(), comment.clone()) {
+            _ => {}
+        }
+        match self.create_index(
+            database_name,
+            view_name,
+            index_name,
+            EngineType::Memory,
+            IndexMold::String,
+            true,
+        ) {
             _ => {}
         }
     }
@@ -323,7 +346,10 @@ impl Master {
         log::debug!("bootstrap recovery!");
         // 读取data目录下所有文件
         match read_dir(data_path()) {
-            Ok(paths) => self.recovery_databases(paths),
+            Ok(paths) => {
+                self.init_default();
+                self.recovery_databases(paths)
+            }
             Err(err) => panic!("recovery failed! error is {}", err),
         }
     }
