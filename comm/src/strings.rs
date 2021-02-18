@@ -15,7 +15,9 @@
 use crate::errors::entrances::{err_strs, GeorgeResult};
 
 pub trait StringHandler {
+    /// 字符串截取
     fn sub(comment: &str, begin: usize, end: usize) -> String;
+    /// 字符串截取
     fn subs(comment: String, begin: usize, end: usize) -> String;
     /// 字符串左边补齐字符，长度为len
     ///

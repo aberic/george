@@ -15,9 +15,7 @@
 use crate::task::view::View;
 use crate::utils::enums::Tag;
 use crate::utils::path::{database_file_path, database_path, view_file_path};
-use crate::utils::store::{
-    before_content_bytes, metadata_2_bytes, recovery_before_content, Metadata, HD,
-};
+use crate::utils::store::{before_content_bytes, recovery_before_content, Metadata, HD};
 use crate::utils::writer::obtain_write_append_file;
 use chrono::{Duration, Local, NaiveDateTime};
 use comm::errors::children::{ViewExistError, ViewNoExistError};
@@ -72,7 +70,7 @@ impl Database {
     pub(crate) fn create(name: String) -> GeorgeResult<Arc<RwLock<Database>>> {
         Filer::touch(database_file_path(name.clone()))?;
         let mut database = new_database(name)?;
-        let mut metadata_bytes = metadata_2_bytes(database.metadata());
+        let mut metadata_bytes = database.metadata_bytes();
         let mut description = database.description();
         // 初始化为32 + 8，即head长度加正文描述符长度
         let mut before_description = before_content_bytes(40, description.len() as u32);
@@ -92,6 +90,10 @@ impl Database {
     /// 文件信息
     pub(crate) fn metadata(&self) -> Metadata {
         self.metadata.clone()
+    }
+    /// 文件字节信息
+    pub(crate) fn metadata_bytes(&self) -> Vec<u8> {
+        self.metadata.bytes()
     }
     /// 根据文件路径获取该文件追加写入的写对象
     ///

@@ -35,9 +35,7 @@ use crate::task::seed::{IndexData, Seed};
 use crate::utils::comm::{key_fetch, INDEX_CATALOG, VALUE_TYPE_NORMAL};
 use crate::utils::enums::{EngineType, IndexMold, Tag};
 use crate::utils::path::{index_file_path, view_file_path, view_path};
-use crate::utils::store::{
-    before_content_bytes, metadata_2_bytes, recovery_before_content, Metadata, HD,
-};
+use crate::utils::store::{before_content_bytes, recovery_before_content, Metadata, HD};
 use crate::utils::writer::Filed;
 
 /// 视图，类似表
@@ -106,7 +104,7 @@ impl View {
         Ok(Arc::new(RwLock::new(view)))
     }
     fn init(&self) -> GeorgeResult<()> {
-        let mut metadata_bytes = metadata_2_bytes(self.metadata());
+        let mut metadata_bytes = self.metadata_bytes();
         let mut description = self.description();
         // 初始化为32 + 8，即head长度加正文描述符长度
         let mut before_description = before_content_bytes(40, description.len() as u32);
@@ -130,6 +128,10 @@ impl View {
     /// 文件信息
     pub(crate) fn metadata(&self) -> Metadata {
         self.metadata.clone()
+    }
+    /// 文件字节信息
+    pub(crate) fn metadata_bytes(&self) -> Vec<u8> {
+        self.metadata.bytes()
     }
     /// 索引集合
     pub(crate) fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>> {
@@ -594,10 +596,20 @@ impl View {
 }
 
 /// 归档服务
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub(crate) struct Pigeonhole {
     now: Record,
     history: HashMap<u16, Record>,
+}
+
+impl fmt::Debug for Pigeonhole {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut histories = String::from("");
+        for (_, his) in self.history.iter() {
+            histories = histories.add(his.to_string().as_str());
+        }
+        write!(f, "[now = {:#?}, histories = {:#?}]", self.now, histories)
+    }
 }
 
 impl Pigeonhole {

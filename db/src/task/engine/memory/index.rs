@@ -65,7 +65,7 @@ impl Index {
     ///
     /// 该索引需要定义ID，此外索引所表达的字段组成内容也是必须的，并通过primary判断索引类型，具体传参参考如下定义：<p><p>
     pub(crate) fn create(name: String) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
-        let mut index = new_index(name, Metadata::index(EngineType::Memory)?)?;
+        let index = new_index(name, Metadata::index(EngineType::Memory)?)?;
         Ok(Arc::new(RwLock::new(index)))
     }
 }
@@ -80,6 +80,9 @@ impl TIndex for Index {
     }
     fn metadata(&self) -> Metadata {
         self.metadata.clone()
+    }
+    fn metadata_bytes(&self) -> Vec<u8> {
+        self.metadata.bytes()
     }
     fn create_time(&self) -> Duration {
         self.create_time.clone()

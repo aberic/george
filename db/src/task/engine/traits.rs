@@ -32,8 +32,10 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     fn name(&self) -> String;
     /// 索引值类型
     fn mold(&self) -> IndexMold;
-    /// 存储引擎类型
+    /// 文件信息
     fn metadata(&self) -> Metadata;
+    /// 文件字节信息
+    fn metadata_bytes(&self) -> Vec<u8>;
     /// 创建时间
     fn create_time(&self) -> Duration;
     fn modify(&mut self, database_name: String, view_name: String);

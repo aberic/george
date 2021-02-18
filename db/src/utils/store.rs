@@ -49,7 +49,7 @@ impl fmt::Debug for Metadata {
             "tag = {:#?}, engine_type = {:#?}, version = {:#?}, sequence = {:#?}",
             self.tag,
             self.engine_type,
-            trans_bytes_2_u16(version),
+            trans_bytes_2_u16(version).unwrap(),
             self.sequence
         )
     }
@@ -123,68 +123,83 @@ impl Metadata {
             ))
         }
     }
-}
-
-/// 生成sr文件首部信息字符串，长度32个字节<p>
-///
-/// 文件包括文件首部和正文两部分组成，文件首部告知了文件组成的所有有效信息，损坏将无法使用<p>
-///
-/// ###Params
-///
-/// tag 文件标识符，标识该文件是引导文件、库文件、表文件或是索引文件等，1字节<p>
-///
-/// engine_type 存储引擎类型，如内存类型Memory(0x00)/卷宗存储Dossier(0x01)/文库存储Library(0x02)/块存储Block(0x03)，该参数主要用于库、表和索引数据类型使用，1字节<p>
-///
-/// level 文件存储容量，如Small(0x00)表示2^32，以及Large(0x01)表示2^64结点个数，该参数主要用于库、表和索引数据类型使用，1字节<p>
-///
-/// index_type 文件索引类型，如Siam(0x00)。该参数主要用于库、表和索引数据类型使用，1字节<p>
-///
-/// version 文件创建时版本号，2字节<p>
-///
-/// sequence 文件序号，第一个字节表示当前文件所持顺序，第二个字节表示是否存在后续文件，0x00无，0x01有。该参数主要用于
-/// 表数据类型使用，2字节<p>
-///
-/// 自version=[0x00, 0x00]起始生效<p>
-///
-/// ###Return
-///
-/// 返回一个拼装完成的文件首部字符串
-pub fn metadata_2_bytes(metadata: Metadata) -> Vec<u8> {
-    let head: [u8; 32] = [
-        FRONT.get(0).unwrap().clone(),
-        FRONT.get(1).unwrap().clone(),
-        Enum::tag_u8(metadata.tag),
-        Enum::engine_type_u8(metadata.engine_type),
-        metadata.version.get(0).unwrap().clone(),
-        metadata.version.get(1).unwrap().clone(),
-        metadata.sequence,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        END.get(0).unwrap().clone(),
-        END.get(1).unwrap().clone(),
-    ];
-    head.to_vec()
+    /// 标识符
+    pub fn tag(&self) -> Tag {
+        self.tag.clone()
+    }
+    /// 存储引擎类型
+    pub fn engine_type(&self) -> EngineType {
+        self.engine_type.clone()
+    }
+    /// 版本号
+    pub fn version(&self) -> GeorgeResult<u16> {
+        trans_bytes_2_u16(vec![self.version[0], self.version[1]])
+    }
+    /// 序号
+    pub fn sequence(&self) -> u8 {
+        self.sequence
+    }
+    /// 生成sr文件首部信息字符串，长度32个字节<p>
+    ///
+    /// 文件包括文件首部和正文两部分组成，文件首部告知了文件组成的所有有效信息，损坏将无法使用<p>
+    ///
+    /// ###Params
+    ///
+    /// tag 文件标识符，标识该文件是引导文件、库文件、表文件或是索引文件等，1字节<p>
+    ///
+    /// engine_type 存储引擎类型，如内存类型Memory(0x00)/卷宗存储Dossier(0x01)/文库存储Library(0x02)/块存储Block(0x03)，该参数主要用于库、表和索引数据类型使用，1字节<p>
+    ///
+    /// level 文件存储容量，如Small(0x00)表示2^32，以及Large(0x01)表示2^64结点个数，该参数主要用于库、表和索引数据类型使用，1字节<p>
+    ///
+    /// index_type 文件索引类型，如Siam(0x00)。该参数主要用于库、表和索引数据类型使用，1字节<p>
+    ///
+    /// version 文件创建时版本号，2字节<p>
+    ///
+    /// sequence 文件序号，第一个字节表示当前文件所持顺序，第二个字节表示是否存在后续文件，0x00无，0x01有。该参数主要用于
+    /// 表数据类型使用，2字节<p>
+    ///
+    /// 自version=[0x00, 0x00]起始生效<p>
+    ///
+    /// ###Return
+    ///
+    /// 返回一个拼装完成的文件首部字符串
+    pub fn bytes(&self) -> Vec<u8> {
+        let head: [u8; 32] = [
+            FRONT.get(0).unwrap().clone(),
+            FRONT.get(1).unwrap().clone(),
+            Enum::tag_u8(self.tag()),
+            Enum::engine_type_u8(self.engine_type()),
+            self.version.get(0).unwrap().clone(),
+            self.version.get(1).unwrap().clone(),
+            self.sequence,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            END.get(0).unwrap().clone(),
+            END.get(1).unwrap().clone(),
+        ];
+        head.to_vec()
+    }
 }
 
 /// 正文前所有信息，包括头部信息和正文描述信息

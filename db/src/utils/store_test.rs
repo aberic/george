@@ -13,12 +13,12 @@
  */
 
 use crate::utils::enums::{EngineType, Tag};
-use crate::utils::store::{metadata_2_bytes, Metadata};
+use crate::utils::store::Metadata;
 
 #[test]
 fn head_test() {
-    let head1 = metadata_2_bytes(Metadata::create(Tag::Bootstrap, EngineType::Memory, 0x00));
-    let head2 = metadata_2_bytes(Metadata::create(Tag::Database, EngineType::Dossier, 0x01));
+    let head1 = Metadata::create(Tag::Bootstrap, EngineType::Memory, 0x00).bytes();
+    let head2 = Metadata::create(Tag::Database, EngineType::Dossier, 0x01).bytes();
     println!("head1 = {:#?}", head1);
     println!("head2 = {:#?}", head2);
 

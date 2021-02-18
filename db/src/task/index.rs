@@ -30,7 +30,7 @@ use crate::task::engine::traits::{TIndex, TNode, TSeed};
 use crate::utils::comm::hash_key;
 use crate::utils::enums::{EngineType, Enum, EnumHandler, IndexMold};
 use crate::utils::path::index_file_path;
-use crate::utils::store::{before_content_bytes, metadata_2_bytes, Metadata, HD};
+use crate::utils::store::{before_content_bytes, Metadata, HD};
 use crate::utils::writer::obtain_write_append_file;
 
 /// Siam索引
@@ -128,7 +128,7 @@ impl Index {
             root,
             Metadata::index(engine_type)?,
         )?;
-        let mut metadata_bytes = metadata_2_bytes(index.metadata());
+        let mut metadata_bytes = index.metadata_bytes();
         let mut description = index.description();
         // 初始化为32 + 8，即head长度加正文描述符长度
         let mut before_description = before_content_bytes(40, description.len() as u32);
@@ -195,6 +195,9 @@ impl TIndex for Index {
     }
     fn metadata(&self) -> Metadata {
         self.metadata.clone()
+    }
+    fn metadata_bytes(&self) -> Vec<u8> {
+        self.metadata.bytes()
     }
     fn create_time(&self) -> Duration {
         self.create_time.clone()
