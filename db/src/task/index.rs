@@ -38,7 +38,9 @@ use crate::utils::writer::obtain_write_append_file;
 /// 5位key及16位md5后key及5位起始seek和4位持续seek
 #[derive(Debug)]
 pub(crate) struct Index {
+    /// 数据库名称
     database_name: String,
+    /// 视图名称
     view_name: String,
     /// 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
     name: String,
@@ -173,9 +175,11 @@ impl Index {
             }
         }
     }
+    /// 数据库名称
     fn database_name(&self) -> String {
         self.database_name.clone()
     }
+    /// 视图名称
     fn view_name(&self) -> String {
         self.view_name.clone()
     }
@@ -194,6 +198,10 @@ impl TIndex for Index {
     }
     fn create_time(&self) -> Duration {
         self.create_time.clone()
+    }
+    fn modify(&mut self, database_name: String, view_name: String) {
+        self.database_name = database_name;
+        self.view_name = view_name;
     }
     fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
         self.root.write().unwrap().put(

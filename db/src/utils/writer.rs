@@ -38,35 +38,18 @@ impl Filed {
             file_append,
         })));
     }
-    pub fn append(&mut self, file_path: String, content: Vec<u8>) -> GeorgeResult<u64> {
+    pub fn append(&mut self, content: Vec<u8>) -> GeorgeResult<u64> {
         let file_append = self.file_append.clone();
         let mut file_write = file_append.write().unwrap();
         match file_write.seek(SeekFrom::End(0)) {
             Ok(seek_end_before) => match file_write.try_clone() {
-                Ok(f) => match Filer::appends(f, content.clone()) {
-                    Ok(()) => Ok(seek_end_before),
-                    Err(_err) => {
-                        self.file_append = obtain_write_append_file(file_path)?;
-                        let file_write_again = self.file_append.write().unwrap();
-                        match file_write_again.try_clone() {
-                            Ok(f) => Filer::appends(f, content)?,
-                            Err(err) => return Err(err_strs("write append file try clone2", err)),
-                        }
-                        Ok(seek_end_before)
-                    }
-                },
-                Err(err) => Err(err_strs("write append file try clone1", err)),
-            },
-            Err(_err) => {
-                self.file_append = obtain_write_append_file(file_path)?;
-                let mut file_write_again = self.file_append.write().unwrap();
-                let seek_end_before_again = file_write_again.seek(SeekFrom::End(0)).unwrap();
-                match file_write_again.try_clone() {
-                    Ok(f) => Filer::appends(f, content)?,
-                    Err(err) => return Err(err_strs("write append file try clone3", err)),
+                Ok(f) => {
+                    Filer::appends(f, content.clone())?;
+                    Ok(seek_end_before)
                 }
-                Ok(seek_end_before_again)
-            }
+                Err(err) => Err(err_strs("write append file try clone2", err)),
+            },
+            Err(err) => Err(err_strs("write append file try clone1", err)),
         }
     }
     fn file_path(&self) -> String {

@@ -114,21 +114,21 @@ impl Database {
                         match file_write_again.try_clone() {
                             Ok(f) => Filer::appends(f, content)?,
                             Err(err) => {
-                                return Err(err_strs("database append file try clone2", err))
+                                return Err(err_strs("database append file try clone3", err))
                             }
                         }
                         Ok(seek_end_before)
                     }
                 },
-                Err(err) => Err(err_strs("database append file try clone1", err)),
+                Err(err) => Err(err_strs("database append file try clone2", err)),
             },
             Err(_err) => {
                 self.file_append = obtain_write_append_file(database_file_path(self.name()))?;
                 let mut file_write_again = self.file_append.write().unwrap();
                 let seek_end_before_again = file_write_again.seek(SeekFrom::End(0)).unwrap();
                 match file_write_again.try_clone() {
-                    Ok(f) => Filer::appends(file_write_again.try_clone().unwrap(), content)?,
-                    Err(err) => return Err(err_strs("database append file try clone3", err)),
+                    Ok(f) => Filer::appends(f, content)?,
+                    Err(err) => return Err(err_strs("database append file try clone1", err)),
                 }
                 Ok(seek_end_before_again)
             }
@@ -142,7 +142,7 @@ impl Database {
         let old_name = self.name();
         let filepath = database_file_path(old_name.clone());
         let content = Filer::read_sub(filepath.clone(), 0, 40)?;
-        self.name = name;
+        self.name = name.clone();
         let description = self.description();
         let seek_end = self.file_append(description.clone())?;
         log::debug!(
@@ -159,6 +159,11 @@ impl Database {
         match std::fs::rename(database_path_old, database_path_new) {
             Ok(_) => {
                 self.file_append = obtain_write_append_file(database_file_path(self.name()))?;
+                for (view_name, view) in self.views.write().unwrap().iter() {
+                    view.write()
+                        .unwrap()
+                        .modify(name.clone(), view_name.clone())?;
+                }
                 Ok(())
             }
             Err(err) => {
@@ -220,7 +225,7 @@ impl Database {
         self.view(view_name)?
             .read()
             .unwrap()
-            .archive(self.name(), archive_file_path)
+            .archive(archive_file_path)
     }
 }
 
@@ -239,10 +244,7 @@ impl Database {
     ///
     /// IndexResult<()>
     pub(crate) fn put(&self, view_name: String, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        self.view(view_name)?
-            .read()
-            .unwrap()
-            .put(self.name(), key, value)
+        self.view(view_name)?.read().unwrap().put(key, value)
     }
     /// 插入数据，无论存在与否都会插入或更新数据<p><p>
     ///
@@ -258,10 +260,7 @@ impl Database {
     ///
     /// IndexResult<()>
     pub(crate) fn set(&self, view_name: String, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        self.view(view_name)?
-            .read()
-            .unwrap()
-            .set(self.name(), key, value)
+        self.view(view_name)?.read().unwrap().set(key, value)
     }
     /// 获取数据，返回存储对象<p><p>
     ///
@@ -297,10 +296,7 @@ impl Database {
     /// IndexResult<()>
     pub(crate) fn remove(&self, view_name: String, key: String) -> GeorgeResult<()> {
         // read trans write can use mut
-        self.view(view_name)?
-            .read()
-            .unwrap()
-            .remove(self.name(), key)
+        self.view(view_name)?.read().unwrap().remove(key)
     }
 }
 

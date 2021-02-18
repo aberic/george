@@ -43,6 +43,8 @@ use crate::utils::writer::Filed;
 /// 视图，类似表
 #[derive(Debug, Clone)]
 pub(crate) struct View {
+    /// 数据库名称
+    database_name: String,
     /// 名称
     name: String,
     /// 创建时间
@@ -68,10 +70,10 @@ pub(crate) struct View {
 /// id 视图唯一ID
 ///
 /// name 视图名称
-///
+///k
 /// comment 视图描述
 ///
-/// category 视图类型
+/// category 视图类型kk
 ///
 /// level 视图规模/级别
 fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
@@ -79,6 +81,7 @@ fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
     let file_path = view_file_path(database_name.clone(), name.clone());
     let view = View {
+        database_name: database_name.clone(),
         name,
         create_time,
         metadata: Metadata::default(Tag::View),
@@ -98,19 +101,23 @@ fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
 
 impl View {
     pub(crate) fn create(database_name: String, name: String) -> GeorgeResult<Arc<RwLock<View>>> {
-        let view = new_view(database_name.clone(), name)?;
-        view.init(database_name)?;
+        let view = new_view(database_name, name)?;
+        view.init()?;
         Ok(Arc::new(RwLock::new(view)))
     }
-    fn init(&self, database_name: String) -> GeorgeResult<()> {
+    fn init(&self) -> GeorgeResult<()> {
         let mut metadata_bytes = metadata_2_bytes(self.metadata());
         let mut description = self.description();
         // 初始化为32 + 8，即head长度加正文描述符长度
         let mut before_description = before_content_bytes(40, description.len() as u32);
         metadata_bytes.append(&mut before_description);
         metadata_bytes.append(&mut description);
-        self.file_append(database_name, metadata_bytes)?;
+        self.file_append(metadata_bytes)?;
         Ok(())
+    }
+    /// 数据库名称
+    pub(crate) fn database_name(&self) -> String {
+        self.database_name.clone()
     }
     /// 名称
     pub(crate) fn name(&self) -> String {
@@ -174,8 +181,8 @@ impl View {
     /// #Return
     ///
     /// seek_end_before 写之前文件字节数据长度
-    fn file_append(&self, database_name: String, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.filer.write().unwrap().append(database_name, content)
+    fn file_append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
+        self.filer.write().unwrap().append(content)
     }
     /// 视图变更
     pub(crate) fn modify(&mut self, database_name: String, name: String) -> GeorgeResult<()> {
@@ -184,7 +191,7 @@ impl View {
         let content_old = Filer::read_sub(filepath.clone(), 0, 40)?;
         self.name = name;
         let description = self.description();
-        let seek_end = self.file_append(database_name.clone(), description.clone())?;
+        let seek_end = self.file_append(description.clone())?;
         log::debug!(
             "view {} modify to {} with file seek_end = {}",
             old_name.clone(),
@@ -197,7 +204,16 @@ impl View {
         let view_path_old = view_path(database_name.clone(), old_name);
         let view_path_new = view_path(database_name.clone(), self.name());
         match std::fs::rename(view_path_old, view_path_new) {
-            Ok(_) => Ok(()),
+            Ok(_) => {
+                for (_name, index) in self.index_map().write().unwrap().iter() {
+                    index
+                        .write()
+                        .unwrap()
+                        .modify(database_name.clone(), self.name())
+                }
+                self.database_name = database_name;
+                Ok(())
+            }
             Err(err) => {
                 // 回滚数据
                 Filer::write_seek(filepath, 0, content_old)?;
@@ -257,13 +273,8 @@ impl View {
     /// ###Return
     ///
     /// IndexResult<()>
-    pub(crate) fn put(
-        &self,
-        database_name: String,
-        key: String,
-        value: Vec<u8>,
-    ) -> GeorgeResult<()> {
-        self.save(database_name, key, value, false, false)
+    pub(crate) fn put(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
+        self.save(key, value, false, false)
     }
     /// 插入数据，无论存在与否都会插入或更新数据<p><p>
     ///
@@ -276,13 +287,8 @@ impl View {
     /// ###Return
     ///
     /// IndexResult<()>
-    pub(crate) fn set(
-        &self,
-        database_name: String,
-        key: String,
-        value: Vec<u8>,
-    ) -> GeorgeResult<()> {
-        self.save(database_name, key, value, true, false)
+    pub(crate) fn set(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
+        self.save(key, value, true, false)
     }
     /// 获取数据，返回存储对象<p><p>
     ///
@@ -316,8 +322,8 @@ impl View {
     /// ###Return
     ///
     /// IndexResult<()>
-    pub(crate) fn remove(&self, database_name: String, key: String) -> GeorgeResult<()> {
-        self.save(database_name, key, vec![], true, true)
+    pub(crate) fn remove(&self, key: String) -> GeorgeResult<()> {
+        self.save(key, vec![], true, true)
     }
 }
 
@@ -325,13 +331,9 @@ impl View {
     /// 整理归档
     ///
     /// archive_file_path 归档路径
-    pub(crate) fn archive(
-        &self,
-        database_name: String,
-        archive_file_path: String,
-    ) -> GeorgeResult<()> {
+    pub(crate) fn archive(&self, archive_file_path: String) -> GeorgeResult<()> {
         self.filer.write().unwrap().archive(archive_file_path)?;
-        self.init(database_name)
+        self.init()
     }
     /// 取出表记录表内容索引
     ///
@@ -418,17 +420,13 @@ impl View {
     /// 组装写入视图的内容，即持续长度+该长度的原文内容
     ///
     /// 将数据存入view，返回数据在view中的起始偏移量坐标
-    pub(crate) fn write_content(
-        &self,
-        database_name: String,
-        mut value: Vec<u8>,
-    ) -> GeorgeResult<u64> {
+    pub(crate) fn write_content(&self, mut value: Vec<u8>) -> GeorgeResult<u64> {
         // 内容持续长度(4字节)
         let mut seed_bytes_len_bytes = trans_u32_2_bytes(value.len() as u32);
         // 真实存储内容，内容持续长度(4字节)+内容字节数组
         seed_bytes_len_bytes.append(&mut value);
         // 将数据存入view，返回数据在view中的起始坐标
-        self.file_append(database_name, seed_bytes_len_bytes)
+        self.file_append(seed_bytes_len_bytes)
     }
     /// 插入数据业务方法<p><p>
     ///
@@ -443,14 +441,7 @@ impl View {
     /// ###Return
     ///
     /// IndexResult<()>
-    fn save(
-        &self,
-        database_name: String,
-        key: String,
-        value: Vec<u8>,
-        force: bool,
-        remove: bool,
-    ) -> GeorgeResult<()> {
+    fn save(&self, key: String, value: Vec<u8>, force: bool, remove: bool) -> GeorgeResult<()> {
         let seed = Arc::new(RwLock::new(Seed::create(key.clone(), value.clone())));
         let mut receives = Vec::new();
         for (index_name, index) in self.index_map().read().unwrap().iter() {
@@ -486,11 +477,9 @@ impl View {
             }
         }
         if remove {
-            seed.write().unwrap().remove(database_name, self.clone())
+            seed.write().unwrap().remove(self.clone())
         } else {
-            seed.write()
-                .unwrap()
-                .save(database_name, self.clone(), force)
+            seed.write().unwrap().save(self.clone(), force)
         }
     }
 }
@@ -520,6 +509,7 @@ impl View {
                 let pigeonhole = Pigeonhole::from_string(split.next().unwrap().to_string())?;
                 let file_path = view_file_path(database_name.clone(), name.clone());
                 let mut view = View {
+                    database_name: database_name.clone(),
                     name,
                     create_time,
                     metadata: hd.metadata(),

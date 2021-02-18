@@ -13,7 +13,9 @@
  */
 
 use crate::task::database::Database;
-use crate::utils::comm::{GEORGE_DB_CONFIG, INDEX_CATALOG};
+use crate::utils::comm::{
+    DEFAULT_COMMENT, DEFAULT_DATABASE, DEFAULT_VIEW, GEORGE_DB_CONFIG, INDEX_CATALOG, INDEX_MEMORY,
+};
 use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
 use crate::utils::enums::{EngineType, IndexMold};
 use crate::utils::path::{bootstrap_file_path, data_path, database_file_path};
@@ -166,6 +168,7 @@ impl Master {
     }
 }
 
+/// db for disk
 impl Master {
     /// 插入数据，如果存在则返回已存在<p><p>
     ///
@@ -289,6 +292,80 @@ impl Master {
     }
 }
 
+/// db for memory
+impl Master {
+    /// 插入数据，如果存在则返回已存在<p><p>
+    ///
+    /// ###Params
+    ///
+    /// key string
+    ///
+    /// value 当前结果value信息<p><p>
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    pub(crate) fn put_m(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
+        self.database(DEFAULT_DATABASE.to_string())?
+            .read()
+            .unwrap()
+            .put(DEFAULT_VIEW.to_string(), key, value)
+    }
+    /// 插入数据，无论存在与否都会插入或更新数据<p><p>
+    ///
+    /// ###Params
+    ///
+    /// view_name 视图名称<p><p>
+    ///
+    /// key string
+    ///
+    /// value 当前结果value信息<p><p>
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    pub(crate) fn set_m(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
+        self.database(DEFAULT_DATABASE.to_string())?
+            .read()
+            .unwrap()
+            .set(DEFAULT_VIEW.to_string(), key, value)
+    }
+    /// 获取数据，返回存储对象<p><p>
+    ///
+    /// ###Params
+    ///
+    /// view_name 视图名称
+    ///
+    /// key string
+    ///
+    /// ###Return
+    ///
+    /// Seed value信息
+    pub(crate) fn get_m(&self, key: String) -> GeorgeResult<Vec<u8>> {
+        self.database(DEFAULT_DATABASE.to_string())?
+            .read()
+            .unwrap()
+            .get(DEFAULT_VIEW.to_string(), INDEX_CATALOG, key)
+    }
+    /// 删除数据<p><p>
+    ///
+    /// ###Params
+    ///
+    /// view_name 视图名称
+    ///
+    /// key string
+    ///
+    /// ###Return
+    ///
+    /// Seed value信息
+    pub(crate) fn remove_m(&self, key: String) -> GeorgeResult<Vec<u8>> {
+        self.database(DEFAULT_DATABASE.to_string())?
+            .read()
+            .unwrap()
+            .get(DEFAULT_VIEW.to_string(), INDEX_CATALOG, key)
+    }
+}
+
 impl Master {
     /// 初始化或恢复数据
     fn init_or_recovery(&self) {
@@ -319,20 +396,20 @@ impl Master {
     }
 
     fn init_default(&self) {
-        let database_name = String::from("sys");
-        let view_name = String::from("memory");
-        let index_name = String::from("default");
-        let comment = String::from("system default");
-        match self.create_database(database_name.clone(), comment.clone()) {
+        match self.create_database(DEFAULT_DATABASE.to_string(), DEFAULT_COMMENT.to_string()) {
             _ => {}
         }
-        match self.create_view(database_name.clone(), view_name.clone(), comment.clone()) {
+        match self.create_view(
+            DEFAULT_DATABASE.to_string(),
+            DEFAULT_VIEW.to_string(),
+            DEFAULT_COMMENT.to_string(),
+        ) {
             _ => {}
         }
         match self.create_index(
-            database_name,
-            view_name,
-            index_name,
+            DEFAULT_DATABASE.to_string(),
+            DEFAULT_VIEW.to_string(),
+            INDEX_MEMORY.to_string(),
             EngineType::Memory,
             IndexMold::String,
             true,

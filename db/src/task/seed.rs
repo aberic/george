@@ -247,7 +247,7 @@ impl IndexPolicy {
         // 生成完整存储数据字节数组=数据类型(1字节)+持续长度(4字节)+数据字节数组
         pos_data_bytes.append(&mut view_info_index_data);
         // 执行视图存储操作，得到定位数据起始偏移量
-        let pos_seek_start = view.write_content(database_name, pos_data_bytes)?;
+        let pos_seek_start = view.write_content(pos_data_bytes)?;
         // 记录表文件属性(数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
         let mut index_info_index = view_version_bytes;
         // 记录表文件属性为当前视图版本号(数据归档/定位文件用2字节)
@@ -292,7 +292,7 @@ impl TSeed for Seed {
         self.policies.push(index_policy);
         Ok(())
     }
-    fn save(&mut self, database_name: String, view: View, force: bool) -> GeorgeResult<()> {
+    fn save(&mut self, view: View, force: bool) -> GeorgeResult<()> {
         // todo 失败回滚
         if self.policies.len() == 0 {
             return Err(err_string(format!(
@@ -305,7 +305,7 @@ impl TSeed for Seed {
         let mut value_bytes = trans_u32_2_bytes(value_len);
         value_bytes.append(&mut value);
         // 执行真实存储操作，即索引将seed存入后，允许检索到该结果，但该结果值不存在，仅当所有索引存入都成功，才会执行本方法完成真实存储操作
-        let view_seek_start = view.write_content(database_name.clone(), value_bytes)?;
+        let view_seek_start = view.write_content(value_bytes)?;
         // 记录视图文件属性(版本号/数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
         // 数据在视图文件中起始偏移量p(6字节)
         let mut view_seek_start_bytes = trans_u48_2_bytes(view_seek_start);
@@ -319,7 +319,7 @@ impl TSeed for Seed {
         // 将在数据在view中的坐标存入各个index
         for policy in self.policies.to_vec() {
             policy.exec(
-                database_name.clone(),
+                view.database_name(),
                 view.clone(),
                 view_version_bytes.clone(),
                 view_info_index.clone(),
@@ -328,7 +328,7 @@ impl TSeed for Seed {
         }
         Ok(())
     }
-    fn remove(&mut self, database_name: String, view: View) -> GeorgeResult<()> {
+    fn remove(&mut self, view: View) -> GeorgeResult<()> {
         if self.policies.len() == 0 {
             return Ok(());
         }
@@ -342,7 +342,7 @@ impl TSeed for Seed {
         for policy in self.policies.to_vec() {
             // todo 设计碰撞模型
             policy.exec(
-                database_name.clone(),
+                view.database_name(),
                 view.clone(),
                 view_version_bytes.clone(),
                 view_info_index.clone(),

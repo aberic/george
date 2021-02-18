@@ -36,6 +36,7 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     fn metadata(&self) -> Metadata;
     /// 创建时间
     fn create_time(&self) -> Duration;
+    fn modify(&mut self, database_name: String, view_name: String);
     /// 插入数据<p><p>
     ///
     /// ###Params
@@ -142,9 +143,9 @@ pub(crate) trait TSeed: Send + Sync + Debug {
     /// view View 视图<p><p>
     ///
     /// force 是否强制覆盖
-    fn save(&mut self, database_name: String, view: View, force: bool) -> GeorgeResult<()>;
+    fn save(&mut self, view: View, force: bool) -> GeorgeResult<()>;
     /// 删除操作
     ///
     /// view View 视图
-    fn remove(&mut self, database_name: String, view: View) -> GeorgeResult<()>;
+    fn remove(&mut self, view: View) -> GeorgeResult<()>;
 }

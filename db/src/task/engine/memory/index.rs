@@ -84,6 +84,9 @@ impl TIndex for Index {
     fn create_time(&self) -> Duration {
         self.create_time.clone()
     }
+    fn modify(&mut self, _dn: String, _vn: String) {
+        unimplemented!()
+    }
     fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
         self.root.put(key, seed)
     }

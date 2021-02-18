@@ -54,10 +54,10 @@ impl TSeed for Seed {
         self.value = Some(value);
         Ok(())
     }
-    fn save(&mut self, _database_name: String, _view: View, _force: bool) -> GeorgeResult<()> {
+    fn save(&mut self, _view: View, _force: bool) -> GeorgeResult<()> {
         Ok(())
     }
-    fn remove(&mut self, _database_name: String, _view: View) -> GeorgeResult<()> {
+    fn remove(&mut self, _view: View) -> GeorgeResult<()> {
         self.value = None;
         Ok(())
     }
