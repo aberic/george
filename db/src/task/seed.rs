@@ -173,7 +173,6 @@ impl IndexPolicy {
     /// view_index_info 表内容索引(8字节)，记录表文件属性(数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
     fn exec(
         &self,
-        db_name: String,
         view: View,
         view_version_bytes: Vec<u8>,
         view_index_info: Vec<u8>,
@@ -197,7 +196,6 @@ impl IndexPolicy {
             // 如果读取到为空，则表明该数据为首次插入
             self.record_normal(
                 file,
-                db_name,
                 self.original_key(),
                 view,
                 view_version_bytes,
@@ -231,7 +229,6 @@ impl IndexPolicy {
     fn record_normal(
         &self,
         file: File,
-        database_name: String,
         key: String,
         view: View,
         view_version_bytes: Vec<u8>,
@@ -319,7 +316,6 @@ impl TSeed for Seed {
         // 将在数据在view中的坐标存入各个index
         for policy in self.policies.to_vec() {
             policy.exec(
-                view.database_name(),
                 view.clone(),
                 view_version_bytes.clone(),
                 view_info_index.clone(),
@@ -342,7 +338,6 @@ impl TSeed for Seed {
         for policy in self.policies.to_vec() {
             // todo 设计碰撞模型
             policy.exec(
-                view.database_name(),
                 view.clone(),
                 view_version_bytes.clone(),
                 view_info_index.clone(),
