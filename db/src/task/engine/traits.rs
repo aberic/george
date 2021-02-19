@@ -82,6 +82,7 @@ pub(crate) trait TNode: Send + Sync + Debug {
     /// 如果子项是seed集合，在seed集合中每一个seed的默认字符长度是6，当前叶子node会存储叶子中首个出现hash碰撞的
     /// seed起始坐标，每一个seed都会存储出现hash碰撞的下一seed起始坐标
     fn node_bytes(&self) -> Arc<RwLock<Vec<u8>>>;
+    fn modify(&mut self, database_name: String, view_name: String);
     /// 插入数据<p><p>
     ///
     /// ###Params
@@ -95,15 +96,7 @@ pub(crate) trait TNode: Send + Sync + Debug {
     /// ###Return
     ///
     /// EngineResult<()>
-    fn put(
-        &self,
-        original_key: String,
-        database_name: String,
-        view_name: String,
-        index_name: String,
-        key: u64,
-        seed: Arc<RwLock<dyn TSeed>>,
-    ) -> GeorgeResult<()>;
+    fn put(&self, key: String, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()>;
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -113,13 +106,17 @@ pub(crate) trait TNode: Send + Sync + Debug {
     /// ###Return
     ///
     /// Seed value信息
-    fn get(
-        &self,
-        database_name: String,
-        view_name: String,
-        index_name: String,
-        key: u64,
-    ) -> GeorgeResult<Vec<u8>>;
+    fn get(&self, key: String, hash_key: u64) -> GeorgeResult<Vec<u8>>;
+    /// 删除数据<p><p>
+    ///
+    /// ###Params
+    ///
+    /// key string
+    ///
+    /// ###Return
+    ///
+    /// Seed value信息
+    fn del(&self, key: String, hash_key: u64) -> GeorgeResult<()>;
 }
 
 /// B+Tree索引叶子结点内防hash碰撞数组对象中对象特性

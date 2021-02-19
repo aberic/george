@@ -94,16 +94,19 @@ impl Master {
         };
     }
     /// 创建视图
+    ///
+    /// mem 是否为内存视图
     pub(super) fn create_view(
         &self,
         database_name: String,
         view_name: String,
         _view_comment: String,
+        mem: bool,
     ) -> GeorgeResult<()> {
         match self.database_map().read().unwrap().get(&database_name) {
             Some(database_lock) => {
                 let database = database_lock.read().unwrap();
-                database.create_view(view_name.clone())?;
+                database.create_view(view_name.clone(), mem)?;
             }
             None => return Err(GeorgeError::from(DatabaseNoExistError)),
         }
@@ -345,7 +348,7 @@ impl Master {
         self.database(DEFAULT_DATABASE.to_string())?
             .read()
             .unwrap()
-            .get(DEFAULT_VIEW.to_string(), INDEX_CATALOG, key)
+            .get(DEFAULT_VIEW.to_string(), INDEX_MEMORY, key)
     }
     /// 删除数据<p><p>
     ///
@@ -358,11 +361,11 @@ impl Master {
     /// ###Return
     ///
     /// Seed value信息
-    pub(crate) fn remove_m(&self, key: String) -> GeorgeResult<Vec<u8>> {
+    pub(crate) fn remove_m(&self, key: String) -> GeorgeResult<()> {
         self.database(DEFAULT_DATABASE.to_string())?
             .read()
             .unwrap()
-            .get(DEFAULT_VIEW.to_string(), INDEX_CATALOG, key)
+            .remove(DEFAULT_VIEW.to_string(), key)
     }
 }
 
@@ -403,6 +406,7 @@ impl Master {
             DEFAULT_DATABASE.to_string(),
             DEFAULT_VIEW.to_string(),
             DEFAULT_COMMENT.to_string(),
+            true,
         ) {
             _ => {}
         }

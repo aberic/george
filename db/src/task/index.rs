@@ -26,12 +26,14 @@ use comm::vectors::{Vector, VectorHandler};
 use crate::task::engine::block::node::Node as NodeBlock;
 use crate::task::engine::dossier::node::Node as NodeDossier;
 use crate::task::engine::library::node::Node as NodeLibrary;
+use crate::task::engine::memory::node::Node as NodeMemory;
 use crate::task::engine::traits::{TIndex, TNode, TSeed};
 use crate::utils::comm::hash_key;
 use crate::utils::enums::{EngineType, Enum, EnumHandler, IndexMold};
 use crate::utils::path::index_file_path;
 use crate::utils::store::{before_content_bytes, Metadata, HD};
 use crate::utils::writer::obtain_write_append_file;
+use comm::trans::{trans_bytes_2_u32, trans_u32_2_bytes};
 
 /// Siam索引
 ///
@@ -114,9 +116,19 @@ impl Index {
         ))?;
         let root: Arc<RwLock<dyn TNode>>;
         match engine_type {
-            EngineType::Dossier => root = NodeDossier::create_root(),
-            EngineType::Library => root = NodeLibrary::create_root(),
-            EngineType::Block => root = NodeBlock::create_root(),
+            EngineType::Dossier => {
+                root =
+                    NodeDossier::create_root(database_name.clone(), view_name.clone(), name.clone())
+            }
+            EngineType::Library => {
+                root =
+                    NodeLibrary::create_root(database_name.clone(), view_name.clone(), name.clone())
+            }
+            EngineType::Block => {
+                root =
+                    NodeBlock::create_root(database_name.clone(), view_name.clone(), name.clone())
+            }
+            EngineType::Memory => root = NodeMemory::create_root(),
             _ => return Err(err_str("unsupported engine type with none")),
         }
         let mut index = new_index(
@@ -175,14 +187,6 @@ impl Index {
             }
         }
     }
-    /// 数据库名称
-    fn database_name(&self) -> String {
-        self.database_name.clone()
-    }
-    /// 视图名称
-    fn view_name(&self) -> String {
-        self.view_name.clone()
-    }
 }
 
 /// 封装方法函数w
@@ -203,29 +207,24 @@ impl TIndex for Index {
         self.create_time.clone()
     }
     fn modify(&mut self, database_name: String, view_name: String) {
+        self.root
+            .write()
+            .unwrap()
+            .modify(database_name.clone(), view_name.clone());
         self.database_name = database_name;
         self.view_name = view_name;
     }
     fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
-        self.root.write().unwrap().put(
-            key.clone(),
-            self.database_name(),
-            self.view_name(),
-            self.name(),
-            hash_key(self.mold(), key)?,
-            seed,
-        )
+        let hash_key = hash_key(self.mold(), key.clone())?;
+        self.root.write().unwrap().put(key, hash_key, seed)
     }
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        self.root.read().unwrap().get(
-            self.database_name(),
-            self.view_name(),
-            self.name(),
-            hash_key(self.mold(), key)?,
-        )
+        let hash_key = hash_key(self.mold(), key.clone())?;
+        self.root.read().unwrap().get(key, hash_key)
     }
     fn del(&self, key: String) -> GeorgeResult<()> {
-        unimplemented!()
+        let hash_key = hash_key(self.mold(), key.clone())?;
+        self.root.write().unwrap().del(key, hash_key)
     }
 }
 
@@ -249,8 +248,10 @@ impl Index {
             .read()
             .unwrap()
             .to_vec();
-        part1.append(&mut part2);
-        part1
+        let mut des_bytes = trans_u32_2_bytes(part2.len() as u32);
+        des_bytes.append(&mut part1);
+        des_bytes.append(&mut part2);
+        des_bytes
     }
     /// 通过文件描述恢复结构信息
     pub(crate) fn recover(
@@ -258,10 +259,13 @@ impl Index {
         view_name: String,
         hd: HD,
     ) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
-        let des_len = hd.description().len();
-        let middle_pos = des_len - 524288;
-        let part1 = Vector::sub(hd.description(), 0, middle_pos)?;
-        let part2 = Vector::sub(hd.description(), middle_pos, des_len)?;
+        let des_bytes = hd.description();
+        let des_bytes_len = des_bytes.len();
+        let part2_len_bytes = vec![des_bytes[0], des_bytes[1], des_bytes[2], des_bytes[3]];
+        let part2_bytes_len = trans_bytes_2_u32(part2_len_bytes)? as usize;
+        let middle_pos = des_bytes_len - part2_bytes_len;
+        let part1 = Vector::sub(des_bytes.clone(), 4, middle_pos)?;
+        let part2 = Vector::sub(des_bytes, middle_pos, des_bytes_len)?;
         let description_str = Strings::from_utf8(part1)?;
         match hex::decode(description_str) {
             Ok(vu8) => {
@@ -278,9 +282,31 @@ impl Index {
                 let file_append = obtain_write_append_file(file_path)?;
                 let root: Arc<RwLock<dyn TNode>>;
                 match hd.engine_type() {
-                    EngineType::Dossier => root = NodeDossier::recovery_root(part2),
-                    EngineType::Library => root = NodeLibrary::recovery_root(part2),
-                    EngineType::Block => root = NodeBlock::recovery_root(part2),
+                    EngineType::Dossier => {
+                        root = NodeDossier::recovery_root(
+                            database_name.clone(),
+                            view_name.clone(),
+                            name.clone(),
+                            part2,
+                        )
+                    }
+                    EngineType::Library => {
+                        root = NodeLibrary::recovery_root(
+                            database_name.clone(),
+                            view_name.clone(),
+                            name.clone(),
+                            part2,
+                        )
+                    }
+                    EngineType::Block => {
+                        root = NodeBlock::recovery_root(
+                            database_name.clone(),
+                            view_name.clone(),
+                            name.clone(),
+                            part2,
+                        )
+                    }
+                    EngineType::Memory => root = NodeMemory::recovery_root(),
                     _ => return Err(err_str("unsupported engine type")),
                 }
                 log::info!(

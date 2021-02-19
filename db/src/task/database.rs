@@ -87,10 +87,6 @@ impl Database {
     pub(crate) fn create_time(&self) -> Duration {
         self.create_time.clone()
     }
-    /// 文件信息
-    pub(crate) fn metadata(&self) -> Metadata {
-        self.metadata.clone()
-    }
     /// 文件字节信息
     pub(crate) fn metadata_bytes(&self) -> Vec<u8> {
         self.metadata.bytes()
@@ -189,11 +185,18 @@ impl Database {
         };
     }
     /// 创建视图
-    pub(crate) fn create_view(&self, name: String) -> GeorgeResult<()> {
+    ///
+    /// mem 是否为内存视图
+    pub(crate) fn create_view(&self, name: String, mem: bool) -> GeorgeResult<()> {
         if self.exist_view(name.clone()) {
             return Err(GeorgeError::from(ViewExistError));
         }
-        let view = View::create(self.name(), name.clone())?;
+        let view: Arc<RwLock<View>>;
+        if mem {
+            view = View::create_m(self.name(), name.clone())?;
+        } else {
+            view = View::create(self.name(), name.clone())?;
+        }
         self.view_map().write().unwrap().insert(name, view.clone());
         Ok(())
     }
@@ -231,6 +234,7 @@ impl Database {
     }
 }
 
+/// db for disk
 impl Database {
     /// 插入数据，如果存在则返回已存在<p><p>
     ///

@@ -26,6 +26,7 @@ pub(crate) struct Seed {
     /// 当前结果原始key信息
     key: String,
     value: Option<Vec<u8>>,
+    old_value: Option<Vec<u8>>,
 }
 
 /// 封装方法函数
@@ -35,6 +36,7 @@ impl Seed {
         return Seed {
             key,
             value: Some(value),
+            old_value: None,
         };
     }
 }

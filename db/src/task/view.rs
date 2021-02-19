@@ -28,11 +28,11 @@ use comm::strings::{StringHandler, Strings};
 use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u64, trans_u32_2_bytes};
 use comm::vectors::{Vector, VectorHandler};
 
-use crate::task::engine::memory::index::Index as IndexMemory;
+use crate::task::engine::memory::seed::Seed as SeedMemory;
 use crate::task::engine::traits::{TIndex, TSeed};
 use crate::task::index::Index as IndexDefault;
-use crate::task::seed::{IndexData, Seed};
-use crate::utils::comm::{key_fetch, INDEX_CATALOG, VALUE_TYPE_NORMAL};
+use crate::task::seed::{IndexData, Seed as SeedDefault};
+use crate::utils::comm::{key_fetch, INDEX_CATALOG, INDEX_MEMORY, VALUE_TYPE_NORMAL};
 use crate::utils::enums::{EngineType, IndexMold, Tag};
 use crate::utils::path::{index_file_path, view_file_path, view_path};
 use crate::utils::store::{before_content_bytes, recovery_before_content, Metadata, HD};
@@ -53,6 +53,8 @@ pub(crate) struct View {
     ///
     /// 需要借助对象包裹，以便更新file，避免self为mut
     filer: Arc<RwLock<Filed>>,
+    /// 是否为内存视图
+    mem: bool,
     /// 索引集合
     indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
     /// 当前归档版本信息
@@ -65,41 +67,47 @@ pub(crate) struct View {
 ///
 /// ###Params
 ///
-/// id 视图唯一ID
-///
-/// name 视图名称
-///k
-/// comment 视图描述
-///
-/// category 视图类型kk
-///
-/// level 视图规模/级别
-fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
+/// mem 是否为内存视图
+fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
     let file_path = view_file_path(database_name.clone(), name.clone());
+    let metadata: Metadata;
+    if mem {
+        metadata = Metadata::default_mem(Tag::View)
+    } else {
+        metadata = Metadata::default(Tag::View)
+    }
     let view = View {
         database_name: database_name.clone(),
         name,
         create_time,
-        metadata: Metadata::default(Tag::View),
+        metadata,
         filer: Filed::create(file_path.clone())?,
+        mem,
         indexes: Default::default(),
         pigeonhole: Pigeonhole::create(0, file_path, create_time),
     };
-    view.create_index(
-        database_name,
-        INDEX_CATALOG.to_string(),
-        EngineType::Library,
-        IndexMold::String,
-        true,
-    )?;
+    if !mem {
+        view.create_index(
+            database_name,
+            INDEX_CATALOG.to_string(),
+            EngineType::Library,
+            IndexMold::String,
+            true,
+        )?;
+    }
     Ok(view)
 }
 
 impl View {
     pub(crate) fn create(database_name: String, name: String) -> GeorgeResult<Arc<RwLock<View>>> {
-        let view = new_view(database_name, name)?;
+        let view = new_view(database_name, name, false)?;
+        view.init()?;
+        Ok(Arc::new(RwLock::new(view)))
+    }
+    pub(crate) fn create_m(database_name: String, name: String) -> GeorgeResult<Arc<RwLock<View>>> {
+        let view = new_view(database_name, name, true)?;
         view.init()?;
         Ok(Arc::new(RwLock::new(view)))
     }
@@ -148,7 +156,7 @@ impl View {
     pub(crate) fn index(&self, index_name: &str) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
         match self.index_map().read().unwrap().get(index_name) {
             Some(idx) => Ok(idx.clone()),
-            None => Err(err_string(format!("index {} does't found", index_name))),
+            None => Err(err_string(format!("index {} doesn't found", index_name))),
         }
     }
     /// 当前归档版本信息
@@ -246,7 +254,6 @@ impl View {
         let index;
         match engine_type {
             EngineType::None => return Err(err_str("unsupported engine type with none")),
-            EngineType::Memory => index = IndexMemory::create(name)?,
             _ => {
                 index = IndexDefault::create(
                     database_name,
@@ -263,6 +270,7 @@ impl View {
     }
 }
 
+/// db for disk
 impl View {
     /// 插入数据，如果存在则返回已存在<p><p>
     ///
@@ -307,13 +315,18 @@ impl View {
         let index = self.index(index_name)?;
         let idx = index.read().unwrap();
         let view_info_index = idx.get(key.clone())?;
-        let index_data_list = self.fetch_view_info_index(view_info_index)?;
-        for index_data in index_data_list {
-            if index_data.equal_key(key.clone()) {
-                return Ok(index_data.value());
+        match index_name {
+            INDEX_MEMORY => Ok(view_info_index),
+            _ => {
+                let index_data_list = self.fetch_view_info_index(view_info_index)?;
+                for index_data in index_data_list {
+                    if index_data.equal_key(key.clone()) {
+                        return Ok(index_data.value());
+                    }
+                }
+                Err(GeorgeError::from(DataNoExistError))
             }
         }
-        Err(GeorgeError::from(DataNoExistError))
     }
     /// 删除数据<p><p>
     ///
@@ -444,7 +457,7 @@ impl View {
     ///
     /// IndexResult<()>
     fn save(&self, key: String, value: Vec<u8>, force: bool, remove: bool) -> GeorgeResult<()> {
-        let seed = Arc::new(RwLock::new(Seed::create(key.clone(), value.clone())));
+        let seed = Arc::new(RwLock::new(SeedDefault::create(key.clone(), value.clone())));
         let mut receives = Vec::new();
         for (index_name, index) in self.index_map().read().unwrap().iter() {
             let (sender, receive) = mpsc::channel();
@@ -458,6 +471,16 @@ impl View {
                 let index_read = index_clone.read().unwrap();
                 match index_name_clone.as_str() {
                     INDEX_CATALOG => sender.send(index_read.put(key_clone, seed_clone)),
+                    INDEX_MEMORY => {
+                        if remove {
+                            sender.send(index_read.del(key_clone.clone()))
+                        } else {
+                            sender.send(index_read.put(
+                                key_clone.clone(),
+                                Arc::new(RwLock::new(SeedMemory::create(key_clone, value_clone))),
+                            ))
+                        }
+                    }
                     _ => match key_fetch(index_name_clone, value_clone) {
                         Ok(res) => sender.send(index_read.put(res, seed_clone)),
                         Err(err) => {
@@ -490,8 +513,9 @@ impl View {
     /// 生成文件描述
     fn description(&self) -> Vec<u8> {
         hex::encode(format!(
-            "{}:#?{}:#?{}",
+            "{}:#?{}:#?{}:#?{}",
             self.name(),
+            self.mem,
             self.create_time().num_nanoseconds().unwrap().to_string(),
             self.pigeonhole().to_string()
         ))
@@ -505,6 +529,7 @@ impl View {
                 let real = Strings::from_utf8(vu8)?;
                 let mut split = real.split(":#?");
                 let name = split.next().unwrap().to_string();
+                let mem = split.next().unwrap().to_string().parse::<bool>().unwrap();
                 let create_time = Duration::nanoseconds(
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
@@ -516,6 +541,7 @@ impl View {
                     create_time,
                     metadata: hd.metadata(),
                     filer: Filed::recovery(file_path)?,
+                    mem,
                     indexes: Arc::new(Default::default()),
                     pigeonhole,
                 };
@@ -569,7 +595,6 @@ impl View {
         // 恢复index数据
         match hd.engine_type() {
             EngineType::None => panic!("index engine type error"),
-            EngineType::Memory => return Ok(()),
             _ => index = IndexDefault::recover(database_name, view_name, hd)?,
         }
         log::debug!(

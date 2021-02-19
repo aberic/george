@@ -31,6 +31,9 @@ use std::ops::Add;
 /// 叶子结点中才会存在Link，其余结点Link为None
 #[derive(Debug, Clone)]
 pub(crate) struct Node {
+    database_name: String,
+    view_name: String,
+    index_name: String,
     /// 存储结点所属各子结点坐标顺序字符串
     ///
     /// 子项是64位node集合，在node集合中每一个node的默认字节长度是8，数量是524288，即一次性读取524288个字节
@@ -39,18 +42,45 @@ pub(crate) struct Node {
 
 impl Node {
     /// 新建根结点
-    ///
+    ///w
     /// 该结点没有Links，也没有preNode，是B+Tree的创世结点
-    pub fn create_root() -> Arc<RwLock<Self>> {
+    pub fn create_root(
+        database_name: String,
+        view_name: String,
+        index_name: String,
+    ) -> Arc<RwLock<Self>> {
         return Arc::new(RwLock::new(Node {
+            database_name,
+            view_name,
+            index_name,
             node_bytes: Arc::new(RwLock::new(Vector::create_empty_bytes(524288))),
         }));
     }
     /// 恢复根结点
-    pub fn recovery_root(v8s: Vec<u8>) -> Arc<RwLock<Self>> {
+    pub fn recovery_root(
+        database_name: String,
+        view_name: String,
+        index_name: String,
+        v8s: Vec<u8>,
+    ) -> Arc<RwLock<Self>> {
         return Arc::new(RwLock::new(Node {
+            database_name,
+            view_name,
+            index_name,
             node_bytes: Arc::new(RwLock::new(v8s)),
         }));
+    }
+    fn database_name(&self) -> String {
+        self.database_name.clone()
+    }
+    fn view_name(&self) -> String {
+        self.view_name.clone()
+    }
+    fn index_name(&self) -> String {
+        self.index_name.clone()
+    }
+    fn index_path(&self) -> String {
+        index_path(self.database_name(), self.view_name(), self.index_name())
     }
 }
 
@@ -61,6 +91,10 @@ impl TNode for Node {
     /// 如果子项是node集合，在node集合中每一个node的默认字节长度是8，数量是65536，即一次性读取524288个字节
     fn node_bytes(&self) -> Arc<RwLock<Vec<u8>>> {
         self.node_bytes.clone()
+    }
+    fn modify(&mut self, database_name: String, view_name: String) {
+        self.database_name = database_name;
+        self.view_name = view_name;
     }
     /// 插入数据<p><p>
     ///
@@ -73,27 +107,17 @@ impl TNode for Node {
     /// ###Return
     ///
     /// EngineResult<()>
-    fn put(
-        &self,
-        original_key: String,
-        database_name: String,
-        view_name: String,
-        index_name: String,
-        key: u64,
-        seed: Arc<RwLock<dyn TSeed>>,
-    ) -> GeorgeResult<()> {
-        let index_path = index_path(database_name, view_name, index_name);
-        self.put_in_node(original_key, index_path, String::from(""), 1, key, seed)
+    fn put(&self, key: String, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
+        let index_path = self.index_path();
+        self.put_in_node(key, index_path, String::from(""), 1, hash_key, seed)
     }
-    fn get(
-        &self,
-        database_name: String,
-        view_name: String,
-        index_name: String,
-        key: u64,
-    ) -> GeorgeResult<Vec<u8>> {
-        let index_path = index_path(database_name, view_name, index_name);
-        self.get_in_node(index_path, String::from(""), 1, key)
+    fn get(&self, key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
+        let index_path = self.index_path();
+        self.get_in_node(key, index_path, String::from(""), 1, hash_key)
+    }
+
+    fn del(&self, key: String, hash_key: u64) -> GeorgeResult<()> {
+        unimplemented!()
     }
 }
 
@@ -160,6 +184,7 @@ impl Node {
     }
     fn get_in_node(
         &self,
+        key: String,
         index_path: String,
         mut index_file_name: String,
         level: u8,
@@ -186,7 +211,13 @@ impl Node {
             ));
             // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
             let next_flexible_key = flexible_key - next_degree * distance;
-            self.get_in_node(index_path, index_file_name, level + 1, next_flexible_key)
+            self.get_in_node(
+                key,
+                index_path,
+                index_file_name,
+                level + 1,
+                next_flexible_key,
+            )
         }
     }
 }

@@ -15,10 +15,9 @@
 use std::fmt::Debug;
 use std::sync::{Arc, RwLock};
 
-use comm::cryptos::hash::hashcode64_str;
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
 
-use crate::task::engine::traits::TSeed;
+use crate::task::engine::traits::{TNode, TSeed};
 use crate::utils::comm::level_distance_64;
 use comm::errors::children::{DataExistError, DataNoExistError, NoneError};
 
@@ -89,8 +88,12 @@ impl Node {
     /// 新建根结点
     ///
     /// 该结点没有Seeds，也没有preNode，是B+Tree的创世结点
-    pub(crate) fn create_root() -> Arc<Self> {
-        return Arc::new(create_root_self());
+    pub(crate) fn create_root() -> Arc<RwLock<Self>> {
+        Arc::new(RwLock::new(create_root_self()))
+    }
+    /// 恢复根结点
+    pub fn recovery_root() -> Arc<RwLock<Self>> {
+        Arc::new(RwLock::new(create_root_self()))
     }
 }
 
@@ -109,47 +112,26 @@ impl Node {
     fn seeds(&self) -> Option<Arc<RwLock<Vec<Arc<RwLock<dyn TSeed>>>>>> {
         self.seeds.clone()
     }
-    /// 插入数据<p><p>
-    ///
-    /// ###Params
-    ///
-    /// key string
-    ///
-    /// force 如果存在原值，是否覆盖原结果
-    ///
-    /// description_len 描述长度
-    ///
-    /// ###Return
-    ///
-    /// EngineResult<()>
-    pub(super) fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
-        let flexible_key = hashcode64_str(key.clone());
+}
+
+/// 封装方法函数
+impl TNode for Node {
+    fn node_bytes(&self) -> Arc<RwLock<Vec<u8>>> {
+        Arc::new(RwLock::new(vec![]))
+    }
+    fn modify(&mut self, _database_name: String, _view_name: String) {}
+    fn put(
+        &self,
+        key: String,
+        flexible_key: u64,
+        seed: Arc<RwLock<dyn TSeed>>,
+    ) -> GeorgeResult<()> {
         self.put_in_node(1, flexible_key, seed, true)
     }
-    /// 获取数据，返回存储对象<p><p>
-    ///
-    /// ###Params
-    ///
-    /// key string
-    ///
-    /// ###Return
-    ///
-    /// Seed value信息
-    pub(super) fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        let flexible_key = hashcode64_str(key.clone());
+    fn get(&self, key: String, flexible_key: u64) -> GeorgeResult<Vec<u8>> {
         self.get_in_node(1, key, flexible_key)
     }
-    /// 删除数据<p><p>
-    ///
-    /// ###Params
-    ///
-    /// key string
-    ///
-    /// ###Return
-    ///
-    /// Seed value信息
-    pub(super) fn del(&self, key: String) -> GeorgeResult<()> {
-        let flexible_key = hashcode64_str(key.clone());
+    fn del(&self, key: String, flexible_key: u64) -> GeorgeResult<()> {
         self.del_in_node(1, key, flexible_key)
     }
 }
@@ -377,7 +359,7 @@ impl Node {
             let mut seed_new_w = seed_new.write().unwrap();
             if seed_r.key().eq(&seed_new_w.key()) {
                 if !seed_r.value().eq(&seed_new_w.value()) {
-                    seed_new_w.modify(seed_r.value());
+                    seed_new_w.modify(seed_r.value()).unwrap();
                 }
                 seeds_rm_position.push(position);
             }

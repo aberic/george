@@ -292,10 +292,11 @@ impl TSeed for Seed {
     fn save(&mut self, view: View, force: bool) -> GeorgeResult<()> {
         // todo 失败回滚
         if self.policies.len() == 0 {
-            return Err(err_string(format!(
-                "no index found in this view {}",
-                view.name()
-            )));
+            // return Err(err_string(format!(
+            //     "no index found in this view {}",
+            //     view.name()
+            // )));
+            return Ok(());
         }
         let mut value = self.value();
         let value_len = value.len() as u32;

@@ -124,6 +124,34 @@ fn exec_test() {
     get(database_name, view_name, "hello", 1);
 }
 
+#[test]
+fn memory_test() {
+    let key1 = "a".to_string();
+    let key2 = "b".to_string();
+    GLOBAL_MASTER
+        .put_m(key1.clone(), "test1".as_bytes().to_vec())
+        .unwrap();
+    GLOBAL_MASTER
+        .put_m(key2.clone(), "test2".as_bytes().to_vec())
+        .unwrap();
+    println!(
+        "{} = {}",
+        key1.clone(),
+        String::from_utf8(GLOBAL_MASTER.get_m(key1.clone()).unwrap()).unwrap()
+    );
+    println!(
+        "{} = {}",
+        key2.clone(),
+        String::from_utf8(GLOBAL_MASTER.get_m(key2.clone()).unwrap()).unwrap()
+    );
+    GLOBAL_MASTER.remove_m(key2.clone()).unwrap();
+    println!(
+        "{} = {}",
+        key2.clone(),
+        String::from_utf8(GLOBAL_MASTER.get_m(key2.clone()).unwrap()).unwrap()
+    );
+}
+
 fn database_map() {
     for (database_name, db) in GLOBAL_MASTER
         .database_map()
@@ -211,6 +239,7 @@ fn create_view(database_name: &str, view_name: &str) {
         String::from(database_name),
         String::from(view_name),
         String::from("comment"),
+        false,
     ) {
         Ok(()) => println!("create view {} from database {}", view_name, database_name),
         Err(err) => println!(

@@ -80,6 +80,14 @@ impl Metadata {
             sequence: 0x00,
         }
     }
+    pub fn default_mem(tag: Tag) -> Metadata {
+        Metadata {
+            tag,
+            engine_type: EngineType::Memory,
+            version: VERSION,
+            sequence: 0x00,
+        }
+    }
     pub fn index(engine_type: EngineType) -> GeorgeResult<Metadata> {
         match engine_type {
             EngineType::None => Err(err_str("unsupported engine type with none")),
