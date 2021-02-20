@@ -216,7 +216,11 @@ impl TIndex for Index {
     }
     fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
         let hash_key = hash_key(self.mold(), key.clone())?;
-        self.root.write().unwrap().put(key, hash_key, seed)
+        self.root.write().unwrap().put(hash_key, seed)
+    }
+    fn set(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
+        let hash_key = hash_key(self.mold(), key.clone())?;
+        self.root.write().unwrap().set(hash_key, seed)
     }
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
         let hash_key = hash_key(self.mold(), key.clone())?;

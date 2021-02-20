@@ -100,16 +100,17 @@ impl TNode for Node {
     ///
     /// ###Params
     ///
-    /// original_key 使用当前索引的原始key
-    ///
-    /// key u64
+    /// hash_key u64
     ///
     /// ###Return
     ///
     /// EngineResult<()>
-    fn put(&self, key: String, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
+    fn put(&self, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
         let index_path = self.index_path();
-        self.put_in_node(key, index_path, String::from(""), 1, hash_key, seed)
+        self.put_in_node(index_path, String::from(""), 1, hash_key, seed)
+    }
+    fn set(&self, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
+        self.put(hash_key, seed)
     }
     fn get(&self, key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
         let index_path = self.index_path();
@@ -139,7 +140,6 @@ impl Node {
     /// node_seek 当前操作结点在文件中的真实起始位置
     fn put_in_node(
         &self,
-        key: String,
         index_path: String,
         mut index_file_name: String,
         level: u8,
@@ -161,9 +161,11 @@ impl Node {
                 index_file_path,
                 next_degree
             );
-            seed.write()
-                .unwrap()
-                .modify(IndexPolicy::bytes(key, index_file_path, next_degree * 8)?)
+            seed.write().unwrap().modify(IndexPolicy::bytes(
+                "".to_string(),
+                index_file_path,
+                next_degree * 8,
+            )?)
         } else {
             index_file_name = index_file_name.add(&Strings::left_fits(
                 next_degree.to_string(),
@@ -173,7 +175,6 @@ impl Node {
             // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
             let next_flexible_key = flexible_key - next_degree * distance;
             self.put_in_node(
-                key,
                 index_path,
                 index_file_name,
                 level + 1,

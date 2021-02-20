@@ -120,12 +120,10 @@ impl TNode for Node {
         Arc::new(RwLock::new(vec![]))
     }
     fn modify(&mut self, _database_name: String, _view_name: String) {}
-    fn put(
-        &self,
-        key: String,
-        flexible_key: u64,
-        seed: Arc<RwLock<dyn TSeed>>,
-    ) -> GeorgeResult<()> {
+    fn put(&self, flexible_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
+        self.put_in_node(1, flexible_key, seed, false)
+    }
+    fn set(&self, flexible_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
         self.put_in_node(1, flexible_key, seed, true)
     }
     fn get(&self, key: String, flexible_key: u64) -> GeorgeResult<Vec<u8>> {
@@ -358,9 +356,6 @@ impl Node {
             }
             let mut seed_new_w = seed_new.write().unwrap();
             if seed_r.key().eq(&seed_new_w.key()) {
-                if !seed_r.value().eq(&seed_new_w.value()) {
-                    seed_new_w.modify(seed_r.value()).unwrap();
-                }
                 seeds_rm_position.push(position);
             }
         }

@@ -135,10 +135,12 @@ fn memory_test() {
     get_m(key2, 2);
     remove_m(key2, 3);
     get_m(key2, 3);
-    put_m(key3, "test3", 4);
+    put_m(key3, "test4", 4);
     get_m(key3, 4);
-    put_m(key3, "test4", 5);
+    put_m(key3, "test5", 5);
     get_m(key3, 5);
+    set_m(key3, "test6", 6);
+    get_m(key3, 6);
 }
 
 fn database_map() {

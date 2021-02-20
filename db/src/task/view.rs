@@ -475,10 +475,23 @@ impl View {
                         if remove {
                             sender.send(index_read.del(key_clone.clone()))
                         } else {
-                            sender.send(index_read.put(
-                                key_clone.clone(),
-                                Arc::new(RwLock::new(SeedMemory::create(key_clone, value_clone))),
-                            ))
+                            if force {
+                                sender.send(index_read.set(
+                                    key_clone.clone(),
+                                    Arc::new(RwLock::new(SeedMemory::create(
+                                        key_clone,
+                                        value_clone,
+                                    ))),
+                                ))
+                            } else {
+                                sender.send(index_read.put(
+                                    key_clone.clone(),
+                                    Arc::new(RwLock::new(SeedMemory::create(
+                                        key_clone,
+                                        value_clone,
+                                    ))),
+                                ))
+                            }
                         }
                     }
                     _ => match key_fetch(index_name_clone, value_clone) {

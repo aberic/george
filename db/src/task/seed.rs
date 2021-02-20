@@ -285,7 +285,8 @@ impl TSeed for Seed {
         self.value.is_empty()
     }
     fn modify(&mut self, value: Vec<u8>) -> GeorgeResult<()> {
-        let index_policy = IndexPolicy::from(value)?;
+        let mut index_policy = IndexPolicy::from(value)?;
+        index_policy.original_key = self.key();
         self.policies.push(index_policy);
         Ok(())
     }
