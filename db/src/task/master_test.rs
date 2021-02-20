@@ -126,30 +126,19 @@ fn exec_test() {
 
 #[test]
 fn memory_test() {
-    let key1 = "a".to_string();
-    let key2 = "b".to_string();
-    GLOBAL_MASTER
-        .put_m(key1.clone(), "test1".as_bytes().to_vec())
-        .unwrap();
-    GLOBAL_MASTER
-        .put_m(key2.clone(), "test2".as_bytes().to_vec())
-        .unwrap();
-    println!(
-        "{} = {}",
-        key1.clone(),
-        String::from_utf8(GLOBAL_MASTER.get_m(key1.clone()).unwrap()).unwrap()
-    );
-    println!(
-        "{} = {}",
-        key2.clone(),
-        String::from_utf8(GLOBAL_MASTER.get_m(key2.clone()).unwrap()).unwrap()
-    );
-    GLOBAL_MASTER.remove_m(key2.clone()).unwrap();
-    println!(
-        "{} = {}",
-        key2.clone(),
-        String::from_utf8(GLOBAL_MASTER.get_m(key2.clone()).unwrap()).unwrap()
-    );
+    let key1 = "a";
+    let key2 = "b";
+    let key3 = "c";
+    put_m(key1, "test1", 1);
+    put_m(key2, "test2", 2);
+    get_m(key1, 1);
+    get_m(key2, 2);
+    remove_m(key2, 3);
+    get_m(key2, 3);
+    put_m(key3, "test3", 4);
+    get_m(key3, 4);
+    put_m(key3, "test4", 5);
+    get_m(key3, 5);
 }
 
 fn database_map() {
@@ -358,6 +347,50 @@ fn remove(database_name: &str, view_name: &str, key: &str, position: usize) {
         view_name.to_string(),
         key.to_string(),
     ) {
+        Ok(_) => println!("remove{} success!", position),
+        Err(ie) => println!(
+            "remove{} is {:#?}",
+            position,
+            ie.source().unwrap().to_string()
+        ),
+    }
+}
+
+fn put_m(key: &str, value: &str, position: usize) {
+    match GLOBAL_MASTER.put_m(key.to_string(), value.to_string().into_bytes()) {
+        Err(ie) => println!(
+            "put{} error is {:#?}",
+            position,
+            ie.source().unwrap().to_string()
+        ),
+        _ => {}
+    }
+}
+
+fn set_m(key: &str, value: &str, position: usize) {
+    match GLOBAL_MASTER.set_m(key.to_string(), value.to_string().into_bytes()) {
+        Err(ie) => println!(
+            "put{} error is {:#?}",
+            position,
+            ie.source().unwrap().to_string()
+        ),
+        _ => {}
+    }
+}
+
+fn get_m(key: &str, position: usize) {
+    match GLOBAL_MASTER.get_m(key.to_string()) {
+        Ok(vu8) => println!(
+            "get{} is {:#?}",
+            position,
+            String::from_utf8(vu8).unwrap().as_str()
+        ),
+        Err(ie) => println!("get{} is {:#?}", position, ie.source().unwrap().to_string()),
+    }
+}
+
+fn remove_m(key: &str, position: usize) {
+    match GLOBAL_MASTER.remove_m(key.to_string()) {
         Ok(_) => println!("remove{} success!", position),
         Err(ie) => println!(
             "remove{} is {:#?}",
