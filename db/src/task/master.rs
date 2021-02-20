@@ -17,7 +17,7 @@ use crate::utils::comm::{
     DEFAULT_COMMENT, DEFAULT_DATABASE, DEFAULT_VIEW, GEORGE_DB_CONFIG, INDEX_CATALOG, INDEX_MEMORY,
 };
 use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
-use crate::utils::enums::{EngineType, IndexMold};
+use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::{bootstrap_file_path, data_path, database_file_path};
 use crate::utils::store::recovery_before_content;
 use chrono::{Duration, Local, NaiveDateTime};
@@ -155,8 +155,8 @@ impl Master {
         database_name: String,
         view_name: String,
         index_name: String,
-        engine_type: EngineType,
-        index_mold: IndexMold,
+        index_type: IndexType,
+        key_type: KeyType,
         primary: bool,
     ) -> GeorgeResult<()> {
         let database = self.database(database_name.clone())?;
@@ -164,8 +164,8 @@ impl Master {
         database_read.view(view_name)?.read().unwrap().create_index(
             database_name,
             index_name,
-            engine_type,
-            index_mold,
+            index_type,
+            key_type,
             primary,
         )
     }

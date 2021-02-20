@@ -15,7 +15,7 @@
 use chrono::{Duration, NaiveDateTime};
 
 use crate::task::master::GLOBAL_MASTER;
-use crate::utils::enums::{EngineType, IndexMold};
+use crate::utils::enums::{IndexType, KeyType};
 use comm::strings::{StringHandler, Strings};
 use std::error::Error;
 
@@ -54,8 +54,8 @@ fn base_test() {
         database_name,
         view_name,
         index_name,
-        EngineType::Dossier,
-        IndexMold::String,
+        IndexType::Dossier,
+        KeyType::String,
         true,
     );
     database_map();
@@ -108,8 +108,8 @@ fn index_create_test() {
         "database_index_create_test",
         "view_index_create_test",
         "index_create_test",
-        EngineType::Dossier,
-        IndexMold::String,
+        IndexType::Dossier,
+        KeyType::String,
         true,
     );
     database_map();
@@ -272,8 +272,8 @@ fn create_index(
     database_name: &str,
     view_name: &str,
     index_name: &str,
-    engine_type: EngineType,
-    index_mold: IndexMold,
+    index_type: IndexType,
+    key_type: KeyType,
     primary: bool,
 ) {
     create_view(database_name.clone(), view_name.clone());
@@ -281,8 +281,8 @@ fn create_index(
         String::from(database_name),
         String::from(view_name),
         String::from(index_name),
-        engine_type,
-        index_mold,
+        index_type,
+        key_type,
         primary,
     ) {
         Ok(()) => println!(

@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-use crate::utils::enums::IndexMold;
+use crate::utils::enums::KeyType;
 use comm::cryptos::hash::{
     hashcode64_bl, hashcode64_f64, hashcode64_i64, hashcode64_str, hashcode64_u64,
 };
@@ -127,17 +127,17 @@ pub fn is_bytes_fill(bs: Vec<u8>) -> bool {
     false
 }
 
-pub fn hash_key(mold: IndexMold, key: String) -> GeorgeResult<u64> {
+pub fn hash_key(key_type: KeyType, key: String) -> GeorgeResult<u64> {
     let mut hash_key: u64 = 0;
-    match mold {
-        IndexMold::String => hash_key = hashcode64_str(key),
-        IndexMold::Bool => hash_key = hashcode64_bl(key)?,
-        IndexMold::U32 => hash_key = hashcode64_u64(key)?,
-        IndexMold::U64 => hash_key = hashcode64_u64(key)?,
-        IndexMold::F32 => hash_key = hashcode64_f64(key)?,
-        IndexMold::F64 => hash_key = hashcode64_f64(key)?,
-        IndexMold::I32 => hash_key = hashcode64_i64(key)?,
-        IndexMold::I64 => hash_key = hashcode64_i64(key)?,
+    match key_type {
+        KeyType::String => hash_key = hashcode64_str(key),
+        KeyType::Bool => hash_key = hashcode64_bl(key)?,
+        KeyType::U32 => hash_key = hashcode64_u64(key)?,
+        KeyType::U64 => hash_key = hashcode64_u64(key)?,
+        KeyType::F32 => hash_key = hashcode64_f64(key)?,
+        KeyType::F64 => hash_key = hashcode64_f64(key)?,
+        KeyType::I32 => hash_key = hashcode64_i64(key)?,
+        KeyType::I64 => hash_key = hashcode64_i64(key)?,
     }
     Ok(hash_key)
 }

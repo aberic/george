@@ -13,7 +13,6 @@
  */
 
 use crate::task::view::View;
-use crate::utils::enums::Tag;
 use crate::utils::path::{database_file_path, database_path, view_file_path};
 use crate::utils::store::{before_content_bytes, recovery_before_content, Metadata, HD};
 use crate::utils::writer::obtain_write_append_file;
@@ -60,7 +59,7 @@ fn new_database(name: String) -> GeorgeResult<Database> {
     Ok(Database {
         name,
         create_time,
-        metadata: Metadata::default(Tag::Database),
+        metadata: Metadata::database(),
         file_append,
         views: Arc::new(Default::default()),
     })

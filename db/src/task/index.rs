@@ -21,6 +21,7 @@ use chrono::{Duration, Local, NaiveDateTime};
 use comm::errors::entrances::{err_str, err_string, GeorgeResult};
 use comm::io::file::{Filer, FilerExecutor, FilerHandler};
 use comm::strings::{StringHandler, Strings};
+use comm::trans::{trans_bytes_2_u32, trans_u32_2_bytes};
 use comm::vectors::{Vector, VectorHandler};
 
 use crate::task::engine::block::node::Node as NodeBlock;
@@ -29,11 +30,10 @@ use crate::task::engine::library::node::Node as NodeLibrary;
 use crate::task::engine::memory::node::Node as NodeMemory;
 use crate::task::engine::traits::{TIndex, TNode, TSeed};
 use crate::utils::comm::hash_key;
-use crate::utils::enums::{EngineType, Enum, EnumHandler, IndexMold};
+use crate::utils::enums::{Enum, EnumHandler, IndexType, KeyType};
 use crate::utils::path::index_file_path;
 use crate::utils::store::{before_content_bytes, Metadata, HD};
 use crate::utils::writer::obtain_write_append_file;
-use comm::trans::{trans_bytes_2_u32, trans_u32_2_bytes};
 
 /// Siam索引
 ///
@@ -49,7 +49,7 @@ pub(crate) struct Index {
     /// 是否主键
     primary: bool,
     /// 索引值类型
-    mold: IndexMold,
+    key_type: KeyType,
     /// 结点
     root: Arc<RwLock<dyn TNode>>,
     /// 文件信息
@@ -78,7 +78,7 @@ fn new_index(
     view_name: String,
     name: String,
     primary: bool,
-    mold: IndexMold,
+    key_type: KeyType,
     root: Arc<RwLock<dyn TNode>>,
     metadata: Metadata,
 ) -> GeorgeResult<Index> {
@@ -94,7 +94,7 @@ fn new_index(
         metadata,
         create_time,
         file_append,
-        mold,
+        key_type,
         view_name,
     };
     Ok(index)
@@ -105,9 +105,9 @@ impl Index {
         database_name: String,
         view_name: String,
         name: String,
-        engine_type: EngineType,
+        index_type: IndexType,
         primary: bool,
-        index_mold: IndexMold,
+        key_type: KeyType,
     ) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
         Filer::touch(index_file_path(
             database_name.clone(),
@@ -115,20 +115,20 @@ impl Index {
             name.clone(),
         ))?;
         let root: Arc<RwLock<dyn TNode>>;
-        match engine_type {
-            EngineType::Dossier => {
+        match index_type {
+            IndexType::Dossier => {
                 root =
                     NodeDossier::create_root(database_name.clone(), view_name.clone(), name.clone())
             }
-            EngineType::Library => {
+            IndexType::Library => {
                 root =
                     NodeLibrary::create_root(database_name.clone(), view_name.clone(), name.clone())
             }
-            EngineType::Block => {
+            IndexType::Block => {
                 root =
                     NodeBlock::create_root(database_name.clone(), view_name.clone(), name.clone())
             }
-            EngineType::Memory => root = NodeMemory::create_root(),
+            IndexType::Memory => root = NodeMemory::create_root(),
             _ => return Err(err_str("unsupported engine type with none")),
         }
         let mut index = new_index(
@@ -136,9 +136,9 @@ impl Index {
             view_name.clone(),
             name,
             primary,
-            index_mold,
+            key_type,
             root,
-            Metadata::index(engine_type)?,
+            Metadata::index(index_type)?,
         )?;
         let mut metadata_bytes = index.metadata_bytes();
         let mut description = index.description();
@@ -194,8 +194,8 @@ impl TIndex for Index {
     fn name(&self) -> String {
         self.name.clone()
     }
-    fn mold(&self) -> IndexMold {
-        self.mold.clone()
+    fn key_type(&self) -> KeyType {
+        self.key_type.clone()
     }
     fn metadata(&self) -> Metadata {
         self.metadata.clone()
@@ -215,19 +215,19 @@ impl TIndex for Index {
         self.view_name = view_name;
     }
     fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
-        let hash_key = hash_key(self.mold(), key.clone())?;
+        let hash_key = hash_key(self.key_type(), key.clone())?;
         self.root.write().unwrap().put(hash_key, seed)
     }
     fn set(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
-        let hash_key = hash_key(self.mold(), key.clone())?;
+        let hash_key = hash_key(self.key_type(), key.clone())?;
         self.root.write().unwrap().set(hash_key, seed)
     }
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        let hash_key = hash_key(self.mold(), key.clone())?;
+        let hash_key = hash_key(self.key_type(), key.clone())?;
         self.root.read().unwrap().get(key, hash_key)
     }
     fn del(&self, key: String) -> GeorgeResult<()> {
-        let hash_key = hash_key(self.mold(), key.clone())?;
+        let hash_key = hash_key(self.key_type(), key.clone())?;
         self.root.write().unwrap().del(key, hash_key)
     }
 }
@@ -239,7 +239,7 @@ impl Index {
             "{}:#?{}:#?{}:#?{}",
             self.name,
             self.primary,
-            Enum::mold_u8(self.mold),
+            Enum::key_type_u8(self.key_type),
             self.create_time().num_nanoseconds().unwrap().to_string(),
         ))
         .into_bytes();
@@ -277,7 +277,8 @@ impl Index {
                 let mut split = real.split(":#?");
                 let name = split.next().unwrap().to_string();
                 let primary = split.next().unwrap().to_string().parse::<bool>().unwrap();
-                let mold = Enum::mold(split.next().unwrap().to_string().parse::<u8>().unwrap());
+                let key_type =
+                    Enum::key_type(split.next().unwrap().to_string().parse::<u8>().unwrap());
                 let create_time = Duration::nanoseconds(
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
@@ -285,8 +286,8 @@ impl Index {
                     index_file_path(database_name.clone(), view_name.clone(), name.clone());
                 let file_append = obtain_write_append_file(file_path)?;
                 let root: Arc<RwLock<dyn TNode>>;
-                match hd.engine_type() {
-                    EngineType::Dossier => {
+                match hd.index_type() {
+                    IndexType::Dossier => {
                         root = NodeDossier::recovery_root(
                             database_name.clone(),
                             view_name.clone(),
@@ -294,7 +295,7 @@ impl Index {
                             part2,
                         )
                     }
-                    EngineType::Library => {
+                    IndexType::Library => {
                         root = NodeLibrary::recovery_root(
                             database_name.clone(),
                             view_name.clone(),
@@ -302,7 +303,7 @@ impl Index {
                             part2,
                         )
                     }
-                    EngineType::Block => {
+                    IndexType::Block => {
                         root = NodeBlock::recovery_root(
                             database_name.clone(),
                             view_name.clone(),
@@ -310,7 +311,7 @@ impl Index {
                             part2,
                         )
                     }
-                    EngineType::Memory => root = NodeMemory::recovery_root(),
+                    IndexType::Memory => root = NodeMemory::recovery_root(),
                     _ => return Err(err_str("unsupported engine type")),
                 }
                 log::info!(
@@ -328,7 +329,7 @@ impl Index {
                     metadata: hd.metadata(),
                     file_append,
                     root,
-                    mold,
+                    key_type,
                 };
                 Ok(Arc::new(RwLock::new(index)))
             }

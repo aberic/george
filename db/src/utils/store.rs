@@ -17,11 +17,11 @@ use std::fs::File;
 
 use comm::errors::entrances::GeorgeResult;
 use comm::errors::entrances::{err_str, err_string};
+use comm::io::file::{Filer, FilerNormal};
 use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_u32_2_bytes};
 
 use crate::utils::deploy::VERSION;
-use crate::utils::enums::{EngineType, Enum, EnumHandler, Tag};
-use comm::io::file::{Filer, FilerNormal};
+use crate::utils::enums::{Enum, EnumHandler, IndexType, Tag, ViewType};
 
 /// 起始符
 const FRONT: [u8; 2] = [0x20, 0x19];
@@ -34,7 +34,9 @@ pub struct Metadata {
     /// 标识符
     pub tag: Tag,
     /// 存储引擎类型
-    pub engine_type: EngineType,
+    pub index_type: IndexType,
+    /// 视图引擎类型
+    pub view_type: ViewType,
     /// 版本号
     pub version: [u8; 2],
     /// 序号
@@ -46,9 +48,9 @@ impl fmt::Debug for Metadata {
         let version = vec![self.version[0], self.version[1]];
         write!(
             f,
-            "tag = {:#?}, engine_type = {:#?}, version = {:#?}, sequence = {:#?}",
+            "tag = {:#?}, index_type = {:#?}, version = {:#?}, sequence = {:#?}",
             self.tag,
-            self.engine_type,
+            self.index_type,
             trans_bytes_2_u16(version).unwrap(),
             self.sequence
         )
@@ -56,62 +58,97 @@ impl fmt::Debug for Metadata {
 }
 
 impl Metadata {
-    pub fn create(tag: Tag, engine_type: EngineType, sequence: u8) -> Metadata {
+    pub fn from_master(version: [u8; 2], sequence: u8) -> Metadata {
         Metadata {
-            tag,
-            engine_type,
-            version: VERSION,
-            sequence,
-        }
-    }
-    pub fn from(tag: Tag, engine_type: EngineType, version: [u8; 2], sequence: u8) -> Metadata {
-        Metadata {
-            tag,
-            engine_type,
+            tag: Tag::Bootstrap,
+            index_type: IndexType::None,
+            view_type: ViewType::None,
             version,
             sequence,
         }
     }
-    pub fn default(tag: Tag) -> Metadata {
+    pub fn from_database(version: [u8; 2], sequence: u8) -> Metadata {
         Metadata {
-            tag,
-            engine_type: EngineType::None,
+            tag: Tag::Database,
+            index_type: IndexType::None,
+            view_type: ViewType::None,
+            version,
+            sequence,
+        }
+    }
+    pub fn from_view(view_type: ViewType, version: [u8; 2], sequence: u8) -> Metadata {
+        Metadata {
+            tag: Tag::View,
+            index_type: IndexType::None,
+            view_type,
+            version,
+            sequence,
+        }
+    }
+    pub fn from_index(index_type: IndexType, version: [u8; 2], sequence: u8) -> Metadata {
+        Metadata {
+            tag: Tag::Index,
+            index_type,
+            view_type: ViewType::None,
+            version,
+            sequence,
+        }
+    }
+    pub fn database() -> Metadata {
+        Metadata {
+            tag: Tag::Database,
+            index_type: IndexType::None,
+            view_type: ViewType::None,
             version: VERSION,
             sequence: 0x00,
         }
     }
-    pub fn default_mem(tag: Tag) -> Metadata {
+    pub fn view_disk() -> Metadata {
         Metadata {
-            tag,
-            engine_type: EngineType::Memory,
+            tag: Tag::View,
+            index_type: IndexType::None,
+            view_type: ViewType::Disk,
             version: VERSION,
             sequence: 0x00,
         }
     }
-    pub fn index(engine_type: EngineType) -> GeorgeResult<Metadata> {
-        match engine_type {
-            EngineType::None => Err(err_str("unsupported engine type with none")),
-            EngineType::Memory => Ok(Metadata {
+    pub fn view_mem() -> Metadata {
+        Metadata {
+            tag: Tag::View,
+            index_type: IndexType::None,
+            view_type: ViewType::Memory,
+            version: VERSION,
+            sequence: 0x00,
+        }
+    }
+    pub fn index(index_type: IndexType) -> GeorgeResult<Metadata> {
+        match index_type {
+            IndexType::None => Err(err_str("unsupported engine type with none")),
+            IndexType::Memory => Ok(Metadata {
                 tag: Tag::Index,
-                engine_type,
+                index_type,
+                view_type: ViewType::None,
                 version: VERSION,
                 sequence: 0x00,
             }),
-            EngineType::Dossier => Ok(Metadata {
+            IndexType::Dossier => Ok(Metadata {
                 tag: Tag::Index,
-                engine_type,
+                index_type,
+                view_type: ViewType::None,
                 version: VERSION,
                 sequence: 0x00,
             }),
-            EngineType::Library => Ok(Metadata {
+            IndexType::Library => Ok(Metadata {
                 tag: Tag::Index,
-                engine_type,
+                index_type,
+                view_type: ViewType::None,
                 version: VERSION,
                 sequence: 0x00,
             }),
-            EngineType::Block => Ok(Metadata {
+            IndexType::Block => Ok(Metadata {
                 tag: Tag::Index,
-                engine_type,
+                index_type,
+                view_type: ViewType::None,
                 version: VERSION,
                 sequence: 0x00,
             }),
@@ -119,25 +156,41 @@ impl Metadata {
     }
     fn from_bytes(head: Vec<u8>) -> GeorgeResult<Metadata> {
         if 0x20 != head.get(0).unwrap().clone() || 0x19 != head.get(1).unwrap().clone() {
-            Err(err_str("recovery head failed! because front is invalid!"))
+            Err(err_str("recovery head failed! front is invalid!"))
         } else if 0x02 != head.get(30).unwrap().clone() || 0x19 != head.get(31).unwrap().clone() {
-            Err(err_str("recovery head failed! because end is invalid!"))
+            Err(err_str("recovery head failed! end is invalid!"))
         } else {
-            Ok(Metadata::from(
-                Enum::tag(head.get(2).unwrap().clone()),
-                Enum::engine_type(head.get(3).unwrap().clone()),
-                [head.get(4).unwrap().clone(), head.get(5).unwrap().clone()],
-                head.get(6).unwrap().clone(),
-            ))
+            let tag = Enum::tag(head.get(2).unwrap().clone());
+            match tag {
+                Tag::Database => Ok(Metadata::from_database(
+                    [head.get(4).unwrap().clone(), head.get(5).unwrap().clone()],
+                    head.get(6).unwrap().clone(),
+                )),
+                Tag::View => Ok(Metadata::from_view(
+                    Enum::view_type(head.get(3).unwrap().clone()),
+                    [head.get(4).unwrap().clone(), head.get(5).unwrap().clone()],
+                    head.get(6).unwrap().clone(),
+                )),
+                Tag::Index => Ok(Metadata::from_index(
+                    Enum::index_type(head.get(3).unwrap().clone()),
+                    [head.get(4).unwrap().clone(), head.get(5).unwrap().clone()],
+                    head.get(6).unwrap().clone(),
+                )),
+                _ => Err(err_str("recovery head failed! tag doesn't support!")),
+            }
         }
     }
     /// 标识符
     pub fn tag(&self) -> Tag {
         self.tag.clone()
     }
-    /// 存储引擎类型
-    pub fn engine_type(&self) -> EngineType {
-        self.engine_type.clone()
+    /// 索引引擎类型
+    pub fn index_type(&self) -> IndexType {
+        self.index_type.clone()
+    }
+    /// 视图引擎类型
+    pub fn view_type(&self) -> ViewType {
+        self.view_type.clone()
     }
     /// 版本号
     pub fn version(&self) -> GeorgeResult<u16> {
@@ -155,7 +208,7 @@ impl Metadata {
     ///
     /// tag 文件标识符，标识该文件是引导文件、库文件、表文件或是索引文件等，1字节<p>
     ///
-    /// engine_type 存储引擎类型，如内存类型Memory(0x00)/卷宗存储Dossier(0x01)/文库存储Library(0x02)/块存储Block(0x03)，该参数主要用于库、表和索引数据类型使用，1字节<p>
+    /// index_type 存储引擎类型，如内存类型Memory(0x00)/卷宗存储Dossier(0x01)/文库存储Library(0x02)/块存储Block(0x03)，该参数主要用于库、表和索引数据类型使用，1字节<p>
     ///
     /// level 文件存储容量，如Small(0x00)表示2^32，以及Large(0x01)表示2^64结点个数，该参数主要用于库、表和索引数据类型使用，1字节<p>
     ///
@@ -172,11 +225,17 @@ impl Metadata {
     ///
     /// 返回一个拼装完成的文件首部字符串
     pub fn bytes(&self) -> Vec<u8> {
+        let mut type_u8: u8 = 0x00;
+        match self.tag {
+            Tag::View => type_u8 = Enum::view_type_u8(self.view_type()),
+            Tag::Index => type_u8 = Enum::index_type_u8(self.index_type()),
+            _ => {}
+        }
         let head: [u8; 32] = [
             FRONT.get(0).unwrap().clone(),
             FRONT.get(1).unwrap().clone(),
             Enum::tag_u8(self.tag()),
-            Enum::engine_type_u8(self.engine_type()),
+            type_u8,
             self.version.get(0).unwrap().clone(),
             self.version.get(1).unwrap().clone(),
             self.sequence,
@@ -251,8 +310,8 @@ impl HD {
     pub fn metadata(&self) -> Metadata {
         self.metadata.clone()
     }
-    pub fn engine_type(&self) -> EngineType {
-        self.metadata().engine_type.clone()
+    pub fn index_type(&self) -> IndexType {
+        self.metadata().index_type.clone()
     }
     pub fn description(&self) -> Vec<u8> {
         self.description.clone()

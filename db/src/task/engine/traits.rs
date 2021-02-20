@@ -20,7 +20,7 @@ use serde::export::fmt::Debug;
 use comm::errors::entrances::GeorgeResult;
 
 use crate::task::view::View;
-use crate::utils::enums::IndexMold;
+use crate::utils::enums::KeyType;
 use crate::utils::store::Metadata;
 
 /// 索引通用特性，遵循此特性创建索引可以更方便的针对icdb进行扩展
@@ -31,7 +31,7 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     /// siam::Index 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入<p><p>
     fn name(&self) -> String;
     /// 索引值类型
-    fn mold(&self) -> IndexMold;
+    fn key_type(&self) -> KeyType;
     /// 文件信息
     fn metadata(&self) -> Metadata;
     /// 文件字节信息

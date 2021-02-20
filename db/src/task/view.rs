@@ -33,7 +33,7 @@ use crate::task::engine::traits::{TIndex, TSeed};
 use crate::task::index::Index as IndexDefault;
 use crate::task::seed::{IndexData, Seed as SeedDefault};
 use crate::utils::comm::{key_fetch, INDEX_CATALOG, INDEX_MEMORY, VALUE_TYPE_NORMAL};
-use crate::utils::enums::{EngineType, IndexMold, Tag};
+use crate::utils::enums::{IndexType, KeyType, ViewType};
 use crate::utils::path::{index_file_path, view_file_path, view_path};
 use crate::utils::store::{before_content_bytes, recovery_before_content, Metadata, HD};
 use crate::utils::writer::Filed;
@@ -74,9 +74,9 @@ fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View
     let file_path = view_file_path(database_name.clone(), name.clone());
     let metadata: Metadata;
     if mem {
-        metadata = Metadata::default_mem(Tag::View)
+        metadata = Metadata::view_mem()
     } else {
-        metadata = Metadata::default(Tag::View)
+        metadata = Metadata::view_disk()
     }
     let view = View {
         database_name: database_name.clone(),
@@ -92,16 +92,16 @@ fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View
         view.create_index_in(
             database_name,
             INDEX_MEMORY.to_string(),
-            EngineType::Memory,
-            IndexMold::String,
+            IndexType::Memory,
+            KeyType::String,
             true,
         )?;
     } else {
         view.create_index_in(
             database_name,
             INDEX_CATALOG.to_string(),
-            EngineType::Library,
-            IndexMold::String,
+            IndexType::Library,
+            KeyType::String,
             true,
         )?;
     }
@@ -150,8 +150,8 @@ impl View {
         self.metadata.bytes()
     }
     /// 文件信息
-    pub(crate) fn engine_type(&self) -> EngineType {
-        self.metadata().engine_type()
+    pub(crate) fn view_type(&self) -> ViewType {
+        self.metadata().view_type()
     }
     /// 索引集合
     pub(crate) fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>> {
@@ -254,13 +254,13 @@ impl View {
         &self,
         database_name: String,
         index_name: String,
-        engine_type: EngineType,
-        index_mold: IndexMold,
+        index_type: IndexType,
+        key_type: KeyType,
         primary: bool,
     ) -> GeorgeResult<()> {
-        match self.engine_type() {
-            EngineType::Memory => Err(err_str("this memory view allow only one index")),
-            _ => self.create_index_in(database_name, index_name, engine_type, index_mold, primary),
+        match self.view_type() {
+            ViewType::Memory => Err(err_str("this memory view allow only one index")),
+            _ => self.create_index_in(database_name, index_name, index_type, key_type, primary),
         }
     }
     /// 创建索引内部方法，绕开外部调用验证
@@ -268,8 +268,8 @@ impl View {
         &self,
         database_name: String,
         index_name: String,
-        engine_type: EngineType,
-        index_mold: IndexMold,
+        engine_type: IndexType,
+        key_type: KeyType,
         primary: bool,
     ) -> GeorgeResult<()> {
         if self.exist_index(index_name.clone()) {
@@ -279,7 +279,7 @@ impl View {
         let name = index_name.clone();
         let index;
         match engine_type {
-            EngineType::None => return Err(err_str("unsupported engine type with none")),
+            IndexType::None => return Err(err_str("unsupported engine type with none")),
             _ => {
                 index = IndexDefault::create(
                     database_name,
@@ -287,7 +287,7 @@ impl View {
                     name,
                     engine_type,
                     primary,
-                    index_mold,
+                    key_type,
                 )?
             }
         }
@@ -632,8 +632,8 @@ impl View {
         let metadata = hd.metadata();
         let index;
         // 恢复index数据
-        match hd.engine_type() {
-            EngineType::None => panic!("index engine type error"),
+        match hd.index_type() {
+            IndexType::None => panic!("index engine type error"),
             _ => index = IndexDefault::recover(database_name, view_name, hd)?,
         }
         log::debug!(

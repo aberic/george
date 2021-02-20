@@ -14,12 +14,14 @@
 
 pub trait EnumHandler {
     fn tag_u8(tag: Tag) -> u8;
-    fn engine_type_u8(engine_type: EngineType) -> u8;
-    fn mold_u8(mold: IndexMold) -> u8;
+    fn index_type_u8(index_type: IndexType) -> u8;
+    fn view_type_u8(view_type: ViewType) -> u8;
+    fn key_type_u8(key_type: KeyType) -> u8;
     fn tag(b: u8) -> Tag;
-    fn engine_type(b: u8) -> EngineType;
-    fn mold(b: u8) -> IndexMold;
-    fn mold_str(mold: IndexMold) -> String;
+    fn index_type(b: u8) -> IndexType;
+    fn view_type(b: u8) -> ViewType;
+    fn key_type(b: u8) -> KeyType;
+    fn key_type_str(key_type: KeyType) -> String;
 }
 
 pub struct Enum {}
@@ -28,23 +30,29 @@ impl EnumHandler for Enum {
     fn tag_u8(tag: Tag) -> u8 {
         tag_u8(tag)
     }
-    fn engine_type_u8(engine_type: EngineType) -> u8 {
-        engine_type_u8(engine_type)
+    fn index_type_u8(index_type: IndexType) -> u8 {
+        index_type_u8(index_type)
     }
-    fn mold_u8(mold: IndexMold) -> u8 {
-        mold_u8(mold)
+    fn view_type_u8(view_type: ViewType) -> u8 {
+        view_type_u8(view_type)
+    }
+    fn key_type_u8(key_type: KeyType) -> u8 {
+        key_type_u8(key_type)
     }
     fn tag(b: u8) -> Tag {
         tag(b)
     }
-    fn engine_type(b: u8) -> EngineType {
-        engine_type(b)
+    fn index_type(b: u8) -> IndexType {
+        index_type(b)
     }
-    fn mold(b: u8) -> IndexMold {
-        mold(b)
+    fn view_type(b: u8) -> ViewType {
+        view_type(b)
     }
-    fn mold_str(mold: IndexMold) -> String {
-        mold_str(mold)
+    fn key_type(b: u8) -> KeyType {
+        key_type(b)
+    }
+    fn key_type_str(key_type: KeyType) -> String {
+        key_type_str(key_type)
     }
 }
 
@@ -63,7 +71,7 @@ pub enum Tag {
 
 /// 索引值类型
 #[derive(Debug, Clone, Copy)]
-pub enum IndexMold {
+pub enum KeyType {
     /// 字符串索引
     String,
     /// 无符号64位整型
@@ -84,7 +92,7 @@ pub enum IndexMold {
 
 /// 存储引擎类型
 #[derive(Debug, Clone, Copy)]
-pub enum EngineType {
+pub enum IndexType {
     /// 占位
     None,
     /// 内存存储引擎
@@ -97,6 +105,17 @@ pub enum EngineType {
     Block,
 }
 
+/// 存储引擎类型
+#[derive(Debug, Clone, Copy)]
+pub enum ViewType {
+    /// 占位
+    None,
+    /// 内存存储视图
+    Memory,
+    /// 磁盘存储视图
+    Disk,
+}
+
 fn tag_u8(tag: Tag) -> u8 {
     match tag {
         Tag::Bootstrap => 0x00,
@@ -106,26 +125,34 @@ fn tag_u8(tag: Tag) -> u8 {
     }
 }
 
-fn engine_type_u8(engine_type: EngineType) -> u8 {
-    match engine_type {
-        EngineType::None => 0x00,
-        EngineType::Memory => 0x01,
-        EngineType::Dossier => 0x02,
-        EngineType::Library => 0x03,
-        EngineType::Block => 0x04,
+fn index_type_u8(index_type: IndexType) -> u8 {
+    match index_type {
+        IndexType::None => 0x00,
+        IndexType::Memory => 0x01,
+        IndexType::Dossier => 0x02,
+        IndexType::Library => 0x03,
+        IndexType::Block => 0x04,
     }
 }
 
-fn mold_u8(mold: IndexMold) -> u8 {
-    match mold {
-        IndexMold::String => 0x00,
-        IndexMold::U64 => 0x01,
-        IndexMold::I64 => 0x02,
-        IndexMold::U32 => 0x03,
-        IndexMold::I32 => 0x04,
-        IndexMold::F64 => 0x05,
-        IndexMold::F32 => 0x06,
-        IndexMold::Bool => 0x07,
+fn view_type_u8(view_type: ViewType) -> u8 {
+    match view_type {
+        ViewType::None => 0x00,
+        ViewType::Memory => 0x01,
+        ViewType::Disk => 0x02,
+    }
+}
+
+fn key_type_u8(key_type: KeyType) -> u8 {
+    match key_type {
+        KeyType::String => 0x00,
+        KeyType::U64 => 0x01,
+        KeyType::I64 => 0x02,
+        KeyType::U32 => 0x03,
+        KeyType::I32 => 0x04,
+        KeyType::F64 => 0x05,
+        KeyType::F32 => 0x06,
+        KeyType::Bool => 0x07,
     }
 }
 
@@ -139,38 +166,47 @@ fn tag(b: u8) -> Tag {
     }
 }
 
-fn engine_type(b: u8) -> EngineType {
+fn index_type(b: u8) -> IndexType {
     match b {
-        0x00 => EngineType::None,
-        0x01 => EngineType::Memory,
-        0x02 => EngineType::Dossier,
-        0x03 => EngineType::Library,
-        0x04 => EngineType::Block,
-        _ => EngineType::None,
+        0x00 => IndexType::None,
+        0x01 => IndexType::Memory,
+        0x02 => IndexType::Dossier,
+        0x03 => IndexType::Library,
+        0x04 => IndexType::Block,
+        _ => IndexType::None,
     }
 }
 
-fn mold(b: u8) -> IndexMold {
+fn view_type(b: u8) -> ViewType {
     match b {
-        0x00 => IndexMold::String,
-        0x01 => IndexMold::U64,
-        0x02 => IndexMold::I64,
-        0x03 => IndexMold::U32,
-        0x04 => IndexMold::I32,
-        0x05 => IndexMold::F64,
-        _ => IndexMold::String,
+        0x00 => ViewType::None,
+        0x01 => ViewType::Memory,
+        0x02 => ViewType::Disk,
+        _ => ViewType::None,
     }
 }
 
-fn mold_str(mold: IndexMold) -> String {
-    match mold {
-        IndexMold::String => String::from("string"),
-        IndexMold::U64 => String::from("u64"),
-        IndexMold::I64 => String::from("i64"),
-        IndexMold::U32 => String::from("u32"),
-        IndexMold::I32 => String::from("i32"),
-        IndexMold::F64 => String::from("f64"),
-        IndexMold::F32 => String::from("f32"),
-        IndexMold::Bool => String::from("bool"),
+fn key_type(b: u8) -> KeyType {
+    match b {
+        0x00 => KeyType::String,
+        0x01 => KeyType::U64,
+        0x02 => KeyType::I64,
+        0x03 => KeyType::U32,
+        0x04 => KeyType::I32,
+        0x05 => KeyType::F64,
+        _ => KeyType::String,
+    }
+}
+
+fn key_type_str(key_type: KeyType) -> String {
+    match key_type {
+        KeyType::String => String::from("string"),
+        KeyType::U64 => String::from("u64"),
+        KeyType::I64 => String::from("i64"),
+        KeyType::U32 => String::from("u32"),
+        KeyType::I32 => String::from("i32"),
+        KeyType::F64 => String::from("f64"),
+        KeyType::F32 => String::from("f32"),
+        KeyType::Bool => String::from("bool"),
     }
 }
