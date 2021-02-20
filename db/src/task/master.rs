@@ -410,16 +410,6 @@ impl Master {
         ) {
             _ => {}
         }
-        match self.create_index(
-            DEFAULT_DATABASE.to_string(),
-            DEFAULT_VIEW.to_string(),
-            INDEX_MEMORY.to_string(),
-            EngineType::Memory,
-            IndexMold::String,
-            true,
-        ) {
-            _ => {}
-        }
     }
 
     /// 恢复sky数据

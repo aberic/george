@@ -88,8 +88,16 @@ fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View
         indexes: Default::default(),
         pigeonhole: Pigeonhole::create(0, file_path, create_time),
     };
-    if !mem {
-        view.create_index(
+    if mem {
+        view.create_index_in(
+            database_name,
+            INDEX_MEMORY.to_string(),
+            EngineType::Memory,
+            IndexMold::String,
+            true,
+        )?;
+    } else {
+        view.create_index_in(
             database_name,
             INDEX_CATALOG.to_string(),
             EngineType::Library,
@@ -140,6 +148,10 @@ impl View {
     /// 文件字节信息
     pub(crate) fn metadata_bytes(&self) -> Vec<u8> {
         self.metadata.bytes()
+    }
+    /// 文件信息
+    pub(crate) fn engine_type(&self) -> EngineType {
+        self.metadata().engine_type()
     }
     /// 索引集合
     pub(crate) fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>> {
@@ -239,6 +251,20 @@ impl View {
     }
     /// 创建索引
     pub(crate) fn create_index(
+        &self,
+        database_name: String,
+        index_name: String,
+        engine_type: EngineType,
+        index_mold: IndexMold,
+        primary: bool,
+    ) -> GeorgeResult<()> {
+        match self.engine_type() {
+            EngineType::Memory => Err(err_str("this memory view allow only one index")),
+            _ => self.create_index_in(database_name, index_name, engine_type, index_mold, primary),
+        }
+    }
+    /// 创建索引内部方法，绕开外部调用验证
+    fn create_index_in(
         &self,
         database_name: String,
         index_name: String,
