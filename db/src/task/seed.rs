@@ -322,6 +322,7 @@ impl TSeed for Seed {
         // 记录表文件属性(版本/数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
         view_info_index.append(&mut view_seek_start_bytes);
 
+        // todo 特殊处理 INDEX_SEQUENCE
         // 将在数据在view中的坐标存入各个index
         for policy in self.policies.to_vec() {
             policy.exec(

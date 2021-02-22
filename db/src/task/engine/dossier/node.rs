@@ -126,7 +126,7 @@ impl TNode for Node {
     fn set(&self, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
         self.put(hash_key, seed)
     }
-    fn get(&self, key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
+    fn get(&self, _key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
         self.get_in_node(hash_key)
     }
 

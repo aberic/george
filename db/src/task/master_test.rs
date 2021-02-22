@@ -15,6 +15,7 @@
 use chrono::{Duration, NaiveDateTime};
 
 use crate::task::master::GLOBAL_MASTER;
+use crate::utils::comm::INDEX_SEQUENCE;
 use crate::utils::enums::{IndexType, KeyType};
 use comm::strings::{StringHandler, Strings};
 use std::error::Error;
@@ -116,15 +117,6 @@ fn index_create_test() {
 }
 
 #[test]
-fn exec_test() {
-    let database_name = "database_exec_base_test";
-    let view_name = "view_exec_base_test";
-    create_view(database_name, view_name);
-    put(database_name, view_name, "hello", "world", 1);
-    get(database_name, view_name, "hello", 1);
-}
-
-#[test]
 fn memory_test() {
     let key1 = "a";
     let key2 = "b";
@@ -141,6 +133,15 @@ fn memory_test() {
     get_m(key3, 5);
     set_m(key3, "test6", 6);
     get_m(key3, 6);
+}
+
+#[test]
+fn sequence_test() {
+    let database_name = "database_sequence_base_test";
+    let view_name = "view_sequence_base_test";
+    create_view(database_name, view_name);
+    put(database_name, view_name, "hello", "world", 1);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "1", 1);
 }
 
 fn database_map() {
@@ -332,6 +333,28 @@ fn get(database_name: &str, view_name: &str, key: &str, position: usize) {
     match GLOBAL_MASTER.get(
         database_name.to_string(),
         view_name.to_string(),
+        key.to_string(),
+    ) {
+        Ok(vu8) => println!(
+            "get{} is {:#?}",
+            position,
+            Strings::from_utf8(vu8).unwrap().as_str()
+        ),
+        Err(ie) => println!("get{} is {:#?}", position, ie.source().unwrap().to_string()),
+    }
+}
+
+fn get_by_index(
+    database_name: &str,
+    view_name: &str,
+    index_name: &str,
+    key: &str,
+    position: usize,
+) {
+    match GLOBAL_MASTER.get_by_index(
+        database_name.to_string(),
+        view_name.to_string(),
+        index_name.to_string(),
         key.to_string(),
     ) {
         Ok(vu8) => println!(

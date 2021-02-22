@@ -25,7 +25,9 @@ use comm::errors::children::{DataNoExistError, IndexExistError};
 use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerNormal, FilerReader, FilerWriter};
 use comm::strings::{StringHandler, Strings};
-use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u64, trans_u32_2_bytes};
+use comm::trans::{
+    trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u48, trans_bytes_2_u64, trans_u32_2_bytes,
+};
 use comm::vectors::{Vector, VectorHandler};
 
 use crate::task::engine::memory::seed::Seed as SeedMemory;
@@ -352,6 +354,14 @@ impl View {
         let view_info_index = idx.get(key.clone())?;
         match index_name {
             INDEX_MEMORY => Ok(view_info_index),
+            INDEX_SEQUENCE => {
+                let file = Filer::reader(self.file_path())?;
+                let len_start = trans_bytes_2_u64(view_info_index)?;
+                let data_bytes_len = Filer::read_subs(file.try_clone().unwrap(), len_start, 4)?;
+                let data_start = len_start + 4;
+                let data_len = trans_bytes_2_u48(data_bytes_len)? as usize;
+                Ok(Filer::read_subs(file, data_start, data_len)?)
+            }
             _ => {
                 let index_data_list = self.fetch_view_info_index(view_info_index)?;
                 for index_data in index_data_list {
