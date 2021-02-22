@@ -292,8 +292,7 @@ impl Index {
                             database_name.clone(),
                             view_name.clone(),
                             name.clone(),
-                            part2,
-                        )
+                        )?
                     }
                     IndexType::Library => {
                         root = NodeLibrary::recovery_root(

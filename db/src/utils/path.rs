@@ -86,7 +86,7 @@ pub fn view_file_path(database_name: String, view_name: String) -> String {
     )
 }
 
-/// 索引文件目录 /var/lib/georgedb/data/database_name/view_name/index.ge
+/// 索引文件目录 /var/lib/georgedb/data/database_name/view_name/index_name/index.ge
 pub fn index_file_path(database_name: String, view_name: String, index_name: String) -> String {
     format!(
         "{}/{}/{}/{}/{}/index.ge",

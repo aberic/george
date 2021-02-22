@@ -28,6 +28,7 @@ use comm::vectors::{Vector, VectorHandler};
 use crate::task::engine::traits::TSeed;
 use crate::task::view::View;
 use crate::utils::comm::{is_bytes_fill, VALUE_TYPE_NORMAL};
+use crate::utils::enums::IndexType;
 use comm::strings::{StringHandler, Strings};
 
 /// B+Tree索引叶子结点内防hash碰撞数组结构中单体结构
@@ -115,10 +116,11 @@ impl IndexData {
 /// 待处理索引操作策略
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct IndexPolicy {
+    index_type: IndexType,
     /// 使用当前索引的原始key
     original_key: String,
     /// 待处理索引文件路径
-    index_file_path: String,
+    node_file_path: String,
     /// 待写入索引内容起始偏移量
     seek: u64,
 }
@@ -130,10 +132,15 @@ impl IndexPolicy {
             Err(err) => Err(err_string(err.to_string())),
         }
     }
-    pub fn bytes(key: String, index_file_path: String, seek: u64) -> GeorgeResult<Vec<u8>> {
+    pub fn bytes(
+        index_type: IndexType,
+        node_file_path: String,
+        seek: u64,
+    ) -> GeorgeResult<Vec<u8>> {
         let policy = IndexPolicy {
-            original_key: key,
-            index_file_path,
+            index_type,
+            original_key: "".to_string(),
+            node_file_path,
             seek,
         };
         match serde_json::to_vec(&policy) {
@@ -141,8 +148,8 @@ impl IndexPolicy {
             Err(err) => Err(err_string(err.to_string())),
         }
     }
-    fn index_file_path(&self) -> String {
-        self.index_file_path.clone()
+    fn node_file_path(&self) -> String {
+        self.node_file_path.clone()
     }
     fn original_key(&self) -> String {
         self.original_key.clone()
@@ -151,8 +158,8 @@ impl IndexPolicy {
     ///
     /// view_version_bytes 视图文件属性，版本号(2字节)
     pub(super) fn check_out_bytes(&self, mut view_version_bytes: Vec<u8>) -> GeorgeResult<Vec<u8>> {
-        Filer::try_touch(self.index_file_path())?;
-        let file = Filer::reader_writer(self.index_file_path())?;
+        Filer::try_touch(self.node_file_path())?;
+        let file = Filer::reader_writer(self.node_file_path())?;
         // 表内容索引(8字节)，记录表文件属性(数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
         let check_out_bytes = Filer::read_subs(file, self.seek, 8)?;
         // 如果读取到不为空，则表明该数据已经存在
@@ -178,8 +185,8 @@ impl IndexPolicy {
         view_index_info: Vec<u8>,
         force: bool,
     ) -> GeorgeResult<()> {
-        Filer::try_touch(self.index_file_path())?;
-        let file = Filer::reader_writer(self.index_file_path())?;
+        Filer::try_touch(self.node_file_path())?;
+        let file = Filer::reader_writer(self.node_file_path())?;
         // 表内容索引(8字节)，记录表文件属性(数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
         let check_out_bytes;
         match file.try_clone() {

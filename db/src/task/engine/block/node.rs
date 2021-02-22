@@ -17,6 +17,7 @@ use std::sync::{Arc, RwLock};
 use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::seed::IndexPolicy;
 use crate::utils::comm::level_distance_64;
+use crate::utils::enums::IndexType;
 use crate::utils::path::{index_path, node_file_path};
 use comm::errors::entrances::GeorgeResult;
 use comm::io::file::{Filer, FilerReader};
@@ -162,7 +163,7 @@ impl Node {
                 next_degree
             );
             seed.write().unwrap().modify(IndexPolicy::bytes(
-                "".to_string(),
+                IndexType::Block,
                 index_file_path,
                 next_degree * 8,
             )?)

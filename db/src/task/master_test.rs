@@ -54,7 +54,7 @@ fn base_test() {
         database_name,
         view_name,
         index_name,
-        IndexType::Dossier,
+        IndexType::Library,
         KeyType::String,
         true,
     );
@@ -108,7 +108,7 @@ fn index_create_test() {
         "database_index_create_test",
         "view_index_create_test",
         "index_create_test",
-        IndexType::Dossier,
+        IndexType::Library,
         KeyType::String,
         true,
     );

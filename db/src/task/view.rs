@@ -32,7 +32,9 @@ use crate::task::engine::memory::seed::Seed as SeedMemory;
 use crate::task::engine::traits::{TIndex, TSeed};
 use crate::task::index::Index as IndexDefault;
 use crate::task::seed::{IndexData, Seed as SeedDefault};
-use crate::utils::comm::{key_fetch, INDEX_CATALOG, INDEX_MEMORY, VALUE_TYPE_NORMAL};
+use crate::utils::comm::{
+    key_fetch, INDEX_CATALOG, INDEX_MEMORY, INDEX_SEQUENCE, VALUE_TYPE_NORMAL,
+};
 use crate::utils::enums::{IndexType, KeyType, ViewType};
 use crate::utils::path::{index_file_path, view_file_path, view_path};
 use crate::utils::store::{before_content_bytes, recovery_before_content, Metadata, HD};
@@ -98,10 +100,17 @@ fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View
         )?;
     } else {
         view.create_index_in(
-            database_name,
+            database_name.clone(),
             INDEX_CATALOG.to_string(),
             IndexType::Library,
             KeyType::String,
+            true,
+        )?;
+        view.create_index_in(
+            database_name,
+            INDEX_SEQUENCE.to_string(),
+            IndexType::Dossier,
+            KeyType::U64,
             true,
         )?;
     }
@@ -497,6 +506,7 @@ impl View {
                 let index_read = index_clone.read().unwrap();
                 match index_name_clone.as_str() {
                     INDEX_CATALOG => sender.send(index_read.put(key_clone, seed_clone)),
+                    INDEX_SEQUENCE => sender.send(index_read.put(String::from("0"), seed_clone)),
                     INDEX_MEMORY => {
                         if remove {
                             sender.send(index_read.del(key_clone.clone()))

@@ -12,17 +12,18 @@
  * limitations under the License.
  */
 
+use std::io::{Seek, SeekFrom};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
+
+use comm::errors::entrances::{err_str, GeorgeResult};
+use comm::io::file::{Filer, FilerHandler, FilerNormal};
 
 use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::seed::IndexPolicy;
-use crate::utils::comm::level_distance_64;
+use crate::utils::comm::is_bytes_fill;
+use crate::utils::enums::IndexType;
 use crate::utils::path::{index_path, node_file_path};
-use comm::errors::entrances::GeorgeResult;
-use comm::io::file::{Filer, FilerReader};
-use comm::strings::{StringHandler, Strings};
-use comm::vectors::{Vector, VectorHandler};
-use std::ops::Add;
 
 /// 索引B+Tree结点结构
 ///
@@ -31,13 +32,11 @@ use std::ops::Add;
 /// 叶子结点中才会存在Link，其余结点Link为None
 #[derive(Debug, Clone)]
 pub(crate) struct Node {
+    atomic_key: Arc<AtomicU64>,
     database_name: String,
     view_name: String,
     index_name: String,
-    /// 存储结点所属各子结点坐标顺序字符串
-    ///
-    /// 子项是64位node集合，在node集合中每一个node的默认字节长度是8，数量是524288，即一次性读取524288个字节
-    node_bytes: Arc<RwLock<Vec<u8>>>,
+    node_file_path: String,
 }
 
 impl Node {
@@ -49,26 +48,37 @@ impl Node {
         view_name: String,
         index_name: String,
     ) -> Arc<RwLock<Self>> {
-        return Arc::new(RwLock::new(Node {
+        let atomic_key = Arc::new(AtomicU64::new(0));
+        let index_path = index_path(database_name.clone(), view_name.clone(), index_name.clone());
+        let node_file_path = node_file_path(index_path, String::from("increment"));
+        Filer::try_touch(node_file_path.clone());
+        Arc::new(RwLock::new(Node {
+            atomic_key,
             database_name,
             view_name,
             index_name,
-            node_bytes: Arc::new(RwLock::new(Vector::create_empty_bytes(524288))),
-        }));
+            node_file_path,
+        }))
     }
     /// 恢复根结点
     pub fn recovery_root(
         database_name: String,
         view_name: String,
         index_name: String,
-        v8s: Vec<u8>,
-    ) -> Arc<RwLock<Self>> {
-        return Arc::new(RwLock::new(Node {
+    ) -> GeorgeResult<Arc<RwLock<Self>>> {
+        let index_path = index_path(database_name.clone(), view_name.clone(), index_name.clone());
+        let node_file_path = node_file_path(index_path, String::from("increment"));
+        let file = Filer::reader_writer(node_file_path.clone())?;
+        let file_len = file.try_clone().unwrap().seek(SeekFrom::End(0)).unwrap();
+        let atomic_key_u32 = file_len / 8;
+        let atomic_key = Arc::new(AtomicU64::new(atomic_key_u32));
+        Ok(Arc::new(RwLock::new(Node {
+            atomic_key,
             database_name,
             view_name,
             index_name,
-            node_bytes: Arc::new(RwLock::new(v8s)),
-        }));
+            node_file_path,
+        })))
     }
     fn database_name(&self) -> String {
         self.database_name.clone()
@@ -82,15 +92,15 @@ impl Node {
     fn index_path(&self) -> String {
         index_path(self.database_name(), self.view_name(), self.index_name())
     }
+    fn node_file_path(&self) -> String {
+        self.node_file_path.clone()
+    }
 }
 
 /// 封装方法函数
 impl TNode for Node {
-    /// 存储结点所属各子结点坐标顺序字符串
-    ///
-    /// 如果子项是node集合，在node集合中每一个node的默认字节长度是8，数量是65536，即一次性读取524288个字节
     fn node_bytes(&self) -> Arc<RwLock<Vec<u8>>> {
-        self.node_bytes.clone()
+        Arc::new(RwLock::new(vec![]))
     }
     fn modify(&mut self, database_name: String, view_name: String) {
         self.database_name = database_name;
@@ -106,15 +116,18 @@ impl TNode for Node {
     ///
     /// EngineResult<()>
     fn put(&self, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
-        let index_path = self.index_path();
-        self.put_in_node(index_path, String::from(""), 1, hash_key, seed)
+        if hash_key == 0 {
+            let auto_increment_key = self.atomic_key.fetch_add(1, Ordering::Relaxed);
+            self.put_in_node(auto_increment_key, seed)
+        } else {
+            self.put_in_node(hash_key, seed)
+        }
     }
     fn set(&self, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
         self.put(hash_key, seed)
     }
     fn get(&self, key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
-        let index_path = self.index_path();
-        self.get_in_node(key, index_path, String::from(""), 1, hash_key)
+        self.get_in_node(hash_key)
     }
 
     fn del(&self, key: String, hash_key: u64) -> GeorgeResult<()> {
@@ -125,100 +138,29 @@ impl TNode for Node {
 impl Node {
     /// 存储数据真实操作
     ///
-    /// key 使用当前索引的原始key
-    ///
-    /// node_bytes 当前操作结点的字节数组
-    ///
-    /// level 当前操作结点层
-    ///
-    /// flexible_key 下一级最左最小树所对应真实key
+    /// auto_increment_key 自增key
     ///
     /// Seed value信息
-    ///
-    /// root 是否根结点
-    ///
-    /// node_seek 当前操作结点在文件中的真实起始位置
-    fn put_in_node(
-        &self,
-        index_path: String,
-        mut index_file_name: String,
-        level: u8,
-        flexible_key: u64,
-        seed: Arc<RwLock<dyn TSeed>>,
-    ) -> GeorgeResult<()>
+    fn put_in_node(&self, auto_increment_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()>
     where
         Self: Sized,
     {
-        // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
-        let distance = level_distance_64(level);
-        // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数
-        let next_degree = flexible_key / distance;
-        // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
-        if level == 4 {
-            let index_file_path = node_file_path(index_path, index_file_name);
-            log::debug!(
-                "node_file_path = {}, degree = {}",
-                index_file_path,
-                next_degree
-            );
-            seed.write().unwrap().modify(IndexPolicy::bytes(
-                "".to_string(),
-                index_file_path,
-                next_degree * 8,
-            )?)
+        let seek = auto_increment_key * 8;
+        let file = Filer::reader_writer(self.node_file_path())?;
+        let res = Filer::read_subs(file.try_clone().unwrap(), seek, 8)?;
+        if is_bytes_fill(res) {
+            Err(err_str("auto increment key has been used"))
         } else {
-            index_file_name = index_file_name.add(&Strings::left_fits(
-                next_degree.to_string(),
-                "0".parse().unwrap(),
-                5,
-            ));
-            // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
-            let next_flexible_key = flexible_key - next_degree * distance;
-            self.put_in_node(
-                index_path,
-                index_file_name,
-                level + 1,
-                next_flexible_key,
-                seed,
-            )
+            seed.write().unwrap().modify(IndexPolicy::bytes(
+                IndexType::Dossier,
+                self.node_file_path(),
+                seek,
+            )?)
         }
     }
-    fn get_in_node(
-        &self,
-        key: String,
-        index_path: String,
-        mut index_file_name: String,
-        level: u8,
-        flexible_key: u64,
-    ) -> GeorgeResult<Vec<u8>> {
-        // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
-        let distance = level_distance_64(level);
-        // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数
-        let next_degree = flexible_key / distance;
-        // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
-        if level == 4 {
-            let index_file_path = node_file_path(index_path, index_file_name);
-            log::debug!(
-                "node_file_path = {}, degree = {}",
-                index_file_path,
-                next_degree
-            );
-            Filer::read_sub(index_file_path, next_degree, 8)
-        } else {
-            index_file_name = index_file_name.add(&Strings::left_fits(
-                next_degree.to_string(),
-                "0".parse().unwrap(),
-                5,
-            ));
-            // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
-            let next_flexible_key = flexible_key - next_degree * distance;
-            self.get_in_node(
-                key,
-                index_path,
-                index_file_name,
-                level + 1,
-                next_flexible_key,
-            )
-        }
+    fn get_in_node(&self, auto_increment_key: u64) -> GeorgeResult<Vec<u8>> {
+        let seek = auto_increment_key * 8;
+        let file = Filer::reader_writer(self.node_file_path())?;
+        Filer::read_subs(file.try_clone().unwrap(), seek, 8)
     }
 }

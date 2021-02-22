@@ -12,6 +12,8 @@
  * limitations under the License.
  */
 
+use serde::{Deserialize, Serialize};
+
 pub trait EnumHandler {
     fn tag_u8(tag: Tag) -> u8;
     fn index_type_u8(index_type: IndexType) -> u8;
@@ -91,7 +93,7 @@ pub enum KeyType {
 }
 
 /// 存储引擎类型
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum IndexType {
     /// 占位
     None,

@@ -18,6 +18,7 @@ use std::path::Path;
 use crate::errors::entrances::{err_string, err_strings};
 use crate::errors::entrances::{err_strs, GeorgeResult};
 use crate::io::dir::{Dir, DirHandler};
+use crate::vectors::{Vector, VectorHandler};
 use std::fs::{read_to_string, File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 
@@ -488,7 +489,7 @@ fn file_read_sub(filepath: String, start: u64, last: usize) -> GeorgeResult<Vec<
 fn read_subs(mut file: File, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
     let file_len = file.try_clone().unwrap().seek(SeekFrom::End(0)).unwrap();
     if file_len < start + last as u64 {
-        Ok(vec![0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+        Ok(Vector::create_empty_bytes(last))
     } else {
         match file.seek(SeekFrom::Start(start)) {
             Ok(_u) => {
