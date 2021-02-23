@@ -146,8 +146,8 @@ impl Node {
         Self: Sized,
     {
         let seek = auto_increment_key * 8;
-        let file = Filer::reader_writer(self.node_file_path())?;
-        let res = Filer::read_subs(file.try_clone().unwrap(), seek, 8)?;
+        let file = Filer::reader(self.node_file_path())?;
+        let res = Filer::read_subs(file, seek, 8)?;
         if is_bytes_fill(res) {
             Err(err_str("auto increment key has been used"))
         } else {
@@ -161,6 +161,6 @@ impl Node {
     fn get_in_node(&self, auto_increment_key: u64) -> GeorgeResult<Vec<u8>> {
         let seek = auto_increment_key * 8;
         let file = Filer::reader_writer(self.node_file_path())?;
-        Filer::read_subs(file.try_clone().unwrap(), seek, 8)
+        Filer::read_subs(file, seek, 8)
     }
 }

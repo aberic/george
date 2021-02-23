@@ -17,7 +17,7 @@ use std::fs::File;
 use serde::{Deserialize, Serialize};
 
 use comm::errors::children::DataExistError;
-use comm::errors::entrances::{err_string, err_strs, GeorgeError, GeorgeResult};
+use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerExecutor, FilerHandler, FilerNormal};
 use comm::trans::{
     trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u64, trans_u16_2_bytes, trans_u32_2_bytes,
@@ -322,15 +322,19 @@ impl TSeed for Seed {
         // 记录表文件属性(版本/数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
         view_info_index.append(&mut view_seek_start_bytes);
 
-        // todo 特殊处理 INDEX_SEQUENCE
         // 将在数据在view中的坐标存入各个index
         for policy in self.policies.to_vec() {
-            policy.exec(
-                view.clone(),
-                view_version_bytes.clone(),
-                view_info_index.clone(),
-                force,
-            )?
+            match policy.index_type {
+                IndexType::None => return Err(err_str("index type none is not support!")),
+                IndexType::Memory => return Err(err_str("index type memory is not support!")),
+                IndexType::Dossier => return Err(err_str("dossier index need to be complete!")),
+                _ => policy.exec(
+                    view.clone(),
+                    view_version_bytes.clone(),
+                    view_info_index.clone(),
+                    force,
+                )?,
+            }
         }
         Ok(())
     }
