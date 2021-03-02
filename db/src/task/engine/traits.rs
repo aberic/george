@@ -45,20 +45,12 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     ///
     /// key string
     ///
-    /// ###Return
-    ///
-    /// EngineResult<()>
-    fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()>;
-    /// 插入数据，如果存在原值，覆盖原结果<p><p>
-    ///
-    /// ###Params
-    ///
-    /// key string
+    /// force 如果存在原值，是否覆盖原结果
     ///
     /// ###Return
     ///
     /// EngineResult<()>
-    fn set(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()>;
+    fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()>;
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -93,18 +85,14 @@ pub(crate) trait TNode: Send + Sync + Debug {
     /// seed起始坐标，每一个seed都会存储出现hash碰撞的下一seed起始坐标
     fn node_bytes(&self) -> Arc<RwLock<Vec<u8>>>;
     fn modify(&mut self, database_name: String, view_name: String);
-    /// 插入数据，如果存在原值，不覆盖原结果<p><p>
+    /// 插入数据<p><p>
+    ///
+    /// force 如果存在原值，是否覆盖原结果
     ///
     /// ###Return
     ///
     /// EngineResult<()>
-    fn put(&self, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()>;
-    /// 插入数据，如果存在原值，覆盖原结果<p><p>
-    ///
-    /// ###Return
-    ///
-    /// EngineResult<()>
-    fn set(&self, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()>;
+    fn put(&self, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()>;
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -150,7 +138,7 @@ pub(crate) trait TSeed: Send + Sync + Debug {
     /// view View 视图<p><p>
     ///
     /// force 是否强制覆盖
-    fn save(&mut self, view: View, force: bool) -> GeorgeResult<()>;
+    fn save(&mut self, view: View) -> GeorgeResult<()>;
     /// 删除操作
     ///
     /// view View 视图

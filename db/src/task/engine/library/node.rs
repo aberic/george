@@ -106,12 +106,9 @@ impl TNode for Node {
     /// ###Return
     ///
     /// EngineResult<()>
-    fn put(&self, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
+    fn put(&self, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
         let index_path = self.index_path();
         self.put_in_node(index_path, String::from(""), 1, hash_key, seed)
-    }
-    fn set(&self, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
-        self.put(hash_key, seed)
     }
     fn get(&self, key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
         let index_path = self.index_path();

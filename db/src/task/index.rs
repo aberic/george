@@ -214,13 +214,9 @@ impl TIndex for Index {
         self.database_name = database_name;
         self.view_name = view_name;
     }
-    fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
+    fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
         let hash_key = hash_key(self.key_type(), key.clone())?;
-        self.root.write().unwrap().put(hash_key, seed)
-    }
-    fn set(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
-        let hash_key = hash_key(self.key_type(), key.clone())?;
-        self.root.write().unwrap().set(hash_key, seed)
+        self.root.write().unwrap().put(hash_key, seed, force)
     }
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
         let hash_key = hash_key(self.key_type(), key.clone())?;

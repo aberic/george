@@ -16,9 +16,8 @@ use std::fs::File;
 
 use serde::{Deserialize, Serialize};
 
-use comm::errors::children::DataExistError;
-use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeError, GeorgeResult};
-use comm::io::file::{Filer, FilerExecutor, FilerHandler, FilerNormal};
+use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeResult};
+use comm::io::file::{Filer, FilerHandler, FilerNormal, FilerWriter};
 use comm::trans::{
     trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u64, trans_u16_2_bytes, trans_u32_2_bytes,
     trans_u48_2_bytes,
@@ -27,7 +26,7 @@ use comm::vectors::{Vector, VectorHandler};
 
 use crate::task::engine::traits::TSeed;
 use crate::task::view::View;
-use crate::utils::comm::{is_bytes_fill, VALUE_TYPE_NORMAL};
+use crate::utils::comm::is_bytes_fill;
 use crate::utils::enums::IndexType;
 use comm::strings::{StringHandler, Strings};
 
@@ -171,97 +170,6 @@ impl IndexPolicy {
             Ok(view_version_bytes)
         }
     }
-    /// 执行索引落库操作
-    ///
-    /// view 视图对象
-    ///
-    /// view_version_bytes 视图文件属性，版本号(2字节)
-    ///
-    /// view_index_info 表内容索引(8字节)，记录表文件属性(数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
-    fn exec(
-        &self,
-        view: View,
-        view_version_bytes: Vec<u8>,
-        view_index_info: Vec<u8>,
-        force: bool,
-    ) -> GeorgeResult<()> {
-        Filer::try_touch(self.node_file_path())?;
-        let file = Filer::reader_writer(self.node_file_path())?;
-        // 表内容索引(8字节)，记录表文件属性(数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
-        let check_out_bytes;
-        match file.try_clone() {
-            Ok(file) => check_out_bytes = Filer::read_subs(file, self.seek, 8)?,
-            Err(err) => return Err(err_strs("seed exec file try clone1", err)),
-        }
-        // 如果读取到不为空，则表明该数据已经存在
-        if is_bytes_fill(check_out_bytes) {
-            // todo 先读取视图数据，比对是否为碰撞数据
-
-            if force {}
-            Err(GeorgeError::DataExistError(DataExistError))
-        } else {
-            // 如果读取到为空，则表明该数据为首次插入
-            self.record_normal(
-                file,
-                self.original_key(),
-                view,
-                view_version_bytes,
-                view_index_info,
-            )
-        }
-    }
-    /// 生成表内容索引(8字节)+原始key长度+原始key
-    ///
-    /// view_seek_start_bytes 数据在视图文件中起始偏移量p(8字节)
-    fn view_info_index_data(&self, key: String, mut view_index_info: Vec<u8>) -> Vec<u8> {
-        // 原始key字节数组
-        let mut key_bytes = key.into_bytes();
-        // 原始key字节数组长度
-        let mut key_bytes_len_bytes = trans_u16_2_bytes(key_bytes.len() as u16);
-        // 视图内容索引(8字节)+原始key长度
-        view_index_info.append(&mut key_bytes_len_bytes);
-        // 视图内容索引(8字节)+原始key长度+原始key
-        view_index_info.append(&mut key_bytes);
-        view_index_info
-    }
-    /// 执行索引落库操作
-    ///
-    /// index_class 索引属性：主键溯源；主键不溯源；普通索引
-    ///
-    /// view 视图对象
-    ///
-    /// view_version_bytes 当前视图文件属性，版本号(2字节)
-    ///
-    /// view_index_info 表内容索引(8字节)，记录表文件属性(数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
-    fn record_normal(
-        &self,
-        file: File,
-        key: String,
-        view: View,
-        view_version_bytes: Vec<u8>,
-        view_index_info: Vec<u8>,
-    ) -> GeorgeResult<()> {
-        let mut view_info_index_data = self.view_info_index_data(key, view_index_info);
-        // 定位文件持续长度(4字节)
-        let mut pos_data_len_bytes = trans_u32_2_bytes(view_info_index_data.len() as u32);
-        // 定位文件首次插入数据类型为正常数据类型
-        let mut pos_data_bytes = vec![VALUE_TYPE_NORMAL];
-        // 生成定位数据字节数组=数据类型(1字节)+持续长度(4字节)
-        pos_data_bytes.append(&mut pos_data_len_bytes);
-        // 生成完整存储数据字节数组=数据类型(1字节)+持续长度(4字节)+数据字节数组
-        pos_data_bytes.append(&mut view_info_index_data);
-        // 执行视图存储操作，得到定位数据起始偏移量
-        let pos_seek_start = view.write_content(pos_data_bytes)?;
-        // 记录表文件属性(数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
-        let mut index_info_index = view_version_bytes;
-        // 记录表文件属性为当前视图版本号(数据归档/定位文件用2字节)
-        // 生成数据在表文件中起始偏移量p(6字节)
-        let mut pos_seek_start_bytes = trans_u48_2_bytes(pos_seek_start);
-        // 生成存储在索引中的视图文件坐标信息(8字节)
-        index_info_index.append(&mut pos_seek_start_bytes);
-        // 将视图索引偏移量记录在索引文件指定位置
-        Filer::write_seeks(file, self.seek, index_info_index)
-    }
 }
 
 /// 封装方法函数
@@ -297,7 +205,7 @@ impl TSeed for Seed {
         self.policies.push(index_policy);
         Ok(())
     }
-    fn save(&mut self, view: View, force: bool) -> GeorgeResult<()> {
+    fn save(&mut self, view: View) -> GeorgeResult<()> {
         // todo 失败回滚
         if self.policies.len() == 0 {
             // return Err(err_string(format!(
@@ -327,13 +235,12 @@ impl TSeed for Seed {
             match policy.index_type {
                 IndexType::None => return Err(err_str("index type none is not support!")),
                 IndexType::Memory => return Err(err_str("index type memory is not support!")),
-                IndexType::Dossier => return Err(err_str("dossier index need to be complete!")),
-                _ => policy.exec(
-                    view.clone(),
-                    view_version_bytes.clone(),
+                IndexType::Dossier => Filer::write_seek(
+                    policy.node_file_path(),
+                    policy.seek,
                     view_info_index.clone(),
-                    force,
                 )?,
+                _ => return Err(err_str("index type is not support!")),
             }
         }
         Ok(())
@@ -350,13 +257,12 @@ impl TSeed for Seed {
         // 记录表文件属性(版本/数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
         view_info_index.append(&mut view_seek_start_bytes);
         for policy in self.policies.to_vec() {
-            // todo 设计碰撞模型
-            policy.exec(
-                view.clone(),
-                view_version_bytes.clone(),
-                view_info_index.clone(),
-                true,
-            )?
+            match policy.index_type {
+                IndexType::None => return Err(err_str("index type none is not support!")),
+                IndexType::Memory => return Err(err_str("index type memory is not support!")),
+                IndexType::Dossier => return Err(err_str("index type dossier is not support!")),
+                _ => return Err(err_str("index type is not support!")),
+            }
         }
         Ok(())
     }

@@ -297,7 +297,7 @@ impl TSeed for Seed {
         self.policies.push(index_policy);
         Ok(())
     }
-    fn save(&mut self, view: View, force: bool) -> GeorgeResult<()> {
+    fn save(&mut self, view: View) -> GeorgeResult<()> {
         // todo 失败回滚
         if self.policies.len() == 0 {
             // return Err(err_string(format!(
@@ -332,7 +332,7 @@ impl TSeed for Seed {
                     view.clone(),
                     view_version_bytes.clone(),
                     view_info_index.clone(),
-                    force,
+                    false,
                 )?,
             }
         }

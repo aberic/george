@@ -25,9 +25,7 @@ use comm::errors::children::{DataNoExistError, IndexExistError};
 use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerNormal, FilerReader, FilerWriter};
 use comm::strings::{StringHandler, Strings};
-use comm::trans::{
-    trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u48, trans_bytes_2_u64, trans_u32_2_bytes,
-};
+use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u64, trans_u32_2_bytes};
 use comm::vectors::{Vector, VectorHandler};
 
 use crate::task::engine::memory::seed::Seed as SeedMemory;
@@ -101,13 +99,13 @@ fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View
             true,
         )?;
     } else {
-        view.create_index_in(
-            database_name.clone(),
-            INDEX_CATALOG.to_string(),
-            IndexType::Library,
-            KeyType::String,
-            true,
-        )?;
+        // view.create_index_in(
+        //     database_name.clone(),
+        //     INDEX_CATALOG.to_string(),
+        //     IndexType::Library,
+        //     KeyType::String,
+        //     true,
+        // )?;
         view.create_index_in(
             database_name,
             INDEX_SEQUENCE.to_string(),
@@ -354,14 +352,7 @@ impl View {
         let view_info_index = idx.get(key.clone())?;
         match index_name {
             INDEX_MEMORY => Ok(view_info_index),
-            INDEX_SEQUENCE => {
-                let file = Filer::reader(self.file_path())?;
-                let len_start = trans_bytes_2_u64(view_info_index)?;
-                let data_bytes_len = Filer::read_subs(file.try_clone().unwrap(), len_start, 4)?;
-                let data_start = len_start + 4;
-                let data_len = trans_bytes_2_u48(data_bytes_len)? as usize;
-                Ok(Filer::read_subs(file, data_start, data_len)?)
-            }
+            INDEX_SEQUENCE => idx.get(key),
             _ => {
                 let index_data_list = self.fetch_view_info_index(view_info_index)?;
                 for index_data in index_data_list {
@@ -515,33 +506,23 @@ impl View {
             thread::spawn(move || {
                 let index_read = index_clone.read().unwrap();
                 match index_name_clone.as_str() {
-                    INDEX_CATALOG => sender.send(index_read.put(key_clone, seed_clone)),
-                    INDEX_SEQUENCE => sender.send(index_read.put(String::from("0"), seed_clone)),
+                    INDEX_CATALOG => sender.send(index_read.put(key_clone, seed_clone, force)),
+                    INDEX_SEQUENCE => {
+                        sender.send(index_read.put(String::from("0"), seed_clone, force))
+                    }
                     INDEX_MEMORY => {
                         if remove {
                             sender.send(index_read.del(key_clone.clone()))
                         } else {
-                            if force {
-                                sender.send(index_read.set(
-                                    key_clone.clone(),
-                                    Arc::new(RwLock::new(SeedMemory::create(
-                                        key_clone,
-                                        value_clone,
-                                    ))),
-                                ))
-                            } else {
-                                sender.send(index_read.put(
-                                    key_clone.clone(),
-                                    Arc::new(RwLock::new(SeedMemory::create(
-                                        key_clone,
-                                        value_clone,
-                                    ))),
-                                ))
-                            }
+                            sender.send(index_read.put(
+                                key_clone.clone(),
+                                Arc::new(RwLock::new(SeedMemory::create(key_clone, value_clone))),
+                                force,
+                            ))
                         }
                     }
                     _ => match key_fetch(index_name_clone, value_clone) {
-                        Ok(res) => sender.send(index_read.put(res, seed_clone)),
+                        Ok(res) => sender.send(index_read.put(res, seed_clone, force)),
                         Err(err) => {
                             log::debug!("key fetch error: {}", err);
                             sender.send(Ok(()))
@@ -563,7 +544,7 @@ impl View {
         if remove {
             seed.write().unwrap().remove(self.clone())
         } else {
-            seed.write().unwrap().save(self.clone(), force)
+            seed.write().unwrap().save(self.clone())
         }
     }
 }
