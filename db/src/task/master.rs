@@ -18,7 +18,7 @@ use crate::utils::comm::{
 };
 use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
 use crate::utils::enums::{IndexType, KeyType};
-use crate::utils::path::{bootstrap_file_path, data_path, database_file_path};
+use crate::utils::path::{bootstrap_filepath, data_path, database_filepath};
 use crate::utils::store::recovery_before_content;
 use chrono::{Duration, Local, NaiveDateTime};
 use comm::env;
@@ -372,7 +372,7 @@ impl Master {
 impl Master {
     /// 初始化或恢复数据
     fn init_or_recovery(&self) {
-        let bootstrap_file = bootstrap_file_path();
+        let bootstrap_file = bootstrap_filepath();
         match read_to_string(bootstrap_file.clone()) {
             Ok(text) => {
                 if text.is_empty() {
@@ -392,7 +392,7 @@ impl Master {
     fn init(&self) {
         log::debug!("bootstrap init!");
         // 创建系统库，用户表(含权限等信息)、库历史记录表(含变更、归档等信息) todo
-        match Filer::write(bootstrap_file_path(), vec![0x01]) {
+        match Filer::write(bootstrap_filepath(), vec![0x01]) {
             Err(err) => panic!("init failed! error is {}", err),
             _ => self.init_default(),
         }
@@ -445,7 +445,7 @@ impl Master {
 
     /// 恢复database数据
     fn recovery_database(&self, database_name: String) {
-        match recovery_before_content(database_file_path(database_name)) {
+        match recovery_before_content(database_filepath(database_name)) {
             Ok(hd) => {
                 // 恢复database数据
                 match Database::recover(hd.clone()) {
@@ -490,7 +490,7 @@ pub(super) static GLOBAL_MASTER: Lazy<Arc<Master>> = Lazy::new(|| {
         Ok(_file) => log::info!("load data path success!"),
         Err(err) => panic!("create data path failed! error is {}", err),
     }
-    let bootstrap_file_path = bootstrap_file_path();
+    let bootstrap_file_path = bootstrap_filepath();
     match Filer::exist(bootstrap_file_path.clone()) {
         Ok(b) => {
             if !b {

@@ -144,6 +144,25 @@ fn sequence_test() {
     get_by_index(database_name, view_name, INDEX_SEQUENCE, "1", 1);
 }
 
+#[test]
+fn sequence_test_after() {
+    let database_name = "database_sequence_base_test";
+    let view_name = "view_sequence_base_test";
+    // put(
+    //     database_name,
+    //     view_name,
+    //     "hello",
+    //     "hello12345hello67890world12345world67890",
+    //     1,
+    // );
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "1", 1);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "2", 1);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "3", 1);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "4", 1);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "5", 1);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "6", 1);
+}
+
 fn database_map() {
     for (database_name, db) in GLOBAL_MASTER
         .database_map()

@@ -57,7 +57,7 @@ pub fn index_path(database_name: String, view_name: String, index_name: String) 
 }
 
 /// 引导文件目录 /var/lib/georgedb/data/bootstrap.ge
-pub fn bootstrap_file_path() -> String {
+pub fn bootstrap_filepath() -> String {
     format!(
         "{}/{}",
         GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
@@ -66,7 +66,7 @@ pub fn bootstrap_file_path() -> String {
 }
 
 /// 库根目录 /var/lib/georgedb/data/database_name/database.ge
-pub fn database_file_path(database_name: String) -> String {
+pub fn database_filepath(database_name: String) -> String {
     format!(
         "{}/{}/{}/database.ge",
         GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
@@ -76,7 +76,7 @@ pub fn database_file_path(database_name: String) -> String {
 }
 
 /// 视图根目录 /var/lib/georgedb/data/database_name/view_name/view.ge
-pub fn view_file_path(database_name: String, view_name: String) -> String {
+pub fn view_filepath(database_name: String, view_name: String) -> String {
     format!(
         "{}/{}/{}/{}/view.ge",
         GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
@@ -87,7 +87,7 @@ pub fn view_file_path(database_name: String, view_name: String) -> String {
 }
 
 /// 索引文件目录 /var/lib/georgedb/data/database_name/view_name/index_name/index.ge
-pub fn index_file_path(database_name: String, view_name: String, index_name: String) -> String {
+pub fn index_filepath(database_name: String, view_name: String, index_name: String) -> String {
     format!(
         "{}/{}/{}/{}/{}/index.ge",
         GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
@@ -99,16 +99,12 @@ pub fn index_file_path(database_name: String, view_name: String, index_name: Str
 }
 
 /// 索引文件目录 /var/lib/georgedb/data/database_name/view_name/index_name/index_file_name.ge
-pub fn node_file_path(index_path: String, index_file_name: String) -> String {
+pub fn node_filepath(index_path: String, index_file_name: String) -> String {
     format!("{}/{}.ge", index_path, index_file_name)
 }
 
 /// 索引文件目录 /var/lib/georgedb/data/database/view/index.ge
-pub fn index_file_path_yet(
-    database_id: String,
-    view_id: String,
-    index_file_name: String,
-) -> String {
+pub fn index_filepath_yet(database_id: String, view_id: String, index_file_name: String) -> String {
     format!(
         "{}/{}/{}/{}/{}",
         GLOBAL_CONFIG.read().unwrap().data_dir.clone(),

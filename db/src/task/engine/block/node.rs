@@ -18,7 +18,7 @@ use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::seed::IndexPolicy;
 use crate::utils::comm::level_distance_64;
 use crate::utils::enums::IndexType;
-use crate::utils::path::{index_path, node_file_path};
+use crate::utils::path::{index_path, node_filepath};
 use comm::errors::entrances::GeorgeResult;
 use comm::io::file::{Filer, FilerReader};
 use comm::strings::{StringHandler, Strings};
@@ -153,7 +153,7 @@ impl Node {
         let next_degree = flexible_key / distance;
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
-            let index_file_path = node_file_path(index_path, index_file_name);
+            let index_file_path = node_filepath(index_path, index_file_name);
             log::debug!(
                 "node_file_path = {}, degree = {}",
                 index_file_path,
@@ -195,7 +195,7 @@ impl Node {
         let next_degree = flexible_key / distance;
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
-            let index_file_path = node_file_path(index_path, index_file_name);
+            let index_file_path = node_filepath(index_path, index_file_name);
             log::debug!(
                 "node_file_path = {}, degree = {}",
                 index_file_path,

@@ -23,7 +23,7 @@ use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::seed::IndexPolicy;
 use crate::utils::comm::is_bytes_fill;
 use crate::utils::enums::IndexType;
-use crate::utils::path::{index_path, node_file_path};
+use crate::utils::path::{index_path, node_filepath};
 use comm::errors::children::DataNoExistError;
 
 /// 索引B+Tree结点结构
@@ -51,7 +51,7 @@ impl Node {
     ) -> Arc<RwLock<Self>> {
         let atomic_key = Arc::new(AtomicU64::new(0));
         let index_path = index_path(database_name.clone(), view_name.clone(), index_name.clone());
-        let node_file_path = node_file_path(index_path, String::from("increment"));
+        let node_file_path = node_filepath(index_path, String::from("increment"));
         Filer::try_touch(node_file_path.clone());
         Arc::new(RwLock::new(Node {
             atomic_key,
@@ -68,7 +68,7 @@ impl Node {
         index_name: String,
     ) -> GeorgeResult<Arc<RwLock<Self>>> {
         let index_path = index_path(database_name.clone(), view_name.clone(), index_name.clone());
-        let node_file_path = node_file_path(index_path, String::from("increment"));
+        let node_file_path = node_filepath(index_path, String::from("increment"));
         let file = Filer::reader_writer(node_file_path.clone())?;
         let file_len = file.try_clone().unwrap().seek(SeekFrom::End(0)).unwrap();
         let atomic_key_u32 = file_len / 8;

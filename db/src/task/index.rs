@@ -31,7 +31,7 @@ use crate::task::engine::memory::node::Node as NodeMemory;
 use crate::task::engine::traits::{TIndex, TNode, TSeed};
 use crate::utils::comm::hash_key;
 use crate::utils::enums::{Enum, EnumHandler, IndexType, KeyType};
-use crate::utils::path::index_file_path;
+use crate::utils::path::index_filepath;
 use crate::utils::store::{before_content_bytes, Metadata, HD};
 use crate::utils::writer::obtain_write_append_file;
 
@@ -84,8 +84,8 @@ fn new_index(
 ) -> GeorgeResult<Index> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
-    let file_path = index_file_path(database_name.clone(), view_name.clone(), name.clone());
-    let file_append = obtain_write_append_file(file_path)?;
+    let filepath = index_filepath(database_name.clone(), view_name.clone(), name.clone());
+    let file_append = obtain_write_append_file(filepath)?;
     let index = Index {
         database_name,
         primary,
@@ -109,7 +109,7 @@ impl Index {
         primary: bool,
         key_type: KeyType,
     ) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
-        Filer::touch(index_file_path(
+        Filer::touch(index_filepath(
             database_name.clone(),
             view_name.clone(),
             name.clone(),
@@ -169,8 +169,8 @@ impl Index {
                 match Filer::appends(file_write.try_clone().unwrap(), content.clone()) {
                     Ok(()) => Ok(seek_end_before),
                     Err(_err) => {
-                        let file_path = index_file_path(database_name, view_name, self.name());
-                        self.file_append = obtain_write_append_file(file_path)?;
+                        let filepath = index_filepath(database_name, view_name, self.name());
+                        self.file_append = obtain_write_append_file(filepath)?;
                         let file_write_again = self.file_append.write().unwrap();
                         Filer::appends(file_write_again.try_clone().unwrap(), content)?;
                         Ok(seek_end_before)
@@ -178,8 +178,8 @@ impl Index {
                 }
             }
             Err(_err) => {
-                let file_path = index_file_path(database_name, view_name, self.name());
-                self.file_append = obtain_write_append_file(file_path)?;
+                let filepath = index_filepath(database_name, view_name, self.name());
+                self.file_append = obtain_write_append_file(filepath)?;
                 let mut file_write_again = self.file_append.write().unwrap();
                 let seek_end_before_again = file_write_again.seek(SeekFrom::End(0)).unwrap();
                 Filer::appends(file_write_again.try_clone().unwrap(), content)?;
@@ -278,9 +278,9 @@ impl Index {
                 let create_time = Duration::nanoseconds(
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
-                let file_path =
-                    index_file_path(database_name.clone(), view_name.clone(), name.clone());
-                let file_append = obtain_write_append_file(file_path)?;
+                let filepath =
+                    index_filepath(database_name.clone(), view_name.clone(), name.clone());
+                let file_append = obtain_write_append_file(filepath)?;
                 let root: Arc<RwLock<dyn TNode>>;
                 match hd.index_type() {
                     IndexType::Dossier => {

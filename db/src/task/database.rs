@@ -13,7 +13,7 @@
  */
 
 use crate::task::view::View;
-use crate::utils::path::{database_file_path, database_path, view_file_path};
+use crate::utils::path::{database_filepath, database_path, view_filepath};
 use crate::utils::store::{before_content_bytes, recovery_before_content, Metadata, HD};
 use crate::utils::writer::obtain_write_append_file;
 use chrono::{Duration, Local, NaiveDateTime};
@@ -54,8 +54,8 @@ pub(crate) struct Database {
 fn new_database(name: String) -> GeorgeResult<Database> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
-    let file_path = database_file_path(name.clone());
-    let file_append = obtain_write_append_file(file_path)?;
+    let filepath = database_filepath(name.clone());
+    let file_append = obtain_write_append_file(filepath)?;
     Ok(Database {
         name,
         create_time,
@@ -67,7 +67,7 @@ fn new_database(name: String) -> GeorgeResult<Database> {
 
 impl Database {
     pub(crate) fn create(name: String) -> GeorgeResult<Arc<RwLock<Database>>> {
-        Filer::touch(database_file_path(name.clone()))?;
+        Filer::touch(database_filepath(name.clone()))?;
         let mut database = new_database(name)?;
         let mut metadata_bytes = database.metadata_bytes();
         let mut description = database.description();
@@ -106,7 +106,7 @@ impl Database {
                     Ok(()) => Ok(seek_end_before),
                     Err(_err) => {
                         self.file_append =
-                            obtain_write_append_file(database_file_path(self.name()))?;
+                            obtain_write_append_file(database_filepath(self.name()))?;
                         let file_write_again = self.file_append.write().unwrap();
                         match file_write_again.try_clone() {
                             Ok(f) => Filer::appends(f, content)?,
@@ -120,7 +120,7 @@ impl Database {
                 Err(err) => Err(err_strs("database append file try clone2", err)),
             },
             Err(_err) => {
-                self.file_append = obtain_write_append_file(database_file_path(self.name()))?;
+                self.file_append = obtain_write_append_file(database_filepath(self.name()))?;
                 let mut file_write_again = self.file_append.write().unwrap();
                 let seek_end_before_again = file_write_again.seek(SeekFrom::End(0)).unwrap();
                 match file_write_again.try_clone() {
@@ -137,7 +137,7 @@ impl Database {
     }
     pub(crate) fn modify(&mut self, name: String) -> GeorgeResult<()> {
         let old_name = self.name();
-        let filepath = database_file_path(old_name.clone());
+        let filepath = database_filepath(old_name.clone());
         let content = Filer::read_sub(filepath.clone(), 0, 40)?;
         self.name = name.clone();
         let description = self.description();
@@ -155,7 +155,7 @@ impl Database {
         let database_path_new = database_path(self.name());
         match std::fs::rename(database_path_old, database_path_new) {
             Ok(_) => {
-                self.file_append = obtain_write_append_file(database_file_path(self.name()))?;
+                self.file_append = obtain_write_append_file(database_filepath(self.name()))?;
                 for (view_name, view) in self.views.write().unwrap().iter() {
                     view.write()
                         .unwrap()
@@ -326,8 +326,8 @@ impl Database {
                 let create_time = Duration::nanoseconds(
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
-                let file_path = database_file_path(name.clone());
-                let file_append = obtain_write_append_file(file_path)?;
+                let filepath = database_filepath(name.clone());
+                let file_append = obtain_write_append_file(filepath)?;
                 let database = Database {
                     name,
                     create_time,
@@ -373,7 +373,7 @@ impl Database {
 
     /// 恢复view数据
     fn recovery_view(&self, view_name: String) {
-        let view_file_path = view_file_path(self.name(), view_name);
+        let view_file_path = view_filepath(self.name(), view_name);
         match recovery_before_content(view_file_path.clone()) {
             Ok(hd) => {
                 // 恢复view数据

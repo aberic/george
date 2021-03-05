@@ -25,7 +25,9 @@ use comm::errors::children::{DataNoExistError, IndexExistError};
 use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerNormal, FilerReader, FilerWriter};
 use comm::strings::{StringHandler, Strings};
-use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u64, trans_u32_2_bytes};
+use comm::trans::{
+    trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u48, trans_bytes_2_u64, trans_u32_2_bytes,
+};
 use comm::vectors::{Vector, VectorHandler};
 
 use crate::task::engine::memory::seed::Seed as SeedMemory;
@@ -36,7 +38,7 @@ use crate::utils::comm::{
     key_fetch, INDEX_CATALOG, INDEX_MEMORY, INDEX_SEQUENCE, VALUE_TYPE_NORMAL,
 };
 use crate::utils::enums::{IndexType, KeyType, ViewType};
-use crate::utils::path::{index_file_path, view_file_path, view_path};
+use crate::utils::path::{index_filepath, view_filepath, view_path};
 use crate::utils::store::{before_content_bytes, recovery_before_content, Metadata, HD};
 use crate::utils::writer::Filed;
 
@@ -73,7 +75,7 @@ pub(crate) struct View {
 fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
-    let file_path = view_file_path(database_name.clone(), name.clone());
+    let filepath = view_filepath(database_name.clone(), name.clone());
     let metadata: Metadata;
     if mem {
         metadata = Metadata::view_mem()
@@ -85,10 +87,10 @@ fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View
         name,
         create_time,
         metadata,
-        filer: Filed::create(file_path.clone())?,
+        filer: Filed::create(filepath.clone())?,
         mem,
         indexes: Default::default(),
-        pigeonhole: Pigeonhole::create(0, file_path, create_time),
+        pigeonhole: Pigeonhole::create(0, filepath, create_time),
     };
     if mem {
         view.create_index_in(
@@ -189,8 +191,21 @@ impl View {
         self.pigeonhole().now().version()
     }
     /// 当前视图文件地址
-    pub(crate) fn file_path(&self) -> String {
-        self.pigeonhole().now().file_path()
+    pub(crate) fn filepath(&self) -> String {
+        self.pigeonhole().now().filepath()
+    }
+    /// 当前视图文件地址
+    pub(crate) fn filepath_by_version(&self, version: u16) -> GeorgeResult<String> {
+        if version == self.version() {
+            Ok(self.filepath())
+        } else {
+            for (ver, record) in self.pigeonhole().history.iter() {
+                if version.eq(ver) {
+                    return Ok(record.filepath());
+                }
+            }
+            Err(err_str("no view version found while get view filepath"))
+        }
     }
     /// 当前归档版本信息
     pub(crate) fn record(&self, version: u16) -> GeorgeResult<Record> {
@@ -218,7 +233,7 @@ impl View {
     /// 视图变更
     pub(crate) fn modify(&mut self, database_name: String, name: String) -> GeorgeResult<()> {
         let old_name = self.name();
-        let filepath = view_file_path(database_name.clone(), old_name.clone());
+        let filepath = view_filepath(database_name.clone(), old_name.clone());
         let content_old = Filer::read_sub(filepath.clone(), 0, 40)?;
         self.name = name;
         let description = self.description();
@@ -352,7 +367,22 @@ impl View {
         let view_info_index = idx.get(key.clone())?;
         match index_name {
             INDEX_MEMORY => Ok(view_info_index),
-            INDEX_SEQUENCE => idx.get(key),
+            INDEX_SEQUENCE => {
+                let seek_bytes = idx.get(key)?;
+                let version = trans_bytes_2_u16(Vector::sub(seek_bytes.clone(), 0, 2)?)?;
+                let seek = trans_bytes_2_u48(Vector::sub(seek_bytes, 2, 8)?)?;
+                let filepath = self.filepath_by_version(version)?;
+                let file = Filer::reader(filepath)?;
+                let last: u32;
+                match file.try_clone() {
+                    Ok(f) => {
+                        let bs = Filer::read_subs(f, seek, 4)?;
+                        last = trans_bytes_2_u32(bs)?
+                    }
+                    Err(err) => return Err(err_strs("get while file try clone", err)),
+                }
+                Filer::read_subs(file, seek + 4, last as usize)
+            }
             _ => {
                 let index_data_list = self.fetch_view_info_index(view_info_index)?;
                 for index_data in index_data_list {
@@ -460,10 +490,10 @@ impl View {
     /// key 原始key
     pub(crate) fn path(&self, version: u16) -> GeorgeResult<String> {
         if self.version() == version {
-            Ok(self.file_path())
+            Ok(self.filepath())
         } else {
             match self.pigeonhole().history().get(&version) {
-                Some(record) => Ok(record.file_path()),
+                Some(record) => Ok(record.filepath()),
                 None => Err(err_str("index exist but value is none!")),
             }
         }
@@ -574,13 +604,13 @@ impl View {
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
                 let pigeonhole = Pigeonhole::from_string(split.next().unwrap().to_string())?;
-                let file_path = view_file_path(database_name.clone(), name.clone());
+                let filepath = view_filepath(database_name.clone(), name.clone());
                 let mut view = View {
                     database_name: database_name.clone(),
                     name,
                     create_time,
                     metadata: hd.metadata(),
-                    filer: Filed::recovery(file_path)?,
+                    filer: Filed::recovery(filepath)?,
                     mem,
                     indexes: Arc::new(Default::default()),
                     pigeonhole,
@@ -626,7 +656,7 @@ impl View {
     /// 恢复view数据
     fn recovery_index(&self, database_name: String, index_name: String) -> GeorgeResult<()> {
         let index_file_path =
-            index_file_path(database_name.clone(), self.name(), index_name.clone());
+            index_filepath(database_name.clone(), self.name(), index_name.clone());
         let db_name = database_name.clone();
         let view_name = self.name();
         let hd = recovery_before_content(index_file_path.clone())?;
@@ -678,11 +708,11 @@ impl fmt::Debug for Pigeonhole {
 }
 
 impl Pigeonhole {
-    fn create(version: u16, file_path: String, create_time: Duration) -> Pigeonhole {
+    fn create(version: u16, filepath: String, create_time: Duration) -> Pigeonhole {
         Pigeonhole {
             now: Record {
                 version,
-                file_path,
+                filepath,
                 create_time,
             },
             history: Default::default(),
@@ -751,7 +781,7 @@ pub(crate) struct Record {
     /// 归档版本，默认新建为[0x00,0x00]，版本每次归档操作递增，最多归档65536次
     version: u16,
     /// 当前归档版本文件所处路径
-    file_path: String,
+    filepath: String,
     /// 归档时间
     create_time: Duration,
 }
@@ -762,19 +792,19 @@ impl fmt::Debug for Record {
         let time_format = time_from_stamp.format("%Y-%m-%d %H:%M:%S");
         write!(
             f,
-            "[version = {:#?}, file_path = {}, create_time = {}]",
+            "[version = {:#?}, filepath = {}, create_time = {}]",
             self.version(),
-            self.file_path(),
+            self.filepath(),
             time_format
         )
     }
 }
 
 impl Record {
-    fn create(version: u16, file_path: String, create_time: Duration) -> Record {
+    fn create(version: u16, filepath: String, create_time: Duration) -> Record {
         Record {
             version,
-            file_path,
+            filepath,
             create_time,
         }
     }
@@ -783,8 +813,8 @@ impl Record {
         self.version
     }
     /// 当前归档版本文件所处路径
-    pub(crate) fn file_path(&self) -> String {
-        self.file_path.clone()
+    pub(crate) fn filepath(&self) -> String {
+        self.filepath.clone()
     }
     /// 归档时间
     pub(crate) fn create_time(&self) -> Duration {
@@ -795,7 +825,7 @@ impl Record {
         hex::encode(format!(
             "{}|{}|{}",
             self.version(),
-            self.file_path(),
+            self.filepath(),
             self.create_time().num_nanoseconds().unwrap().to_string()
         ))
     }
@@ -806,11 +836,11 @@ impl Record {
                 let real = Strings::from_utf8(vu8)?;
                 let mut split = real.split("|");
                 let version = split.next().unwrap().to_string().parse::<u16>().unwrap();
-                let file_path = split.next().unwrap().to_string();
+                let filepath = split.next().unwrap().to_string();
                 let create_time = Duration::nanoseconds(
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
-                Ok(Record::create(version, file_path, create_time))
+                Ok(Record::create(version, filepath, create_time))
             }
             Err(err) => Err(err_string(format!(
                 "recovery pigeonhole from utf8 1 failed! error is {}",
