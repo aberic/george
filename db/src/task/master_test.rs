@@ -156,11 +156,12 @@ fn sequence_test_after() {
     //     1,
     // );
     get_by_index(database_name, view_name, INDEX_SEQUENCE, "1", 1);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "2", 1);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "3", 1);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "4", 1);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "5", 1);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "6", 1);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "2", 2);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "3", 3);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "4", 4);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "5", 5);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "6", 6);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "7", 7);
 }
 
 fn database_map() {

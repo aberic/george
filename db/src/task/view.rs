@@ -368,9 +368,8 @@ impl View {
         match index_name {
             INDEX_MEMORY => Ok(view_info_index),
             INDEX_SEQUENCE => {
-                let seek_bytes = idx.get(key)?;
-                let version = trans_bytes_2_u16(Vector::sub(seek_bytes.clone(), 0, 2)?)?;
-                let seek = trans_bytes_2_u48(Vector::sub(seek_bytes, 2, 8)?)?;
+                let version = trans_bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
+                let seek = trans_bytes_2_u48(Vector::sub(view_info_index, 2, 8)?)?;
                 let filepath = self.filepath_by_version(version)?;
                 let file = Filer::reader(filepath)?;
                 let last: u32;

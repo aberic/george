@@ -17,7 +17,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 
 use comm::errors::entrances::{err_str, GeorgeError, GeorgeResult};
-use comm::io::file::{Filer, FilerHandler, FilerNormal};
+use comm::io::file::{Filer, FilerHandler, FilerNormal, FilerReader};
 
 use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::seed::IndexPolicy;
@@ -49,7 +49,7 @@ impl Node {
         view_name: String,
         index_name: String,
     ) -> Arc<RwLock<Self>> {
-        let atomic_key = Arc::new(AtomicU64::new(0));
+        let atomic_key = Arc::new(AtomicU64::new(1));
         let index_path = index_path(database_name.clone(), view_name.clone(), index_name.clone());
         let node_file_path = node_filepath(index_path, String::from("increment"));
         Filer::try_touch(node_file_path.clone());
@@ -116,13 +116,16 @@ impl TNode for Node {
     /// ###Return
     ///
     /// EngineResult<()>
-    fn put(&self, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
+    fn put(
+        &self,
+        mut hash_key: u64,
+        seed: Arc<RwLock<dyn TSeed>>,
+        force: bool,
+    ) -> GeorgeResult<()> {
         if hash_key == 0 {
-            let auto_increment_key = self.atomic_key.fetch_add(1, Ordering::Relaxed);
-            self.put_in_node(auto_increment_key, seed, force)
-        } else {
-            self.put_in_node(hash_key, seed, force)
+            hash_key = self.atomic_key.fetch_add(1, Ordering::Relaxed);
         }
+        self.put_in_node(hash_key, seed, force)
     }
     fn get(&self, _key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
         self.get_in_node(hash_key)
@@ -141,14 +144,14 @@ impl Node {
     /// Seed value信息
     fn put_in_node(
         &self,
-        auto_increment_key: u64,
+        hash_key: u64,
         seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
     ) -> GeorgeResult<()>
     where
         Self: Sized,
     {
-        let seek = auto_increment_key * 8;
+        let seek = hash_key * 8;
         if !force {
             let file = Filer::reader(self.node_file_path())?;
             let res = Filer::read_subs(file, seek, 8)?;
@@ -162,10 +165,9 @@ impl Node {
             seek,
         )?)
     }
-    fn get_in_node(&self, auto_increment_key: u64) -> GeorgeResult<Vec<u8>> {
-        let seek = auto_increment_key * 8;
-        let file = Filer::reader_writer(self.node_file_path())?;
-        let res = Filer::read_subs(file, seek, 8)?;
+    fn get_in_node(&self, hash_key: u64) -> GeorgeResult<Vec<u8>> {
+        let seek = hash_key * 8;
+        let res = Filer::read_sub(self.node_file_path(), seek, 8)?;
         return if is_bytes_fill(res.clone()) {
             Ok(res)
         } else {

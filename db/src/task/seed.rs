@@ -19,8 +19,7 @@ use serde::{Deserialize, Serialize};
 use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeResult};
 use comm::io::file::{Filer, FilerHandler, FilerNormal, FilerWriter};
 use comm::trans::{
-    trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u64, trans_u16_2_bytes, trans_u32_2_bytes,
-    trans_u48_2_bytes,
+    trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u64, trans_u16_2_bytes, trans_u48_2_bytes,
 };
 use comm::vectors::{Vector, VectorHandler};
 
@@ -214,12 +213,8 @@ impl TSeed for Seed {
             // )));
             return Ok(());
         }
-        let mut value = self.value();
-        let value_len = value.len() as u32;
-        let mut value_bytes = trans_u32_2_bytes(value_len);
-        value_bytes.append(&mut value);
         // 执行真实存储操作，即索引将seed存入后，允许检索到该结果，但该结果值不存在，仅当所有索引存入都成功，才会执行本方法完成真实存储操作
-        let view_seek_start = view.write_content(value_bytes)?;
+        let view_seek_start = view.write_content(self.value())?;
         // 记录视图文件属性(版本号/数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
         // 数据在视图文件中起始偏移量p(6字节)
         let mut view_seek_start_bytes = trans_u48_2_bytes(view_seek_start);
