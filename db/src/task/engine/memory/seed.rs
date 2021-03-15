@@ -59,7 +59,7 @@ impl TSeed for Seed {
     fn save(&mut self, _view: View) -> GeorgeResult<()> {
         Ok(())
     }
-    fn remove(&mut self, _view: View) -> GeorgeResult<()> {
+    fn remove(&mut self) -> GeorgeResult<()> {
         self.value = None;
         Ok(())
     }

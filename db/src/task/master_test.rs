@@ -140,7 +140,7 @@ fn sequence_test() {
     let database_name = "database_sequence_base_test";
     let view_name = "view_sequence_base_test";
     create_view(database_name, view_name);
-    put(database_name, view_name, "hello", "world", 1);
+    put(database_name, view_name, "0", "world", 1);
     get_by_index(database_name, view_name, INDEX_SEQUENCE, "1", 1);
 }
 
@@ -148,13 +148,13 @@ fn sequence_test() {
 fn sequence_test_after() {
     let database_name = "database_sequence_base_test";
     let view_name = "view_sequence_base_test";
-    // put(
-    //     database_name,
-    //     view_name,
-    //     "hello",
-    //     "hello12345hello67890world12345world67890",
-    //     1,
-    // );
+    put(
+        database_name,
+        view_name,
+        "7",
+        "hello12345hello67890world12345world67890",
+        1,
+    );
     get_by_index(database_name, view_name, INDEX_SEQUENCE, "1", 1);
     get_by_index(database_name, view_name, INDEX_SEQUENCE, "2", 2);
     get_by_index(database_name, view_name, INDEX_SEQUENCE, "3", 3);
@@ -162,6 +162,23 @@ fn sequence_test_after() {
     get_by_index(database_name, view_name, INDEX_SEQUENCE, "5", 5);
     get_by_index(database_name, view_name, INDEX_SEQUENCE, "6", 6);
     get_by_index(database_name, view_name, INDEX_SEQUENCE, "7", 7);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "8", 8);
+}
+
+#[test]
+fn sequence_test_delete() {
+    let database_name = "database_sequence_base_test";
+    let view_name = "view_sequence_base_test";
+    del(database_name, view_name, "2", 2);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "1", 1);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "2", 2);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "3", 3);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "4", 4);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "5", 5);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "6", 6);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "7", 7);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "8", 8);
+    get_by_index(database_name, view_name, INDEX_SEQUENCE, "9", 9);
 }
 
 fn database_map() {
@@ -361,6 +378,17 @@ fn get(database_name: &str, view_name: &str, key: &str, position: usize) {
             Strings::from_utf8(vu8).unwrap().as_str()
         ),
         Err(ie) => println!("get{} is {:#?}", position, ie.source().unwrap().to_string()),
+    }
+}
+
+fn del(database_name: &str, view_name: &str, key: &str, position: usize) {
+    match GLOBAL_MASTER.remove(
+        database_name.to_string(),
+        view_name.to_string(),
+        key.to_string(),
+    ) {
+        Ok(vu8) => println!("del{} success", position,),
+        Err(ie) => println!("del{} is {:#?}", position, ie.source().unwrap().to_string()),
     }
 }
 

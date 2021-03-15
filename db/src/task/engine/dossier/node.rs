@@ -17,7 +17,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 
 use comm::errors::entrances::{err_str, GeorgeError, GeorgeResult};
-use comm::io::file::{Filer, FilerHandler, FilerNormal, FilerReader};
+use comm::io::file::{Filer, FilerHandler, FilerNormal, FilerReader, FilerWriter};
 
 use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::seed::IndexPolicy;
@@ -25,6 +25,7 @@ use crate::utils::comm::is_bytes_fill;
 use crate::utils::enums::IndexType;
 use crate::utils::path::{index_path, node_filepath};
 use comm::errors::children::DataNoExistError;
+use comm::vectors::{Vector, VectorHandler};
 
 /// 索引B+Tree结点结构
 ///
@@ -72,6 +73,7 @@ impl Node {
         let file = Filer::reader_writer(node_file_path.clone())?;
         let file_len = file.try_clone().unwrap().seek(SeekFrom::End(0)).unwrap();
         let atomic_key_u32 = file_len / 8;
+        // log::debug!("atomic_key_u32 = {}", atomic_key_u32);
         let atomic_key = Arc::new(AtomicU64::new(atomic_key_u32));
         Ok(Arc::new(RwLock::new(Node {
             atomic_key,
@@ -131,8 +133,8 @@ impl TNode for Node {
         self.get_in_node(hash_key)
     }
 
-    fn del(&self, key: String, hash_key: u64) -> GeorgeResult<()> {
-        unimplemented!()
+    fn del(&self, _key: String, hash_key: u64) -> GeorgeResult<()> {
+        self.del_in_node(hash_key)
     }
 }
 
@@ -173,5 +175,10 @@ impl Node {
         } else {
             Err(GeorgeError::from(DataNoExistError))
         };
+    }
+    fn del_in_node(&self, hash_key: u64) -> GeorgeResult<()> {
+        let seek = hash_key * 8;
+        Filer::write_seek(self.node_file_path(), seek, Vector::create_empty_bytes(8))?;
+        Ok(())
     }
 }

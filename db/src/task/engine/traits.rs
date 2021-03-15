@@ -140,7 +140,5 @@ pub(crate) trait TSeed: Send + Sync + Debug {
     /// force 是否强制覆盖
     fn save(&mut self, view: View) -> GeorgeResult<()>;
     /// 删除操作
-    ///
-    /// view View 视图
-    fn remove(&mut self, view: View) -> GeorgeResult<()>;
+    fn remove(&mut self) -> GeorgeResult<()>;
 }

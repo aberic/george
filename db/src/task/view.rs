@@ -371,16 +371,7 @@ impl View {
                 let version = trans_bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
                 let seek = trans_bytes_2_u48(Vector::sub(view_info_index, 2, 8)?)?;
                 let filepath = self.filepath_by_version(version)?;
-                let file = Filer::reader(filepath)?;
-                let last: u32;
-                match file.try_clone() {
-                    Ok(f) => {
-                        let bs = Filer::read_subs(f, seek, 4)?;
-                        last = trans_bytes_2_u32(bs)?
-                    }
-                    Err(err) => return Err(err_strs("get while file try clone", err)),
-                }
-                Filer::read_subs(file, seek + 4, last as usize)
+                self.read_content(filepath, seek)
             }
             _ => {
                 let index_data_list = self.fetch_view_info_index(view_info_index)?;
@@ -508,6 +499,23 @@ impl View {
         // 将数据存入view，返回数据在view中的起始坐标
         self.file_append(seed_bytes_len_bytes)
     }
+    /// 读取已组装写入视图的内容，即持续长度+该长度的原文内容
+    ///
+    /// 在view中的起始偏移量坐标读取数据
+    ///
+    /// seek 读取偏移量
+    pub(crate) fn read_content(&self, filepath: String, seek: u64) -> GeorgeResult<Vec<u8>> {
+        let file = Filer::reader(filepath)?;
+        let last: u32;
+        match file.try_clone() {
+            Ok(f) => {
+                let bs = Filer::read_subs(f, seek, 4)?;
+                last = trans_bytes_2_u32(bs)?
+            }
+            Err(err) => return Err(err_strs("get while file try clone", err)),
+        }
+        Filer::read_subs(file, seek + 4, last as usize)
+    }
     /// 插入数据业务方法<p><p>
     ///
     /// ###Params
@@ -537,7 +545,11 @@ impl View {
                 match index_name_clone.as_str() {
                     INDEX_CATALOG => sender.send(index_read.put(key_clone, seed_clone, force)),
                     INDEX_SEQUENCE => {
-                        sender.send(index_read.put(String::from("0"), seed_clone, force))
+                        if remove {
+                            sender.send(index_read.del(key_clone.clone()))
+                        } else {
+                            sender.send(index_read.put(key_clone.clone(), seed_clone, force))
+                        }
                     }
                     INDEX_MEMORY => {
                         if remove {
@@ -571,7 +583,7 @@ impl View {
             }
         }
         if remove {
-            seed.write().unwrap().remove(self.clone())
+            seed.write().unwrap().remove()
         } else {
             seed.write().unwrap().save(self.clone())
         }

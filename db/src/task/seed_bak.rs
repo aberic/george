@@ -338,26 +338,26 @@ impl TSeed for Seed {
         }
         Ok(())
     }
-    fn remove(&mut self, view: View) -> GeorgeResult<()> {
-        if self.policies.len() == 0 {
-            return Ok(());
-        }
-        // 生成视图文件属性，版本号(2字节)
-        let view_version_bytes = trans_u16_2_bytes(view.version());
-        // 循环定位记录使用文件属性
-        let mut view_info_index = view_version_bytes.clone();
-        let mut view_seek_start_bytes = vec![0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
-        // 记录表文件属性(版本/数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
-        view_info_index.append(&mut view_seek_start_bytes);
-        for policy in self.policies.to_vec() {
-            // todo 设计碰撞模型
-            policy.exec(
-                view.clone(),
-                view_version_bytes.clone(),
-                view_info_index.clone(),
-                true,
-            )?
-        }
+    fn remove(&mut self) -> GeorgeResult<()> {
+        // if self.policies.len() == 0 {
+        //     return Ok(());
+        // }
+        // // 生成视图文件属性，版本号(2字节)
+        // let view_version_bytes = trans_u16_2_bytes(view.version());
+        // // 循环定位记录使用文件属性
+        // let mut view_info_index = view_version_bytes.clone();
+        // let mut view_seek_start_bytes = vec![0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+        // // 记录表文件属性(版本/数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
+        // view_info_index.append(&mut view_seek_start_bytes);
+        // for policy in self.policies.to_vec() {
+        //     // todo 设计碰撞模型
+        //     policy.exec(
+        //         view.clone(),
+        //         view_version_bytes.clone(),
+        //         view_info_index.clone(),
+        //         true,
+        //     )?
+        // }
         Ok(())
     }
 }
