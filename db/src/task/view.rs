@@ -292,7 +292,7 @@ impl View {
         &self,
         database_name: String,
         index_name: String,
-        engine_type: IndexType,
+        index_type: IndexType,
         key_type: KeyType,
         primary: bool,
     ) -> GeorgeResult<()> {
@@ -302,14 +302,14 @@ impl View {
         let view_name = self.name();
         let name = index_name.clone();
         let index;
-        match engine_type {
+        match index_type {
             IndexType::None => return Err(err_str("unsupported engine type with none")),
             _ => {
                 index = IndexDefault::create(
                     database_name,
                     view_name,
                     name,
-                    engine_type,
+                    index_type,
                     primary,
                     key_type,
                 )?

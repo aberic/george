@@ -107,15 +107,13 @@ impl TNode for Node {
     ///
     /// EngineResult<()>
     fn put(&self, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
-        let index_path = self.index_path();
-        self.put_in_node(index_path, String::from(""), 1, hash_key, seed)
+        self.put_in_node(String::from(""), 1, hash_key, seed, force)
     }
     fn get(&self, key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
-        let index_path = self.index_path();
-        self.get_in_node(key, index_path, String::from(""), 1, hash_key)
+        self.get_in_node(key, String::from(""), 1, hash_key)
     }
 
-    fn del(&self, key: String, hash_key: u64) -> GeorgeResult<()> {
+    fn del(&self, _key: String, _hash_key: u64) -> GeorgeResult<()> {
         unimplemented!()
     }
 }
@@ -138,11 +136,11 @@ impl Node {
     /// node_seek 当前操作结点在文件中的真实起始位置
     fn put_in_node(
         &self,
-        index_path: String,
         mut index_file_name: String,
         level: u8,
         flexible_key: u64,
         seed: Arc<RwLock<dyn TSeed>>,
+        force: bool,
     ) -> GeorgeResult<()>
     where
         Self: Sized,
@@ -153,15 +151,15 @@ impl Node {
         let next_degree = flexible_key / distance;
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
-            let index_file_path = node_filepath(index_path, index_file_name);
+            let node_file_path = node_filepath(self.index_path(), index_file_name);
             log::debug!(
                 "node_file_path = {}, degree = {}",
-                index_file_path,
+                node_file_path,
                 next_degree
             );
             seed.write().unwrap().modify(IndexPolicy::bytes(
                 IndexType::Library,
-                index_file_path,
+                node_file_path,
                 next_degree * 8,
             )?)
         } else {
@@ -172,19 +170,12 @@ impl Node {
             ));
             // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
             let next_flexible_key = flexible_key - next_degree * distance;
-            self.put_in_node(
-                index_path,
-                index_file_name,
-                level + 1,
-                next_flexible_key,
-                seed,
-            )
+            self.put_in_node(index_file_name, level + 1, next_flexible_key, seed, force)
         }
     }
     fn get_in_node(
         &self,
         key: String,
-        index_path: String,
         mut index_file_name: String,
         level: u8,
         flexible_key: u64,
@@ -195,7 +186,7 @@ impl Node {
         let next_degree = flexible_key / distance;
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
-            let index_file_path = node_filepath(index_path, index_file_name);
+            let index_file_path = node_filepath(self.index_path(), index_file_name);
             log::debug!(
                 "node_file_path = {}, degree = {}",
                 index_file_path,
@@ -210,13 +201,7 @@ impl Node {
             ));
             // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
             let next_flexible_key = flexible_key - next_degree * distance;
-            self.get_in_node(
-                key,
-                index_path,
-                index_file_name,
-                level + 1,
-                next_flexible_key,
-            )
+            self.get_in_node(key, index_file_name, level + 1, next_flexible_key)
         }
     }
 }

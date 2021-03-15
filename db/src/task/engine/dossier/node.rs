@@ -83,18 +83,6 @@ impl Node {
             node_file_path,
         })))
     }
-    fn database_name(&self) -> String {
-        self.database_name.clone()
-    }
-    fn view_name(&self) -> String {
-        self.view_name.clone()
-    }
-    fn index_name(&self) -> String {
-        self.index_name.clone()
-    }
-    fn index_path(&self) -> String {
-        index_path(self.database_name(), self.view_name(), self.index_name())
-    }
     fn node_file_path(&self) -> String {
         self.node_file_path.clone()
     }
@@ -126,8 +114,10 @@ impl TNode for Node {
     ) -> GeorgeResult<()> {
         if hash_key == 0 {
             hash_key = self.atomic_key.fetch_add(1, Ordering::Relaxed);
+            self.put_in_node(hash_key, seed, force, false)
+        } else {
+            self.put_in_node(hash_key, seed, force, true)
         }
-        self.put_in_node(hash_key, seed, force)
     }
     fn get(&self, _key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
         self.get_in_node(hash_key)
@@ -143,12 +133,15 @@ impl Node {
     ///
     /// auto_increment_key 自增key
     ///
-    /// Seed value信息
+    /// seed value信息
+    ///
+    /// custom 是否用户自定义传入key
     fn put_in_node(
         &self,
         hash_key: u64,
         seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
+        custom: bool,
     ) -> GeorgeResult<()>
     where
         Self: Sized,
@@ -158,7 +151,11 @@ impl Node {
             let file = Filer::reader(self.node_file_path())?;
             let res = Filer::read_subs(file, seek, 8)?;
             if is_bytes_fill(res) {
-                return Err(err_str("auto increment key has been used"));
+                return if custom {
+                    Err(err_str("auto increment key has been used"))
+                } else {
+                    self.put(0, seed, force)
+                };
             }
         }
         seed.write().unwrap().modify(IndexPolicy::bytes(

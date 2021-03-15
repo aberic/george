@@ -230,12 +230,11 @@ impl TSeed for Seed {
             match policy.index_type {
                 IndexType::None => return Err(err_str("index type none is not support!")),
                 IndexType::Memory => return Err(err_str("index type memory is not support!")),
-                IndexType::Dossier => Filer::write_seek(
+                _ => Filer::write_seek(
                     policy.node_file_path(),
                     policy.seek,
                     view_info_index.clone(),
                 )?,
-                _ => return Err(err_str("index type is not support!")),
             }
         }
         Ok(())
