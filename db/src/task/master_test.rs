@@ -140,8 +140,19 @@ fn sequence_test() {
     let database_name = "database_sequence_base_test";
     let view_name = "view_sequence_base_test";
     create_view(database_name, view_name);
-    put(database_name, view_name, "0", "world", 1);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "1", 1);
+    let mut i = 1;
+    while i < 5 {
+        // 循环体
+        put(database_name, view_name, "0", "world", i);
+        get_by_index(
+            database_name,
+            view_name,
+            INDEX_SEQUENCE,
+            i.to_string().as_str(),
+            i,
+        );
+        i += 1;
+    }
 }
 
 #[test]

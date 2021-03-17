@@ -99,6 +99,7 @@ fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View
             IndexType::Memory,
             KeyType::String,
             true,
+            true,
         )?;
     } else {
         // view.create_index_in(
@@ -113,6 +114,7 @@ fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View
             INDEX_SEQUENCE.to_string(),
             IndexType::Dossier,
             KeyType::U64,
+            true,
             true,
         )?;
     }
@@ -280,11 +282,18 @@ impl View {
         index_name: String,
         index_type: IndexType,
         key_type: KeyType,
-        primary: bool,
+        unique: bool,
     ) -> GeorgeResult<()> {
         match self.view_type() {
             ViewType::Memory => Err(err_str("this memory view allow only one index")),
-            _ => self.create_index_in(database_name, index_name, index_type, key_type, primary),
+            _ => self.create_index_in(
+                database_name,
+                index_name,
+                index_type,
+                key_type,
+                false,
+                unique,
+            ),
         }
     }
     /// 创建索引内部方法，绕开外部调用验证
@@ -295,6 +304,7 @@ impl View {
         index_type: IndexType,
         key_type: KeyType,
         primary: bool,
+        unique: bool,
     ) -> GeorgeResult<()> {
         if self.exist_index(index_name.clone()) {
             return Err(GeorgeError::from(IndexExistError));
@@ -311,6 +321,7 @@ impl View {
                     name,
                     index_type,
                     primary,
+                    unique,
                     key_type,
                 )?
             }

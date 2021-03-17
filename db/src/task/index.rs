@@ -46,8 +46,10 @@ pub(crate) struct Index {
     view_name: String,
     /// 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
     name: String,
-    /// 是否主键
+    /// 是否主键，主键也是唯一索引，即默认列表依赖索引
     primary: bool,
+    /// 是否唯一索引
+    unique: bool,
     /// 索引值类型
     key_type: KeyType,
     /// 结点
@@ -78,6 +80,7 @@ fn new_index(
     view_name: String,
     name: String,
     primary: bool,
+    unique: bool,
     key_type: KeyType,
     root: Arc<RwLock<dyn TNode>>,
     metadata: Metadata,
@@ -96,6 +99,7 @@ fn new_index(
         file_append,
         key_type,
         view_name,
+        unique,
     };
     Ok(index)
 }
@@ -107,6 +111,7 @@ impl Index {
         name: String,
         index_type: IndexType,
         primary: bool,
+        unique: bool,
         key_type: KeyType,
     ) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
         Filer::touch(index_filepath(
@@ -136,6 +141,7 @@ impl Index {
             view_name.clone(),
             name,
             primary,
+            unique,
             key_type,
             root,
             Metadata::index(index_type)?,
@@ -232,9 +238,10 @@ impl Index {
     /// 生成文件描述
     fn description(&self) -> Vec<u8> {
         let mut part1 = hex::encode(format!(
-            "{}:#?{}:#?{}:#?{}",
+            "{}:#?{}:#?{}:#?{}:#?{}",
             self.name,
             self.primary,
+            self.unique,
             Enum::key_type_u8(self.key_type),
             self.create_time().num_nanoseconds().unwrap().to_string(),
         ))
@@ -273,6 +280,7 @@ impl Index {
                 let mut split = real.split(":#?");
                 let name = split.next().unwrap().to_string();
                 let primary = split.next().unwrap().to_string().parse::<bool>().unwrap();
+                let unique = split.next().unwrap().to_string().parse::<bool>().unwrap();
                 let key_type =
                     Enum::key_type(split.next().unwrap().to_string().parse::<u8>().unwrap());
                 let create_time = Duration::nanoseconds(
@@ -320,6 +328,7 @@ impl Index {
                     view_name,
                     name,
                     primary,
+                    unique,
                     create_time,
                     metadata: hd.metadata(),
                     file_append,
