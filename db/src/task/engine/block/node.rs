@@ -15,6 +15,7 @@
 use std::sync::{Arc, RwLock};
 
 use crate::task::engine::traits::{TNode, TSeed};
+use crate::task::rich::{Constraint, Expectation};
 use crate::task::seed::IndexPolicy;
 use crate::utils::comm::level_distance_64;
 use crate::utils::enums::IndexType;
@@ -114,8 +115,16 @@ impl TNode for Node {
         let index_path = self.index_path();
         self.get_in_node(key, index_path, String::from(""), 1, hash_key)
     }
-
     fn del(&self, key: String, hash_key: u64) -> GeorgeResult<()> {
+        unimplemented!()
+    }
+    fn select(
+        &self,
+        _left: bool,
+        _start: u64,
+        _end: u64,
+        _constraint: Constraint,
+    ) -> GeorgeResult<Expectation> {
         unimplemented!()
     }
 }

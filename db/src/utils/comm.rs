@@ -16,7 +16,7 @@ use crate::utils::enums::KeyType;
 use comm::cryptos::hash::{
     hashcode64_bl, hashcode64_f64, hashcode64_i64, hashcode64_str, hashcode64_u64,
 };
-use comm::errors::entrances::{err_string, GeorgeResult};
+use comm::errors::entrances::{err_str, err_string, GeorgeResult};
 use comm::strings::{StringHandler, Strings};
 use serde_json::{Error, Value};
 

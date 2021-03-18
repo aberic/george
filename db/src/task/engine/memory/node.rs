@@ -18,8 +18,9 @@ use std::sync::{Arc, RwLock};
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
 
 use crate::task::engine::traits::{TNode, TSeed};
+use crate::task::rich::{Constraint, Expectation};
 use crate::utils::comm::level_distance_64;
-use comm::errors::children::{DataExistError, DataNoExistError, NoneError};
+use comm::errors::children::{DataExistError, DataNoExistError, MethodNoSupportError, NoneError};
 
 /// 索引B+Tree结点结构
 ///
@@ -133,6 +134,15 @@ impl TNode for Node {
     }
     fn del(&self, key: String, flexible_key: u64) -> GeorgeResult<()> {
         self.del_in_node(1, key, flexible_key)
+    }
+    fn select(
+        &self,
+        _left: bool,
+        _start: u64,
+        _end: u64,
+        _constraint: Constraint,
+    ) -> GeorgeResult<Expectation> {
+        Err(GeorgeError::from(MethodNoSupportError))
     }
 }
 

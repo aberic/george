@@ -29,6 +29,7 @@ use crate::task::engine::dossier::node::Node as NodeDossier;
 use crate::task::engine::library::node::Node as NodeLibrary;
 use crate::task::engine::memory::node::Node as NodeMemory;
 use crate::task::engine::traits::{TIndex, TNode, TSeed};
+use crate::task::rich::{Constraint, Expectation};
 use crate::utils::comm::hash_key;
 use crate::utils::enums::{Enum, EnumHandler, IndexType, KeyType};
 use crate::utils::path::index_filepath;
@@ -231,6 +232,15 @@ impl TIndex for Index {
     fn del(&self, key: String) -> GeorgeResult<()> {
         let hash_key = hash_key(self.key_type(), key.clone())?;
         self.root.write().unwrap().del(key, hash_key)
+    }
+    fn select(
+        &self,
+        left: bool,
+        start: u64,
+        end: u64,
+        constraint: Constraint,
+    ) -> GeorgeResult<Expectation> {
+        unimplemented!()
     }
 }
 

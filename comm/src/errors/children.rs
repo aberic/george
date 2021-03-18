@@ -18,7 +18,7 @@ use std::fmt::{Display, Formatter, Result};
 /// 子类型 Error,实现std::fmt::Debug的trait
 #[derive(Debug)]
 pub struct StringError {
-    pub(crate) error_msg: String
+    pub(crate) error_msg: String,
 }
 
 impl Display for StringError {
@@ -118,6 +118,17 @@ impl Display for IndexNoExistError {
 }
 
 impl Error for IndexNoExistError {}
+
+#[derive(Debug)]
+pub struct MethodNoSupportError;
+
+impl Display for MethodNoSupportError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "method is not support!")
+    }
+}
+
+impl Error for MethodNoSupportError {}
 
 #[derive(Debug)]
 pub struct NoneError;

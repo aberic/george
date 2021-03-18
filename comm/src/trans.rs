@@ -18,6 +18,7 @@ use phf::{phf_map, Map};
 
 use crate::errors::entrances::{err_string, GeorgeResult};
 use crate::strings::{StringHandler, Strings};
+use std::ops::{Add, Sub};
 
 /// 十进制对应64进制映射
 static STRING_2_U64_MAP: Map<&'static str, u64> = phf_map! {
@@ -297,5 +298,21 @@ pub fn trans_bytes_2_u16(bs: Vec<u8>) -> GeorgeResult<u16> {
             i += 1;
         }
         Ok(res)
+    }
+}
+
+pub fn trans_i64_2_u64(res: i64) -> u64 {
+    if res >= 0 {
+        (res as u64).add(9223372036854775809)
+    } else {
+        (res as u64).sub(9223372036854775807)
+    }
+}
+
+pub fn trans_i32_2_u64(res: i32) -> u64 {
+    if res >= 0 {
+        (res as u64).add(2147483649)
+    } else {
+        (res as u64).sub(2147483647)
     }
 }

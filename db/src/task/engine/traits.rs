@@ -19,6 +19,7 @@ use serde::export::fmt::Debug;
 
 use comm::errors::entrances::GeorgeResult;
 
+use crate::task::rich::{Constraint, Expectation};
 use crate::task::view::View;
 use crate::utils::enums::KeyType;
 use crate::utils::store::Metadata;
@@ -71,6 +72,24 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     ///
     /// Seed value信息
     fn del(&self, key: String) -> GeorgeResult<()>;
+    /// 通过查询约束获取数据集
+    ///
+    /// ###Params
+    ///
+    /// left 是否左查询
+    ///
+    /// constraint 查询约束
+    ///
+    /// ###Return
+    ///
+    /// Expectation 经由Selector后的期望结果
+    fn select(
+        &self,
+        left: bool,
+        start: u64,
+        end: u64,
+        constraint: Constraint,
+    ) -> GeorgeResult<Expectation>;
 }
 
 /// 结点通用特性，遵循此特性创建结点可以更方便的针对db进行扩展
@@ -113,6 +132,24 @@ pub(crate) trait TNode: Send + Sync + Debug {
     ///
     /// Seed value信息
     fn del(&self, key: String, hash_key: u64) -> GeorgeResult<()>;
+    /// 通过查询约束获取数据集
+    ///
+    /// ###Params
+    ///
+    /// left 是否左查询
+    ///
+    /// constraint 查询约束
+    ///
+    /// ###Return
+    ///
+    /// Expectation 经由Selector后的期望结果
+    fn select(
+        &self,
+        left: bool,
+        start: u64,
+        end: u64,
+        constraint: Constraint,
+    ) -> GeorgeResult<Expectation>;
 }
 
 /// B+Tree索引叶子结点内防hash碰撞数组对象中对象特性

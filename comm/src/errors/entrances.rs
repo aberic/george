@@ -17,7 +17,8 @@ use std::fmt::{Display, Formatter, Result};
 
 use crate::errors::children::{
     DataExistError, DataNoExistError, DatabaseExistError, DatabaseNoExistError, IndexExistError,
-    IndexNoExistError, NoneError, StringError, ViewExistError, ViewNoExistError,
+    IndexNoExistError, MethodNoSupportError, NoneError, StringError, ViewExistError,
+    ViewNoExistError,
 };
 
 pub trait GeorgeStringErr<M, N>: Sized {
@@ -34,6 +35,7 @@ pub type GeorgeResult<T> = std::result::Result<T, GeorgeError>;
 /// 索引触发Error,实现std::fmt::Debug的trait
 #[derive(Debug)]
 pub enum GeorgeError {
+    StringError(StringError),
     DataExistError(DataExistError),
     DatabaseExistError(DatabaseExistError),
     ViewExistError(ViewExistError),
@@ -42,13 +44,14 @@ pub enum GeorgeError {
     DatabaseNoExistError(DatabaseNoExistError),
     ViewNoExistError(ViewNoExistError),
     IndexNoExistError(IndexNoExistError),
-    StringError(StringError),
+    MethodNoSupportError(MethodNoSupportError),
     NoneError(NoneError),
 }
 
 impl Error for GeorgeError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match &self {
+            GeorgeError::StringError(ref e) => Some(e),
             GeorgeError::DataExistError(ref e) => Some(e),
             GeorgeError::DatabaseExistError(ref e) => Some(e),
             GeorgeError::ViewExistError(ref e) => Some(e),
@@ -57,7 +60,7 @@ impl Error for GeorgeError {
             GeorgeError::DatabaseNoExistError(ref e) => Some(e),
             GeorgeError::ViewNoExistError(ref e) => Some(e),
             GeorgeError::IndexNoExistError(ref e) => Some(e),
-            GeorgeError::StringError(ref e) => Some(e),
+            GeorgeError::MethodNoSupportError(ref e) => Some(e),
             GeorgeError::NoneError(ref e) => Some(e),
         }
     }
@@ -66,6 +69,7 @@ impl Error for GeorgeError {
 impl Display for GeorgeError {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match &self {
+            GeorgeError::StringError(ref e) => e.fmt(f),
             GeorgeError::DataExistError(ref e) => e.fmt(f),
             GeorgeError::DatabaseExistError(ref e) => e.fmt(f),
             GeorgeError::ViewExistError(ref e) => e.fmt(f),
@@ -74,9 +78,15 @@ impl Display for GeorgeError {
             GeorgeError::DatabaseNoExistError(ref e) => e.fmt(f),
             GeorgeError::ViewNoExistError(ref e) => e.fmt(f),
             GeorgeError::IndexNoExistError(ref e) => e.fmt(f),
-            GeorgeError::StringError(ref e) => e.fmt(f),
+            GeorgeError::MethodNoSupportError(ref e) => e.fmt(f),
             GeorgeError::NoneError(ref e) => e.fmt(f),
         }
+    }
+}
+
+impl From<StringError> for GeorgeError {
+    fn from(s: StringError) -> Self {
+        GeorgeError::StringError(s)
     }
 }
 
@@ -134,9 +144,9 @@ impl From<NoneError> for GeorgeError {
     }
 }
 
-impl From<StringError> for GeorgeError {
-    fn from(s: StringError) -> Self {
-        GeorgeError::StringError(s)
+impl From<MethodNoSupportError> for GeorgeError {
+    fn from(s: MethodNoSupportError) -> Self {
+        GeorgeError::MethodNoSupportError(s)
     }
 }
 

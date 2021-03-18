@@ -20,11 +20,12 @@ use comm::errors::entrances::{err_str, GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerHandler, FilerNormal, FilerReader, FilerWriter};
 
 use crate::task::engine::traits::{TNode, TSeed};
+use crate::task::rich::{Constraint, Expectation};
 use crate::task::seed::IndexPolicy;
 use crate::utils::comm::is_bytes_fill;
 use crate::utils::enums::IndexType;
 use crate::utils::path::{index_path, node_filepath};
-use comm::errors::children::DataNoExistError;
+use comm::errors::children::{DataNoExistError, MethodNoSupportError};
 use comm::vectors::{Vector, VectorHandler};
 
 /// 索引B+Tree结点结构
@@ -122,9 +123,17 @@ impl TNode for Node {
     fn get(&self, _key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
         self.get_in_node(hash_key)
     }
-
     fn del(&self, _key: String, hash_key: u64) -> GeorgeResult<()> {
         self.del_in_node(hash_key)
+    }
+    fn select(
+        &self,
+        _left: bool,
+        _start: u64,
+        _end: u64,
+        _constraint: Constraint,
+    ) -> GeorgeResult<Expectation> {
+        unimplemented!()
     }
 }
 
