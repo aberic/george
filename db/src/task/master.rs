@@ -13,6 +13,7 @@
  */
 
 use crate::task::database::Database;
+use crate::task::rich::Expectation;
 use crate::utils::comm::{
     DEFAULT_COMMENT, DEFAULT_DATABASE, DEFAULT_VIEW, GEORGE_DB_CONFIG, INDEX_CATALOG, INDEX_MEMORY,
 };
@@ -292,6 +293,34 @@ impl Master {
             .read()
             .unwrap()
             .remove(view_name, key)
+    }
+    /// 条件检索
+    ///
+    /// selector_json_bytes 选择器字节数组，自定义转换策略
+    pub fn select(
+        &self,
+        database_name: String,
+        view_name: String,
+        constraint_json_bytes: Vec<u8>,
+    ) -> GeorgeResult<Expectation> {
+        self.database(database_name)?
+            .read()
+            .unwrap()
+            .select(view_name, constraint_json_bytes)
+    }
+    /// 条件删除
+    ///
+    /// selector_json_bytes 选择器字节数组，自定义转换策略
+    pub fn delete(
+        &self,
+        database_name: String,
+        view_name: String,
+        constraint_json_bytes: Vec<u8>,
+    ) -> GeorgeResult<Expectation> {
+        self.database(database_name)?
+            .read()
+            .unwrap()
+            .delete(view_name, constraint_json_bytes)
     }
 }
 

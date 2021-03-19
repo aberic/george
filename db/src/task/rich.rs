@@ -474,7 +474,7 @@ impl Selector {
     /// indexes 索引集合
     ///
     /// delete 是否删除检索结果
-    fn run(
+    pub(crate) fn run(
         constraint_json_bytes: Vec<u8>,
         indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
         delete: bool,
@@ -498,15 +498,10 @@ impl Selector {
     /// index_name 使用到的索引名称，如果没用上则为空
     ///
     /// values 检索结果集合
-    pub fn exec(&mut self) -> GeorgeResult<Expectation> {
+    fn exec(&mut self) -> GeorgeResult<Expectation> {
         let status = self.index()?;
-        log::debug!(
-            "index status with start = {} & end = {}",
-            status.start,
-            status.end
-        );
         // status自测
-        if status.end != 0 && status.start > status.end {
+        if status.start != status.end && status.start > status.end {
             Err(err_string(format!(
                 "condition {} end {} can't start from {}",
                 status.index.read().unwrap().name(),

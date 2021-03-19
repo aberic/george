@@ -33,6 +33,7 @@ use comm::vectors::{Vector, VectorHandler};
 use crate::task::engine::memory::seed::Seed as SeedMemory;
 use crate::task::engine::traits::{TIndex, TSeed};
 use crate::task::index::Index as IndexDefault;
+use crate::task::rich::{Expectation, Selector};
 use crate::task::seed::{IndexData, Seed as SeedDefault};
 use crate::utils::comm::{
     key_fetch, INDEX_CATALOG, INDEX_MEMORY, INDEX_SEQUENCE, VALUE_TYPE_NORMAL,
@@ -406,6 +407,18 @@ impl View {
     /// IndexResult<()>
     pub(crate) fn remove(&self, key: String) -> GeorgeResult<()> {
         self.save(key, vec![], true, true)
+    }
+    /// 条件检索
+    ///
+    /// selector_json_bytes 选择器字节数组，自定义转换策略
+    pub fn select(&self, constraint_json_bytes: Vec<u8>) -> GeorgeResult<Expectation> {
+        Selector::run(constraint_json_bytes, self.indexes.clone(), false)
+    }
+    /// 条件删除
+    ///
+    /// selector_json_bytes 选择器字节数组，自定义转换策略
+    pub fn delete(&self, constraint_json_bytes: Vec<u8>) -> GeorgeResult<Expectation> {
+        Selector::run(constraint_json_bytes, self.indexes.clone(), true)
     }
 }
 

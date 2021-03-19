@@ -12,6 +12,7 @@
  * limitations under the License.
  */
 
+use crate::task::rich::Expectation;
 use crate::task::view::View;
 use crate::utils::path::{database_filepath, database_path, view_filepath};
 use crate::utils::store::{before_content_bytes, recovery_before_content, Metadata, HD};
@@ -300,8 +301,33 @@ impl Database {
     ///
     /// IndexResult<()>
     pub(crate) fn remove(&self, view_name: String, key: String) -> GeorgeResult<()> {
-        // read trans write can use mut
         self.view(view_name)?.read().unwrap().remove(key)
+    }
+    /// 条件检索
+    ///
+    /// selector_json_bytes 选择器字节数组，自定义转换策略
+    pub fn select(
+        &self,
+        view_name: String,
+        constraint_json_bytes: Vec<u8>,
+    ) -> GeorgeResult<Expectation> {
+        return match self.views.clone().read().unwrap().get(&view_name) {
+            Some(view) => view.read().unwrap().select(constraint_json_bytes),
+            _ => Err(GeorgeError::ViewNoExistError(ViewNoExistError)),
+        };
+    }
+    /// 条件删除
+    ///
+    /// selector_json_bytes 选择器字节数组，自定义转换策略
+    pub fn delete(
+        &self,
+        view_name: String,
+        constraint_json_bytes: Vec<u8>,
+    ) -> GeorgeResult<Expectation> {
+        return match self.views.clone().read().unwrap().get(&view_name) {
+            Some(view) => view.read().unwrap().delete(constraint_json_bytes),
+            _ => Err(GeorgeError::ViewNoExistError(ViewNoExistError)),
+        };
     }
 }
 

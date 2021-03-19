@@ -240,7 +240,20 @@ impl TIndex for Index {
         end: u64,
         constraint: Constraint,
     ) -> GeorgeResult<Expectation> {
-        unimplemented!()
+        log::debug!(
+            "index status with left = {} & start = {} & end = {} & constraint = {:#?}",
+            left,
+            start,
+            end,
+            constraint
+        );
+        Ok(Expectation {
+            total: 0,
+            count: 0,
+            index_name: "".to_string(),
+            asc: false,
+            values: vec![],
+        })
     }
 }
 

@@ -192,6 +192,36 @@ fn sequence_test_delete() {
     get_by_index(database_name, view_name, INDEX_SEQUENCE, "9", 9);
 }
 
+#[test]
+fn select_document1() {
+    let database_name = "database_select_base_test";
+    let view_name = "view_select_base_test";
+    create_view(database_name, view_name);
+    let cond_str0 = r#"
+  {
+    "Conditions":[
+        {
+            "Param":"age",
+            "Cond":"ge",
+            "Value":49900,
+            "Type": "bool"
+        },
+        {
+            "Param":"age",
+            "Cond":"le",
+            "Value":90100
+        }
+    ],
+    "Sort":{
+        "Param":"height",
+        "Asc":true
+    },
+    "Skip":100,
+    "Limit":1000
+  }"#;
+    select(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
+}
+
 fn database_map() {
     for (database_name, db) in GLOBAL_MASTER
         .database_map()
@@ -398,7 +428,7 @@ fn del(database_name: &str, view_name: &str, key: &str, position: usize) {
         view_name.to_string(),
         key.to_string(),
     ) {
-        Ok(vu8) => println!("del{} success", position,),
+        Ok(_) => println!("del{} success", position,),
         Err(ie) => println!("del{} is {:#?}", position, ie.source().unwrap().to_string()),
     }
 }
@@ -478,6 +508,29 @@ fn remove_m(key: &str, position: usize) {
         Ok(_) => println!("remove{} success!", position),
         Err(ie) => println!(
             "remove{} is {:#?}",
+            position,
+            ie.source().unwrap().to_string()
+        ),
+    }
+}
+
+fn select(database_name: &str, view_name: &str, constraint_json_bytes: Vec<u8>, position: usize) {
+    match GLOBAL_MASTER.select(
+        database_name.to_string(),
+        view_name.to_string(),
+        constraint_json_bytes,
+    ) {
+        Ok(e) => {
+            println!(
+                "select{},total={},count={},index_name={},asc={}",
+                position, e.total, e.count, e.index_name, e.asc
+            );
+            for value in e.values {
+                println!("value={}", String::from_utf8(value).unwrap());
+            }
+        }
+        Err(ie) => println!(
+            "select{} is {:#?}",
             position,
             ie.source().unwrap().to_string()
         ),
