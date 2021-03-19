@@ -14,11 +14,12 @@
 
 use crate::utils::enums::KeyType;
 use comm::cryptos::hash::{
-    hashcode64_bl, hashcode64_f64, hashcode64_i64, hashcode64_str, hashcode64_u64,
+    hashcode64_bl, hashcode64_f64, hashcode64_f64_real, hashcode64_i64, hashcode64_i64_real,
+    hashcode64_str, hashcode64_u64,
 };
 use comm::errors::entrances::{err_str, err_string, GeorgeResult};
 use comm::strings::{StringHandler, Strings};
-use serde_json::{Error, Value};
+use serde_json::{Error, Number, Value};
 
 pub const GEORGE_DB_CONFIG: &str = "GEORGE_DB_CONFIG";
 pub const GEORGE_DB_DATA_DIR: &str = "GEORGE_DB_DATA_DIR";
@@ -138,6 +139,21 @@ pub fn hash_key(key_type: KeyType, key: String) -> GeorgeResult<u64> {
         KeyType::F64 => hash_key = hashcode64_f64(key)?,
         KeyType::I32 => hash_key = hashcode64_i64(key)?,
         KeyType::I64 => hash_key = hashcode64_i64(key)?,
+        _ => return Err(err_str("key type not support!")),
+    }
+    Ok(hash_key)
+}
+
+pub fn hash_key_number(key_type: KeyType, key: &Number) -> GeorgeResult<u64> {
+    let mut hash_key: u64 = 0;
+    match key_type {
+        KeyType::U32 => hash_key = key.as_u64().unwrap(),
+        KeyType::U64 => hash_key = key.as_u64().unwrap(),
+        KeyType::F32 => hash_key = hashcode64_f64_real(key.as_f64().unwrap()),
+        KeyType::F64 => hash_key = hashcode64_f64_real(key.as_f64().unwrap()),
+        KeyType::I32 => hash_key = hashcode64_i64_real(key.as_i64().unwrap()),
+        KeyType::I64 => hash_key = hashcode64_i64_real(key.as_i64().unwrap()),
+        _ => return Err(err_str("key type not support!")),
     }
     Ok(hash_key)
 }

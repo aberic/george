@@ -72,7 +72,7 @@ pub enum Tag {
 }
 
 /// 索引值类型
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum KeyType {
     /// 字符串索引
     String,
@@ -90,6 +90,8 @@ pub enum KeyType {
     F32,
     /// bool类型
     Bool,
+    /// 不支持类型
+    None,
 }
 
 /// 存储引擎类型
@@ -155,6 +157,7 @@ fn key_type_u8(key_type: KeyType) -> u8 {
         KeyType::F64 => 0x05,
         KeyType::F32 => 0x06,
         KeyType::Bool => 0x07,
+        KeyType::None => 0x08,
     }
 }
 
@@ -210,5 +213,6 @@ fn key_type_str(key_type: KeyType) -> String {
         KeyType::F64 => String::from("f64"),
         KeyType::F32 => String::from("f32"),
         KeyType::Bool => String::from("bool"),
+        KeyType::None => String::from("none"),
     }
 }

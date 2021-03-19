@@ -62,42 +62,48 @@ pub fn hashcode64_u64(comment: String) -> GeorgeResult<u64> {
 
 pub fn hashcode64_i64(comment: String) -> GeorgeResult<u64> {
     match comment.parse::<i64>() {
-        Ok(si64) => {
-            if si64 < 0 {
-                Ok(si64.add(9223372036854775807).add(1) as u64)
-            } else {
-                Ok((si64 as u64).add(9223372036854775807).add(1))
-            }
-        }
+        Ok(real) => Ok(hashcode64_i64_real(real)),
         Err(err) => Err(err_strings(format!("{} parse to i64", comment), err)),
     }
 }
 
 pub fn hashcode64_f64(comment: String) -> GeorgeResult<u64> {
     match comment.parse::<f64>() {
-        Ok(sf64) => {
-            if sf64 > 0.0 {
-                Ok(sf64.to_bits().add(9223372036854775808))
-            } else if sf64 < 0.0 {
-                Ok(9223372036854775807 + 9223372036854775807 - sf64.to_bits() + 2)
-            } else {
-                Ok(9223372036854775808)
-            }
-        }
+        Ok(real) => Ok(hashcode64_f64_real(real)),
         Err(err) => Err(err_strings(format!("{} parse to f64", comment), err)),
     }
 }
 
 pub fn hashcode64_bl(comment: String) -> GeorgeResult<u64> {
     match comment.parse::<bool>() {
-        Ok(sbl) => {
-            if sbl {
-                Ok(1)
-            } else {
-                Ok(0)
-            }
-        }
+        Ok(real) => Ok(hashcode64_bl_real(real)),
         Err(err) => Err(err_strings(format!("{} parse to bool", comment), err)),
+    }
+}
+
+pub fn hashcode64_i64_real(real: i64) -> u64 {
+    if real < 0 {
+        real.add(9223372036854775807).add(1) as u64
+    } else {
+        (real as u64).add(9223372036854775807).add(1)
+    }
+}
+
+pub fn hashcode64_f64_real(real: f64) -> u64 {
+    if real > 0.0 {
+        real.to_bits().add(9223372036854775808)
+    } else if real < 0.0 {
+        9223372036854775807 + 9223372036854775807 - real.to_bits() + 2
+    } else {
+        9223372036854775808
+    }
+}
+
+pub fn hashcode64_bl_real(real: bool) -> u64 {
+    if real {
+        1
+    } else {
+        0
     }
 }
 

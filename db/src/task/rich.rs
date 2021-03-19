@@ -13,11 +13,10 @@
  */
 
 use crate::task::engine::traits::TIndex;
+use crate::utils::comm::{hash_key, hash_key_number};
 use crate::utils::enums::KeyType;
-use comm::errors::entrances::{
-    err_str, err_string, err_strings, err_strs, GeorgeError, GeorgeResult,
-};
-use comm::trans::{trans_i32_2_u64, trans_i64_2_u64};
+use comm::cryptos::hash::hashcode64_bl_real;
+use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeResult};
 use serde_json::{Error, Value};
 use std::collections::HashMap;
 use std::ops::Add;
@@ -53,11 +52,30 @@ pub struct Condition {
     key_type: KeyType,
     /// 比较对象，支持int、string、float和bool
     value: String,
+    /// 索引key，可通过hash转换string生成，长度为无符号64位整型，是数据存放于索引树中的坐标
+    hash_key: u64,
     /// 索引
     index: Option<Arc<RwLock<dyn TIndex>>>,
 }
 
 impl Condition {
+    fn new(
+        param: String,
+        compare: Compare,
+        key_type: KeyType,
+        value: String,
+        index: Option<Arc<RwLock<dyn TIndex>>>,
+    ) -> GeorgeResult<Condition> {
+        let hash_key = hash_key(key_type, value.clone())?;
+        Ok(Condition {
+            param,
+            compare,
+            key_type,
+            value,
+            hash_key,
+            index,
+        })
+    }
     /// 参数名，新插入的数据将会尝试将数据对象转成json，并将json中的`param`作为参数使用
     fn param(&self) -> String {
         self.param.clone()
@@ -75,56 +93,8 @@ impl Condition {
         self.value.clone()
     }
     /// 比较对象值
-    fn value_u64(&self) -> GeorgeResult<u64> {
-        match self.value.clone().parse() {
-            Ok(res) => Ok(res),
-            Err(err) => Err(self.err("u64", err.to_string())),
-        }
-    }
-    fn value_i64(&self) -> GeorgeResult<i64> {
-        match self.value.clone().parse() {
-            Ok(res) => Ok(res),
-            Err(err) => Err(self.err("i64", err.to_string())),
-        }
-    }
-    fn value_u32(&self) -> GeorgeResult<u32> {
-        match self.value.clone().parse() {
-            Ok(res) => Ok(res),
-            Err(err) => Err(self.err("u32", err.to_string())),
-        }
-    }
-    fn value_i32(&self) -> GeorgeResult<i32> {
-        match self.value.clone().parse() {
-            Ok(res) => Ok(res),
-            Err(err) => Err(self.err("i32", err.to_string())),
-        }
-    }
-    fn value_f64(&self) -> GeorgeResult<f64> {
-        match self.value.clone().parse() {
-            Ok(res) => Ok(res),
-            Err(err) => Err(self.err("f64", err.to_string())),
-        }
-    }
-    /// 比较对象值
-    fn value_bool(&self) -> bool {
-        self.value.clone().eq("1")
-    }
-    /// 比较对象值
-    fn value_compare(&self) -> GeorgeResult<u64> {
-        match self.key_type {
-            KeyType::U64 => self.value_u64(),
-            KeyType::I64 => trans_i64_2_u64(self.value_i64()?),
-            KeyType::U32 => self.value_u32() as u64,
-            KeyType::I32 => trans_i32_2_u64(self.value_i32()?),
-            KeyType::F64 => self.value_f64()?.to_bits(),
-            _ => Err(self.err("success", err.to_string())),
-        }
-    }
-    fn err(&self, to: &str, err: String) -> GeorgeError {
-        err_strings(
-            format!("{} {} can't parse to {}", self.param(), self.value(), to),
-            err,
-        )
+    fn hash_key(&self) -> u64 {
+        self.hash_key
     }
     /// 约束是否有效
     ///
@@ -156,61 +126,36 @@ impl Condition {
     fn valid(&self, value: Value) -> bool {
         return match value[self.param()] {
             Value::Bool(ref val) => match self.key_type() {
-                KeyType::Bool => val.eq(&self.value_bool()),
+                KeyType::Bool => self.compare_value(hashcode64_bl_real(*val)),
                 _ => false,
             },
             Value::String(ref val) => match self.key_type() {
                 KeyType::String => match self.compare() {
-                    Compare::EQ => val.eq(&self.value()),
-                    _ => false,
+                    Compare::EQ => self.value().eq(val),
+                    Compare::GT => self.value().gt(val),
+                    Compare::GE => self.value().ge(val),
+                    Compare::LT => self.value().lt(val),
+                    Compare::LE => self.value().le(val),
+                    Compare::NE => self.value().ne(val),
                 },
                 _ => false,
             },
-            Value::Number(ref val) => match self.key_type() {
-                KeyType::U64 => self.match_cond_u64(val.as_u64().unwrap()),
-                KeyType::I64 => self.match_cond_i64(val.as_i64().unwrap()),
-                KeyType::U32 => self.match_cond_u64(val.as_u64().unwrap()),
-                KeyType::I32 => self.match_cond_i64(val.as_i64().unwrap()),
-                KeyType::F64 => self.match_cond_f64(val.as_f64().unwrap()),
-                _ => {
-                    log::debug!("select valid condition does't support");
-                    false
-                }
+            Value::Number(ref val) => match hash_key_number(self.key_type(), val) {
+                Ok(real) => self.compare_value(real),
+                _ => false,
             },
-            _ => {
-                log::debug!("select valid constraint value is not bool/string/number");
-                false
-            }
+            _ => false,
         };
     }
-    fn match_cond_u64(&self, val: u64) -> bool {
+    /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
+    fn compare_value(&self, value_hash: u64) -> bool {
         match self.compare() {
-            Compare::EQ => val.eq(&self.value_u64().unwrap()),
-            Compare::GT => val.gt(&self.value_u64().unwrap()),
-            Compare::GE => val.ge(&self.value_u64().unwrap()),
-            Compare::LT => val.lt(&self.value_u64().unwrap()),
-            Compare::LE => val.le(&self.value_u64().unwrap()),
-            Compare::NE => val.ne(&self.value_u64().unwrap()),
-        }
-    }
-    fn match_cond_i64(&self, val: i64) -> bool {
-        match self.compare() {
-            Compare::EQ => val.eq(&self.value_i64().unwrap()),
-            Compare::GT => val.gt(&self.value_i64().unwrap()),
-            Compare::GE => val.ge(&self.value_i64().unwrap()),
-            Compare::LT => val.lt(&self.value_i64().unwrap()),
-            Compare::LE => val.le(&self.value_i64().unwrap()),
-            Compare::NE => val.ne(&self.value_i64().unwrap()),
-        }
-    }
-    fn match_cond_f64(&self, val: f64) -> bool {
-        match self.compare() {
-            Compare::EQ => val.eq(&self.value_f64().unwrap()),
-            Compare::GT => val.gt(&self.value_f64().unwrap()),
-            Compare::GE => val.ge(&self.value_f64().unwrap()),
-            Compare::LT => val.lt(&self.value_f64().unwrap()),
-            Compare::LE => val.le(&self.value_f64().unwrap()),
-            Compare::NE => val.ne(&self.value_f64().unwrap()),
+            Compare::EQ => value_hash == self.hash_key(),
+            Compare::GT => value_hash > self.hash_key(),
+            Compare::GE => value_hash >= self.hash_key(),
+            Compare::LT => value_hash < self.hash_key(),
+            Compare::LE => value_hash <= self.hash_key(),
+            Compare::NE => value_hash != self.hash_key(),
         }
     }
 }
@@ -328,43 +273,54 @@ impl Constraint {
                 let compare: Compare;
                 let mut key_type: KeyType;
                 match v["Param"].as_str() {
-                    Some(ref val_param) => match v["Cond"].as_str() {
-                        Some(ref val_cond) => {
-                            vp = val_param;
-                            if val_cond.eq(&"gt") {
-                                compare = Compare::GT
-                            } else if val_cond.eq(&"ge") {
-                                compare = Compare::GE
-                            } else if val_cond.eq(&"lt") {
-                                compare = Compare::LT
-                            } else if val_cond.eq(&"le") {
-                                compare = Compare::LE
-                            } else if val_cond.eq(&"eq") {
-                                compare = Compare::EQ
-                            } else if val_cond.eq(&"ne") {
-                                compare = Compare::NE
-                            } else {
-                                break;
+                    Some(ref val_param) => {
+                        vp = val_param;
+                        match v["Cond"].as_str() {
+                            Some(ref val_cond) => {
+                                if val_cond.eq(&"gt") {
+                                    compare = Compare::GT
+                                } else if val_cond.eq(&"ge") {
+                                    compare = Compare::GE
+                                } else if val_cond.eq(&"lt") {
+                                    compare = Compare::LT
+                                } else if val_cond.eq(&"le") {
+                                    compare = Compare::LE
+                                } else if val_cond.eq(&"eq") {
+                                    compare = Compare::EQ
+                                } else if val_cond.eq(&"ne") {
+                                    compare = Compare::NE
+                                } else {
+                                    return Err(err_str(
+                                        "fit conditions cond only support gt,ge,lt,le,eq and ne",
+                                    ));
+                                }
                             }
+                            _ => return Err(err_str("fit conditions no match cond")),
                         }
-                        _ => return Err(err_str("fit conditions no match cond")),
-                    },
+                    }
                     _ => return Err(err_str("fit conditions no match param")),
                 }
-                match v["Type"].as_str() {
-                    Some(ref val_type) => match val_type.to_lowercase().as_str() {
-                        "bool" => key_type = KeyType::Bool,
-                        "string" => key_type = KeyType::String,
-                        "i64" => key_type = KeyType::I64,
-                        "u64" => key_type = KeyType::U64,
-                        "f64" => key_type = KeyType::F64,
-                        _ => {
-                            return Err(err_str(
-                                "fit conditions type only support bool,string,i64,u64 and f64!",
-                            ))
+                if v["Type"].is_null() {
+                    key_type = KeyType::None
+                } else {
+                    match v["Type"].as_str() {
+                        Some(ref val_type) => {
+                            match val_type.to_lowercase().as_str() {
+                                "bool" => key_type = KeyType::Bool,
+                                "string" => key_type = KeyType::String,
+                                "i32" => key_type = KeyType::I64,
+                                "i64" => key_type = KeyType::I64,
+                                "u32" => key_type = KeyType::U64,
+                                "u64" => key_type = KeyType::U64,
+                                "f32" => key_type = KeyType::F64,
+                                "f64" => key_type = KeyType::F64,
+                                _ => return Err(err_str(
+                                    "fit conditions type only support bool,string,i32,i64,u32,u64,f32 and f64!",
+                                )),
+                            }
                         }
-                    },
-                    _ => return Err(err_str("fit conditions no match type")),
+                        _ => return Err(err_str("fit conditions no match type")),
+                    }
                 }
                 let indexes_clone = indexes.clone();
                 let index_r = indexes_clone.read().unwrap();
@@ -372,7 +328,15 @@ impl Constraint {
                 match index_r.get(vp) {
                     Some(idx) => {
                         index = Some(idx.clone());
-                        key_type = idx.read().unwrap().key_type()
+                        let idx_key_type = idx.read().unwrap().key_type();
+                        match key_type {
+                            KeyType::None => key_type = idx_key_type,
+                            _ => {
+                                if key_type != idx_key_type {
+                                    return Err(err_str("fit conditions type is not expect"));
+                                }
+                            }
+                        }
                     }
                     None => {}
                 }
@@ -387,45 +351,39 @@ impl Constraint {
                             }
                             _ => {}
                         }
-                        self.conditions.push(Condition {
-                            param: vp.to_string(),
+                        self.conditions.push(Condition::new(
+                            vp.to_string(),
                             compare,
                             key_type,
-                            value: val_num.as_f64().unwrap().to_string(),
+                            val_num.to_string(),
                             index,
-                        })
+                        )?)
                     }
                     Value::Bool(ref val_bool) => {
                         match key_type {
                             KeyType::Bool => {}
                             _ => return Err(err_str("fit conditions no match key type")),
                         }
-                        let value_res: String;
-                        if *val_bool {
-                            value_res = String::from("1")
-                        } else {
-                            value_res = String::from("0")
-                        }
-                        self.conditions.push(Condition {
-                            param: vp.to_string(),
+                        self.conditions.push(Condition::new(
+                            vp.to_string(),
                             compare,
                             key_type,
-                            value: value_res,
+                            val_bool.to_string(),
                             index,
-                        })
+                        )?)
                     }
                     Value::String(ref val_str) => {
                         match key_type {
                             KeyType::String => {}
                             _ => return Err(err_str("fit conditions no match key type")),
                         }
-                        self.conditions.push(Condition {
-                            param: vp.to_string(),
+                        self.conditions.push(Condition::new(
+                            vp.to_string(),
                             compare,
                             key_type,
-                            value: val_str.to_string(),
+                            val_str.to_string(),
                             index,
-                        })
+                        )?)
                     }
                     _ => {
                         return Err(err_str(
@@ -528,7 +486,9 @@ impl Selector {
         };
         select.exec()
     }
-
+    fn constraint(&self) -> Constraint {
+        self.constraint.clone()
+    }
     /// 执行富查询
     ///
     /// # return
@@ -568,14 +528,12 @@ impl Selector {
     ///
     /// 检索顺序 sort -> conditions -> skip -> limit
     fn index(&self) -> GeorgeResult<IndexStatus> {
-        let mut oi = self.index_sort()?;
-        match oi {
+        match self.index_sort() {
             Some(is) => return Ok(is),
             None => {}
         }
 
-        oi = self.index_condition()?;
-        match oi {
+        match self.index_condition() {
             Some(is) => return Ok(is),
             None => {}
         }
@@ -594,36 +552,38 @@ impl Selector {
     }
 
     /// 通过sort所包含参数匹配索引
-    fn index_sort(&self) -> GeorgeResult<Option<IndexStatus>> {
-        match self.constraint.sort.clone() {
+    fn index_sort(&self) -> Option<IndexStatus> {
+        match self.constraint().sort() {
             Some(sort) => {
                 // 通过参数匹配到排序索引
-                match self.indexes.clone().read().unwrap().get(&sort.param) {
+                match self.indexes.clone().read().unwrap().get(&sort.param()) {
                     Some(idx) => {
-                        let is = self.index_condition_param(1, sort.asc, idx)?;
-                        Ok(Some(is))
+                        let is = self.index_condition_param(1, sort.asc, sort.param(), idx);
+                        Some(is)
                     }
-                    None => Ok(None),
+                    None => None,
                 }
             }
-            None => Ok(None),
+            None => None,
         }
     }
 
     /// 通过condition所包含参数匹配索引
-    fn index_condition(&self) -> GeorgeResult<Option<IndexStatus>> {
+    fn index_condition(&self) -> Option<IndexStatus> {
         let mut cs: Vec<IndexStatus> = vec![];
-        for condition in self.constraint.conditions.iter() {
+        for condition in self.constraint().conditions().iter() {
             match condition.clone().index {
-                Some(index) => cs.push(self.index_condition_param(0, true, &index)?),
+                Some(index) => {
+                    cs.push(self.index_condition_param(0, true, condition.param(), &index))
+                }
                 None => {}
             }
         }
         if cs.is_empty() {
-            Ok(None)
+            None
         } else {
             cs.sort_by(|a, b| b.level.cmp(&a.level));
-            Ok(Some(cs.get(0).unwrap().clone()))
+            Some(cs.get(0).unwrap().clone())
         }
     }
 
@@ -634,8 +594,9 @@ impl Selector {
         &self,
         level: u8,
         asc: bool,
+        idx_name: String,
         idx: &Arc<RwLock<dyn TIndex>>,
-    ) -> GeorgeResult<IndexStatus> {
+    ) -> IndexStatus {
         let mut status = IndexStatus {
             index: idx.clone(),
             asc,
@@ -644,40 +605,27 @@ impl Selector {
             conditions: vec![],
             level,
         };
-        let idx_r = idx.read().unwrap();
         // 确认排序索引是否存在条件区间
-        for condition in self.constraint.conditions.iter() {
-            match condition.key_type() {
-                KeyType::F64 => {
-                    match condition.value_f64() {
-                        Ok(res) => match condition.compare {
-                            // ConditionType::GT => status.fit_start(condition.value_f64().to_bits()),
-                            Compare::GT => status.fit_start(res.to_bits() + 1),
-                            Compare::GE => status.fit_start(res.to_bits()),
-                            Compare::LT => status.fit_end(res.to_bits() - 1),
-                            Compare::LE => status.fit_end(res.to_bits()),
-                            Compare::EQ => {
-                                if asc {
-                                    status.fit_start(res.to_bits())
-                                } else {
-                                    status.fit_end(res.to_bits())
-                                }
-                            }
-                            Compare::NE => {}
-                        },
-                        Err(err) => {
-                            return Err(err_strs("index condition param, while value 2 f64", err))
+        for condition in self.constraint.conditions().iter() {
+            if condition.param() == idx_name {
+                match condition.compare() {
+                    Compare::GT => status.fit_start(condition.hash_key() + 1),
+                    Compare::GE => status.fit_start(condition.hash_key()),
+                    Compare::LT => status.fit_end(condition.hash_key() - 1),
+                    Compare::LE => status.fit_end(condition.hash_key()),
+                    Compare::EQ => {
+                        if asc {
+                            status.fit_start(condition.hash_key())
+                        } else {
+                            status.fit_end(condition.hash_key())
                         }
                     }
+                    Compare::NE => {}
                 }
-                _ => {
-                    return Err(err_string(format!(
-                        "{} can't parse except Number",
-                        mold_str(idx_r.mold())
-                    )));
-                }
+            } else {
+                status.append_condition(condition.clone());
             }
         }
-        Ok(status)
+        status
     }
 }

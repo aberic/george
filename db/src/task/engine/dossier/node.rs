@@ -25,7 +25,7 @@ use crate::task::seed::IndexPolicy;
 use crate::utils::comm::is_bytes_fill;
 use crate::utils::enums::IndexType;
 use crate::utils::path::{index_path, node_filepath};
-use comm::errors::children::{DataNoExistError, MethodNoSupportError};
+use comm::errors::children::DataNoExistError;
 use comm::vectors::{Vector, VectorHandler};
 
 /// 索引B+Tree结点结构
