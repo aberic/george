@@ -142,6 +142,22 @@ impl Master {
             .unwrap()
             .archive_view(view_name, archive_file_path)
     }
+    /// 当前视图文件地址
+    pub(super) fn read_content_by(
+        &self,
+        database_name: String,
+        view_name: String,
+        version: u16,
+        seek: u64,
+    ) -> GeorgeResult<Vec<u8>> {
+        self.database(database_name)?
+            .read()
+            .unwrap()
+            .view(view_name)?
+            .read()
+            .unwrap()
+            .read_content_by(version, seek)
+    }
     /// 在指定库及视图中创建索引
     ///
     /// 该索引需要定义ID，此外索引所表达的字段组成内容也是必须的，并通过primary判断索引类型，具体传参参考如下定义：<p><p>
@@ -174,6 +190,28 @@ impl Master {
 
 /// db for disk
 impl Master {
+    /// 插入数据，如果存在冲突索引则返回已存在<p><p>
+    ///
+    /// ###Params
+    ///
+    /// view_name 视图名称<p><p>
+    ///
+    /// value 当前结果value信息<p><p>
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    pub(crate) fn insert(
+        &self,
+        database_name: String,
+        view_name: String,
+        value: Vec<u8>,
+    ) -> GeorgeResult<()> {
+        self.database(database_name)?
+            .read()
+            .unwrap()
+            .put(view_name, String::from("0"), value)
+    }
     /// 插入数据，如果存在则返回已存在<p><p>
     ///
     /// ###Params

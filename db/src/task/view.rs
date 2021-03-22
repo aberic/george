@@ -382,8 +382,7 @@ impl View {
             INDEX_SEQUENCE => {
                 let version = trans_bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
                 let seek = trans_bytes_2_u48(Vector::sub(view_info_index, 2, 8)?)?;
-                let filepath = self.filepath_by_version(version)?;
-                self.read_content(filepath, seek)
+                self.read_content_by(version, seek)
             }
             _ => {
                 let index_data_list = self.fetch_view_info_index(view_info_index)?;
@@ -539,6 +538,15 @@ impl View {
             Err(err) => return Err(err_strs("get while file try clone", err)),
         }
         Filer::read_subs(file, seek + 4, last as usize)
+    }
+    /// 读取已组装写入视图的内容，即持续长度+该长度的原文内容
+    ///
+    /// 在view中的起始偏移量坐标读取数据
+    ///
+    /// seek 读取偏移量
+    pub(crate) fn read_content_by(&self, version: u16, seek: u64) -> GeorgeResult<Vec<u8>> {
+        let filepath = self.filepath_by_version(version)?;
+        self.read_content(filepath, seek)
     }
     /// 插入数据业务方法<p><p>
     ///

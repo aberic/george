@@ -19,7 +19,7 @@ use serde::export::fmt::Debug;
 
 use comm::errors::entrances::GeorgeResult;
 
-use crate::task::rich::{Constraint, Expectation};
+use crate::task::rich::{Condition, Constraint, Expectation};
 use crate::task::view::View;
 use crate::utils::enums::KeyType;
 use crate::utils::store::Metadata;
@@ -142,14 +142,21 @@ pub(crate) trait TNode: Send + Sync + Debug {
     ///
     /// ###Return
     ///
-    /// Expectation 经由Selector后的期望结果
+    /// total 检索过程中遍历的总条数（也表示文件读取次数，文件描述符次数远小于该数，一般文件描述符数为1，即共用同一文件描述符）
+    ///
+    /// count 检索结果过程中遍历的总条数
+    ///
+    /// values 检索结果集合
     fn select(
         &self,
         left: bool,
         start: u64,
         end: u64,
-        constraint: Constraint,
-    ) -> GeorgeResult<Expectation>;
+        skip: u64,
+        limit: u64,
+        delete: bool,
+        conditions: Vec<Condition>,
+    ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)>;
 }
 
 /// B+Tree索引叶子结点内防hash碰撞数组对象中对象特性

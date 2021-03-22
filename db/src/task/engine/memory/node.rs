@@ -18,7 +18,7 @@ use std::sync::{Arc, RwLock};
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
 
 use crate::task::engine::traits::{TNode, TSeed};
-use crate::task::rich::{Constraint, Expectation};
+use crate::task::rich::Condition;
 use crate::utils::comm::level_distance_64;
 use comm::errors::children::{DataExistError, DataNoExistError, MethodNoSupportError, NoneError};
 
@@ -140,8 +140,11 @@ impl TNode for Node {
         _left: bool,
         _start: u64,
         _end: u64,
-        _constraint: Constraint,
-    ) -> GeorgeResult<Expectation> {
+        _skip: u64,
+        _limit: u64,
+        _delete: bool,
+        _conditions: Vec<Condition>,
+    ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)> {
         Err(GeorgeError::from(MethodNoSupportError))
     }
 }

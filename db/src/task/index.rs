@@ -35,6 +35,7 @@ use crate::utils::enums::{Enum, EnumHandler, IndexType, KeyType};
 use crate::utils::path::index_filepath;
 use crate::utils::store::{before_content_bytes, Metadata, HD};
 use crate::utils::writer::obtain_write_append_file;
+use serde_json::Value;
 
 /// Siam索引
 ///
@@ -247,12 +248,112 @@ impl TIndex for Index {
             end,
             constraint
         );
+        let conditions = constraint.conditions();
+        let skip = constraint.skip();
+        let limit = constraint.limit();
+        let delete = constraint.delete();
+        let (total, count, mut values) = self
+            .root
+            .read()
+            .unwrap()
+            .select(left, start, end, skip, limit, delete, conditions)?;
+        match constraint.sort() {
+            Some(sort) => {
+                values.sort_by(|a, b| {
+                    let value_a: Value;
+                    let value_b: Value;
+                    match String::from_utf8(a.clone()) {
+                        Ok(value_str) => match serde_json::from_str(value_str.as_ref()) {
+                            Ok(value) => value_a = value,
+                            Err(err) => panic!("an unexpected mistake a json from, {}", err),
+                        },
+                        Err(err) => panic!("an unexpected mistake a string from, {}", err),
+                    }
+                    match String::from_utf8(b.clone()) {
+                        Ok(value_str) => match serde_json::from_str(value_str.as_ref()) {
+                            Ok(value) => value_b = value,
+                            Err(err) => panic!("an unexpected mistake b json from, {}", err),
+                        },
+                        Err(err) => panic!("an unexpected mistake b string from, {}", err),
+                    }
+                    if value_a[sort.param()].is_i64() && value_b[sort.param()].is_i64() {
+                        let opa = value_a[sort.param()].as_i64();
+                        let opb = value_b[sort.param()].as_i64();
+                        if sort.asc() {
+                            if opa.gt(&opb) {
+                                a.cmp(b)
+                            } else {
+                                b.cmp(a)
+                            }
+                        } else {
+                            if opa.lt(&opb) {
+                                a.cmp(b)
+                            } else {
+                                b.cmp(a)
+                            }
+                        }
+                    } else if value_a[sort.param()].is_u64() && value_b[sort.param()].is_u64() {
+                        let opa = value_a[sort.param()].as_u64();
+                        let opb = value_b[sort.param()].as_u64();
+                        if sort.asc() {
+                            if opa.gt(&opb) {
+                                a.cmp(b)
+                            } else {
+                                b.cmp(a)
+                            }
+                        } else {
+                            if opa.lt(&opb) {
+                                a.cmp(b)
+                            } else {
+                                b.cmp(a)
+                            }
+                        }
+                    } else if value_a[sort.param()].is_f64() && value_b[sort.param()].is_f64() {
+                        let opa = value_a[sort.param()].as_f64();
+                        let opb = value_b[sort.param()].as_f64();
+                        if sort.asc() {
+                            if opa.gt(&opb) {
+                                a.cmp(b)
+                            } else {
+                                b.cmp(a)
+                            }
+                        } else {
+                            if opa.lt(&opb) {
+                                a.cmp(b)
+                            } else {
+                                b.cmp(a)
+                            }
+                        }
+                    } else if value_a[sort.param()].is_string() && value_b[sort.param()].is_string()
+                    {
+                        let opa = value_a[sort.param()].as_str();
+                        let opb = value_b[sort.param()].as_str();
+                        if sort.asc() {
+                            if opa.gt(&opb) {
+                                a.cmp(b)
+                            } else {
+                                b.cmp(a)
+                            }
+                        } else {
+                            if opa.lt(&opb) {
+                                a.cmp(b)
+                            } else {
+                                b.cmp(a)
+                            }
+                        }
+                    } else {
+                        panic!("{} can't match each other when sort", sort.param())
+                    }
+                });
+            }
+            _ => {}
+        }
         Ok(Expectation {
-            total: 0,
-            count: 0,
-            index_name: "".to_string(),
-            asc: false,
-            values: vec![],
+            total,
+            count,
+            index_name: self.name(),
+            asc: left,
+            values,
         })
     }
 }

@@ -13,6 +13,7 @@
  */
 
 use chrono::{Duration, NaiveDateTime};
+use serde::{Deserialize, Serialize};
 
 use crate::task::master::GLOBAL_MASTER;
 use crate::utils::comm::INDEX_SEQUENCE;
@@ -143,7 +144,7 @@ fn sequence_test() {
     let mut i = 1;
     while i < 5 {
         // 循环体
-        put(database_name, view_name, "0", "world", i);
+        insert(database_name, view_name, "world", i);
         get_by_index(
             database_name,
             view_name,
@@ -192,19 +193,57 @@ fn sequence_test_delete() {
     get_by_index(database_name, view_name, INDEX_SEQUENCE, "9", 9);
 }
 
+#[derive(Serialize, Deserialize)]
+struct Teacher {
+    name: String,
+    age: u32,
+    height: u32,
+    blog: String,
+    married: bool,
+}
+
+fn create_t(a: u32, h: u32) -> Teacher {
+    Teacher {
+        name: a.to_string(),
+        age: a,
+        height: h,
+        blog: a.to_string(),
+        married: a % 2 == 0,
+    }
+}
+
 #[test]
-fn select_document1() {
-    let database_name = "database_select_base_test";
+fn select_document_sequence_prepare() {
+    let database_name = "database_select_sequence_base_test";
     let view_name = "view_select_base_test";
     create_view(database_name, view_name);
+
+    let mut pos1: u32 = 1;
+    while pos1 <= 100000 {
+        print!("{} ", pos1);
+        let user_str = serde_json::to_string(&create_t(pos1, 100000 - pos1)).unwrap();
+        insert(database_name, view_name, user_str.as_str(), pos1 as usize);
+        pos1 += 1
+    }
+}
+
+#[test]
+fn select_document_sequence() {
+    let database_name = "database_select_sequence_base_test";
+    let view_name = "view_select_base_test";
     let cond_str0 = r#"
   {
     "Conditions":[
         {
+            "Param":"george_db_index_sequence",
+            "Cond":"ge",
+            "Value":49900
+        },
+        {
             "Param":"age",
             "Cond":"ge",
             "Value":49900,
-            "Type": "bool"
+            "Type": "i64"
         },
         {
             "Param":"age",
@@ -372,6 +411,21 @@ fn create_index(
             "create index {} from database.view {}.{} error, {}",
             index_name, database_name, view_name, err
         ),
+    }
+}
+
+fn insert(database_name: &str, view_name: &str, value: &str, position: usize) {
+    match GLOBAL_MASTER.insert(
+        database_name.to_string(),
+        view_name.to_string(),
+        value.to_string().into_bytes(),
+    ) {
+        Err(ie) => println!(
+            "insert{} error is {:#?}",
+            position,
+            ie.source().unwrap().to_string()
+        ),
+        _ => {}
     }
 }
 

@@ -15,7 +15,6 @@
 use crate::task::engine::traits::TIndex;
 use crate::utils::comm::{hash_key, hash_key_number};
 use crate::utils::enums::KeyType;
-use comm::cryptos::hash::hashcode64_bl_real;
 use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeResult};
 use serde_json::{Error, Value};
 use std::collections::HashMap;
@@ -50,10 +49,12 @@ pub struct Condition {
     compare: Compare,
     /// 索引值类型
     key_type: KeyType,
-    /// 比较对象，支持int、string、float和bool
+    /// 比较对象为string
     value: String,
-    /// 索引key，可通过hash转换string生成，长度为无符号64位整型，是数据存放于索引树中的坐标
-    hash_key: u64,
+    /// 比较对象为int/float，类索引key，可通过hash转换string生成，长度为无符号64位整型，是数据存放于索引树中的坐标
+    value_hash: u64,
+    /// 比较对象为bool
+    value_bool: bool,
     /// 索引
     index: Option<Arc<RwLock<dyn TIndex>>>,
 }
@@ -64,15 +65,17 @@ impl Condition {
         compare: Compare,
         key_type: KeyType,
         value: String,
+        value_bool: bool,
         index: Option<Arc<RwLock<dyn TIndex>>>,
     ) -> GeorgeResult<Condition> {
-        let hash_key = hash_key(key_type, value.clone())?;
+        let value_hash = hash_key(key_type, value.clone())?;
         Ok(Condition {
             param,
             compare,
             key_type,
             value,
-            hash_key,
+            value_hash,
+            value_bool,
             index,
         })
     }
@@ -93,8 +96,12 @@ impl Condition {
         self.value.clone()
     }
     /// 比较对象值
-    fn hash_key(&self) -> u64 {
-        self.hash_key
+    fn value_hash(&self) -> u64 {
+        self.value_hash
+    }
+    /// 比较对象值
+    fn value_bool(&self) -> bool {
+        self.value_bool
     }
     /// 约束是否有效
     ///
@@ -126,7 +133,14 @@ impl Condition {
     fn valid(&self, value: Value) -> bool {
         return match value[self.param()] {
             Value::Bool(ref val) => match self.key_type() {
-                KeyType::Bool => self.compare_value(hashcode64_bl_real(*val)),
+                KeyType::Bool => match self.compare() {
+                    Compare::EQ => self.value_bool().eq(val),
+                    Compare::GT => self.value_bool().gt(val),
+                    Compare::GE => self.value_bool().ge(val),
+                    Compare::LT => self.value_bool().lt(val),
+                    Compare::LE => self.value_bool().le(val),
+                    Compare::NE => self.value_bool().ne(val),
+                },
                 _ => false,
             },
             Value::String(ref val) => match self.key_type() {
@@ -150,12 +164,12 @@ impl Condition {
     /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
     fn compare_value(&self, value_hash: u64) -> bool {
         match self.compare() {
-            Compare::EQ => value_hash == self.hash_key(),
-            Compare::GT => value_hash > self.hash_key(),
-            Compare::GE => value_hash >= self.hash_key(),
-            Compare::LT => value_hash < self.hash_key(),
-            Compare::LE => value_hash <= self.hash_key(),
-            Compare::NE => value_hash != self.hash_key(),
+            Compare::EQ => value_hash == self.value_hash(),
+            Compare::GT => value_hash > self.value_hash(),
+            Compare::GE => value_hash >= self.value_hash(),
+            Compare::LT => value_hash < self.value_hash(),
+            Compare::LE => value_hash <= self.value_hash(),
+            Compare::NE => value_hash != self.value_hash(),
         }
     }
 }
@@ -224,7 +238,7 @@ impl Constraint {
                     constraint.skip = value["Skip"].as_u64().unwrap();
                 }
                 constraint.fit_sort(value["Sort"].clone());
-                constraint.fit_conditions(indexes, value["Conditions"].clone());
+                constraint.fit_conditions(indexes, value["Conditions"].clone())?;
                 Ok(constraint)
             }
             Err(err) => Err(err_strs("new constraint", err)),
@@ -244,6 +258,9 @@ impl Constraint {
     }
     pub fn delete(&self) -> bool {
         self.delete
+    }
+    pub fn sort_clean(&mut self) {
+        self.sort = None
     }
     /// 解析`json value`并获取排序索引
     fn fit_sort(&mut self, value: Value) {
@@ -290,9 +307,10 @@ impl Constraint {
                                 } else if val_cond.eq(&"ne") {
                                     compare = Compare::NE
                                 } else {
-                                    return Err(err_str(
-                                        "fit conditions cond only support gt,ge,lt,le,eq and ne",
-                                    ));
+                                    return Err(err_string(format!(
+                                        "fit conditions cond {} only support gt,ge,lt,le,eq and ne",
+                                        val_cond
+                                    )));
                                 }
                             }
                             _ => return Err(err_str("fit conditions no match cond")),
@@ -342,7 +360,9 @@ impl Constraint {
                 }
                 match v["Value"] {
                     Value::Number(ref val_num) => {
+                        log::debug!("value number, key_type = {:#?}", key_type);
                         match key_type {
+                            KeyType::None => key_type = KeyType::F64,
                             KeyType::String => {
                                 return Err(err_str("fit conditions no match key type"))
                             }
@@ -356,11 +376,13 @@ impl Constraint {
                             compare,
                             key_type,
                             val_num.to_string(),
+                            false,
                             index,
                         )?)
                     }
                     Value::Bool(ref val_bool) => {
                         match key_type {
+                            KeyType::None => key_type = KeyType::None,
                             KeyType::Bool => {}
                             _ => return Err(err_str("fit conditions no match key type")),
                         }
@@ -369,11 +391,13 @@ impl Constraint {
                             compare,
                             key_type,
                             val_bool.to_string(),
+                            val_bool.clone(),
                             index,
                         )?)
                     }
                     Value::String(ref val_str) => {
                         match key_type {
+                            KeyType::None => key_type = KeyType::String,
                             KeyType::String => {}
                             _ => return Err(err_str("fit conditions no match key type")),
                         }
@@ -382,6 +406,7 @@ impl Constraint {
                             compare,
                             key_type,
                             val_str.to_string(),
+                            false,
                             index,
                         )?)
                     }
@@ -410,6 +435,10 @@ pub struct IndexStatus {
     start: u64,
     /// 查询终止值
     end: u64,
+    /// 查询起始值更新
+    start_update: bool,
+    /// 查询终止值更新
+    end_update: bool,
     /// 条件查询集合
     conditions: Vec<Condition>,
     /// 索引评级。asc=1；start=2；end=2。
@@ -417,6 +446,25 @@ pub struct IndexStatus {
 }
 
 impl IndexStatus {
+    fn new(
+        index: Arc<RwLock<dyn TIndex>>,
+        asc: bool,
+        start: u64,
+        end: u64,
+        conditions: Vec<Condition>,
+        level: u8,
+    ) -> IndexStatus {
+        IndexStatus {
+            index,
+            asc,
+            start,
+            end,
+            start_update: false,
+            end_update: false,
+            conditions,
+            level,
+        }
+    }
     fn index(&mut self) -> Arc<RwLock<dyn TIndex>> {
         self.index.clone()
     }
@@ -426,17 +474,31 @@ impl IndexStatus {
     fn fit_start(&mut self, start: u64) {
         if start > self.start {
             self.start = start;
-            self.level = self.level.add(2)
+            self.level = self.level.add(2);
+            self.start_update = true
         }
     }
     fn fit_end(&mut self, end: u64) {
         if 0 == self.end || end < self.end {
             self.end = end;
-            self.level = self.level.add(2)
+            self.level = self.level.add(2);
+            self.end_update = true
         }
     }
     fn append_condition(&mut self, condition: Condition) {
         self.conditions.push(condition)
+    }
+    fn check(&self) -> GeorgeResult<()> {
+        if self.start_update && self.end_update && self.start > self.end {
+            Err(err_string(format!(
+                "condition {} end {} can't start from {}",
+                self.index.read().unwrap().name(),
+                self.end,
+                self.start
+            )))
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -445,7 +507,7 @@ impl IndexStatus {
 pub struct Expectation {
     /// total 检索过程中遍历的总条数（也表示文件读取次数，文件描述符次数远小于该数，一般文件描述符数为1，即共用同一文件描述符）
     pub total: u64,
-    /// 检索结果总条数
+    /// 检索结果过程中遍历的总条数
     pub count: u64,
     ///  使用到的索引名称，如果没用上则为空
     pub index_name: String,
@@ -501,30 +563,25 @@ impl Selector {
     fn exec(&mut self) -> GeorgeResult<Expectation> {
         let status = self.index()?;
         // status自测
-        if status.start != status.end && status.start > status.end {
-            Err(err_string(format!(
-                "condition {} end {} can't start from {}",
-                status.index.read().unwrap().name(),
-                status.end,
-                status.start
-            )))
-        } else {
-            self.constraint.conditions = status.conditions;
-            status.index.clone().read().unwrap().select(
-                status.asc,
-                status.start,
-                status.end,
-                self.constraint.clone(),
-            )
-        }
+        status.check()?;
+        self.constraint.conditions = status.conditions;
+        status.index.clone().read().unwrap().select(
+            status.asc,
+            status.start,
+            status.end,
+            self.constraint.clone(),
+        )
     }
 
     /// 获取最佳索引
     ///
     /// 检索顺序 sort -> conditions -> skip -> limit
-    fn index(&self) -> GeorgeResult<IndexStatus> {
+    fn index(&mut self) -> GeorgeResult<IndexStatus> {
         match self.index_sort() {
-            Some(is) => return Ok(is),
+            Some(is) => {
+                self.constraint.sort_clean();
+                return Ok(is);
+            }
             None => {}
         }
 
@@ -534,14 +591,14 @@ impl Selector {
         }
 
         match self.indexes.read().unwrap().iter().next() {
-            Some(idx) => Ok(IndexStatus {
-                index: idx.1.clone(),
-                asc: true,
-                start: 0,
-                end: 0,
-                conditions: self.constraint.conditions(),
-                level: 0,
-            }),
+            Some(idx) => Ok(IndexStatus::new(
+                idx.1.clone(),
+                true,
+                0,
+                0,
+                self.constraint.conditions(),
+                0,
+            )),
             None => Err(err_str("no index found!")),
         }
     }
@@ -592,27 +649,20 @@ impl Selector {
         idx_name: String,
         idx: &Arc<RwLock<dyn TIndex>>,
     ) -> IndexStatus {
-        let mut status = IndexStatus {
-            index: idx.clone(),
-            asc,
-            start: 0,
-            end: 0,
-            conditions: vec![],
-            level,
-        };
+        let mut status = IndexStatus::new(idx.clone(), asc, 0, 0, vec![], level);
         // 确认排序索引是否存在条件区间
         for condition in self.constraint.conditions().iter() {
             if condition.param() == idx_name {
                 match condition.compare() {
-                    Compare::GT => status.fit_start(condition.hash_key() + 1),
-                    Compare::GE => status.fit_start(condition.hash_key()),
-                    Compare::LT => status.fit_end(condition.hash_key() - 1),
-                    Compare::LE => status.fit_end(condition.hash_key()),
+                    Compare::GT => status.fit_start(condition.value_hash() + 1),
+                    Compare::GE => status.fit_start(condition.value_hash()),
+                    Compare::LT => status.fit_end(condition.value_hash() - 1),
+                    Compare::LE => status.fit_end(condition.value_hash()),
                     Compare::EQ => {
                         if asc {
-                            status.fit_start(condition.hash_key())
+                            status.fit_start(condition.value_hash())
                         } else {
-                            status.fit_end(condition.hash_key())
+                            status.fit_end(condition.value_hash())
                         }
                     }
                     Compare::NE => {}

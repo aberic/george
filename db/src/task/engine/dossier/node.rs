@@ -20,12 +20,14 @@ use comm::errors::entrances::{err_str, GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerHandler, FilerNormal, FilerReader, FilerWriter};
 
 use crate::task::engine::traits::{TNode, TSeed};
-use crate::task::rich::{Constraint, Expectation};
+use crate::task::master::GLOBAL_MASTER;
+use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::utils::comm::is_bytes_fill;
 use crate::utils::enums::IndexType;
 use crate::utils::path::{index_path, node_filepath};
 use comm::errors::children::DataNoExistError;
+use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u48};
 use comm::vectors::{Vector, VectorHandler};
 
 /// 索引B+Tree结点结构
@@ -84,6 +86,12 @@ impl Node {
             node_file_path,
         })))
     }
+    fn database_name(&self) -> String {
+        self.database_name.clone()
+    }
+    fn view_name(&self) -> String {
+        self.view_name.clone()
+    }
     fn node_file_path(&self) -> String {
         self.node_file_path.clone()
     }
@@ -128,12 +136,19 @@ impl TNode for Node {
     }
     fn select(
         &self,
-        _left: bool,
-        _start: u64,
-        _end: u64,
-        _constraint: Constraint,
-    ) -> GeorgeResult<Expectation> {
-        unimplemented!()
+        left: bool,
+        start: u64,
+        end: u64,
+        skip: u64,
+        limit: u64,
+        delete: bool,
+        conditions: Vec<Condition>,
+    ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)> {
+        if left {
+            self.left_query(start, end, conditions, skip, limit, delete)
+        } else {
+            self.left_query(start, end, conditions, skip, limit, delete)
+        }
     }
 }
 
@@ -186,5 +201,70 @@ impl Node {
         let seek = hash_key * 8;
         Filer::write_seek(self.node_file_path(), seek, Vector::create_empty_bytes(8))?;
         Ok(())
+    }
+    /// 通过左查询约束获取数据集
+    ///
+    /// ###Params
+    ///
+    /// node_bytes 当前操作结点的字节数组
+    ///
+    /// conditions 条件集合
+    ///
+    /// skip 结果集跳过数量
+    ///
+    /// limit 结果集限制数量
+    ///
+    /// delete 是否删除检索结果
+    ///
+    /// ###Return
+    ///
+    /// total 检索过程中遍历的总条数（也表示文件读取次数，文件描述符次数远小于该数，一般文件描述符数为1，即共用同一文件描述符）
+    ///
+    /// count 检索结果过程中遍历的总条数
+    ///
+    /// values 检索结果集合
+    fn left_query(
+        &self,
+        start: u64,
+        end: u64,
+        conditions: Vec<Condition>,
+        mut skip: u64,
+        mut limit: u64,
+        delete: bool,
+    ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)> {
+        let mut total: u64 = 0;
+        let mut count: u64 = 0;
+        let mut values: Vec<Vec<u8>> = vec![];
+
+        let mut seek_start = start * 8;
+        let seek_end = end * 8;
+        loop {
+            if limit <= 0 || (seek_end != 0 && seek_start > seek_end) {
+                break;
+            }
+            let res = Filer::read_sub(self.node_file_path(), seek_start, 8)?;
+            total += 1;
+            seek_start += 8;
+            if is_bytes_fill(res.clone()) {
+                let version = trans_bytes_2_u16(Vector::sub(res.clone(), 0, 2)?)?;
+                let seek = trans_bytes_2_u48(Vector::sub(res, 2, 8)?)?;
+                let value_bytes = GLOBAL_MASTER.read_content_by(
+                    self.database_name(),
+                    self.view_name(),
+                    version,
+                    seek,
+                )?;
+                if Condition::validate(conditions.clone(), value_bytes.clone()) {
+                    if skip <= 0 {
+                        limit -= 1;
+                        count += 1;
+                        values.push(value_bytes)
+                    } else {
+                        skip -= 1;
+                    }
+                }
+            }
+        }
+        Ok((total, count, values))
     }
 }
