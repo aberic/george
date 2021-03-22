@@ -228,7 +228,7 @@ fn select_document_sequence_prepare() {
 }
 
 #[test]
-fn select_document_sequence() {
+fn select_document_select_sequence1() {
     let database_name = "database_select_sequence_base_test";
     let view_name = "view_select_base_test";
     let cond_str0 = r#"
@@ -259,6 +259,69 @@ fn select_document_sequence() {
     "Limit":1000
   }"#;
     select(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
+}
+
+#[test]
+fn select_document_select_sequence2() {
+    let database_name = "database_select_sequence_base_test";
+    let view_name = "view_select_base_test";
+    let cond_str0 = r#"
+  {
+    "Conditions":[
+        {
+            "Param":"age",
+            "Cond":"ge",
+            "Value":49900,
+            "Type": "i64"
+        },
+        {
+            "Param":"age",
+            "Cond":"le",
+            "Value":50100
+        }
+    ],
+    "Sort":{
+        "Param":"height",
+        "Asc":false
+    },
+    "Skip":100,
+    "Limit":1000
+  }"#;
+    select(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
+}
+
+#[test]
+fn select_document_delete_sequence1() {
+    let database_name = "database_select_sequence_base_test";
+    let view_name = "view_select_base_test";
+    let cond_str0 = r#"
+  {
+    "Conditions":[
+        {
+            "Param":"george_db_index_sequence",
+            "Cond":"ge",
+            "Value":49900
+        },
+        {
+            "Param":"age",
+            "Cond":"ge",
+            "Value":49900,
+            "Type": "i64"
+        },
+        {
+            "Param":"age",
+            "Cond":"le",
+            "Value":90100
+        }
+    ],
+    "Sort":{
+        "Param":"height",
+        "Asc":true
+    },
+    "Skip":100,
+    "Limit":1000
+  }"#;
+    delete(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
 }
 
 fn database_map() {
@@ -585,6 +648,29 @@ fn select(database_name: &str, view_name: &str, constraint_json_bytes: Vec<u8>, 
         }
         Err(ie) => println!(
             "select{} is {:#?}",
+            position,
+            ie.source().unwrap().to_string()
+        ),
+    }
+}
+
+fn delete(database_name: &str, view_name: &str, constraint_json_bytes: Vec<u8>, position: usize) {
+    match GLOBAL_MASTER.delete(
+        database_name.to_string(),
+        view_name.to_string(),
+        constraint_json_bytes,
+    ) {
+        Ok(e) => {
+            println!(
+                "delete{},total={},count={},index_name={},asc={}",
+                position, e.total, e.count, e.index_name, e.asc
+            );
+            for value in e.values {
+                println!("value={}", String::from_utf8(value).unwrap());
+            }
+        }
+        Err(ie) => println!(
+            "delete{} is {:#?}",
             position,
             ie.source().unwrap().to_string()
         ),

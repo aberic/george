@@ -236,35 +236,121 @@ impl Node {
         let mut count: u64 = 0;
         let mut values: Vec<Vec<u8>> = vec![];
 
-        let mut seek_start = start * 8;
-        let seek_end = end * 8;
+        let mut key_start = start * 8;
+        let mut key_end: u64;
+        if end == 0 {
+            key_end = (self.atomic_key.load(Ordering::Relaxed) - 1) * 8;
+        } else {
+            key_end = end * 8;
+        }
         loop {
-            if limit <= 0 || (seek_end != 0 && seek_start > seek_end) {
+            if limit <= 0 || key_start > key_end {
                 break;
             }
-            let res = Filer::read_sub(self.node_file_path(), seek_start, 8)?;
-            total += 1;
-            seek_start += 8;
-            if is_bytes_fill(res.clone()) {
-                let version = trans_bytes_2_u16(Vector::sub(res.clone(), 0, 2)?)?;
-                let seek = trans_bytes_2_u48(Vector::sub(res, 2, 8)?)?;
-                let value_bytes = GLOBAL_MASTER.read_content_by(
-                    self.database_name(),
-                    self.view_name(),
-                    version,
-                    seek,
-                )?;
-                if Condition::validate(conditions.clone(), value_bytes.clone()) {
-                    if skip <= 0 {
-                        limit -= 1;
-                        count += 1;
-                        values.push(value_bytes)
-                    } else {
-                        skip -= 1;
-                    }
+            let res = Filer::read_sub(self.node_file_path(), key_start, 8)?;
+            let (check, value_bytes) = self.check(key_end, conditions.clone(), delete, res)?;
+            if check {
+                if skip <= 0 {
+                    limit -= 1;
+                    count += 1;
+                    values.push(value_bytes)
+                } else {
+                    skip -= 1;
                 }
             }
+            total += 1;
+            key_start += 8;
         }
         Ok((total, count, values))
+    }
+    /// 通过右查询约束获取数据集
+    ///
+    /// ###Params
+    ///
+    /// node_bytes 当前操作结点的字节数组
+    ///
+    /// conditions 条件集合
+    ///
+    /// skip 结果集跳过数量
+    ///
+    /// limit 结果集限制数量
+    ///
+    /// delete 是否删除检索结果
+    ///
+    /// ###Return
+    ///
+    /// total 检索过程中遍历的总条数（也表示文件读取次数，文件描述符次数远小于该数，一般文件描述符数为1，即共用同一文件描述符）
+    ///
+    /// count 检索结果过程中遍历的总条数
+    ///
+    /// values 检索结果集合
+    fn right_query(
+        &self,
+        start: u64,
+        end: u64,
+        conditions: Vec<Condition>,
+        mut skip: u64,
+        mut limit: u64,
+        delete: bool,
+    ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)> {
+        let mut total: u64 = 0;
+        let mut count: u64 = 0;
+        let mut values: Vec<Vec<u8>> = vec![];
+
+        let mut key_start = start * 8;
+        let mut key_end: u64;
+        if end == 0 {
+            key_end = (self.atomic_key.load(Ordering::Relaxed) - 1) * 8;
+        } else {
+            key_end = end * 8;
+        }
+        loop {
+            if limit <= 0 || key_start > key_end {
+                break;
+            }
+            let res = Filer::read_sub(self.node_file_path(), key_end, 8)?;
+            let (valid, value_bytes) = self.check(key_end, conditions.clone(), delete, res)?;
+            if valid {
+                if skip <= 0 {
+                    limit -= 1;
+                    count += 1;
+                    values.push(value_bytes)
+                } else {
+                    skip -= 1;
+                }
+            }
+            total += 1;
+            key_end -= 8;
+        }
+        Ok((total, count, values))
+    }
+    /// 检查值有效性
+    fn check(
+        &self,
+        key: u64,
+        conditions: Vec<Condition>,
+        delete: bool,
+        res: Vec<u8>,
+    ) -> GeorgeResult<(bool, Vec<u8>)> {
+        if is_bytes_fill(res.clone()) {
+            let version = trans_bytes_2_u16(Vector::sub(res.clone(), 0, 2)?)?;
+            let seek = trans_bytes_2_u48(Vector::sub(res, 2, 8)?)?;
+            let value_bytes = GLOBAL_MASTER.read_content_by(
+                self.database_name(),
+                self.view_name(),
+                version,
+                seek,
+            )?;
+            if Condition::validate(conditions.clone(), value_bytes.clone()) {
+                if delete {
+                    Filer::write_seek(self.node_file_path(), key, Vector::create_empty_bytes(8))?;
+                }
+                Ok((true, value_bytes))
+            } else {
+                Ok((false, vec![]))
+            }
+        } else {
+            Ok((false, vec![]))
+        }
     }
 }
