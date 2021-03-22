@@ -41,7 +41,7 @@ pub(crate) struct Node {
     database_name: String,
     view_name: String,
     index_name: String,
-    node_file_path: String,
+    node_filepath: String,
 }
 
 impl Node {
@@ -55,14 +55,14 @@ impl Node {
     ) -> Arc<RwLock<Self>> {
         let atomic_key = Arc::new(AtomicU64::new(1));
         let index_path = index_path(database_name.clone(), view_name.clone(), index_name.clone());
-        let node_file_path = node_filepath(index_path, String::from("increment"));
-        Filer::try_touch(node_file_path.clone());
+        let node_filepath = node_filepath(index_path, String::from("increment"));
+        Filer::try_touch(node_filepath.clone());
         Arc::new(RwLock::new(Node {
             atomic_key,
             database_name,
             view_name,
             index_name,
-            node_file_path,
+            node_filepath,
         }))
     }
     /// 恢复根结点
@@ -72,8 +72,8 @@ impl Node {
         index_name: String,
     ) -> GeorgeResult<Arc<RwLock<Self>>> {
         let index_path = index_path(database_name.clone(), view_name.clone(), index_name.clone());
-        let node_file_path = node_filepath(index_path, String::from("increment"));
-        let file = Filer::reader_writer(node_file_path.clone())?;
+        let node_filepath = node_filepath(index_path, String::from("increment"));
+        let file = Filer::reader_writer(node_filepath.clone())?;
         let file_len = file.try_clone().unwrap().seek(SeekFrom::End(0)).unwrap();
         let atomic_key_u32 = file_len / 8;
         // log::debug!("atomic_key_u32 = {}", atomic_key_u32);
@@ -83,7 +83,7 @@ impl Node {
             database_name,
             view_name,
             index_name,
-            node_file_path,
+            node_filepath,
         })))
     }
     fn database_name(&self) -> String {
@@ -92,8 +92,8 @@ impl Node {
     fn view_name(&self) -> String {
         self.view_name.clone()
     }
-    fn node_file_path(&self) -> String {
-        self.node_file_path.clone()
+    fn node_filepath(&self) -> String {
+        self.node_filepath.clone()
     }
 }
 
@@ -172,7 +172,7 @@ impl Node {
     {
         let seek = hash_key * 8;
         if !force {
-            let file = Filer::reader(self.node_file_path())?;
+            let file = Filer::reader(self.node_filepath())?;
             let res = Filer::read_subs(file, seek, 8)?;
             if is_bytes_fill(res) {
                 return if custom {
@@ -184,13 +184,13 @@ impl Node {
         }
         seed.write().unwrap().modify(IndexPolicy::bytes(
             IndexType::Dossier,
-            self.node_file_path(),
+            self.node_filepath(),
             seek,
         )?)
     }
     fn get_in_node(&self, hash_key: u64) -> GeorgeResult<Vec<u8>> {
         let seek = hash_key * 8;
-        let res = Filer::read_sub(self.node_file_path(), seek, 8)?;
+        let res = Filer::read_sub(self.node_filepath(), seek, 8)?;
         return if is_bytes_fill(res.clone()) {
             Ok(res)
         } else {
@@ -199,7 +199,7 @@ impl Node {
     }
     fn del_in_node(&self, hash_key: u64) -> GeorgeResult<()> {
         let seek = hash_key * 8;
-        Filer::write_seek(self.node_file_path(), seek, Vector::create_empty_bytes(8))?;
+        Filer::write_seek(self.node_filepath(), seek, Vector::create_empty_bytes(8))?;
         Ok(())
     }
     /// 通过左查询约束获取数据集
@@ -247,7 +247,7 @@ impl Node {
             if limit <= 0 || key_start > key_end {
                 break;
             }
-            let res = Filer::read_sub(self.node_file_path(), key_start, 8)?;
+            let res = Filer::read_sub(self.node_filepath(), key_start, 8)?;
             let (check, value_bytes) = self.check(key_end, conditions.clone(), delete, res)?;
             if check {
                 if skip <= 0 {
@@ -308,7 +308,7 @@ impl Node {
             if limit <= 0 || key_start > key_end {
                 break;
             }
-            let res = Filer::read_sub(self.node_file_path(), key_end, 8)?;
+            let res = Filer::read_sub(self.node_filepath(), key_end, 8)?;
             let (valid, value_bytes) = self.check(key_end, conditions.clone(), delete, res)?;
             if valid {
                 if skip <= 0 {
@@ -343,7 +343,7 @@ impl Node {
             )?;
             if Condition::validate(conditions.clone(), value_bytes.clone()) {
                 if delete {
-                    Filer::write_seek(self.node_file_path(), key, Vector::create_empty_bytes(8))?;
+                    Filer::write_seek(self.node_filepath(), key, Vector::create_empty_bytes(8))?;
                 }
                 Ok((true, value_bytes))
             } else {

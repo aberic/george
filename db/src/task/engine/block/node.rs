@@ -151,7 +151,7 @@ impl Node {
     fn put_in_node(
         &self,
         index_path: String,
-        mut index_file_name: String,
+        mut index_filename: String,
         level: u8,
         flexible_key: u64,
         seed: Arc<RwLock<dyn TSeed>>,
@@ -165,19 +165,19 @@ impl Node {
         let next_degree = flexible_key / distance;
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
-            let index_file_path = node_filepath(index_path, index_file_name);
+            let index_filepath = node_filepath(index_path, index_filename);
             log::debug!(
-                "node_file_path = {}, degree = {}",
-                index_file_path,
+                "node_filepath = {}, degree = {}",
+                index_filepath,
                 next_degree
             );
             seed.write().unwrap().modify(IndexPolicy::bytes(
                 IndexType::Block,
-                index_file_path,
+                index_filepath,
                 next_degree * 8,
             )?)
         } else {
-            index_file_name = index_file_name.add(&Strings::left_fits(
+            index_filename = index_filename.add(&Strings::left_fits(
                 next_degree.to_string(),
                 "0".parse().unwrap(),
                 5,
@@ -186,7 +186,7 @@ impl Node {
             let next_flexible_key = flexible_key - next_degree * distance;
             self.put_in_node(
                 index_path,
-                index_file_name,
+                index_filename,
                 level + 1,
                 next_flexible_key,
                 seed,
@@ -197,7 +197,7 @@ impl Node {
         &self,
         key: String,
         index_path: String,
-        mut index_file_name: String,
+        mut index_filename: String,
         level: u8,
         flexible_key: u64,
     ) -> GeorgeResult<Vec<u8>> {
@@ -207,15 +207,15 @@ impl Node {
         let next_degree = flexible_key / distance;
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
-            let index_file_path = node_filepath(index_path, index_file_name);
+            let index_filepath = node_filepath(index_path, index_filename);
             log::debug!(
-                "node_file_path = {}, degree = {}",
-                index_file_path,
+                "node_filepath = {}, degree = {}",
+                index_filepath,
                 next_degree
             );
-            Filer::read_sub(index_file_path, next_degree, 8)
+            Filer::read_sub(index_filepath, next_degree, 8)
         } else {
-            index_file_name = index_file_name.add(&Strings::left_fits(
+            index_filename = index_filename.add(&Strings::left_fits(
                 next_degree.to_string(),
                 "0".parse().unwrap(),
                 5,
@@ -225,7 +225,7 @@ impl Node {
             self.get_in_node(
                 key,
                 index_path,
-                index_file_name,
+                index_filename,
                 level + 1,
                 next_flexible_key,
             )

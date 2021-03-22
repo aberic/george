@@ -36,6 +36,9 @@ pub(crate) struct Node {
     database_name: String,
     view_name: String,
     index_name: String,
+    index_path: String,
+    /// 是否唯一索引
+    unique: bool,
     /// 存储结点所属各子结点坐标顺序字符串
     ///
     /// 子项是64位node集合，在node集合中每一个node的默认字节长度是8，数量是524288，即一次性读取524288个字节
@@ -50,11 +53,15 @@ impl Node {
         database_name: String,
         view_name: String,
         index_name: String,
+        unique: bool,
     ) -> Arc<RwLock<Self>> {
+        let index_path = index_path(database_name.clone(), view_name.clone(), index_name.clone());
         return Arc::new(RwLock::new(Node {
             database_name,
             view_name,
             index_name,
+            index_path,
+            unique,
             node_bytes: Arc::new(RwLock::new(Vector::create_empty_bytes(524288))),
         }));
     }
@@ -63,12 +70,16 @@ impl Node {
         database_name: String,
         view_name: String,
         index_name: String,
+        unique: bool,
         v8s: Vec<u8>,
     ) -> Arc<RwLock<Self>> {
+        let index_path = index_path(database_name.clone(), view_name.clone(), index_name.clone());
         return Arc::new(RwLock::new(Node {
             database_name,
             view_name,
             index_name,
+            index_path,
+            unique,
             node_bytes: Arc::new(RwLock::new(v8s)),
         }));
     }
@@ -82,7 +93,7 @@ impl Node {
         self.index_name.clone()
     }
     fn index_path(&self) -> String {
-        index_path(self.database_name(), self.view_name(), self.index_name())
+        self.index_path.clone()
     }
 }
 
@@ -95,8 +106,9 @@ impl TNode for Node {
         self.node_bytes.clone()
     }
     fn modify(&mut self, database_name: String, view_name: String) {
-        self.database_name = database_name;
-        self.view_name = view_name;
+        self.database_name = database_name.clone();
+        self.view_name = view_name.clone();
+        self.index_path = index_path(database_name, view_name, self.index_name());
     }
     /// 插入数据<p><p>
     ///
@@ -148,7 +160,7 @@ impl Node {
     /// node_seek 当前操作结点在文件中的真实起始位置
     fn put_in_node(
         &self,
-        mut index_file_name: String,
+        mut index_filename: String,
         level: u8,
         flexible_key: u64,
         seed: Arc<RwLock<dyn TSeed>>,
@@ -163,32 +175,33 @@ impl Node {
         let next_degree = flexible_key / distance;
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
-            let node_file_path = node_filepath(self.index_path(), index_file_name);
+            let node_filepath = node_filepath(self.index_path(), index_filename);
             log::debug!(
-                "node_file_path = {}, degree = {}",
-                node_file_path,
+                "node_filepath = {}, degree = {}",
+                node_filepath,
                 next_degree
             );
-            seed.write().unwrap().modify(IndexPolicy::bytes(
-                IndexType::Library,
-                node_file_path,
-                next_degree * 8,
-            )?)
+            // seed.write().unwrap().modify(IndexPolicy::bytes(
+            //     IndexType::Library,
+            //     node_filepath,
+            //     next_degree * 8,
+            // )?)
+            Ok(())
         } else {
-            index_file_name = index_file_name.add(&Strings::left_fits(
+            index_filename = index_filename.add(&Strings::left_fits(
                 next_degree.to_string(),
                 "0".parse().unwrap(),
                 5,
             ));
             // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
             let next_flexible_key = flexible_key - next_degree * distance;
-            self.put_in_node(index_file_name, level + 1, next_flexible_key, seed, force)
+            self.put_in_node(index_filename, level + 1, next_flexible_key, seed, force)
         }
     }
     fn get_in_node(
         &self,
         key: String,
-        mut index_file_name: String,
+        mut index_filename: String,
         level: u8,
         flexible_key: u64,
     ) -> GeorgeResult<Vec<u8>> {
@@ -198,22 +211,22 @@ impl Node {
         let next_degree = flexible_key / distance;
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
-            let index_file_path = node_filepath(self.index_path(), index_file_name);
+            let index_filepath = node_filepath(self.index_path(), index_filename);
             log::debug!(
-                "node_file_path = {}, degree = {}",
-                index_file_path,
+                "node_filepath = {}, degree = {}",
+                index_filepath,
                 next_degree
             );
-            Filer::read_sub(index_file_path, next_degree, 8)
+            Filer::read_sub(index_filepath, next_degree, 8)
         } else {
-            index_file_name = index_file_name.add(&Strings::left_fits(
+            index_filename = index_filename.add(&Strings::left_fits(
                 next_degree.to_string(),
                 "0".parse().unwrap(),
                 5,
             ));
             // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
             let next_flexible_key = flexible_key - next_degree * distance;
-            self.get_in_node(key, index_file_name, level + 1, next_flexible_key)
+            self.get_in_node(key, index_filename, level + 1, next_flexible_key)
         }
     }
 }

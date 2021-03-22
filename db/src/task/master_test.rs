@@ -324,6 +324,19 @@ fn select_document_delete_sequence1() {
     delete(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
 }
 
+#[test]
+fn library_index_test() {
+    create_index(
+        "database_library_index_test",
+        "view_index_test",
+        "age",
+        IndexType::Library,
+        KeyType::U32,
+        true,
+    );
+    database_map();
+}
+
 fn database_map() {
     for (database_name, db) in GLOBAL_MASTER
         .database_map()

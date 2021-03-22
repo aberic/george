@@ -128,8 +128,12 @@ impl Index {
                     NodeDossier::create_root(database_name.clone(), view_name.clone(), name.clone())
             }
             IndexType::Library => {
-                root =
-                    NodeLibrary::create_root(database_name.clone(), view_name.clone(), name.clone())
+                root = NodeLibrary::create_root(
+                    database_name.clone(),
+                    view_name.clone(),
+                    name.clone(),
+                    unique,
+                )
             }
             IndexType::Block => {
                 root =
@@ -427,6 +431,7 @@ impl Index {
                             database_name.clone(),
                             view_name.clone(),
                             name.clone(),
+                            unique,
                             part2,
                         )
                     }
