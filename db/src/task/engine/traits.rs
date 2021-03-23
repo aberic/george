@@ -15,7 +15,6 @@
 use std::sync::{Arc, RwLock};
 
 use chrono::Duration;
-use serde::export::fmt::Debug;
 
 use comm::errors::entrances::GeorgeResult;
 
@@ -23,6 +22,7 @@ use crate::task::rich::{Condition, Constraint, Expectation};
 use crate::task::view::View;
 use crate::utils::enums::KeyType;
 use crate::utils::store::Metadata;
+use serde::__private::fmt::Debug;
 
 /// 索引通用特性，遵循此特性创建索引可以更方便的针对icdb进行扩展
 ///

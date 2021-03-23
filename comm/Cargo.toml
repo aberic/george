@@ -12,16 +12,16 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-openssl = "0.10.30"
-openssl-sys = "0.9.58"
+openssl = "0.10.33"
+openssl-sys = "0.9.61"
 phf = { version = "0.8.0", features = ["macros"] }
 phf_macros = "0.8.0"
-serde = "1.0.117"
-serde_json = "1.0.59"
-serde_yaml = "0.8.14"
+serde = "1.0.125"
+serde_yaml = "0.8.17"
+serde_json = "1.0.64"
 lazy_static = "1.4.0"
-crc32fast = "1.2.0"
+crc32fast = "1.2.1"
 crc64fast = "1.0.0"
-hex = "0.4.2"
+hex = "0.4.3"
 rust-crypto = "0.2.36"
 libsm = { git = "https://github.com/citahub/libsm", version = "0.3.0" }

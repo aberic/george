@@ -14,16 +14,31 @@
 
 #[cfg(test)]
 mod log_test {
-    use crate::set_log;
+    use crate::{set_log, LogModule};
+    use log::LevelFilter;
 
     #[test]
     fn logs_macro() {
+        let module = LogModule {
+            name: String::from("log"),
+            pkg: "".to_string(),
+            level: LevelFilter::Trace,
+            additive: true,
+            dir: String::from("src/test"),
+            file_max_size: 1024,
+            file_max_count: 7,
+        };
         set_log(
-            String::from("log"),
-            String::from("src/test"),
-            1024,
-            7,
-            String::from("trace"),
+            module,
+            vec![LogModule {
+                name: "mod1".to_string(),
+                pkg: "logs::examples::log_test::log_test_mod".to_string(),
+                level: LevelFilter::Trace,
+                additive: true,
+                dir: String::from("src/test"),
+                file_max_size: 1024,
+                file_max_count: 7,
+            }],
         );
         trace!("Hello, macros!");
         debug!("Hello, macros!");

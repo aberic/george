@@ -20,16 +20,50 @@ use log4rs::append::rolling_file::policy::compound::roll::fixed_window::FixedWin
 use log4rs::append::rolling_file::policy::compound::trigger::size::SizeTrigger;
 use log4rs::append::rolling_file::policy::compound::CompoundPolicy;
 use log4rs::append::rolling_file::RollingFileAppender;
-use log4rs::config::{Appender, Config, Root};
+use log4rs::config::{Appender, Config, Logger, Root};
 use log4rs::encode::json::JsonEncoder;
 use log4rs::encode::pattern::PatternEncoder;
 use log4rs::Handle;
 use once_cell::sync::Lazy;
+use std::collections::HashMap;
+use std::fs;
 
 mod examples;
 #[macro_use]
 pub mod macros;
 mod macros_test;
+
+pub struct LogModule {
+    /// 输出日志模块名称
+    pub name: String,
+    /// 输出日志所在包，如："app::requests"
+    pub pkg: String,
+    /// 输出日志级别
+    pub level: LevelFilter,
+    /// 是否在主日志文件中同步记录
+    pub additive: bool,
+    /// log_dir 日志文件目录
+    pub dir: String,
+    /// log_file_max_size 每个日志文件保存的最大尺寸 单位：M
+    pub file_max_size: u64,
+    /// file_max_count 文件最多保存多少个
+    pub file_max_count: u32,
+}
+
+impl LogModule {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+    fn pkg(&self) -> String {
+        self.pkg.clone()
+    }
+    fn level(&self) -> LevelFilter {
+        self.level.clone()
+    }
+    fn dir(&self) -> String {
+        self.dir.clone()
+    }
+}
 
 pub struct LogHandle {
     handle: Handle,
@@ -38,22 +72,20 @@ pub struct LogHandle {
 }
 
 pub static GLOBAL_LOG: Lazy<RwLock<LogHandle>> = Lazy::new(|| {
-    let service_name = "log".to_string();
-    let dir = "src/test".to_string();
-    let level = "debug".to_string();
-    let file_max_size = 1024;
-    let file_max_count = 7;
+    let module = LogModule {
+        name: "log".to_string(),
+        pkg: "".to_string(),
+        level: LevelFilter::Off,
+        additive: false,
+        dir: "./wonder_log_test_rm/logs".to_string(),
+        file_max_size: 0,
+        file_max_count: 0,
+    };
     let handle = LogHandle {
-        handle: log4rs::init_config(log_config(
-            service_name,
-            dir,
-            file_max_size,
-            file_max_count,
-            level,
-        ))
-        .unwrap(),
+        handle: log4rs::init_config(log_config(module)).unwrap(),
         production: false,
     };
+    fs::remove_dir_all("./wonder_log_test_rm");
     RwLock::new(handle)
 });
 
@@ -68,21 +100,13 @@ pub static GLOBAL_LOG: Lazy<RwLock<LogHandle>> = Lazy::new(|| {
 /// file_max_count 文件最多保存多少个
 ///
 /// log_level 日志级别(debug/info/warn/Error/panic/fatal)
-pub fn set_log(
-    service_name: String,
-    dir: String,
-    file_max_size: u64,
-    file_max_count: u32,
-    level: String,
-) {
+pub fn set_log(module: LogModule, modules: Vec<LogModule>) {
     // log4rs::init_file("src/log4rs.yaml", Default::default()).unwrap();
-    GLOBAL_LOG.write().unwrap().handle.set_config(log_config(
-        service_name,
-        dir,
-        file_max_size,
-        file_max_count,
-        level,
-    ))
+    GLOBAL_LOG
+        .write()
+        .unwrap()
+        .handle
+        .set_config(log_configs(module, modules))
 }
 
 /// 初始化日志
@@ -96,51 +120,109 @@ pub fn set_log(
 /// file_max_count 文件最多保存多少个
 ///
 /// log_level 日志级别(debug/info/warn/Error/panic/fatal)
-fn log_config(
-    service_name: String,
-    dir: String,
-    file_max_size: u64,
-    file_max_count: u32,
-    level: String,
-) -> Config {
+fn log_config(module: LogModule) -> Config {
+    log_configs(module, vec![])
+}
+
+/// 初始化日志
+///
+/// service_name 日志所服务的服务名称
+///
+/// log_dir 日志文件目录
+///
+/// log_file_max_size 每个日志文件保存的最大尺寸 单位：M
+///
+/// file_max_count 文件最多保存多少个
+///
+/// log_level 日志级别(debug/info/warn/Error/panic/fatal)
+fn log_configs(module: LogModule, modules: Vec<LogModule>) -> Config {
+    let stdout_name = "stdout";
     let stdout = ConsoleAppender::builder()
         .encoder(Box::new(PatternEncoder::new(
             "{d(%+)(local)} {l} {t} {m}{n}",
         )))
         .build();
 
-    let files = RollingFileAppender::builder()
+    let server = rolling_appender(
+        module.dir(),
+        module.name(),
+        module.file_max_size,
+        module.file_max_count,
+    );
+
+    let config = Config::builder()
+        .appender(Appender::builder().build(stdout_name, Box::new(stdout)))
+        .appender(Appender::builder().build(module.name(), Box::new(server)));
+    let root = Root::builder()
+        .appender(stdout_name)
+        .appender(module.name());
+    let mut appenders: Vec<Appender> = vec![];
+    let mut loggers: Vec<Logger> = vec![];
+
+    for mdl in modules {
+        let dir: String;
+        let file_max_size: u64;
+        let file_max_count: u32;
+        if mdl.dir().is_empty() {
+            dir = module.dir();
+        } else {
+            dir = mdl.dir();
+        }
+        if mdl.file_max_size <= 0 {
+            file_max_size = module.file_max_size;
+        } else {
+            file_max_size = mdl.file_max_size;
+        }
+        if mdl.file_max_count <= 0 {
+            file_max_count = module.file_max_count;
+        } else {
+            file_max_count = mdl.file_max_count;
+        }
+        let rolling_module = rolling_appender(dir, mdl.name(), file_max_size, file_max_count);
+        appenders.push(Appender::builder().build(mdl.name(), Box::new(rolling_module)));
+        loggers.push(
+            Logger::builder()
+                .appender(mdl.name())
+                .additive(mdl.additive)
+                .build(mdl.pkg(), mdl.level()),
+        );
+        root.clone().appender(mdl.name());
+    }
+    return config
+        .appenders(appenders)
+        .loggers(loggers)
+        .build(root.build(module.level()))
+        .unwrap();
+}
+
+fn rolling_appender(
+    dir: String,
+    module_name: String,
+    file_max_size: u64,
+    file_max_count: u32,
+) -> RollingFileAppender {
+    RollingFileAppender::builder()
         .append(true)
         .encoder(Box::new(JsonEncoder::default()))
         .build(
-            format!("{}/{}{}", dir.clone(), service_name, ".log"),
+            format!("{}/{}{}", dir.clone(), module_name, ".log"),
             Box::new(CompoundPolicy::new(
                 Box::new(SizeTrigger::new(file_max_size * 1024 * 1024)),
                 Box::new(
                     FixedWindowRoller::builder()
+                        .base(1)
                         .build(
-                            &*format!("{}{}", service_name, "-log-{}.log"),
+                            &*format!("{}/{}{}", dir, module_name, "-log-{}.log"),
                             file_max_count,
                         )
                         .unwrap(),
                 ),
             )),
         )
-        .unwrap();
-
-    return Config::builder()
-        .appender(Appender::builder().build("stdout", Box::new(stdout)))
-        .appender(Appender::builder().build("files", Box::new(files)))
-        .build(
-            Root::builder()
-                .appender("stdout")
-                .appender("files")
-                .build(log_level(level)),
-        )
-        .unwrap();
+        .unwrap()
 }
 
-fn log_level(level: String) -> LevelFilter {
+pub fn log_level(level: String) -> LevelFilter {
     match level.to_lowercase().as_str() {
         "trace" => LevelFilter::Trace,
         "debug" => LevelFilter::Debug,

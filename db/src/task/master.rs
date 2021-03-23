@@ -17,7 +17,7 @@ use crate::task::rich::Expectation;
 use crate::utils::comm::{
     DEFAULT_COMMENT, DEFAULT_DATABASE, DEFAULT_VIEW, GEORGE_DB_CONFIG, INDEX_CATALOG, INDEX_MEMORY,
 };
-use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
+use crate::utils::deploy::{init_config, Config, GLOBAL_CONFIG};
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::{bootstrap_filepath, data_path, database_filepath};
 use crate::utils::store::recovery_before_content;
@@ -27,7 +27,8 @@ use comm::errors::children::{DatabaseExistError, DatabaseNoExistError};
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
 use comm::io::dir::{Dir, DirHandler};
 use comm::io::file::{Filer, FilerHandler, FilerWriter};
-use logs::set_log;
+use log::LevelFilter;
+use logs::{log_level, set_log, LogModule};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::fs::{read_dir, read_to_string, ReadDir};
@@ -62,7 +63,7 @@ impl Master {
             .write()
             .unwrap()
             .insert(database_name.clone(), db.clone());
-        log::info!("create database {} success!", database_name.clone());
+        log::debug!("create database {} success!", database_name);
         Ok(())
     }
     /// 修改数据库
@@ -107,7 +108,7 @@ impl Master {
         match self.database_map().read().unwrap().get(&database_name) {
             Some(database_lock) => {
                 let database = database_lock.read().unwrap();
-                database.create_view(view_name.clone(), mem)?;
+                database.create_view(view_name, mem)?;
             }
             None => return Err(GeorgeError::from(DatabaseNoExistError)),
         }
@@ -457,7 +458,7 @@ impl Master {
 
     /// 初始化
     fn init(&self) {
-        log::debug!("bootstrap init!");
+        log::info!("bootstrap init!");
         // 创建系统库，用户表(含权限等信息)、库历史记录表(含变更、归档等信息) todo
         match Filer::write(bootstrap_filepath(), vec![0x01]) {
             Err(err) => panic!("init failed! error is {}", err),
@@ -481,7 +482,7 @@ impl Master {
 
     /// 恢复sky数据
     fn recovery(&self) {
-        log::debug!("bootstrap recovery!");
+        log::info!("bootstrap recovery!");
         // 读取data目录下所有文件
         match read_dir(data_path()) {
             Ok(paths) => {
@@ -543,10 +544,9 @@ impl Master {
 pub(super) static GLOBAL_MASTER: Lazy<Arc<Master>> = Lazy::new(|| {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
-    init_log();
-    log::info!("log init success!");
     init_config(config_path());
-    log::info!("config init success!");
+    init_log();
+    log::info!("config & log init success!");
     let master = Master {
         databases: Default::default(),
         create_time,
@@ -579,12 +579,29 @@ fn config_path() -> String {
 }
 
 fn init_log() {
+    let module_main = log_module_main();
+    let module_record = LogModule {
+        name: "exec".to_string(),
+        pkg: "db::task::master".to_string(),
+        level: LevelFilter::Info,
+        additive: true,
+        dir: format!("{}/{}", module_main.dir, "records"),
+        file_max_size: module_main.file_max_size,
+        file_max_count: module_main.file_max_count,
+    };
+    set_log(module_main, vec![module_record]);
+}
+
+fn log_module_main() -> LogModule {
     let config = GLOBAL_CONFIG.read().unwrap();
-    set_log(
-        String::from("db"),
-        config.log_dir(),
-        config.log_file_max_size(),
-        config.log_file_max_count(),
-        config.log_level(),
-    );
+    println!("config = {:#?}", config);
+    LogModule {
+        name: String::from("db"),
+        pkg: "".to_string(),
+        level: log_level(config.log_level()),
+        additive: true,
+        dir: config.log_dir(),
+        file_max_size: config.log_file_max_size(),
+        file_max_count: config.log_file_max_count(),
+    }
 }
