@@ -17,12 +17,15 @@ use std::sync::{Arc, RwLock};
 use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
-use crate::utils::comm::level_distance_64;
+use crate::utils::comm::{is_bytes_fill, level_distance_64};
 use crate::utils::enums::IndexType;
-use crate::utils::path::{index_path, node_filepath};
-use comm::errors::entrances::GeorgeResult;
-use comm::io::file::{Filer, FilerReader};
+use crate::utils::path::{index_path, linked_filepath, node_filepath};
+use crate::utils::writer::Filed;
+use comm::errors::children::DataExistError;
+use comm::errors::entrances::{GeorgeError, GeorgeResult};
+use comm::io::file::{Filer, FilerExecutor, FilerHandler, FilerNormal, FilerReader, FilerWriter};
 use comm::strings::{StringHandler, Strings};
+use comm::trans::{trans_bytes_2_u32_as_u64, trans_u32_2_bytes};
 use comm::vectors::{Vector, VectorHandler};
 use std::ops::Add;
 
@@ -31,18 +34,25 @@ use std::ops::Add;
 /// 包含了索引的根结点、子结点以及叶子结点
 ///
 /// 叶子结点中才会存在Link，其余结点Link为None
+///
+/// library会创建分散的索引文件，每个索引文件可以存储65536条数据，每条数据长度为4，每个索引文件为256Kb
+///
+/// record文件最大为2^(4*8)=4GB
+///
+/// record存储固定长度的数据，长度为12，即view视图真实数据8+链式后续数据4，总计可存3.57913941亿条数据
 #[derive(Debug, Clone)]
 pub(crate) struct Node {
     database_name: String,
     view_name: String,
     index_name: String,
     index_path: String,
+    linked_filepath: String,
     /// 是否唯一索引
     unique: bool,
-    /// 存储结点所属各子结点坐标顺序字符串
+    /// 根据文件路径获取该文件追加写入的写对象
     ///
-    /// 子项是64位node集合，在node集合中每一个node的默认字节长度是8，数量是524288，即一次性读取524288个字节
-    node_bytes: Arc<RwLock<Vec<u8>>>,
+    /// 需要借助对象包裹，以便更新file，避免self为mut
+    record_filer: Arc<RwLock<Filed>>,
 }
 
 impl Node {
@@ -54,16 +64,20 @@ impl Node {
         view_name: String,
         index_name: String,
         unique: bool,
-    ) -> Arc<RwLock<Self>> {
+    ) -> GeorgeResult<Arc<RwLock<Self>>> {
         let index_path = index_path(database_name.clone(), view_name.clone(), index_name.clone());
-        return Arc::new(RwLock::new(Node {
+        let linked_filepath = linked_filepath(index_path.clone());
+        Filer::write_force(linked_filepath.clone(), vec![0x86, 0x87]);
+        let record_filer = Filed::recovery(linked_filepath.clone())?;
+        Ok(Arc::new(RwLock::new(Node {
             database_name,
             view_name,
             index_name,
             index_path,
+            linked_filepath,
             unique,
-            node_bytes: Arc::new(RwLock::new(Vector::create_empty_bytes(524288))),
-        }));
+            record_filer,
+        })))
     }
     /// 恢复根结点
     pub fn recovery_root(
@@ -71,17 +85,19 @@ impl Node {
         view_name: String,
         index_name: String,
         unique: bool,
-        v8s: Vec<u8>,
-    ) -> Arc<RwLock<Self>> {
+    ) -> GeorgeResult<Arc<RwLock<Self>>> {
         let index_path = index_path(database_name.clone(), view_name.clone(), index_name.clone());
-        return Arc::new(RwLock::new(Node {
+        let linked_filepath = linked_filepath(index_path.clone());
+        let record_filer = Filed::recovery(linked_filepath.clone())?;
+        Ok(Arc::new(RwLock::new(Node {
             database_name,
             view_name,
             index_name,
             index_path,
+            linked_filepath,
             unique,
-            node_bytes: Arc::new(RwLock::new(v8s)),
-        }));
+            record_filer,
+        })))
     }
     fn database_name(&self) -> String {
         self.database_name.clone()
@@ -95,20 +111,29 @@ impl Node {
     fn index_path(&self) -> String {
         self.index_path.clone()
     }
+    fn linked_filepath(&self) -> String {
+        self.linked_filepath.clone()
+    }
+    /// 根据文件路径获取该文件追加写入的写对象
+    ///
+    /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
+    ///
+    /// #Return
+    ///
+    /// seek_end_before 写之前文件字节数据长度
+    fn linked_append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
+        self.record_filer.write().unwrap().append(content)
+    }
 }
 
 /// 封装方法函数
 impl TNode for Node {
-    /// 存储结点所属各子结点坐标顺序字符串
-    ///
-    /// 如果子项是node集合，在node集合中每一个node的默认字节长度是8，数量是65536，即一次性读取524288个字节
-    fn node_bytes(&self) -> Arc<RwLock<Vec<u8>>> {
-        self.node_bytes.clone()
-    }
     fn modify(&mut self, database_name: String, view_name: String) {
         self.database_name = database_name.clone();
         self.view_name = view_name.clone();
-        self.index_path = index_path(database_name, view_name, self.index_name());
+        let index_path = index_path(database_name, view_name, self.index_name());
+        self.index_path = index_path.clone();
+        self.linked_filepath = linked_filepath(index_path);
     }
     /// 插入数据<p><p>
     ///
@@ -181,11 +206,69 @@ impl Node {
                 node_filepath,
                 next_degree
             );
-            // seed.write().unwrap().modify(IndexPolicy::bytes(
-            //     IndexType::Library,
-            //     node_filepath,
-            //     next_degree * 8,
-            // )?)
+            // 在linked中的偏移量
+            let linked_seek = self.linked_seek(node_filepath, next_degree)?;
+            log::debug!("linked_seek = {}", linked_seek);
+            let seek: u64;
+            // 如果是唯一索引，则可能需要判断是否存在已有值
+            if self.unique {
+                // 如果唯一且强制覆盖
+                if force {
+                    seek = linked_seek;
+                } else {
+                    // 否则需要进一步判断
+                    let linked_file = Filer::reader(self.linked_filepath())?;
+                    // 判断索引是否为空
+                    let res = Filer::read_subs(linked_file.try_clone().unwrap(), linked_seek, 8)?;
+                    // 如果不为空
+                    if is_bytes_fill(res) {
+                        return Err(GeorgeError::from(DataExistError));
+                    } else {
+                        // 如果为空
+                        seek = linked_seek;
+                    }
+                }
+            } else {
+                // 如果非唯一索引，则需要读取链式结构
+                let linked_file = Filer::reader_writer(self.linked_filepath())?;
+                let mut linked_loop_seek = linked_seek;
+                loop {
+                    // 判断索引是否为空
+                    let res =
+                        Filer::read_subs(linked_file.try_clone().unwrap(), linked_loop_seek, 8)?;
+                    // 如果不为空
+                    if is_bytes_fill(res) {
+                        // 先查询链式结构是否有后续内容
+                        let seek_next_bytes = Filer::read_subs(
+                            linked_file.try_clone().unwrap(),
+                            linked_loop_seek + 8,
+                            4,
+                        )?;
+                        // 如果有，则尝试读取后续内容
+                        if is_bytes_fill(seek_next_bytes.clone()) {
+                            linked_loop_seek = trans_bytes_2_u32_as_u64(seek_next_bytes)?;
+                        } else {
+                            // 如果没有，则新建后续结构
+                            seek = self.linked_append(Vector::create_empty_bytes(12))?;
+                            Filer::write_seeks(
+                                linked_file.try_clone().unwrap(),
+                                linked_loop_seek + 8,
+                                trans_u32_2_bytes(seek as u32),
+                            )?;
+                            break;
+                        }
+                    } else {
+                        // 如果为空，使用当前空位补全
+                        seek = linked_seek;
+                        break;
+                    }
+                }
+            }
+            seed.write().unwrap().modify(IndexPolicy::bytes(
+                IndexType::Library,
+                self.linked_filepath(),
+                seek,
+            )?)?;
             Ok(())
         } else {
             index_filename = index_filename.add(&Strings::left_fits(
@@ -227,6 +310,24 @@ impl Node {
             // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
             let next_flexible_key = flexible_key - next_degree * distance;
             self.get_in_node(key, index_filename, level + 1, next_flexible_key)
+        }
+    }
+    /// 在record中的偏移量
+    fn linked_seek(&self, node_filepath: String, next_degree: u64) -> GeorgeResult<u64> {
+        match Filer::read_sub(node_filepath.clone(), next_degree * 4, 4) {
+            Ok(seek_bytes) => {
+                // 判断从索引中读取在record中的偏移量字节数组是否为空
+                // 如果为空，则新插入占位字节，并以占位字节为起始变更偏移量
+                if is_bytes_fill(seek_bytes.clone()) {
+                    trans_bytes_2_u32_as_u64(seek_bytes)
+                } else {
+                    self.linked_append(Vector::create_empty_bytes(12))
+                }
+            }
+            _ => {
+                Filer::try_touch(node_filepath)?;
+                self.linked_append(Vector::create_empty_bytes(12))
+            }
         }
     }
 }

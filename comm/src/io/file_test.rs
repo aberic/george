@@ -14,6 +14,7 @@
 
 #[cfg(test)]
 mod file {
+    use crate::errors::entrances::GeorgeError;
     use crate::io::file::{Filer, FilerHandler, FilerReader, FilerWriter};
     use std::fs;
     use std::io::{Read, Write};
@@ -105,6 +106,18 @@ mod file {
     }
 
     #[test]
+    fn writer_test() {
+        match Filer::write("src/test/file/x.txt", vec![0x0b, 0x0c, 0x0d, 0x0e]) {
+            Ok(s) => println!("write success with s = {}", s),
+            Err(err) => println!("file write err = {}", err),
+        }
+        match Filer::write_force("src/test/file/y.txt", vec![0x0b, 0x0c, 0x0d, 0x0e]) {
+            Ok(s) => println!("write success with s = {}", s),
+            Err(err) => println!("file write err = {}", err),
+        }
+    }
+
+    #[test]
     fn writer_append_test() {
         Filer::touch("src/test/file/g.txt").unwrap();
         match Filer::append(
@@ -156,6 +169,12 @@ mod file {
         let x2 = Filer::read_sub("src/test/file/seek.txt", 160000000, 8).unwrap();
         println!("x2 is empty = {}", is_bytes_fill(x2.clone()));
         println!("x2 = {}", String::from_utf8(x2).unwrap());
+
+        Filer::try_touch("src/test/file/read_sub.txt");
+        match Filer::read_sub("src/test/file/read_sub.txt", 150000000, 7) {
+            Ok(x3) => println!("x3 = {}", String::from_utf8(x3).unwrap()),
+            Err(err) => println!("read_sub err = {}", err.to_string()),
+        }
     }
 
     /// 检查字节数组是否已有数据，即不为空且每一个字节都不是0x00

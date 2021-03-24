@@ -19,6 +19,7 @@ use std::sync::{Arc, RwLock};
 use comm::errors::entrances::{err_str, GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerHandler, FilerNormal, FilerReader, FilerWriter};
 
+use crate::task::engine::check;
 use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::master::GLOBAL_MASTER;
 use crate::task::rich::Condition;
@@ -99,9 +100,6 @@ impl Node {
 
 /// 封装方法函数
 impl TNode for Node {
-    fn node_bytes(&self) -> Arc<RwLock<Vec<u8>>> {
-        Arc::new(RwLock::new(vec![]))
-    }
     fn modify(&mut self, database_name: String, view_name: String) {
         self.database_name = database_name;
         self.view_name = view_name;
@@ -248,8 +246,16 @@ impl Node {
                 break;
             }
             let res = Filer::read_sub(self.node_filepath(), key_start, 8)?;
-            let (check, value_bytes) = self.check(key_end, conditions.clone(), delete, res)?;
-            if check {
+            let (valid, value_bytes) = check(
+                self.database_name(),
+                self.view_name(),
+                self.node_filepath(),
+                key_end,
+                conditions.clone(),
+                delete,
+                res,
+            )?;
+            if valid {
                 if skip <= 0 {
                     limit -= 1;
                     count += 1;
@@ -309,7 +315,15 @@ impl Node {
                 break;
             }
             let res = Filer::read_sub(self.node_filepath(), key_end, 8)?;
-            let (valid, value_bytes) = self.check(key_end, conditions.clone(), delete, res)?;
+            let (valid, value_bytes) = check(
+                self.database_name(),
+                self.view_name(),
+                self.node_filepath(),
+                key_end,
+                conditions.clone(),
+                delete,
+                res,
+            )?;
             if valid {
                 if skip <= 0 {
                     limit -= 1;
@@ -323,34 +337,5 @@ impl Node {
             key_end -= 8;
         }
         Ok((total, count, values))
-    }
-    /// 检查值有效性
-    fn check(
-        &self,
-        key: u64,
-        conditions: Vec<Condition>,
-        delete: bool,
-        res: Vec<u8>,
-    ) -> GeorgeResult<(bool, Vec<u8>)> {
-        if is_bytes_fill(res.clone()) {
-            let version = trans_bytes_2_u16(Vector::sub(res.clone(), 0, 2)?)?;
-            let seek = trans_bytes_2_u48(Vector::sub(res, 2, 8)?)?;
-            let value_bytes = GLOBAL_MASTER.read_content_by(
-                self.database_name(),
-                self.view_name(),
-                version,
-                seek,
-            )?;
-            if Condition::validate(conditions.clone(), value_bytes.clone()) {
-                if delete {
-                    Filer::write_seek(self.node_filepath(), key, Vector::create_empty_bytes(8))?;
-                }
-                Ok((true, value_bytes))
-            } else {
-                Ok((false, vec![]))
-            }
-        } else {
-            Ok((false, vec![]))
-        }
     }
 }

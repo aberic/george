@@ -117,9 +117,6 @@ impl Node {
 
 /// 封装方法函数
 impl TNode for Node {
-    fn node_bytes(&self) -> Arc<RwLock<Vec<u8>>> {
-        Arc::new(RwLock::new(vec![]))
-    }
     fn modify(&mut self, _database_name: String, _view_name: String) {}
     fn put(
         &self,

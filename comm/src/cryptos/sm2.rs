@@ -58,11 +58,11 @@ pub fn generate_in_file(
     pk_filepath: String,
 ) -> GeorgeResult<(Vec<u8>, Vec<u8>)> {
     let (sk_bytes, pk_bytes) = generate();
-    match Filer::write(sk_filepath, hex::encode(sk_bytes.clone()).into_bytes()) {
+    match Filer::write_force(sk_filepath, hex::encode(sk_bytes.clone()).into_bytes()) {
         Err(err) => return Err(err_strs("sk write_bytes", err)),
         _ => {}
     }
-    match Filer::write(pk_filepath, hex::encode(pk_bytes.clone()).into_bytes()) {
+    match Filer::write_force(pk_filepath, hex::encode(pk_bytes.clone()).into_bytes()) {
         Err(err) => return Err(err_strs("pk write_bytes", err)),
         _ => {}
     }
@@ -78,11 +78,11 @@ pub fn generate_hex_in_file(
     pk_filepath: String,
 ) -> GeorgeResult<(String, String)> {
     let (sk_str, pk_str) = generate_hex();
-    match Filer::write(sk_filepath, sk_str.clone().into_bytes()) {
+    match Filer::write_force(sk_filepath, sk_str.clone().into_bytes()) {
         Err(err) => return Err(err_strs("sk write_bytes", err)),
         _ => {}
     }
-    match Filer::write(pk_filepath, pk_str.clone().into_bytes()) {
+    match Filer::write_force(pk_filepath, pk_str.clone().into_bytes()) {
         Err(err) => return Err(err_strs("pk write_bytes", err)),
         _ => {}
     }

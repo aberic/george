@@ -57,7 +57,7 @@ pub fn generate_sk(bits: u32) -> GeorgeResult<Vec<u8>> {
 pub fn generate_sk_in_file(bits: u32, filepath: String) -> GeorgeResult<Vec<u8>> {
     match generate_sk(bits) {
         Ok(u8s) => {
-            Filer::write(filepath, u8s.clone())?;
+            Filer::write_force(filepath, u8s.clone())?;
             Ok(u8s)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
@@ -119,7 +119,7 @@ pub fn generate_pk_from_sk_file(filepath: String) -> GeorgeResult<Vec<u8>> {
 pub fn generate_pk_in_file_from_sk(sk: PKey<Private>, filepath: String) -> GeorgeResult<Vec<u8>> {
     match generate_pk_from_sk(sk) {
         Ok(u8s) => {
-            Filer::write(filepath, u8s.clone())?;
+            Filer::write_force(filepath, u8s.clone())?;
             Ok(u8s)
         }
         Err(err) => Err(err_strs("generate_pk_from_sk", err)),
@@ -132,7 +132,7 @@ pub fn generate_pk_in_file_from_sk(sk: PKey<Private>, filepath: String) -> Georg
 pub fn generate_pk_in_file_from_sk_bytes(sk: Vec<u8>, filepath: String) -> GeorgeResult<Vec<u8>> {
     match generate_pk_from_sk_bytes(sk) {
         Ok(u8s) => {
-            Filer::write(filepath, u8s.clone())?;
+            Filer::write_force(filepath, u8s.clone())?;
             Ok(u8s)
         }
         Err(err) => Err(err_strs("generate_pk_from_sk_bytes", err)),
@@ -148,7 +148,7 @@ pub fn generate_pk_in_file_from_sk_file(
 ) -> GeorgeResult<Vec<u8>> {
     match generate_pk_from_sk_file(sk_filepath) {
         Ok(u8s) => {
-            Filer::write(pk_filepath, u8s.clone())?;
+            Filer::write_force(pk_filepath, u8s.clone())?;
             Ok(u8s)
         }
         Err(err) => Err(err_strs("generate_pk_from_sk_file", err)),

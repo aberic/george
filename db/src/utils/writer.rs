@@ -33,10 +33,10 @@ impl Filed {
     }
     pub fn recovery(filepath: String) -> GeorgeResult<Arc<RwLock<Filed>>> {
         let file_append = obtain_write_append_file(filepath.clone())?;
-        return Ok(Arc::new(RwLock::new(Filed {
+        Ok(Arc::new(RwLock::new(Filed {
             filepath,
             file_append,
-        })));
+        })))
     }
     pub fn append(&mut self, content: Vec<u8>) -> GeorgeResult<u64> {
         let file_append = self.file_append.clone();

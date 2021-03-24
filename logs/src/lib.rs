@@ -25,7 +25,6 @@ use log4rs::encode::json::JsonEncoder;
 use log4rs::encode::pattern::PatternEncoder;
 use log4rs::Handle;
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
 use std::fs;
 
 mod examples;
@@ -88,6 +87,23 @@ pub static GLOBAL_LOG: Lazy<RwLock<LogHandle>> = Lazy::new(|| {
     fs::remove_dir_all("./wonder_log_test_rm");
     RwLock::new(handle)
 });
+
+pub fn set_log_test() {
+    let module = LogModule {
+        name: "test".to_string(),
+        pkg: "".to_string(),
+        level: LevelFilter::Debug,
+        additive: true,
+        dir: "./test/logs".to_string(),
+        file_max_size: 1024,
+        file_max_count: 7,
+    };
+    GLOBAL_LOG
+        .write()
+        .unwrap()
+        .handle
+        .set_config(log_configs(module, vec![]))
+}
 
 /// 初始化日志
 ///

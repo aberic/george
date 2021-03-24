@@ -23,7 +23,6 @@ use crate::utils::path::{index_path, node_filepath};
 use comm::errors::entrances::GeorgeResult;
 use comm::io::file::{Filer, FilerReader};
 use comm::strings::{StringHandler, Strings};
-use comm::vectors::{Vector, VectorHandler};
 use std::ops::Add;
 
 /// 索引B+Tree结点结构
@@ -36,10 +35,6 @@ pub(crate) struct Node {
     database_name: String,
     view_name: String,
     index_name: String,
-    /// 存储结点所属各子结点坐标顺序字符串
-    ///
-    /// 子项是64位node集合，在node集合中每一个node的默认字节长度是8，数量是524288，即一次性读取524288个字节
-    node_bytes: Arc<RwLock<Vec<u8>>>,
 }
 
 impl Node {
@@ -55,7 +50,6 @@ impl Node {
             database_name,
             view_name,
             index_name,
-            node_bytes: Arc::new(RwLock::new(Vector::create_empty_bytes(524288))),
         }));
     }
     /// 恢复根结点
@@ -63,13 +57,11 @@ impl Node {
         database_name: String,
         view_name: String,
         index_name: String,
-        v8s: Vec<u8>,
     ) -> Arc<RwLock<Self>> {
         return Arc::new(RwLock::new(Node {
             database_name,
             view_name,
             index_name,
-            node_bytes: Arc::new(RwLock::new(v8s)),
         }));
     }
     fn database_name(&self) -> String {
@@ -88,12 +80,6 @@ impl Node {
 
 /// 封装方法函数
 impl TNode for Node {
-    /// 存储结点所属各子结点坐标顺序字符串
-    ///
-    /// 如果子项是node集合，在node集合中每一个node的默认字节长度是8，数量是65536，即一次性读取524288个字节
-    fn node_bytes(&self) -> Arc<RwLock<Vec<u8>>> {
-        self.node_bytes.clone()
-    }
     fn modify(&mut self, database_name: String, view_name: String) {
         self.database_name = database_name;
         self.view_name = view_name;

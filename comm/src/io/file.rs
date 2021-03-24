@@ -51,6 +51,7 @@ pub trait FilerExecutor<T>: Sized {
 
 pub trait FilerWriter<M, N>: Sized {
     fn write(filepath: M, content: N) -> GeorgeResult<usize>;
+    fn write_force(filepath: M, content: N) -> GeorgeResult<usize>;
     fn append(filepath: M, content: N) -> GeorgeResult<()>;
     fn write_seek(filepath: M, seek: u64, content: N) -> GeorgeResult<()>;
 }
@@ -171,6 +172,9 @@ impl FilerWriter<String, &[u8]> for Filer {
     fn write(filepath: String, content: &[u8]) -> GeorgeResult<usize> {
         file_write(filepath, content)
     }
+    fn write_force(filepath: String, content: &[u8]) -> GeorgeResult<usize> {
+        file_write_force(filepath, content)
+    }
     fn append(filepath: String, content: &[u8]) -> GeorgeResult<()> {
         file_append(filepath, content)
     }
@@ -182,6 +186,9 @@ impl FilerWriter<String, &[u8]> for Filer {
 impl FilerWriter<String, Vec<u8>> for Filer {
     fn write(filepath: String, content: Vec<u8>) -> GeorgeResult<usize> {
         file_write(filepath, content.as_slice())
+    }
+    fn write_force(filepath: String, content: Vec<u8>) -> GeorgeResult<usize> {
+        file_write_force(filepath, content.as_slice())
     }
     fn append(filepath: String, content: Vec<u8>) -> GeorgeResult<()> {
         file_append(filepath, content.as_slice())
@@ -195,6 +202,9 @@ impl FilerWriter<String, String> for Filer {
     fn write(filepath: String, content: String) -> GeorgeResult<usize> {
         file_write(filepath, content.as_bytes())
     }
+    fn write_force(filepath: String, content: String) -> GeorgeResult<usize> {
+        file_write_force(filepath, content.as_bytes())
+    }
     fn append(filepath: String, content: String) -> GeorgeResult<()> {
         file_append(filepath, content.as_bytes())
     }
@@ -206,6 +216,9 @@ impl FilerWriter<String, String> for Filer {
 impl FilerWriter<String, &str> for Filer {
     fn write(filepath: String, content: &str) -> GeorgeResult<usize> {
         file_write(filepath, content.as_bytes())
+    }
+    fn write_force(filepath: String, content: &str) -> GeorgeResult<usize> {
+        file_write_force(filepath, content.as_bytes())
     }
     fn append(filepath: String, content: &str) -> GeorgeResult<()> {
         file_append(filepath, content.as_bytes())
@@ -219,6 +232,9 @@ impl FilerWriter<&str, &[u8]> for Filer {
     fn write(filepath: &str, content: &[u8]) -> GeorgeResult<usize> {
         file_write(filepath.to_string(), content)
     }
+    fn write_force(filepath: &str, content: &[u8]) -> GeorgeResult<usize> {
+        file_write_force(filepath.to_string(), content)
+    }
     fn append(filepath: &str, content: &[u8]) -> GeorgeResult<()> {
         file_append(filepath.to_string(), content)
     }
@@ -230,6 +246,9 @@ impl FilerWriter<&str, &[u8]> for Filer {
 impl FilerWriter<&str, Vec<u8>> for Filer {
     fn write(filepath: &str, content: Vec<u8>) -> GeorgeResult<usize> {
         file_write(filepath.to_string(), content.as_slice())
+    }
+    fn write_force(filepath: &str, content: Vec<u8>) -> GeorgeResult<usize> {
+        file_write_force(filepath.to_string(), content.as_slice())
     }
     fn append(filepath: &str, content: Vec<u8>) -> GeorgeResult<()> {
         file_append(filepath.to_string(), content.as_slice())
@@ -243,6 +262,9 @@ impl FilerWriter<&str, String> for Filer {
     fn write(filepath: &str, content: String) -> GeorgeResult<usize> {
         file_write(filepath.to_string(), content.as_bytes())
     }
+    fn write_force(filepath: &str, content: String) -> GeorgeResult<usize> {
+        file_write_force(filepath.to_string(), content.as_bytes())
+    }
     fn append(filepath: &str, content: String) -> GeorgeResult<()> {
         file_append(filepath.to_string(), content.as_bytes())
     }
@@ -254,6 +276,9 @@ impl FilerWriter<&str, String> for Filer {
 impl FilerWriter<&str, &str> for Filer {
     fn write(filepath: &str, content: &str) -> GeorgeResult<usize> {
         file_write(filepath.to_string(), content.as_bytes())
+    }
+    fn write_force(filepath: &str, content: &str) -> GeorgeResult<usize> {
+        file_write_force(filepath.to_string(), content.as_bytes())
     }
     fn append(filepath: &str, content: &str) -> GeorgeResult<()> {
         file_append(filepath.to_string(), content.as_bytes())
@@ -423,9 +448,6 @@ fn file_move(file_from_path: String, file_to_path: String) -> GeorgeResult<()> {
 ///
 /// 返回写入的字节长度
 pub fn file_write(filepath: String, content: &[u8]) -> GeorgeResult<usize> {
-    if !file_exist(filepath.clone())? {
-        file_touch(filepath.clone())?;
-    }
     match OpenOptions::new().write(true).open(filepath) {
         Ok(mut file) => match file.write(content) {
             Ok(size) => Ok(size),
@@ -433,6 +455,16 @@ pub fn file_write(filepath: String, content: &[u8]) -> GeorgeResult<usize> {
         },
         Err(err) => Err(err_strs("file open when write", err)),
     }
+}
+
+/// 在指定文件中写入数据
+///
+/// 返回写入的字节长度
+pub fn file_write_force(filepath: String, content: &[u8]) -> GeorgeResult<usize> {
+    if !file_exist(filepath.clone())? {
+        file_touch(filepath.clone())?;
+    }
+    file_write(filepath, content)
 }
 
 /// 在指定文件中追加数据

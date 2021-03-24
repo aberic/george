@@ -105,10 +105,6 @@ pub fn key_fetch(index_name: String, value: Vec<u8>) -> GeorgeResult<String> {
                 "key structure {} do not support array!",
                 index_name
             ))),
-            Value::Bool(..) => Err(err_string(format!(
-                "key structure {} do not support bool!",
-                index_name
-            ))),
             _ => Ok(format!("{}", v[index_name])),
         },
         Err(err) => Err(err_string(err.to_string())),

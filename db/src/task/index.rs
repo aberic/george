@@ -21,8 +21,6 @@ use chrono::{Duration, Local, NaiveDateTime};
 use comm::errors::entrances::{err_str, err_string, GeorgeResult};
 use comm::io::file::{Filer, FilerExecutor, FilerHandler};
 use comm::strings::{StringHandler, Strings};
-use comm::trans::{trans_bytes_2_u32, trans_u32_2_bytes};
-use comm::vectors::{Vector, VectorHandler};
 
 use crate::task::engine::block::node::Node as NodeBlock;
 use crate::task::engine::dossier::node::Node as NodeDossier;
@@ -133,7 +131,7 @@ impl Index {
                     view_name.clone(),
                     name.clone(),
                     unique,
-                )
+                )?
             }
             IndexType::Block => {
                 root =
@@ -365,7 +363,7 @@ impl TIndex for Index {
 impl Index {
     /// 生成文件描述
     fn description(&self) -> Vec<u8> {
-        let mut part1 = hex::encode(format!(
+        hex::encode(format!(
             "{}:#?{}:#?{}:#?{}:#?{}",
             self.name,
             self.primary,
@@ -373,20 +371,7 @@ impl Index {
             Enum::key_type_u8(self.key_type),
             self.create_time().num_nanoseconds().unwrap().to_string(),
         ))
-        .into_bytes();
-        // 长度为524288的字节数组
-        let mut part2 = self
-            .root
-            .read()
-            .unwrap()
-            .node_bytes()
-            .read()
-            .unwrap()
-            .to_vec();
-        let mut des_bytes = trans_u32_2_bytes(part2.len() as u32);
-        des_bytes.append(&mut part1);
-        des_bytes.append(&mut part2);
-        des_bytes
+        .into_bytes()
     }
     /// 通过文件描述恢复结构信息
     pub(crate) fn recover(
@@ -395,13 +380,7 @@ impl Index {
         hd: HD,
     ) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
         let des_bytes = hd.description();
-        let des_bytes_len = des_bytes.len();
-        let part2_len_bytes = vec![des_bytes[0], des_bytes[1], des_bytes[2], des_bytes[3]];
-        let part2_bytes_len = trans_bytes_2_u32(part2_len_bytes)? as usize;
-        let middle_pos = des_bytes_len - part2_bytes_len;
-        let part1 = Vector::sub(des_bytes.clone(), 4, middle_pos)?;
-        let part2 = Vector::sub(des_bytes, middle_pos, des_bytes_len)?;
-        let description_str = Strings::from_utf8(part1)?;
+        let description_str = Strings::from_utf8(des_bytes)?;
         match hex::decode(description_str) {
             Ok(vu8) => {
                 let real = Strings::from_utf8(vu8)?;
@@ -432,15 +411,13 @@ impl Index {
                             view_name.clone(),
                             name.clone(),
                             unique,
-                            part2,
-                        )
+                        )?
                     }
                     IndexType::Block => {
                         root = NodeBlock::recovery_root(
                             database_name.clone(),
                             view_name.clone(),
                             name.clone(),
-                            part2,
                         )
                     }
                     IndexType::Memory => root = NodeMemory::recovery_root(),

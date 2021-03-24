@@ -51,3 +51,5 @@ $RECYCLE.BIN/
 /logs/src/test/
 /db/src/test/
 /comm/db/
+/db/test/
+/db/db/

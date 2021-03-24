@@ -32,6 +32,7 @@ use comm::vectors::{Vector, VectorHandler};
 
 use crate::task::engine::memory::seed::Seed as SeedMemory;
 use crate::task::engine::traits::{TIndex, TSeed};
+use crate::task::engine::DataReal;
 use crate::task::index::Index as IndexDefault;
 use crate::task::rich::{Expectation, Selector};
 use crate::task::seed::{IndexData, Seed as SeedDefault};
@@ -546,7 +547,7 @@ impl View {
     /// seek 读取偏移量
     pub(crate) fn read_content_by(&self, version: u16, seek: u64) -> GeorgeResult<Vec<u8>> {
         let filepath = self.filepath_by_version(version)?;
-        self.read_content(filepath, seek)
+        DataReal::value_bytes(self.read_content(filepath, seek)?)
     }
     /// 插入数据业务方法<p><p>
     ///
@@ -562,7 +563,8 @@ impl View {
     ///
     /// IndexResult<()>
     fn save(&self, key: String, value: Vec<u8>, force: bool, remove: bool) -> GeorgeResult<()> {
-        let seed = Arc::new(RwLock::new(SeedDefault::create(key.clone(), value.clone())));
+        let drb = DataReal::bytes(key.clone(), value.clone())?;
+        let seed = Arc::new(RwLock::new(SeedDefault::create(key.clone(), drb)));
         let mut receives = Vec::new();
         for (index_name, index) in self.index_map().read().unwrap().iter() {
             let (sender, receive) = mpsc::channel();

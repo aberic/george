@@ -50,7 +50,7 @@ mod rsa {
                     }
                     match key.private_key_to_pem_pkcs8() {
                         Ok(u8s) => {
-                            Filer::write(pri_filepath.clone(), u8s.clone()).unwrap();
+                            Filer::write_force(pri_filepath.clone(), u8s.clone()).unwrap();
                             println!("pri = {}", String::from_utf8(u8s.clone()).unwrap());
                             match generate_pk_in_file_from_sk_bytes(
                                 u8s,

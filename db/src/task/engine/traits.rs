@@ -96,13 +96,6 @@ pub(crate) trait TIndex: Send + Sync + Debug {
 ///
 /// 该特性包含了结点的基本方法，理论上都需要进行实现才能使用
 pub(crate) trait TNode: Send + Sync + Debug {
-    /// 存储结点所属各子结点坐标顺序字符串
-    ///
-    /// 如果子项是node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
-    ///
-    /// 如果子项是seed集合，在seed集合中每一个seed的默认字符长度是6，当前叶子node会存储叶子中首个出现hash碰撞的
-    /// seed起始坐标，每一个seed都会存储出现hash碰撞的下一seed起始坐标
-    fn node_bytes(&self) -> Arc<RwLock<Vec<u8>>>;
     fn modify(&mut self, database_name: String, view_name: String);
     /// 插入数据<p><p>
     ///

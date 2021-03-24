@@ -17,7 +17,7 @@ use crate::task::rich::Expectation;
 use crate::utils::comm::{
     DEFAULT_COMMENT, DEFAULT_DATABASE, DEFAULT_VIEW, GEORGE_DB_CONFIG, INDEX_CATALOG, INDEX_MEMORY,
 };
-use crate::utils::deploy::{init_config, Config, GLOBAL_CONFIG};
+use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::{bootstrap_filepath, data_path, database_filepath};
 use crate::utils::store::recovery_before_content;
@@ -460,7 +460,7 @@ impl Master {
     fn init(&self) {
         log::info!("bootstrap init!");
         // 创建系统库，用户表(含权限等信息)、库历史记录表(含变更、归档等信息) todo
-        match Filer::write(bootstrap_filepath(), vec![0x01]) {
+        match Filer::write_force(bootstrap_filepath(), vec![0x01]) {
             Err(err) => panic!("init failed! error is {}", err),
             _ => self.init_default(),
         }
