@@ -109,6 +109,7 @@ fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View
         //     INDEX_CATALOG.to_string(),
         //     IndexType::Library,
         //     KeyType::String,
+        //     false,
         //     true,
         // )?;
         view.create_index_in(
@@ -564,7 +565,7 @@ impl View {
     /// IndexResult<()>
     fn save(&self, key: String, value: Vec<u8>, force: bool, remove: bool) -> GeorgeResult<()> {
         let drb = DataReal::bytes(key.clone(), value.clone())?;
-        let seed = Arc::new(RwLock::new(SeedDefault::create(key.clone(), drb)));
+        let seed = SeedDefault::create(key.clone(), drb, remove);
         let mut receives = Vec::new();
         for (index_name, index) in self.index_map().read().unwrap().iter() {
             let (sender, receive) = mpsc::channel();
@@ -577,7 +578,13 @@ impl View {
             thread::spawn(move || {
                 let index_read = index_clone.read().unwrap();
                 match index_name_clone.as_str() {
-                    INDEX_CATALOG => sender.send(index_read.put(key_clone, seed_clone, force)),
+                    INDEX_CATALOG => {
+                        if remove {
+                            sender.send(index_read.del(key_clone.clone()))
+                        } else {
+                            sender.send(index_read.put(key_clone.clone(), seed_clone, force))
+                        }
+                    }
                     INDEX_SEQUENCE => {
                         if remove {
                             sender.send(index_read.del(key_clone.clone()))

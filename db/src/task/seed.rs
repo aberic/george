@@ -28,6 +28,7 @@ use crate::task::view::View;
 use crate::utils::comm::is_bytes_fill;
 use crate::utils::enums::IndexType;
 use comm::strings::{StringHandler, Strings};
+use std::sync::{Arc, RwLock};
 
 /// B+Tree索引叶子结点内防hash碰撞数组结构中单体结构
 ///
@@ -38,7 +39,10 @@ use comm::strings::{StringHandler, Strings};
 pub(crate) struct Seed {
     /// 获取当前结果原始key信息，用于内存版索引
     key: String,
+    /// 真实存储值，参考 `DataReal`
     value: Vec<u8>,
+    /// 是否删除
+    delete: bool,
     /// 除主键索引外的其它索引操作策略集合
     policies: Vec<IndexPolicy>,
 }
@@ -174,12 +178,13 @@ impl IndexPolicy {
 /// 封装方法函数
 impl Seed {
     /// 新建seed
-    pub fn create(key: String, value: Vec<u8>) -> Seed {
-        return Seed {
+    pub fn create(key: String, value: Vec<u8>, delete: bool) -> Arc<RwLock<Seed>> {
+        Arc::new(RwLock::new(Seed {
             key,
             value,
+            delete,
             policies: Vec::new(),
-        };
+        }))
     }
     /// 获取当前结果原始key信息
     fn key(&self) -> String {

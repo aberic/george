@@ -15,13 +15,14 @@
 use std::sync::{Arc, RwLock};
 
 use crate::task::engine::traits::{TNode, TSeed};
+use crate::task::engine::{read_from_view, DataReal};
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::utils::comm::{is_bytes_fill, level_distance_64};
 use crate::utils::enums::IndexType;
 use crate::utils::path::{index_path, linked_filepath, node_filepath};
 use crate::utils::writer::Filed;
-use comm::errors::children::DataExistError;
+use comm::errors::children::{DataExistError, DataNoExistError};
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerExecutor, FilerHandler, FilerNormal, FilerReader, FilerWriter};
 use comm::strings::{StringHandler, Strings};
@@ -294,13 +295,45 @@ impl Node {
         let next_degree = flexible_key / distance;
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
-            let index_filepath = node_filepath(self.index_path(), index_filename);
+            let node_filepath = node_filepath(self.index_path(), index_filename);
             log::debug!(
                 "node_filepath = {}, degree = {}",
-                index_filepath,
+                node_filepath,
                 next_degree
             );
-            Filer::read_sub(index_filepath, next_degree, 8)
+            let linked_seek = self.linked_seek(node_filepath, next_degree)?;
+            log::debug!("linked_seek = {}", linked_seek);
+            let linked_file = Filer::reader(self.linked_filepath())?;
+            let mut linked_loop_seek = linked_seek;
+            loop {
+                // 判断索引是否为空
+                let res = Filer::read_subs(linked_file.try_clone().unwrap(), linked_loop_seek, 8)?;
+                // 如果不为空
+                if is_bytes_fill(res.clone()) {
+                    // 读取当前view视图中内容
+                    let dr = DataReal::froms(self.database_name(), self.view_name(), res)?;
+                    // 如果与查询key匹配，则直接返回
+                    if dr.key.eq(&key) {
+                        return Ok(dr.value);
+                    }
+                    // 如果不匹配，继续查询链式结构是否有后续内容
+                    let seek_next_bytes = Filer::read_subs(
+                        linked_file.try_clone().unwrap(),
+                        linked_loop_seek + 8,
+                        4,
+                    )?;
+                    // 如果有，则尝试读取后续内容
+                    if is_bytes_fill(seek_next_bytes.clone()) {
+                        linked_loop_seek = trans_bytes_2_u32_as_u64(seek_next_bytes)?;
+                    } else {
+                        // 如果没有，则返回无此数据
+                        return Err(GeorgeError::from(DataNoExistError));
+                    }
+                } else {
+                    // 如果为空，则返回无此数据
+                    return Err(GeorgeError::from(DataNoExistError));
+                }
+            }
         } else {
             index_filename = index_filename.add(&Strings::left_fits(
                 next_degree.to_string(),

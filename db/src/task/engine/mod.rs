@@ -27,6 +27,12 @@ pub(super) mod library;
 pub(super) mod memory;
 pub mod traits;
 
+fn read_from_view(database_name: String, view_name: String, res: Vec<u8>) -> GeorgeResult<Vec<u8>> {
+    let version = trans_bytes_2_u16(Vector::sub(res.clone(), 0, 2)?)?;
+    let seek = trans_bytes_2_u48(Vector::sub(res, 2, 8)?)?;
+    GLOBAL_MASTER.read_content_by(database_name, view_name, version, seek)
+}
+
 /// 检查值有效性
 fn check(
     database_name: String,
@@ -38,9 +44,7 @@ fn check(
     res: Vec<u8>,
 ) -> GeorgeResult<(bool, Vec<u8>)> {
     if is_bytes_fill(res.clone()) {
-        let version = trans_bytes_2_u16(Vector::sub(res.clone(), 0, 2)?)?;
-        let seek = trans_bytes_2_u48(Vector::sub(res, 2, 8)?)?;
-        let value_bytes = GLOBAL_MASTER.read_content_by(database_name, view_name, version, seek)?;
+        let value_bytes = read_from_view(database_name, view_name, res)?;
         if Condition::validate(conditions.clone(), value_bytes.clone()) {
             if delete {
                 Filer::write_seek(node_filepath, key, Vector::create_empty_bytes(8))?;
@@ -70,6 +74,27 @@ impl DataReal {
     }
     pub(crate) fn value_bytes(real_bytes: Vec<u8>) -> GeorgeResult<Vec<u8>> {
         Ok(DataReal::from(real_bytes)?.value)
+    }
+    pub(crate) fn value_bytes_from(
+        database_name: String,
+        view_name: String,
+        res: Vec<u8>,
+    ) -> GeorgeResult<Vec<u8>> {
+        Ok(DataReal::from(read_from_view(database_name, view_name, res)?)?.value)
+    }
+    pub(crate) fn key_from(
+        database_name: String,
+        view_name: String,
+        res: Vec<u8>,
+    ) -> GeorgeResult<String> {
+        Ok(DataReal::from(read_from_view(database_name, view_name, res)?)?.key)
+    }
+    pub(crate) fn froms(
+        database_name: String,
+        view_name: String,
+        res: Vec<u8>,
+    ) -> GeorgeResult<DataReal> {
+        DataReal::from(read_from_view(database_name, view_name, res)?)
     }
     fn from(real_bytes: Vec<u8>) -> GeorgeResult<DataReal> {
         match serde_json::from_slice(real_bytes.as_slice()) {

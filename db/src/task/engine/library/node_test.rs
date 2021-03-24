@@ -39,10 +39,10 @@ fn node() -> Arc<RwLock<Node>> {
 #[test]
 fn put_in_node_test() {
     set_log_test();
-    let seed = Seed::create("".to_string(), vec![]);
+    let seed = Seed::create("".to_string(), vec![], false);
     let node = node();
     let node_w = node.write().unwrap();
-    match node_w.put(65536, Arc::new(RwLock::new(seed)), false) {
+    match node_w.put(65536, seed, false) {
         Err(err) => println!("put err = {}", err.to_string()),
         _ => {}
     }
