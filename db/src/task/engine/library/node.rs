@@ -60,11 +60,7 @@ impl Node {
     /// 新建根结点
     ///
     /// 该结点没有Links，也没有preNode，是B+Tree的创世结点
-    pub fn create_root(
-        view: View,
-        index_name: String,
-        unique: bool,
-    ) -> GeorgeResult<Arc<RwLock<Self>>> {
+    pub fn create(view: View, index_name: String, unique: bool) -> GeorgeResult<Arc<RwLock<Self>>> {
         let index_path = index_path(view.database_name(), view.name(), index_name.clone());
         let linked_filepath = linked_filepath(index_path.clone());
         Filer::write_force(linked_filepath.clone(), vec![0x86, 0x87]);
@@ -79,7 +75,7 @@ impl Node {
         })))
     }
     /// 恢复根结点
-    pub fn recovery_root(
+    pub fn recovery(
         view: View,
         index_name: String,
         unique: bool,

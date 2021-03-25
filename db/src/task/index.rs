@@ -22,10 +22,10 @@ use comm::errors::entrances::{err_str, err_string, GeorgeResult};
 use comm::io::file::{Filer, FilerExecutor, FilerHandler};
 use comm::strings::{StringHandler, Strings};
 
-use crate::task::engine::block::node::Node as NodeBlock;
-use crate::task::engine::dossier::node::Node as NodeDossier;
-use crate::task::engine::library::node::Node as NodeLibrary;
-use crate::task::engine::memory::node::Node as NodeMemory;
+use crate::task::engine::block::node::Node as NB;
+use crate::task::engine::dossier::node::Node as ND;
+use crate::task::engine::library::node::Node as NL;
+use crate::task::engine::memory::node::Node as NM;
 use crate::task::engine::traits::{TIndex, TNode, TSeed};
 use crate::task::rich::{Constraint, Expectation};
 use crate::task::view::View;
@@ -42,10 +42,6 @@ use serde_json::Value;
 #[derive(Debug)]
 pub(crate) struct Index {
     view: View,
-    /// 数据库名称
-    database_name: String,
-    /// 视图名称
-    view_name: String,
     /// 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
     name: String,
     /// 是否主键，主键也是唯一索引，即默认列表依赖索引
@@ -81,8 +77,6 @@ pub(crate) struct Index {
 /// metadata 文件信息
 fn new_index(
     view: View,
-    database_name: String,
-    view_name: String,
     name: String,
     primary: bool,
     unique: bool,
@@ -93,11 +87,10 @@ fn new_index(
 ) -> GeorgeResult<Index> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
-    let filepath = index_filepath(database_name.clone(), view_name.clone(), name.clone());
+    let filepath = index_filepath(view.database_name(), view.name(), name.clone());
     let file_append = obtain_write_append_file(filepath)?;
     let index = Index {
         view,
-        database_name,
         primary,
         name,
         root,
@@ -105,7 +98,6 @@ fn new_index(
         create_time,
         file_append,
         key_type,
-        view_name,
         unique,
         null,
     };
@@ -115,8 +107,6 @@ fn new_index(
 impl Index {
     pub(crate) fn create(
         view: View,
-        database_name: String,
-        view_name: String,
         name: String,
         index_type: IndexType,
         primary: bool,
@@ -125,27 +115,20 @@ impl Index {
         key_type: KeyType,
     ) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
         Filer::touch(index_filepath(
-            database_name.clone(),
-            view_name.clone(),
+            view.database_name(),
+            view.name(),
             name.clone(),
         ))?;
         let root: Arc<RwLock<dyn TNode>>;
         match index_type {
-            IndexType::Dossier => root = NodeDossier::create_root(view.clone(), name.clone())?,
-            IndexType::Library => {
-                root = NodeLibrary::create_root(view.clone(), name.clone(), unique)?
-            }
-            IndexType::Block => {
-                root =
-                    NodeBlock::create_root(database_name.clone(), view_name.clone(), name.clone())
-            }
-            IndexType::Memory => root = NodeMemory::create_root(),
+            IndexType::Dossier => root = ND::create(view.clone(), name.clone())?,
+            IndexType::Library => root = NL::create(view.clone(), name.clone(), unique)?,
+            IndexType::Block => root = NB::create(name.clone()),
+            IndexType::Memory => root = NM::create(),
             _ => return Err(err_str("unsupported engine type with none")),
         }
         let mut index = new_index(
             view,
-            database_name.clone(),
-            view_name.clone(),
             name,
             primary,
             unique,
@@ -160,7 +143,7 @@ impl Index {
         let mut before_description = before_content_bytes(40, description.len() as u32);
         metadata_bytes.append(&mut before_description);
         metadata_bytes.append(&mut description);
-        index.file_append(database_name, view_name, metadata_bytes)?;
+        index.file_append(metadata_bytes)?;
         Ok(Arc::new(RwLock::new(index)))
     }
     /// 根据文件路径获取该文件追加写入的写对象
@@ -170,12 +153,7 @@ impl Index {
     /// #Return
     ///
     /// seek_end_before 写之前文件字节数据长度
-    fn file_append(
-        &mut self,
-        database_name: String,
-        view_name: String,
-        content: Vec<u8>,
-    ) -> GeorgeResult<u64> {
+    fn file_append(&mut self, content: Vec<u8>) -> GeorgeResult<u64> {
         let file_append = self.file_append.clone();
         let mut file_write = file_append.write().unwrap();
         match file_write.seek(SeekFrom::End(0)) {
@@ -183,7 +161,8 @@ impl Index {
                 match Filer::appends(file_write.try_clone().unwrap(), content.clone()) {
                     Ok(()) => Ok(seek_end_before),
                     Err(_err) => {
-                        let filepath = index_filepath(database_name, view_name, self.name());
+                        let filepath =
+                            index_filepath(self.database_name(), self.view_name(), self.name());
                         self.file_append = obtain_write_append_file(filepath)?;
                         let file_write_again = self.file_append.write().unwrap();
                         Filer::appends(file_write_again.try_clone().unwrap(), content)?;
@@ -192,7 +171,7 @@ impl Index {
                 }
             }
             Err(_err) => {
-                let filepath = index_filepath(database_name, view_name, self.name());
+                let filepath = index_filepath(self.database_name(), self.view_name(), self.name());
                 self.file_append = obtain_write_append_file(filepath)?;
                 let mut file_write_again = self.file_append.write().unwrap();
                 let seek_end_before_again = file_write_again.seek(SeekFrom::End(0)).unwrap();
@@ -207,6 +186,12 @@ impl Index {
 impl TIndex for Index {
     fn view(&self) -> View {
         self.view.clone()
+    }
+    fn database_name(&self) -> String {
+        self.view.database_name()
+    }
+    fn view_name(&self) -> String {
+        self.view.name()
     }
     fn name(&self) -> String {
         self.name.clone()
@@ -223,10 +208,10 @@ impl TIndex for Index {
     fn create_time(&self) -> Duration {
         self.create_time.clone()
     }
-    fn modify(&mut self, database_name: String, view_name: String) -> GeorgeResult<()> {
+    fn modify(&mut self) -> GeorgeResult<()> {
+        let filepath = index_filepath(self.database_name(), self.view_name(), self.name());
+        self.file_append = obtain_write_append_file(filepath)?;
         self.root.write().unwrap().modify()?;
-        self.database_name = database_name;
-        self.view_name = view_name;
         Ok(())
     }
     fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
@@ -380,12 +365,7 @@ impl Index {
         .into_bytes()
     }
     /// 通过文件描述恢复结构信息
-    pub(crate) fn recover(
-        view: View,
-        database_name: String,
-        view_name: String,
-        hd: HD,
-    ) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
+    pub(crate) fn recover(view: View, hd: HD) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
         let des_bytes = hd.description();
         let description_str = Strings::from_utf8(des_bytes)?;
         match hex::decode(description_str) {
@@ -401,37 +381,24 @@ impl Index {
                 let create_time = Duration::nanoseconds(
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
-                let filepath =
-                    index_filepath(database_name.clone(), view_name.clone(), name.clone());
+                let filepath = index_filepath(view.database_name(), view.name(), name.clone());
                 let file_append = obtain_write_append_file(filepath)?;
                 let root: Arc<RwLock<dyn TNode>>;
                 match hd.index_type() {
-                    IndexType::Dossier => {
-                        root = NodeDossier::recovery_root(view.clone(), name.clone())?
-                    }
-                    IndexType::Library => {
-                        root = NodeLibrary::recovery_root(view.clone(), name.clone(), unique)?
-                    }
-                    IndexType::Block => {
-                        root = NodeBlock::recovery_root(
-                            database_name.clone(),
-                            view_name.clone(),
-                            name.clone(),
-                        )
-                    }
-                    IndexType::Memory => root = NodeMemory::recovery_root(),
+                    IndexType::Dossier => root = ND::recovery(view.clone(), name.clone())?,
+                    IndexType::Library => root = NL::recovery(view.clone(), name.clone(), unique)?,
+                    IndexType::Block => root = NB::recovery(name.clone()),
+                    IndexType::Memory => root = NM::recovery(),
                     _ => return Err(err_str("unsupported engine type")),
                 }
                 log::info!(
                     "recovery index {} from database.view {}.{}",
                     name.clone(),
-                    database_name.clone(),
-                    view_name.clone()
+                    view.database_name(),
+                    view.name()
                 );
                 let index = Index {
                     view,
-                    database_name,
-                    view_name,
                     name,
                     primary,
                     unique,

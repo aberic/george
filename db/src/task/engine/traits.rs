@@ -29,6 +29,8 @@ use serde::__private::fmt::Debug;
 /// 该特性包含了索引的基本方法，理论上都需要进行实现才能使用
 pub(crate) trait TIndex: Send + Sync + Debug {
     fn view(&self) -> View;
+    fn database_name(&self) -> String;
+    fn view_name(&self) -> String;
     /// 索引名称，可以自定义；<p>
     /// siam::Index 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入<p><p>
     fn name(&self) -> String;
@@ -40,7 +42,7 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     fn metadata_bytes(&self) -> Vec<u8>;
     /// 创建时间
     fn create_time(&self) -> Duration;
-    fn modify(&mut self, database_name: String, view_name: String) -> GeorgeResult<()>;
+    fn modify(&mut self) -> GeorgeResult<()>;
     /// 插入数据，如果存在原值，不覆盖原结果<p><p>
     ///
     /// ###Params

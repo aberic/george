@@ -87,14 +87,14 @@ fn create_leaf_self(degree_index: u16) -> Node {
 }
 
 impl Node {
-    /// 新建根结点
+    /// 新建根结点s
     ///
     /// 该结点没有Seeds，也没有preNode，是B+Tree的创世结点
-    pub(crate) fn create_root() -> Arc<RwLock<Self>> {
+    pub(crate) fn create() -> Arc<RwLock<Self>> {
         Arc::new(RwLock::new(create_root_self()))
     }
     /// 恢复根结点
-    pub fn recovery_root() -> Arc<RwLock<Self>> {
+    pub fn recovery() -> Arc<RwLock<Self>> {
         Arc::new(RwLock::new(create_root_self()))
     }
 }

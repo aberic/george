@@ -97,7 +97,6 @@ fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View
     };
     if mem {
         view.create_index_in(
-            database_name,
             INDEX_MEMORY.to_string(),
             IndexType::Memory,
             KeyType::String,
@@ -107,7 +106,6 @@ fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View
         )?;
     } else {
         // view.create_index_in(
-        //     database_name.clone(),
         //     INDEX_CATALOG.to_string(),
         //     IndexType::Library,
         //     KeyType::String,
@@ -116,7 +114,6 @@ fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View
         //     false,
         // )?;
         view.create_index_in(
-            database_name,
             INDEX_SEQUENCE.to_string(),
             IndexType::Dossier,
             KeyType::U64,
@@ -260,13 +257,10 @@ impl View {
         let view_path_new = view_path(database_name.clone(), self.name());
         match std::fs::rename(view_path_old, view_path_new) {
             Ok(_) => {
-                for (_name, index) in self.index_map().write().unwrap().iter() {
-                    index
-                        .write()
-                        .unwrap()
-                        .modify(database_name.clone(), self.name())?
-                }
                 self.database_name = database_name;
+                for (_name, index) in self.index_map().write().unwrap().iter() {
+                    index.write().unwrap().modify()?
+                }
                 Ok(())
             }
             Err(err) => {
@@ -285,7 +279,6 @@ impl View {
     /// 创建索引
     pub(crate) fn create_index(
         &self,
-        database_name: String,
         index_name: String,
         index_type: IndexType,
         key_type: KeyType,
@@ -295,21 +288,12 @@ impl View {
     ) -> GeorgeResult<()> {
         match self.view_type() {
             ViewType::Memory => Err(err_str("this memory view allow only one index")),
-            _ => self.create_index_in(
-                database_name,
-                index_name,
-                index_type,
-                key_type,
-                primary,
-                unique,
-                null,
-            ),
+            _ => self.create_index_in(index_name, index_type, key_type, primary, unique, null),
         }
     }
     /// 创建索引内部方法，绕开外部调用验证
     fn create_index_in(
         &self,
-        database_name: String,
         index_name: String,
         index_type: IndexType,
         key_type: KeyType,
@@ -320,7 +304,6 @@ impl View {
         if self.exist_index(index_name.clone()) {
             return Err(GeorgeError::from(IndexExistError));
         }
-        let view_name = self.name();
         let name = index_name.clone();
         let index;
         match index_type {
@@ -328,8 +311,6 @@ impl View {
             _ => {
                 index = IndexDefault::create(
                     self.clone(),
-                    database_name,
-                    view_name,
                     name,
                     index_type,
                     primary,
@@ -604,9 +585,9 @@ impl View {
                     view.name(),
                     database_name,
                 );
-                match read_dir(view_path(database_name.clone(), view.name())) {
+                match read_dir(view_path(database_name, view.name())) {
                     // 恢复indexes数据
-                    Ok(paths) => view.recovery_indexes(database_name, paths)?,
+                    Ok(paths) => view.recovery_indexes(paths)?,
                     Err(err) => panic!("recovery view read dir failed! error is {}", err),
                 }
                 Ok(view)
@@ -618,7 +599,7 @@ impl View {
         }
     }
     /// 恢复indexes数据
-    fn recovery_indexes(&mut self, database_name: String, paths: ReadDir) -> GeorgeResult<()> {
+    fn recovery_indexes(&mut self, paths: ReadDir) -> GeorgeResult<()> {
         // 遍历view目录下文件
         for path in paths {
             match path {
@@ -628,7 +609,7 @@ impl View {
                         let index_name = dir.file_name().to_str().unwrap().to_string();
                         log::debug!("recovery index from {}", index_name);
                         // 恢复index数据
-                        self.recovery_index(database_name.clone(), index_name.clone())?;
+                        self.recovery_index(index_name.clone())?;
                     }
                 }
                 Err(err) => panic!("recovery indexes path failed! error is {}", err),
@@ -638,22 +619,19 @@ impl View {
     }
 
     /// 恢复view数据
-    fn recovery_index(&self, database_name: String, index_name: String) -> GeorgeResult<()> {
-        let index_file_path =
-            index_filepath(database_name.clone(), self.name(), index_name.clone());
-        let db_name = database_name.clone();
-        let view_name = self.name();
+    fn recovery_index(&self, index_name: String) -> GeorgeResult<()> {
+        let index_file_path = index_filepath(self.database_name(), self.name(), index_name.clone());
         let hd = recovery_before_content(index_file_path.clone())?;
         let metadata = hd.metadata();
         let index;
         // 恢复index数据
         match hd.index_type() {
             IndexType::None => panic!("index engine type error"),
-            _ => index = IndexDefault::recover(self.clone(), database_name, view_name, hd)?,
+            _ => index = IndexDefault::recover(self.clone(), hd)?,
         }
         log::debug!(
             "index [db={}, view={}, name={}, create_time={}, {:#?}]",
-            db_name,
+            self.database_name(),
             self.name(),
             index_name.clone(),
             index

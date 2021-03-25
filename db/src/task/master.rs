@@ -178,17 +178,13 @@ impl Master {
         unique: bool,
         null: bool,
     ) -> GeorgeResult<()> {
-        let database = self.database(database_name.clone())?;
+        let database = self.database(database_name)?;
         let database_read = database.read().unwrap();
-        database_read.view(view_name)?.read().unwrap().create_index(
-            database_name,
-            index_name,
-            index_type,
-            key_type,
-            primary,
-            unique,
-            null,
-        )
+        database_read
+            .view(view_name)?
+            .read()
+            .unwrap()
+            .create_index(index_name, index_type, key_type, primary, unique, null)
     }
 }
 
