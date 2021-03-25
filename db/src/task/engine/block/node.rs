@@ -17,6 +17,7 @@ use std::sync::{Arc, RwLock};
 use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
+use crate::task::view::View;
 use crate::utils::comm::level_distance_64;
 use crate::utils::enums::IndexType;
 use crate::utils::path::{index_path, node_filepath};
@@ -106,6 +107,7 @@ impl TNode for Node {
     }
     fn select(
         &self,
+        _view: View,
         _left: bool,
         _start: u64,
         _end: u64,

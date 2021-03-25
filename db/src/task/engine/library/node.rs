@@ -15,9 +15,10 @@
 use std::sync::{Arc, RwLock};
 
 use crate::task::engine::traits::{TNode, TSeed};
-use crate::task::engine::{read_from_view, DataReal};
+use crate::task::engine::DataReal;
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
+use crate::task::view::View;
 use crate::utils::comm::{is_bytes_fill, level_distance_64};
 use crate::utils::enums::IndexType;
 use crate::utils::path::{index_path, linked_filepath, node_filepath};
@@ -43,8 +44,7 @@ use std::ops::Add;
 /// record存储固定长度的数据，长度为12，即view视图真实数据8+链式后续数据4，总计可存3.57913941亿条数据
 #[derive(Debug, Clone)]
 pub(crate) struct Node {
-    database_name: String,
-    view_name: String,
+    view: View,
     index_name: String,
     index_path: String,
     linked_filepath: String,
@@ -61,18 +61,16 @@ impl Node {
     ///
     /// 该结点没有Links，也没有preNode，是B+Tree的创世结点
     pub fn create_root(
-        database_name: String,
-        view_name: String,
+        view: View,
         index_name: String,
         unique: bool,
     ) -> GeorgeResult<Arc<RwLock<Self>>> {
-        let index_path = index_path(database_name.clone(), view_name.clone(), index_name.clone());
+        let index_path = index_path(view.database_name(), view.name(), index_name.clone());
         let linked_filepath = linked_filepath(index_path.clone());
         Filer::write_force(linked_filepath.clone(), vec![0x86, 0x87]);
         let record_filer = Filed::recovery(linked_filepath.clone())?;
         Ok(Arc::new(RwLock::new(Node {
-            database_name,
-            view_name,
+            view,
             index_name,
             index_path,
             linked_filepath,
@@ -82,17 +80,15 @@ impl Node {
     }
     /// 恢复根结点
     pub fn recovery_root(
-        database_name: String,
-        view_name: String,
+        view: View,
         index_name: String,
         unique: bool,
     ) -> GeorgeResult<Arc<RwLock<Self>>> {
-        let index_path = index_path(database_name.clone(), view_name.clone(), index_name.clone());
+        let index_path = index_path(view.database_name(), view.name(), index_name.clone());
         let linked_filepath = linked_filepath(index_path.clone());
         let record_filer = Filed::recovery(linked_filepath.clone())?;
         Ok(Arc::new(RwLock::new(Node {
-            database_name,
-            view_name,
+            view,
             index_name,
             index_path,
             linked_filepath,
@@ -101,10 +97,10 @@ impl Node {
         })))
     }
     fn database_name(&self) -> String {
-        self.database_name.clone()
+        self.view.database_name()
     }
     fn view_name(&self) -> String {
-        self.view_name.clone()
+        self.view.name()
     }
     fn index_name(&self) -> String {
         self.index_name.clone()
@@ -130,8 +126,6 @@ impl Node {
 /// 封装方法函数
 impl TNode for Node {
     fn modify(&mut self, database_name: String, view_name: String) {
-        self.database_name = database_name.clone();
-        self.view_name = view_name.clone();
         let index_path = index_path(database_name, view_name, self.index_name());
         self.index_path = index_path.clone();
         self.linked_filepath = linked_filepath(index_path);
@@ -156,6 +150,7 @@ impl TNode for Node {
     }
     fn select(
         &self,
+        _view: View,
         _left: bool,
         _start: u64,
         _end: u64,
@@ -207,8 +202,9 @@ impl Node {
                 node_filepath,
                 next_degree
             );
+            let node_file_seek = next_degree * 4;
             // 在linked中的偏移量
-            let linked_seek = self.linked_seek(node_filepath, next_degree)?;
+            let linked_seek = self.linked_seek(node_filepath.clone(), node_file_seek)?;
             log::debug!("linked_seek = {}", linked_seek);
             let seek: u64;
             // 如果是唯一索引，则可能需要判断是否存在已有值
@@ -270,6 +266,11 @@ impl Node {
                 self.linked_filepath(),
                 seek,
             )?)?;
+            seed.write().unwrap().modify(IndexPolicy::bytes_custom(
+                node_filepath,
+                node_file_seek,
+                trans_u32_2_bytes(seek as u32),
+            )?)?;
             Ok(())
         } else {
             index_filename = index_filename.add(&Strings::left_fits(
@@ -301,7 +302,8 @@ impl Node {
                 node_filepath,
                 next_degree
             );
-            let linked_seek = self.linked_seek(node_filepath, next_degree)?;
+            let node_file_seek = next_degree * 4;
+            let linked_seek = self.linked_seek(node_filepath, node_file_seek)?;
             log::debug!("linked_seek = {}", linked_seek);
             let linked_file = Filer::reader(self.linked_filepath())?;
             let mut linked_loop_seek = linked_seek;
@@ -346,8 +348,8 @@ impl Node {
         }
     }
     /// 在record中的偏移量
-    fn linked_seek(&self, node_filepath: String, next_degree: u64) -> GeorgeResult<u64> {
-        match Filer::read_sub(node_filepath.clone(), next_degree * 4, 4) {
+    fn linked_seek(&self, node_filepath: String, node_file_seek: u64) -> GeorgeResult<u64> {
+        match Filer::read_sub(node_filepath.clone(), node_file_seek, 4) {
             Ok(seek_bytes) => {
                 // 判断从索引中读取在record中的偏移量字节数组是否为空
                 // 如果为空，则新插入占位字节，并以占位字节为起始变更偏移量

@@ -13,6 +13,7 @@
  */
 
 use crate::task::engine::traits::TIndex;
+use crate::task::view::View;
 use crate::utils::comm::{hash_key, hash_key_number};
 use crate::utils::enums::KeyType;
 use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeResult};
@@ -537,6 +538,7 @@ impl Selector {
     ///
     /// delete 是否删除检索结果
     pub(crate) fn run(
+        view: View,
         constraint_json_bytes: Vec<u8>,
         indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
         delete: bool,
@@ -546,7 +548,7 @@ impl Selector {
             indexes,
             constraint,
         };
-        select.exec()
+        select.exec(view)
     }
     fn constraint(&self) -> Constraint {
         self.constraint.clone()
@@ -560,12 +562,13 @@ impl Selector {
     /// index_name 使用到的索引名称，如果没用上则为空
     ///
     /// values 检索结果集合
-    fn exec(&mut self) -> GeorgeResult<Expectation> {
+    fn exec(&mut self, view: View) -> GeorgeResult<Expectation> {
         let status = self.index()?;
         // status自测
         status.check()?;
         self.constraint.conditions = status.conditions;
         status.index.clone().read().unwrap().select(
+            view,
             status.asc,
             status.start,
             status.end,

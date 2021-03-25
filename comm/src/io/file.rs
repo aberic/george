@@ -59,6 +59,7 @@ pub trait FilerWriter<M, N>: Sized {
 pub trait FilerReader<T>: Sized {
     fn read(filepath: T) -> GeorgeResult<String>;
     fn read_sub(filepath: T, start: u64, last: usize) -> GeorgeResult<Vec<u8>>;
+    fn len(filepath: T) -> GeorgeResult<u64>;
 }
 
 pub struct Filer {}
@@ -295,6 +296,9 @@ impl FilerReader<String> for Filer {
     fn read_sub(filepath: String, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         file_read_sub(filepath, start, last)
     }
+    fn len(filepath: String) -> GeorgeResult<u64> {
+        file_len(filepath)
+    }
 }
 
 impl FilerReader<&str> for Filer {
@@ -303,6 +307,9 @@ impl FilerReader<&str> for Filer {
     }
     fn read_sub(filepath: &str, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         file_read_sub(filepath.to_string(), start, last)
+    }
+    fn len(filepath: &str) -> GeorgeResult<u64> {
+        file_len(filepath.to_string())
     }
 }
 
@@ -513,6 +520,13 @@ fn file_read(filepath: String) -> GeorgeResult<String> {
 fn file_read_sub(filepath: String, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
     match File::open(filepath) {
         Ok(file) => read_subs(file, start, last),
+        Err(err) => Err(err_string(err.to_string())),
+    }
+}
+
+fn file_len(filepath: String) -> GeorgeResult<u64> {
+    match r_file(filepath)?.seek(SeekFrom::End(0)) {
+        Ok(res) => Ok(res),
         Err(err) => Err(err_string(err.to_string())),
     }
 }

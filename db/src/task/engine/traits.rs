@@ -28,6 +28,7 @@ use serde::__private::fmt::Debug;
 ///
 /// 该特性包含了索引的基本方法，理论上都需要进行实现才能使用
 pub(crate) trait TIndex: Send + Sync + Debug {
+    fn view(&self) -> View;
     /// 索引名称，可以自定义；<p>
     /// siam::Index 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入<p><p>
     fn name(&self) -> String;
@@ -85,6 +86,7 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     /// Expectation 经由Selector后的期望结果
     fn select(
         &self,
+        view: View,
         left: bool,
         start: u64,
         end: u64,
@@ -142,6 +144,7 @@ pub(crate) trait TNode: Send + Sync + Debug {
     /// values 检索结果集合
     fn select(
         &self,
+        view: View,
         left: bool,
         start: u64,
         end: u64,
@@ -165,17 +168,13 @@ pub(crate) trait TSeed: Send + Sync + Debug {
     /// 获取当前结果原始key信息
     fn key(&self) -> String;
     /// value最终存储在文件中的内容
-    fn value(&self) -> Vec<u8>;
+    fn value(&self) -> GeorgeResult<Vec<u8>>;
     /// 值是否为空
     fn is_none(&self) -> bool;
     /// 修改value值
     fn modify(&mut self, value: Vec<u8>) -> GeorgeResult<()>;
     /// 存储操作
-    ///
-    /// view View 视图<p><p>
-    ///
-    /// force 是否强制覆盖
-    fn save(&mut self, view: View) -> GeorgeResult<()>;
+    fn save(&mut self) -> GeorgeResult<()>;
     /// 删除操作
     fn remove(&mut self) -> GeorgeResult<()>;
 }

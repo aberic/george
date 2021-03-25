@@ -24,6 +24,7 @@ use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::master::GLOBAL_MASTER;
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
+use crate::task::view::View;
 use crate::utils::comm::is_bytes_fill;
 use crate::utils::enums::IndexType;
 use crate::utils::path::{index_path, node_filepath};
@@ -38,6 +39,7 @@ use comm::vectors::{Vector, VectorHandler};
 /// 叶子结点中才会存在Link，其余结点Link为None
 #[derive(Debug, Clone)]
 pub(crate) struct Node {
+    view: View,
     atomic_key: Arc<AtomicU64>,
     database_name: String,
     view_name: String,
@@ -50,36 +52,40 @@ impl Node {
     ///
     /// 该结点没有Links，也没有preNode，是B+Tree的创世结点
     pub fn create_root(
+        view: View,
         database_name: String,
         view_name: String,
         index_name: String,
-    ) -> Arc<RwLock<Self>> {
+    ) -> GeorgeResult<Arc<RwLock<Self>>> {
         let atomic_key = Arc::new(AtomicU64::new(1));
         let index_path = index_path(database_name.clone(), view_name.clone(), index_name.clone());
         let node_filepath = node_filepath(index_path, String::from("increment"));
-        Filer::try_touch(node_filepath.clone());
-        Arc::new(RwLock::new(Node {
+        Filer::try_touch(node_filepath.clone())?;
+        Filer::append(node_filepath.clone(), Vector::create_empty_bytes(8))?;
+        Ok(Arc::new(RwLock::new(Node {
+            view,
             atomic_key,
             database_name,
             view_name,
             index_name,
             node_filepath,
-        }))
+        })))
     }
     /// 恢复根结点
     pub fn recovery_root(
+        view: View,
         database_name: String,
         view_name: String,
         index_name: String,
     ) -> GeorgeResult<Arc<RwLock<Self>>> {
         let index_path = index_path(database_name.clone(), view_name.clone(), index_name.clone());
         let node_filepath = node_filepath(index_path, String::from("increment"));
-        let file = Filer::reader_writer(node_filepath.clone())?;
-        let file_len = file.try_clone().unwrap().seek(SeekFrom::End(0)).unwrap();
-        let atomic_key_u32 = file_len / 8;
+        let file_len = Filer::len(node_filepath.clone())?;
+        let last_key = file_len / 8;
         // log::debug!("atomic_key_u32 = {}", atomic_key_u32);
-        let atomic_key = Arc::new(AtomicU64::new(atomic_key_u32));
+        let atomic_key = Arc::new(AtomicU64::new(last_key));
         Ok(Arc::new(RwLock::new(Node {
+            view,
             atomic_key,
             database_name,
             view_name,
@@ -134,6 +140,7 @@ impl TNode for Node {
     }
     fn select(
         &self,
+        view: View,
         left: bool,
         start: u64,
         end: u64,
@@ -143,9 +150,9 @@ impl TNode for Node {
         conditions: Vec<Condition>,
     ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)> {
         if left {
-            self.left_query(start, end, conditions, skip, limit, delete)
+            self.left_query(view, start, end, conditions, skip, limit, delete)
         } else {
-            self.left_query(start, end, conditions, skip, limit, delete)
+            self.left_query(view, start, end, conditions, skip, limit, delete)
         }
     }
 }
@@ -176,7 +183,7 @@ impl Node {
                 return if custom {
                     Err(err_str("auto increment key has been used"))
                 } else {
-                    self.put(0, seed, force)
+                    return self.put(0, seed, force);
                 };
             }
         }
@@ -223,6 +230,7 @@ impl Node {
     /// values 检索结果集合
     fn left_query(
         &self,
+        view: View,
         start: u64,
         end: u64,
         conditions: Vec<Condition>,
@@ -247,8 +255,7 @@ impl Node {
             }
             let res = Filer::read_sub(self.node_filepath(), key_start, 8)?;
             let (valid, value_bytes) = check(
-                self.database_name(),
-                self.view_name(),
+                view.clone(),
                 self.node_filepath(),
                 key_end,
                 conditions.clone(),
@@ -292,6 +299,7 @@ impl Node {
     /// values 检索结果集合
     fn right_query(
         &self,
+        view: View,
         start: u64,
         end: u64,
         conditions: Vec<Condition>,
@@ -316,8 +324,7 @@ impl Node {
             }
             let res = Filer::read_sub(self.node_filepath(), key_end, 8)?;
             let (valid, value_bytes) = check(
-                self.database_name(),
-                self.view_name(),
+                view.clone(),
                 self.node_filepath(),
                 key_end,
                 conditions.clone(),

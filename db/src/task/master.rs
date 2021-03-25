@@ -148,8 +148,7 @@ impl Master {
         &self,
         database_name: String,
         view_name: String,
-        version: u16,
-        seek: u64,
+        view_info_index: Vec<u8>,
     ) -> GeorgeResult<Vec<u8>> {
         self.database(database_name)?
             .read()
@@ -157,7 +156,7 @@ impl Master {
             .view(view_name)?
             .read()
             .unwrap()
-            .read_content_by(version, seek)
+            .read_content_by(view_info_index)
     }
     /// 在指定库及视图中创建索引
     ///
@@ -176,6 +175,8 @@ impl Master {
         index_type: IndexType,
         key_type: KeyType,
         primary: bool,
+        unique: bool,
+        null: bool,
     ) -> GeorgeResult<()> {
         let database = self.database(database_name.clone())?;
         let database_read = database.read().unwrap();
@@ -185,6 +186,8 @@ impl Master {
             index_type,
             key_type,
             primary,
+            unique,
+            null,
         )
     }
 }
@@ -594,7 +597,6 @@ fn init_log() {
 
 fn log_module_main() -> LogModule {
     let config = GLOBAL_CONFIG.read().unwrap();
-    println!("config = {:#?}", config);
     LogModule {
         name: String::from("db"),
         pkg: "".to_string(),

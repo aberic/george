@@ -14,7 +14,8 @@
 
 use crate::task::engine::traits::TSeed;
 use crate::task::view::View;
-use comm::errors::entrances::GeorgeResult;
+use comm::errors::children::DataNoExistError;
+use comm::errors::entrances::{GeorgeError, GeorgeResult};
 
 /// B+Tree索引叶子结点内防hash碰撞数组结构中单体结构
 ///
@@ -46,8 +47,11 @@ impl TSeed for Seed {
     fn key(&self) -> String {
         self.key.clone()
     }
-    fn value(&self) -> Vec<u8> {
-        self.value.clone().unwrap()
+    fn value(&self) -> GeorgeResult<Vec<u8>> {
+        match self.value.clone() {
+            Some(v) => Ok(v),
+            None => Err(GeorgeError::from(DataNoExistError)),
+        }
     }
     fn is_none(&self) -> bool {
         self.value.is_none()
@@ -56,7 +60,7 @@ impl TSeed for Seed {
         self.value = Some(value);
         Ok(())
     }
-    fn save(&mut self, _view: View) -> GeorgeResult<()> {
+    fn save(&mut self) -> GeorgeResult<()> {
         Ok(())
     }
     fn remove(&mut self) -> GeorgeResult<()> {

@@ -19,6 +19,7 @@ use comm::errors::entrances::{GeorgeError, GeorgeResult};
 
 use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::rich::Condition;
+use crate::task::view::View;
 use crate::utils::comm::level_distance_64;
 use comm::errors::children::{DataExistError, DataNoExistError, MethodNoSupportError, NoneError};
 
@@ -134,6 +135,7 @@ impl TNode for Node {
     }
     fn select(
         &self,
+        _view: View,
         _left: bool,
         _start: u64,
         _end: u64,
@@ -430,7 +432,7 @@ impl Node {
             }
             if seed_r.key().eq(&key) {
                 exist = true;
-                vu8 = seed_r.value();
+                vu8 = seed_r.value()?;
             }
         }
         for position in seeds_rm_position {

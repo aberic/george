@@ -28,6 +28,7 @@ use crate::task::engine::library::node::Node as NodeLibrary;
 use crate::task::engine::memory::node::Node as NodeMemory;
 use crate::task::engine::traits::{TIndex, TNode, TSeed};
 use crate::task::rich::{Constraint, Expectation};
+use crate::task::view::View;
 use crate::utils::comm::hash_key;
 use crate::utils::enums::{Enum, EnumHandler, IndexType, KeyType};
 use crate::utils::path::index_filepath;
@@ -40,6 +41,7 @@ use serde_json::Value;
 /// 5位key及16位md5后key及5位起始seek和4位持续seek
 #[derive(Debug)]
 pub(crate) struct Index {
+    view: View,
     /// 数据库名称
     database_name: String,
     /// 视图名称
@@ -50,6 +52,8 @@ pub(crate) struct Index {
     primary: bool,
     /// 是否唯一索引
     unique: bool,
+    /// 是否允许为空
+    null: bool,
     /// 索引值类型
     key_type: KeyType,
     /// 结点
@@ -76,11 +80,13 @@ pub(crate) struct Index {
 ///
 /// metadata 文件信息
 fn new_index(
+    view: View,
     database_name: String,
     view_name: String,
     name: String,
     primary: bool,
     unique: bool,
+    null: bool,
     key_type: KeyType,
     root: Arc<RwLock<dyn TNode>>,
     metadata: Metadata,
@@ -90,6 +96,7 @@ fn new_index(
     let filepath = index_filepath(database_name.clone(), view_name.clone(), name.clone());
     let file_append = obtain_write_append_file(filepath)?;
     let index = Index {
+        view,
         database_name,
         primary,
         name,
@@ -100,18 +107,21 @@ fn new_index(
         key_type,
         view_name,
         unique,
+        null,
     };
     Ok(index)
 }
 
 impl Index {
     pub(crate) fn create(
+        view: View,
         database_name: String,
         view_name: String,
         name: String,
         index_type: IndexType,
         primary: bool,
         unique: bool,
+        null: bool,
         key_type: KeyType,
     ) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
         Filer::touch(index_filepath(
@@ -122,16 +132,15 @@ impl Index {
         let root: Arc<RwLock<dyn TNode>>;
         match index_type {
             IndexType::Dossier => {
-                root =
-                    NodeDossier::create_root(database_name.clone(), view_name.clone(), name.clone())
-            }
-            IndexType::Library => {
-                root = NodeLibrary::create_root(
+                root = NodeDossier::create_root(
+                    view.clone(),
                     database_name.clone(),
                     view_name.clone(),
                     name.clone(),
-                    unique,
                 )?
+            }
+            IndexType::Library => {
+                root = NodeLibrary::create_root(view.clone(), name.clone(), unique)?
             }
             IndexType::Block => {
                 root =
@@ -141,11 +150,13 @@ impl Index {
             _ => return Err(err_str("unsupported engine type with none")),
         }
         let mut index = new_index(
+            view,
             database_name.clone(),
             view_name.clone(),
             name,
             primary,
             unique,
+            null,
             key_type,
             root,
             Metadata::index(index_type)?,
@@ -201,6 +212,9 @@ impl Index {
 
 /// 封装方法函数w
 impl TIndex for Index {
+    fn view(&self) -> View {
+        self.view.clone()
+    }
     fn name(&self) -> String {
         self.name.clone()
     }
@@ -238,6 +252,7 @@ impl TIndex for Index {
     }
     fn select(
         &self,
+        view: View,
         left: bool,
         start: u64,
         end: u64,
@@ -258,7 +273,7 @@ impl TIndex for Index {
             .root
             .read()
             .unwrap()
-            .select(left, start, end, skip, limit, delete, conditions)?;
+            .select(view, left, start, end, skip, limit, delete, conditions)?;
         match constraint.sort() {
             Some(sort) => {
                 values.sort_by(|a, b| {
@@ -364,10 +379,11 @@ impl Index {
     /// 生成文件描述
     fn description(&self) -> Vec<u8> {
         hex::encode(format!(
-            "{}:#?{}:#?{}:#?{}:#?{}",
+            "{}:#?{}:#?{}:#?{}:#?{}:#?{}",
             self.name,
             self.primary,
             self.unique,
+            self.null,
             Enum::key_type_u8(self.key_type),
             self.create_time().num_nanoseconds().unwrap().to_string(),
         ))
@@ -375,6 +391,7 @@ impl Index {
     }
     /// 通过文件描述恢复结构信息
     pub(crate) fn recover(
+        view: View,
         database_name: String,
         view_name: String,
         hd: HD,
@@ -388,6 +405,7 @@ impl Index {
                 let name = split.next().unwrap().to_string();
                 let primary = split.next().unwrap().to_string().parse::<bool>().unwrap();
                 let unique = split.next().unwrap().to_string().parse::<bool>().unwrap();
+                let null = split.next().unwrap().to_string().parse::<bool>().unwrap();
                 let key_type =
                     Enum::key_type(split.next().unwrap().to_string().parse::<u8>().unwrap());
                 let create_time = Duration::nanoseconds(
@@ -400,18 +418,14 @@ impl Index {
                 match hd.index_type() {
                     IndexType::Dossier => {
                         root = NodeDossier::recovery_root(
+                            view.clone(),
                             database_name.clone(),
                             view_name.clone(),
                             name.clone(),
                         )?
                     }
                     IndexType::Library => {
-                        root = NodeLibrary::recovery_root(
-                            database_name.clone(),
-                            view_name.clone(),
-                            name.clone(),
-                            unique,
-                        )?
+                        root = NodeLibrary::recovery_root(view.clone(), name.clone(), unique)?
                     }
                     IndexType::Block => {
                         root = NodeBlock::recovery_root(
@@ -430,6 +444,7 @@ impl Index {
                     view_name.clone()
                 );
                 let index = Index {
+                    view,
                     database_name,
                     view_name,
                     name,
@@ -440,6 +455,7 @@ impl Index {
                     file_append,
                     root,
                     key_type,
+                    null,
                 };
                 Ok(Arc::new(RwLock::new(index)))
             }

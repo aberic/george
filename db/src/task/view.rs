@@ -43,6 +43,7 @@ use crate::utils::enums::{IndexType, KeyType, ViewType};
 use crate::utils::path::{index_filepath, view_filepath, view_path};
 use crate::utils::store::{before_content_bytes, recovery_before_content, Metadata, HD};
 use crate::utils::writer::Filed;
+use std::sync::atomic::AtomicU64;
 
 /// 视图，类似表
 #[derive(Debug, Clone)]
@@ -102,6 +103,7 @@ fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View
             KeyType::String,
             true,
             true,
+            false,
         )?;
     } else {
         // view.create_index_in(
@@ -111,14 +113,16 @@ fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View
         //     KeyType::String,
         //     false,
         //     true,
+        //     false,
         // )?;
         view.create_index_in(
             database_name,
             INDEX_SEQUENCE.to_string(),
             IndexType::Dossier,
             KeyType::U64,
+            false,
             true,
-            true,
+            false,
         )?;
     }
     Ok(view)
@@ -285,7 +289,9 @@ impl View {
         index_name: String,
         index_type: IndexType,
         key_type: KeyType,
+        primary: bool,
         unique: bool,
+        null: bool,
     ) -> GeorgeResult<()> {
         match self.view_type() {
             ViewType::Memory => Err(err_str("this memory view allow only one index")),
@@ -294,8 +300,9 @@ impl View {
                 index_name,
                 index_type,
                 key_type,
-                false,
+                primary,
                 unique,
+                null,
             ),
         }
     }
@@ -308,6 +315,7 @@ impl View {
         key_type: KeyType,
         primary: bool,
         unique: bool,
+        null: bool,
     ) -> GeorgeResult<()> {
         if self.exist_index(index_name.clone()) {
             return Err(GeorgeError::from(IndexExistError));
@@ -319,12 +327,14 @@ impl View {
             IndexType::None => return Err(err_str("unsupported engine type with none")),
             _ => {
                 index = IndexDefault::create(
+                    self.clone(),
                     database_name,
                     view_name,
                     name,
                     index_type,
                     primary,
                     unique,
+                    null,
                     key_type,
                 )?
             }
@@ -381,20 +391,8 @@ impl View {
         let view_info_index = idx.get(key.clone())?;
         match index_name {
             INDEX_MEMORY => Ok(view_info_index),
-            INDEX_SEQUENCE => {
-                let version = trans_bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
-                let seek = trans_bytes_2_u48(Vector::sub(view_info_index, 2, 8)?)?;
-                self.read_content_by(version, seek)
-            }
-            _ => {
-                let index_data_list = self.fetch_view_info_index(view_info_index)?;
-                for index_data in index_data_list {
-                    if index_data.equal_key(key.clone()) {
-                        return Ok(index_data.value());
-                    }
-                }
-                Err(GeorgeError::from(DataNoExistError))
-            }
+            INDEX_CATALOG => Ok(view_info_index),
+            _ => DataReal::value_bytes(self.read_content_by(view_info_index)?),
         }
     }
     /// 删除数据<p><p>
@@ -413,13 +411,23 @@ impl View {
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
     pub fn select(&self, constraint_json_bytes: Vec<u8>) -> GeorgeResult<Expectation> {
-        Selector::run(constraint_json_bytes, self.indexes.clone(), false)
+        Selector::run(
+            self.clone(),
+            constraint_json_bytes,
+            self.indexes.clone(),
+            false,
+        )
     }
     /// 条件删除
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
     pub fn delete(&self, constraint_json_bytes: Vec<u8>) -> GeorgeResult<Expectation> {
-        Selector::run(constraint_json_bytes, self.indexes.clone(), true)
+        Selector::run(
+            self.clone(),
+            constraint_json_bytes,
+            self.indexes.clone(),
+            true,
+        )
     }
 }
 
@@ -431,73 +439,6 @@ impl View {
         self.filer.write().unwrap().archive(archive_file_path)?;
         self.init()
     }
-    /// 取出表记录表内容索引
-    ///
-    /// 索引属性，主键溯源；主键不溯源；普通索引
-    ///
-    /// index_info_index 索引记录表内容索引，记录表文件属性(数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
-    ///
-    /// key 原始key
-    fn fetch_view_info_index(&self, index_info_index: Vec<u8>) -> GeorgeResult<Vec<IndexData>> {
-        let mut index_data_list: Vec<IndexData> = vec![];
-        // 当前记录数据所属视图文件版本信息
-        let version = trans_bytes_2_u16(Vector::sub(index_info_index.clone(), 0, 2)?)?;
-        // 根据版本信息获取当前视图文件路径
-        let filepath = self.path(version)?;
-        // 当前记录数据数据在视图文件中起始偏移量p(6字节)
-        let offset = trans_bytes_2_u64(Vector::sub(index_info_index, 2, 8)?)?;
-        // 当前数据所在文件对象
-        let file = Filer::reader(filepath.clone())?;
-        // 定位数据字节数组=数据类型(1字节)+持续长度(4字节)
-        let pos_bytes: Vec<u8>;
-        match file.try_clone() {
-            Ok(f) => pos_bytes = Filer::read_subs(f, offset, 5)?,
-            Err(err) => return Err(err_strs("view fetch file try clone1", err)),
-        }
-        // 定位文件持续长度(4字节)
-        let data_len = trans_bytes_2_u32(Vector::sub(pos_bytes.clone(), 1, 5)?)?;
-        // 定位文件数据类型(1字节)
-        let value_type_bytes: &u8;
-        // 获取数据类型(1字节)
-        match pos_bytes.get(0) {
-            Some(vtb) => value_type_bytes = vtb,
-            None => return Err(err_str("pos bytes get none")),
-        }
-        // 定位文件数据起始偏移量
-        let offset_data = offset + 5;
-        let view_info_index: Vec<u8>;
-        match file.try_clone() {
-            Ok(f) => view_info_index = Filer::read_subs(f, offset_data, data_len as usize)?,
-            Err(err) => return Err(err_strs("view fetch file try clone1", err)),
-        }
-        // 正常数据类型
-        if VALUE_TYPE_NORMAL.eq(value_type_bytes) {
-            index_data_list.push(IndexData::create(self.clone(), view_info_index)?)
-        } else {
-            // 碰撞数据类型
-        }
-        Ok(index_data_list)
-    }
-    // /// 循环定位文件内容，(表内容索引(8字节)+原始key长度(2字节)+原始key)(循环)
-    // ///
-    // /// 找出与'key'相同的原始key数据
-    // fn traverse(&self, key: String, value_type_bytes: &u8, data_bytes: Vec<u8>) -> GeorgeResult<Vec<u8>> {
-    //     // 判断数据类型
-    //     if VALUE_TYPE_NORMAL.eq(value_type_bytes) { // 正常数据类型，只有一条数据
-    //         let original_key = Strings::from_utf8(Vector::sub(data_bytes.clone(), 10, data_bytes.len())?)?;
-    //         if original_key.eq(&key) {
-    //
-    //         }
-    //     } else if VALUE_TYPE_CRASH.eq(value_type_bytes) { // 碰撞数据类型，有多条循环数据
-    //         let original_key_len = trans_bytes_2_u16(Vector::sub(data_bytes.clone(), 8, 10)?)?;
-    //         let original_key = Vector::sub(data_bytes.clone(), original_key_len as usize, )
-    //     } else {
-    //     }
-    //     Ok(vec![])
-    // }
-    // fn value_from(&self, value_bytes: Vec<u8>) -> GeorgeResult<IndexData> {
-    //
-    // }
     /// 取出可用数据集合
     ///
     /// data_info 记录表文件属性(数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
@@ -546,9 +487,11 @@ impl View {
     /// 在view中的起始偏移量坐标读取数据
     ///
     /// seek 读取偏移量
-    pub(crate) fn read_content_by(&self, version: u16, seek: u64) -> GeorgeResult<Vec<u8>> {
+    pub(crate) fn read_content_by(&self, res: Vec<u8>) -> GeorgeResult<Vec<u8>> {
+        let version = trans_bytes_2_u16(Vector::sub(res.clone(), 0, 2)?)?;
+        let seek = trans_bytes_2_u48(Vector::sub(res, 2, 8)?)?;
         let filepath = self.filepath_by_version(version)?;
-        DataReal::value_bytes(self.read_content(filepath, seek)?)
+        self.read_content(filepath, seek)
     }
     /// 插入数据业务方法<p><p>
     ///
@@ -564,8 +507,7 @@ impl View {
     ///
     /// IndexResult<()>
     fn save(&self, key: String, value: Vec<u8>, force: bool, remove: bool) -> GeorgeResult<()> {
-        let drb = DataReal::bytes(key.clone(), value.clone())?;
-        let seed = SeedDefault::create(key.clone(), drb, remove);
+        let seed = SeedDefault::create(self.clone(), key.clone(), value.clone(), remove);
         let mut receives = Vec::new();
         for (index_name, index) in self.index_map().read().unwrap().iter() {
             let (sender, receive) = mpsc::channel();
@@ -626,7 +568,7 @@ impl View {
         if remove {
             seed.write().unwrap().remove()
         } else {
-            seed.write().unwrap().save(self.clone())
+            seed.write().unwrap().save()
         }
     }
 }
@@ -717,7 +659,7 @@ impl View {
         // 恢复index数据
         match hd.index_type() {
             IndexType::None => panic!("index engine type error"),
-            _ => index = IndexDefault::recover(database_name, view_name, hd)?,
+            _ => index = IndexDefault::recover(self.clone(), database_name, view_name, hd)?,
         }
         log::debug!(
             "index [db={}, view={}, name={}, create_time={}, {:#?}]",

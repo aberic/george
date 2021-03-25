@@ -24,6 +24,7 @@ use comm::trans::{
 use comm::vectors::{Vector, VectorHandler};
 
 use crate::task::engine::traits::TSeed;
+use crate::task::engine::DataReal;
 use crate::task::view::View;
 use crate::utils::comm::is_bytes_fill;
 use crate::utils::enums::IndexType;
@@ -37,14 +38,16 @@ use std::sync::{Arc, RwLock};
 /// 叶子节点下真实存储数据的集合单体结构
 #[derive(Debug)]
 pub(crate) struct Seed {
+    sequence: u64,
     /// 获取当前结果原始key信息，用于内存版索引
     key: String,
-    /// 真实存储值，参考 `DataReal`
+    /// 存储值
     value: Vec<u8>,
     /// 是否删除
     delete: bool,
     /// 除主键索引外的其它索引操作策略集合
     policies: Vec<IndexPolicy>,
+    view: View,
 }
 
 /// 视图索引内容
@@ -122,9 +125,11 @@ pub(crate) struct IndexPolicy {
     /// 使用当前索引的原始key
     original_key: String,
     /// 待处理索引文件路径
-    node_file_path: String,
+    node_filepath: String,
     /// 待写入索引内容起始偏移量
     seek: u64,
+    /// 自行处理内容
+    custom: Vec<u8>,
 }
 
 impl IndexPolicy {
@@ -134,16 +139,30 @@ impl IndexPolicy {
             Err(err) => Err(err_string(err.to_string())),
         }
     }
-    pub fn bytes(
-        index_type: IndexType,
-        node_file_path: String,
-        seek: u64,
-    ) -> GeorgeResult<Vec<u8>> {
+    pub fn bytes(index_type: IndexType, node_filepath: String, seek: u64) -> GeorgeResult<Vec<u8>> {
         let policy = IndexPolicy {
             index_type,
             original_key: "".to_string(),
-            node_file_path,
+            node_filepath,
             seek,
+            custom: vec![],
+        };
+        match serde_json::to_vec(&policy) {
+            Ok(v8s) => Ok(v8s),
+            Err(err) => Err(err_string(err.to_string())),
+        }
+    }
+    pub fn bytes_custom(
+        node_filepath: String,
+        seek: u64,
+        custom: Vec<u8>,
+    ) -> GeorgeResult<Vec<u8>> {
+        let policy = IndexPolicy {
+            index_type: IndexType::None,
+            original_key: "".to_string(),
+            node_filepath,
+            seek,
+            custom,
         };
         match serde_json::to_vec(&policy) {
             Ok(v8s) => Ok(v8s),
@@ -151,7 +170,7 @@ impl IndexPolicy {
         }
     }
     fn node_file_path(&self) -> String {
-        self.node_file_path.clone()
+        self.node_filepath.clone()
     }
     fn original_key(&self) -> String {
         self.original_key.clone()
@@ -178,12 +197,14 @@ impl IndexPolicy {
 /// 封装方法函数
 impl Seed {
     /// 新建seed
-    pub fn create(key: String, value: Vec<u8>, delete: bool) -> Arc<RwLock<Seed>> {
+    pub fn create(view: View, key: String, value: Vec<u8>, delete: bool) -> Arc<RwLock<Seed>> {
         Arc::new(RwLock::new(Seed {
+            sequence: 0,
             key,
             value,
             delete,
             policies: Vec::new(),
+            view,
         }))
     }
     /// 获取当前结果原始key信息
@@ -197,8 +218,8 @@ impl TSeed for Seed {
     fn key(&self) -> String {
         self.key.clone()
     }
-    fn value(&self) -> Vec<u8> {
-        self.value.clone()
+    fn value(&self) -> GeorgeResult<Vec<u8>> {
+        DataReal::bytes(self.sequence, self.key(), self.value.clone())
     }
     fn is_none(&self) -> bool {
         self.value.is_empty()
@@ -206,10 +227,13 @@ impl TSeed for Seed {
     fn modify(&mut self, value: Vec<u8>) -> GeorgeResult<()> {
         let mut index_policy = IndexPolicy::from(value)?;
         index_policy.original_key = self.key();
-        self.policies.push(index_policy);
-        Ok(())
+        match index_policy.index_type {
+            IndexType::Dossier => self.sequence = index_policy.seek / 8,
+            _ => {}
+        }
+        Ok(self.policies.push(index_policy))
     }
-    fn save(&mut self, view: View) -> GeorgeResult<()> {
+    fn save(&mut self) -> GeorgeResult<()> {
         // todo 失败回滚
         if self.policies.len() == 0 {
             // return Err(err_string(format!(
@@ -219,12 +243,12 @@ impl TSeed for Seed {
             return Ok(());
         }
         // 执行真实存储操作，即索引将seed存入后，允许检索到该结果，但该结果值不存在，仅当所有索引存入都成功，才会执行本方法完成真实存储操作
-        let view_seek_start = view.write_content(self.value())?;
+        let view_seek_start = self.view.write_content(self.value()?)?;
         // 记录视图文件属性(版本号/数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
         // 数据在视图文件中起始偏移量p(6字节)
         let mut view_seek_start_bytes = trans_u48_2_bytes(view_seek_start);
         // 生成视图文件属性，版本号(2字节)
-        let view_version_bytes = trans_u16_2_bytes(view.version());
+        let view_version_bytes = trans_u16_2_bytes(self.view.version());
         // 循环定位记录使用文件属性
         let mut view_info_index = view_version_bytes.clone();
         // 记录表文件属性(版本/数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
@@ -233,7 +257,9 @@ impl TSeed for Seed {
         // 将在数据在view中的坐标存入各个index
         for policy in self.policies.to_vec() {
             match policy.index_type {
-                IndexType::None => return Err(err_str("index type none is not support!")),
+                IndexType::None => {
+                    Filer::write_seek(policy.node_file_path(), policy.seek, policy.custom)?
+                }
                 IndexType::Memory => return Err(err_str("index type memory is not support!")),
                 _ => Filer::write_seek(
                     policy.node_file_path(),

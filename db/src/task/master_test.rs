@@ -58,7 +58,9 @@ fn base_test() {
         index_name,
         IndexType::Library,
         KeyType::String,
+        false,
         true,
+        false,
     );
     database_map();
 }
@@ -112,7 +114,9 @@ fn index_create_test() {
         "index_create_test",
         IndexType::Library,
         KeyType::String,
+        false,
         true,
+        false,
     );
     database_map();
 }
@@ -134,6 +138,32 @@ fn memory_test() {
     get_m(key3, 5);
     set_m(key3, "test6", 6);
     get_m(key3, 6);
+}
+
+#[test]
+fn index_test_prepare() {
+    let database_name = "database_index_test";
+    let view_name = "view_index_test";
+    create_view(database_name, view_name);
+    let mut i = 1;
+    while i < 5 {
+        // 循环体
+        put(database_name, view_name, i.to_string().as_str(), "world", i);
+        get(database_name, view_name, i.to_string().as_str(), i);
+        i += 1;
+    }
+}
+
+#[test]
+fn index_test() {
+    let database_name = "database_index_test";
+    let view_name = "view_index_test";
+    let mut i = 1;
+    while i < 5 {
+        // 循环体
+        get(database_name, view_name, i.to_string().as_str(), i);
+        i += 1;
+    }
 }
 
 #[test]
@@ -332,7 +362,9 @@ fn library_index_test() {
         "age",
         IndexType::Library,
         KeyType::U32,
+        false,
         true,
+        false,
     );
     database_map();
 }
@@ -469,6 +501,8 @@ fn create_index(
     index_type: IndexType,
     key_type: KeyType,
     primary: bool,
+    unique: bool,
+    null: bool,
 ) {
     create_view(database_name.clone(), view_name.clone());
     match GLOBAL_MASTER.create_index(
@@ -478,6 +512,8 @@ fn create_index(
         index_type,
         key_type,
         primary,
+        unique,
+        null,
     ) {
         Ok(()) => println!(
             "create index {} from database.view {}.{}",
