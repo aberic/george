@@ -118,7 +118,9 @@ impl Node {
 
 /// 封装方法函数
 impl TNode for Node {
-    fn modify(&mut self, _database_name: String, _view_name: String) {}
+    fn modify(&mut self) -> GeorgeResult<()> {
+        unimplemented!()
+    }
     fn put(
         &self,
         flexible_key: u64,
@@ -135,7 +137,6 @@ impl TNode for Node {
     }
     fn select(
         &self,
-        _view: View,
         _left: bool,
         _start: u64,
         _end: u64,

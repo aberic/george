@@ -131,14 +131,7 @@ impl Index {
         ))?;
         let root: Arc<RwLock<dyn TNode>>;
         match index_type {
-            IndexType::Dossier => {
-                root = NodeDossier::create_root(
-                    view.clone(),
-                    database_name.clone(),
-                    view_name.clone(),
-                    name.clone(),
-                )?
-            }
+            IndexType::Dossier => root = NodeDossier::create_root(view.clone(), name.clone())?,
             IndexType::Library => {
                 root = NodeLibrary::create_root(view.clone(), name.clone(), unique)?
             }
@@ -230,13 +223,11 @@ impl TIndex for Index {
     fn create_time(&self) -> Duration {
         self.create_time.clone()
     }
-    fn modify(&mut self, database_name: String, view_name: String) {
-        self.root
-            .write()
-            .unwrap()
-            .modify(database_name.clone(), view_name.clone());
+    fn modify(&mut self, database_name: String, view_name: String) -> GeorgeResult<()> {
+        self.root.write().unwrap().modify()?;
         self.database_name = database_name;
         self.view_name = view_name;
+        Ok(())
     }
     fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
         let hash_key = hash_key(self.key_type(), key.clone())?;
@@ -252,7 +243,6 @@ impl TIndex for Index {
     }
     fn select(
         &self,
-        view: View,
         left: bool,
         start: u64,
         end: u64,
@@ -273,7 +263,7 @@ impl TIndex for Index {
             .root
             .read()
             .unwrap()
-            .select(view, left, start, end, skip, limit, delete, conditions)?;
+            .select(left, start, end, skip, limit, delete, conditions)?;
         match constraint.sort() {
             Some(sort) => {
                 values.sort_by(|a, b| {
@@ -417,12 +407,7 @@ impl Index {
                 let root: Arc<RwLock<dyn TNode>>;
                 match hd.index_type() {
                     IndexType::Dossier => {
-                        root = NodeDossier::recovery_root(
-                            view.clone(),
-                            database_name.clone(),
-                            view_name.clone(),
-                            name.clone(),
-                        )?
+                        root = NodeDossier::recovery_root(view.clone(), name.clone())?
                     }
                     IndexType::Library => {
                         root = NodeLibrary::recovery_root(view.clone(), name.clone(), unique)?

@@ -125,10 +125,12 @@ impl Node {
 
 /// 封装方法函数
 impl TNode for Node {
-    fn modify(&mut self, database_name: String, view_name: String) {
-        let index_path = index_path(database_name, view_name, self.index_name());
+    fn modify(&mut self) -> GeorgeResult<()> {
+        let index_path = index_path(self.database_name(), self.view_name(), self.index_name());
         self.index_path = index_path.clone();
         self.linked_filepath = linked_filepath(index_path);
+        self.record_filer = Filed::recovery(self.linked_filepath())?;
+        Ok(())
     }
     /// 插入数据<p><p>
     ///
@@ -150,7 +152,6 @@ impl TNode for Node {
     }
     fn select(
         &self,
-        _view: View,
         _left: bool,
         _start: u64,
         _end: u64,

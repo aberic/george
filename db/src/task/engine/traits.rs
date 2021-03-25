@@ -40,7 +40,7 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     fn metadata_bytes(&self) -> Vec<u8>;
     /// 创建时间
     fn create_time(&self) -> Duration;
-    fn modify(&mut self, database_name: String, view_name: String);
+    fn modify(&mut self, database_name: String, view_name: String) -> GeorgeResult<()>;
     /// 插入数据，如果存在原值，不覆盖原结果<p><p>
     ///
     /// ###Params
@@ -86,7 +86,6 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     /// Expectation 经由Selector后的期望结果
     fn select(
         &self,
-        view: View,
         left: bool,
         start: u64,
         end: u64,
@@ -98,7 +97,7 @@ pub(crate) trait TIndex: Send + Sync + Debug {
 ///
 /// 该特性包含了结点的基本方法，理论上都需要进行实现才能使用
 pub(crate) trait TNode: Send + Sync + Debug {
-    fn modify(&mut self, database_name: String, view_name: String);
+    fn modify(&mut self) -> GeorgeResult<()>;
     /// 插入数据<p><p>
     ///
     /// force 如果存在原值，是否覆盖原结果
@@ -144,7 +143,6 @@ pub(crate) trait TNode: Send + Sync + Debug {
     /// values 检索结果集合
     fn select(
         &self,
-        view: View,
         left: bool,
         start: u64,
         end: u64,

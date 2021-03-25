@@ -264,7 +264,7 @@ impl View {
                     index
                         .write()
                         .unwrap()
-                        .modify(database_name.clone(), self.name())
+                        .modify(database_name.clone(), self.name())?
                 }
                 self.database_name = database_name;
                 Ok(())
@@ -411,23 +411,13 @@ impl View {
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
     pub fn select(&self, constraint_json_bytes: Vec<u8>) -> GeorgeResult<Expectation> {
-        Selector::run(
-            self.clone(),
-            constraint_json_bytes,
-            self.indexes.clone(),
-            false,
-        )
+        Selector::run(constraint_json_bytes, self.indexes.clone(), false)
     }
     /// 条件删除
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
     pub fn delete(&self, constraint_json_bytes: Vec<u8>) -> GeorgeResult<Expectation> {
-        Selector::run(
-            self.clone(),
-            constraint_json_bytes,
-            self.indexes.clone(),
-            true,
-        )
+        Selector::run(constraint_json_bytes, self.indexes.clone(), true)
     }
 }
 

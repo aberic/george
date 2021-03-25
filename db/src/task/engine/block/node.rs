@@ -81,9 +81,8 @@ impl Node {
 
 /// 封装方法函数
 impl TNode for Node {
-    fn modify(&mut self, database_name: String, view_name: String) {
-        self.database_name = database_name;
-        self.view_name = view_name;
+    fn modify(&mut self) -> GeorgeResult<()> {
+        unimplemented!()
     }
     /// 插入数据<p><p>
     ///
@@ -107,7 +106,6 @@ impl TNode for Node {
     }
     fn select(
         &self,
-        _view: View,
         _left: bool,
         _start: u64,
         _end: u64,

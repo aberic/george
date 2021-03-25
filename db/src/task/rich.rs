@@ -538,7 +538,6 @@ impl Selector {
     ///
     /// delete 是否删除检索结果
     pub(crate) fn run(
-        view: View,
         constraint_json_bytes: Vec<u8>,
         indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
         delete: bool,
@@ -548,7 +547,7 @@ impl Selector {
             indexes,
             constraint,
         };
-        select.exec(view)
+        select.exec()
     }
     fn constraint(&self) -> Constraint {
         self.constraint.clone()
@@ -562,13 +561,12 @@ impl Selector {
     /// index_name 使用到的索引名称，如果没用上则为空
     ///
     /// values 检索结果集合
-    fn exec(&mut self, view: View) -> GeorgeResult<Expectation> {
+    fn exec(&mut self) -> GeorgeResult<Expectation> {
         let status = self.index()?;
         // status自测
         status.check()?;
         self.constraint.conditions = status.conditions;
         status.index.clone().read().unwrap().select(
-            view,
             status.asc,
             status.start,
             status.end,
