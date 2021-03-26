@@ -176,7 +176,7 @@ impl TIndex for Index {
     }
     fn modify(&mut self) -> GeorgeResult<()> {
         let filepath = index_filepath(self.database_name(), self.view_name(), self.name());
-        self.filer = Filed::recovery_self(filepath)?;
+        self.filer = Filed::recovery(filepath)?;
         self.root.write().unwrap().modify()?;
         Ok(())
     }
@@ -374,7 +374,7 @@ impl Index {
                     root,
                     key_type,
                     null,
-                    filer: Filed::recovery_self(filepath)?,
+                    filer: Filed::recovery(filepath)?,
                 };
                 Ok(Arc::new(RwLock::new(index)))
             }

@@ -540,7 +540,7 @@ impl View {
                     name,
                     create_time,
                     metadata: hd.metadata(),
-                    filer: Filed::recovery_self(filepath)?,
+                    filer: Filed::recovery(filepath)?,
                     indexes: Arc::new(Default::default()),
                     pigeonhole,
                 };

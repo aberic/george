@@ -63,8 +63,8 @@ impl Node {
     pub fn create(view: View, index_name: String, unique: bool) -> GeorgeResult<Arc<RwLock<Self>>> {
         let index_path = index_path(view.database_name(), view.name(), index_name.clone());
         let linked_filepath = linked_filepath(index_path.clone());
-        Filer::write_force(linked_filepath.clone(), vec![0x86, 0x87]);
-        let record_filer = Filed::recovery(linked_filepath.clone())?;
+        let record_filer = Filed::create_rw(linked_filepath.clone())?;
+        record_filer.write().unwrap().append(vec![0x86, 0x87])?;
         Ok(Arc::new(RwLock::new(Node {
             view,
             index_name,
@@ -82,7 +82,7 @@ impl Node {
     ) -> GeorgeResult<Arc<RwLock<Self>>> {
         let index_path = index_path(view.database_name(), view.name(), index_name.clone());
         let linked_filepath = linked_filepath(index_path.clone());
-        let record_filer = Filed::recovery(linked_filepath.clone())?;
+        let record_filer = Filed::recovery_rw(linked_filepath.clone())?;
         Ok(Arc::new(RwLock::new(Node {
             view,
             index_name,
@@ -125,7 +125,7 @@ impl TNode for Node {
         let index_path = index_path(self.database_name(), self.view_name(), self.index_name());
         self.index_path = index_path.clone();
         self.linked_filepath = linked_filepath(index_path);
-        self.record_filer = Filed::recovery(self.linked_filepath())?;
+        self.record_filer = Filed::recovery_rw(self.linked_filepath())?;
         Ok(())
     }
     /// 插入数据<p><p>

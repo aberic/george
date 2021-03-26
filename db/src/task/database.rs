@@ -122,7 +122,7 @@ impl Database {
         let database_path_new = database_path(self.name());
         match std::fs::rename(database_path_old, database_path_new) {
             Ok(_) => {
-                self.filer = Filed::recovery_self(database_filepath(self.name()))?;
+                self.filer = Filed::recovery(database_filepath(self.name()))?;
                 for (view_name, view) in self.views.write().unwrap().iter() {
                     view.write()
                         .unwrap()
@@ -320,7 +320,7 @@ impl Database {
                     name,
                     create_time,
                     metadata: hd.metadata(),
-                    filer: Filed::recovery_self(filepath)?,
+                    filer: Filed::recovery(filepath)?,
                     views: Arc::new(Default::default()),
                 };
                 log::info!("recovery database {}", database.name());

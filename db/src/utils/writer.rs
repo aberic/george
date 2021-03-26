@@ -31,9 +31,9 @@ pub struct Filed {
 impl Filed {
     pub fn create(filepath: String) -> GeorgeResult<Filed> {
         Filer::touch(filepath.clone())?;
-        Filed::recovery_self(filepath)
+        Filed::recovery(filepath)
     }
-    pub fn recovery_self(filepath: String) -> GeorgeResult<Filed> {
+    pub fn recovery(filepath: String) -> GeorgeResult<Filed> {
         Ok(Filed {
             filepath: filepath.clone(),
             reader: Arc::new(Filer::reader(filepath.clone())?),
@@ -41,7 +41,11 @@ impl Filed {
             appender: Arc::new(RwLock::new(Filer::appender(filepath)?)),
         })
     }
-    pub fn recovery(filepath: String) -> GeorgeResult<Arc<RwLock<Filed>>> {
+    pub fn create_rw(filepath: String) -> GeorgeResult<Arc<RwLock<Filed>>> {
+        Filer::touch(filepath.clone())?;
+        Filed::recovery_rw(filepath)
+    }
+    pub fn recovery_rw(filepath: String) -> GeorgeResult<Arc<RwLock<Filed>>> {
         Ok(Arc::new(RwLock::new(Filed {
             filepath: filepath.clone(),
             reader: Arc::new(Filer::reader(filepath.clone())?),
