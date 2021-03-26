@@ -34,7 +34,7 @@ use crate::task::index::Index as IndexDefault;
 use crate::task::rich::{Expectation, Selector};
 use crate::task::seed::Seed;
 use crate::utils::comm::{hash_key, key_fetch, INDEX_CATALOG, INDEX_SEQUENCE};
-use crate::utils::enums::{IndexType, KeyType, ViewType};
+use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::{index_filepath, view_filepath, view_path};
 use crate::utils::store::{before_content_bytes, recovery_before_content, Metadata, HD};
 use crate::utils::writer::Filed;
@@ -67,7 +67,7 @@ pub(crate) struct View {
 /// ###Params
 ///
 /// mem 是否为内存视图
-fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View> {
+fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
     let filepath = view_filepath(database_name.clone(), name.clone());
@@ -81,14 +81,14 @@ fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View
         indexes: Default::default(),
         pigeonhole: Pigeonhole::create(0, filepath, create_time),
     };
-    // view.create_index(
-    //     INDEX_CATALOG.to_string(),
-    //     IndexType::Library,
-    //     KeyType::String,
-    //     false,
-    //     true,
-    //     false,
-    // )?;
+    view.create_index(
+        INDEX_CATALOG.to_string(),
+        IndexType::Library,
+        KeyType::String,
+        true,
+        true,
+        false,
+    )?;
     view.create_index(
         INDEX_SEQUENCE.to_string(),
         IndexType::Dossier,
@@ -103,12 +103,7 @@ fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View
 
 impl View {
     pub(crate) fn create(database_name: String, name: String) -> GeorgeResult<Arc<RwLock<View>>> {
-        let view = new_view(database_name, name, false)?;
-        view.init()?;
-        Ok(Arc::new(RwLock::new(view)))
-    }
-    pub(crate) fn create_m(database_name: String, name: String) -> GeorgeResult<Arc<RwLock<View>>> {
-        let view = new_view(database_name, name, true)?;
+        let view = new_view(database_name, name)?;
         view.init()?;
         Ok(Arc::new(RwLock::new(view)))
     }
@@ -141,10 +136,6 @@ impl View {
     /// 文件字节信息
     pub(crate) fn metadata_bytes(&self) -> Vec<u8> {
         self.metadata.bytes()
-    }
-    /// 文件信息
-    pub(crate) fn view_type(&self) -> ViewType {
-        self.metadata().view_type()
     }
     /// 索引集合
     pub(crate) fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>> {

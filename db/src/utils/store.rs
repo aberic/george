@@ -21,7 +21,7 @@ use comm::io::file::{Filer, FilerNormal};
 use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_u32_2_bytes};
 
 use crate::utils::deploy::VERSION;
-use crate::utils::enums::{Enum, EnumHandler, IndexType, Tag, ViewType};
+use crate::utils::enums::{Enum, EnumHandler, IndexType, Tag};
 
 /// 起始符
 const FRONT: [u8; 2] = [0x20, 0x19];
@@ -35,8 +35,6 @@ pub struct Metadata {
     pub tag: Tag,
     /// 存储引擎类型
     pub index_type: IndexType,
-    /// 视图引擎类型
-    pub view_type: ViewType,
     /// 版本号
     pub version: [u8; 2],
     /// 序号
@@ -62,7 +60,6 @@ impl Metadata {
         Metadata {
             tag: Tag::Bootstrap,
             index_type: IndexType::None,
-            view_type: ViewType::None,
             version,
             sequence,
         }
@@ -71,16 +68,14 @@ impl Metadata {
         Metadata {
             tag: Tag::Database,
             index_type: IndexType::None,
-            view_type: ViewType::None,
             version,
             sequence,
         }
     }
-    pub fn from_view(view_type: ViewType, version: [u8; 2], sequence: u8) -> Metadata {
+    pub fn from_view(version: [u8; 2], sequence: u8) -> Metadata {
         Metadata {
             tag: Tag::View,
             index_type: IndexType::None,
-            view_type,
             version,
             sequence,
         }
@@ -89,7 +84,6 @@ impl Metadata {
         Metadata {
             tag: Tag::Index,
             index_type,
-            view_type: ViewType::None,
             version,
             sequence,
         }
@@ -98,7 +92,6 @@ impl Metadata {
         Metadata {
             tag: Tag::Database,
             index_type: IndexType::None,
-            view_type: ViewType::None,
             version: VERSION,
             sequence: 0x00,
         }
@@ -107,7 +100,6 @@ impl Metadata {
         Metadata {
             tag: Tag::View,
             index_type: IndexType::None,
-            view_type: ViewType::Disk,
             version: VERSION,
             sequence: 0x00,
         }
@@ -118,7 +110,6 @@ impl Metadata {
             _ => Ok(Metadata {
                 tag: Tag::Index,
                 index_type,
-                view_type: ViewType::None,
                 version: VERSION,
                 sequence: 0x00,
             }),
@@ -137,7 +128,6 @@ impl Metadata {
                     head.get(6).unwrap().clone(),
                 )),
                 Tag::View => Ok(Metadata::from_view(
-                    Enum::view_type(head.get(3).unwrap().clone()),
                     [head.get(4).unwrap().clone(), head.get(5).unwrap().clone()],
                     head.get(6).unwrap().clone(),
                 )),
@@ -157,10 +147,6 @@ impl Metadata {
     /// 索引引擎类型
     pub fn index_type(&self) -> IndexType {
         self.index_type.clone()
-    }
-    /// 视图引擎类型
-    pub fn view_type(&self) -> ViewType {
-        self.view_type.clone()
     }
     /// 版本号
     pub fn version(&self) -> GeorgeResult<u16> {
@@ -197,7 +183,6 @@ impl Metadata {
     pub fn bytes(&self) -> Vec<u8> {
         let mut type_u8: u8 = 0x00;
         match self.tag {
-            Tag::View => type_u8 = Enum::view_type_u8(self.view_type()),
             Tag::Index => type_u8 = Enum::index_type_u8(self.index_type()),
             _ => {}
         }

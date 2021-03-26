@@ -517,7 +517,6 @@ fn create_view(database_name: &str, view_name: &str) {
         String::from(database_name),
         String::from(view_name),
         String::from("comment"),
-        false,
     ) {
         Ok(()) => println!("create view {} from database {}", view_name, database_name),
         Err(err) => println!(

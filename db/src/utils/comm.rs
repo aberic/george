@@ -31,7 +31,7 @@ pub const GEORGE_DB_LOG_LEVEL: &str = "GEORGE_DB_LOG_LEVEL";
 pub const GEORGE_DB_PRODUCTION: &str = "GEORGE_DB_PRODUCTION";
 
 pub const DEFAULT_DATABASE: &str = "sys";
-pub const DEFAULT_VIEW: &str = "memory";
+pub const DEFAULT_VIEW: &str = "view";
 pub const DEFAULT_COMMENT: &str = "system default";
 
 /// 默认KV存储索引

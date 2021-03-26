@@ -17,11 +17,9 @@ use serde::{Deserialize, Serialize};
 pub trait EnumHandler {
     fn tag_u8(tag: Tag) -> u8;
     fn index_type_u8(index_type: IndexType) -> u8;
-    fn view_type_u8(view_type: ViewType) -> u8;
     fn key_type_u8(key_type: KeyType) -> u8;
     fn tag(b: u8) -> Tag;
     fn index_type(b: u8) -> IndexType;
-    fn view_type(b: u8) -> ViewType;
     fn key_type(b: u8) -> KeyType;
     fn key_type_str(key_type: KeyType) -> String;
 }
@@ -35,9 +33,6 @@ impl EnumHandler for Enum {
     fn index_type_u8(index_type: IndexType) -> u8 {
         index_type_u8(index_type)
     }
-    fn view_type_u8(view_type: ViewType) -> u8 {
-        view_type_u8(view_type)
-    }
     fn key_type_u8(key_type: KeyType) -> u8 {
         key_type_u8(key_type)
     }
@@ -46,9 +41,6 @@ impl EnumHandler for Enum {
     }
     fn index_type(b: u8) -> IndexType {
         index_type(b)
-    }
-    fn view_type(b: u8) -> ViewType {
-        view_type(b)
     }
     fn key_type(b: u8) -> KeyType {
         key_type(b)
@@ -107,15 +99,6 @@ pub enum IndexType {
     Block,
 }
 
-/// 存储引擎类型
-#[derive(Debug, Clone, Copy)]
-pub enum ViewType {
-    /// 占位
-    None,
-    /// 磁盘存储视图
-    Disk,
-}
-
 fn tag_u8(tag: Tag) -> u8 {
     match tag {
         Tag::Bootstrap => 0x00,
@@ -131,13 +114,6 @@ fn index_type_u8(index_type: IndexType) -> u8 {
         IndexType::Dossier => 0x01,
         IndexType::Library => 0x02,
         IndexType::Block => 0x03,
-    }
-}
-
-fn view_type_u8(view_type: ViewType) -> u8 {
-    match view_type {
-        ViewType::None => 0x00,
-        ViewType::Disk => 0x01,
     }
 }
 
@@ -172,14 +148,6 @@ fn index_type(b: u8) -> IndexType {
         0x02 => IndexType::Library,
         0x03 => IndexType::Block,
         _ => IndexType::None,
-    }
-}
-
-fn view_type(b: u8) -> ViewType {
-    match b {
-        0x00 => ViewType::None,
-        0x01 => ViewType::Disk,
-        _ => ViewType::None,
     }
 }
 

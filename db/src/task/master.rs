@@ -103,12 +103,11 @@ impl Master {
         database_name: String,
         view_name: String,
         _view_comment: String,
-        mem: bool,
     ) -> GeorgeResult<()> {
         match self.database_map().read().unwrap().get(&database_name) {
             Some(database_lock) => {
                 let database = database_lock.read().unwrap();
-                database.create_view(view_name, mem)?;
+                database.create_view(view_name)?;
             }
             None => return Err(GeorgeError::from(DatabaseNoExistError)),
         }
@@ -451,7 +450,6 @@ impl Master {
             DEFAULT_DATABASE.to_string(),
             DEFAULT_VIEW.to_string(),
             DEFAULT_COMMENT.to_string(),
-            true,
         ) {
             _ => {}
         }

@@ -187,17 +187,14 @@ impl Database {
     /// 创建视图
     ///
     /// mem 是否为内存视图
-    pub(crate) fn create_view(&self, name: String, mem: bool) -> GeorgeResult<()> {
+    pub(crate) fn create_view(&self, name: String) -> GeorgeResult<()> {
         if self.exist_view(name.clone()) {
             return Err(GeorgeError::from(ViewExistError));
         }
-        let view: Arc<RwLock<View>>;
-        if mem {
-            view = View::create_m(self.name(), name.clone())?;
-        } else {
-            view = View::create(self.name(), name.clone())?;
-        }
-        self.view_map().write().unwrap().insert(name, view.clone());
+        self.view_map()
+            .write()
+            .unwrap()
+            .insert(name.clone(), View::create(self.name(), name)?);
         Ok(())
     }
     /// 修改视图
