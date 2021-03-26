@@ -60,7 +60,7 @@ fn new_database(name: String) -> GeorgeResult<Database> {
         name,
         create_time,
         metadata: Metadata::database(),
-        filer: Filed::create_self(filepath)?,
+        filer: Filed::create(filepath)?,
         views: Arc::new(Default::default()),
     })
 }

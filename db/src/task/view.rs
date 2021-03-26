@@ -77,7 +77,7 @@ fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
         name,
         create_time,
         metadata,
-        filer: Filed::create_self(filepath.clone())?,
+        filer: Filed::create(filepath.clone())?,
         indexes: Default::default(),
         pigeonhole: Pigeonhole::create(0, filepath, create_time),
     };

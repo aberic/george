@@ -29,13 +29,9 @@ pub struct Filed {
 }
 
 impl Filed {
-    pub fn create_self(filepath: String) -> GeorgeResult<Filed> {
+    pub fn create(filepath: String) -> GeorgeResult<Filed> {
         Filer::touch(filepath.clone())?;
         Filed::recovery_self(filepath)
-    }
-    pub fn create(filepath: String) -> GeorgeResult<Arc<RwLock<Filed>>> {
-        Filer::touch(filepath.clone())?;
-        Filed::recovery(filepath)
     }
     pub fn recovery_self(filepath: String) -> GeorgeResult<Filed> {
         Ok(Filed {

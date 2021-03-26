@@ -12,14 +12,11 @@
  * limitations under the License.
  */
 
-use std::fs::File;
-use std::io::{Seek, SeekFrom};
 use std::sync::{Arc, RwLock};
 
 use chrono::{Duration, Local, NaiveDateTime};
 
 use comm::errors::entrances::{err_str, err_string, GeorgeResult};
-use comm::io::file::{Filer, FilerExecutor, FilerHandler};
 use comm::strings::{StringHandler, Strings};
 
 use crate::task::engine::block::node::Node as NB;
@@ -31,7 +28,7 @@ use crate::task::view::View;
 use crate::utils::enums::{Enum, EnumHandler, IndexType, KeyType};
 use crate::utils::path::index_filepath;
 use crate::utils::store::{before_content_bytes, Metadata, HD};
-use crate::utils::writer::{obtain_append_file, Filed};
+use crate::utils::writer::Filed;
 use serde_json::Value;
 
 /// Siam索引
@@ -56,8 +53,6 @@ pub(crate) struct Index {
     metadata: Metadata,
     /// 创建时间
     create_time: Duration,
-    /// 根据文件路径获取该文件追加写入的写对象
-    file_append: Arc<RwLock<File>>,
     /// 根据文件路径获取该文件追加写入的写对象
     ///
     /// 需要借助对象包裹，以便更新file，避免self为mut
@@ -90,7 +85,6 @@ fn new_index(
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
     let filepath = index_filepath(view.database_name(), view.name(), name.clone());
-    let file_append = obtain_append_file(filepath.clone())?;
     let index = Index {
         view,
         primary,
@@ -98,11 +92,10 @@ fn new_index(
         root,
         metadata,
         create_time,
-        file_append,
         key_type,
         unique,
         null,
-        filer: Filed::recovery_self(filepath)?,
+        filer: Filed::create(filepath)?,
     };
     Ok(index)
 }
@@ -117,11 +110,6 @@ impl Index {
         null: bool,
         key_type: KeyType,
     ) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
-        Filer::touch(index_filepath(
-            view.database_name(),
-            view.name(),
-            name.clone(),
-        ))?;
         let root: Arc<RwLock<dyn TNode>>;
         match index_type {
             IndexType::Dossier => root = ND::create(view.clone(), name.clone())?,
@@ -156,31 +144,7 @@ impl Index {
     ///
     /// seek_end_before 写之前文件字节数据长度
     fn file_append(&mut self, content: Vec<u8>) -> GeorgeResult<u64> {
-        let file_append = self.file_append.clone();
-        let mut file_write = file_append.write().unwrap();
-        match file_write.seek(SeekFrom::End(0)) {
-            Ok(seek_end_before) => {
-                match Filer::appends(file_write.try_clone().unwrap(), content.clone()) {
-                    Ok(()) => Ok(seek_end_before),
-                    Err(_err) => {
-                        let filepath =
-                            index_filepath(self.database_name(), self.view_name(), self.name());
-                        self.file_append = obtain_append_file(filepath)?;
-                        let file_write_again = self.file_append.write().unwrap();
-                        Filer::appends(file_write_again.try_clone().unwrap(), content)?;
-                        Ok(seek_end_before)
-                    }
-                }
-            }
-            Err(_err) => {
-                let filepath = index_filepath(self.database_name(), self.view_name(), self.name());
-                self.file_append = obtain_append_file(filepath)?;
-                let mut file_write_again = self.file_append.write().unwrap();
-                let seek_end_before_again = file_write_again.seek(SeekFrom::End(0)).unwrap();
-                Filer::appends(file_write_again.try_clone().unwrap(), content)?;
-                Ok(seek_end_before_again)
-            }
-        }
+        self.filer.append(content)
     }
 }
 
@@ -212,7 +176,7 @@ impl TIndex for Index {
     }
     fn modify(&mut self) -> GeorgeResult<()> {
         let filepath = index_filepath(self.database_name(), self.view_name(), self.name());
-        self.file_append = obtain_append_file(filepath)?;
+        self.filer = Filed::recovery_self(filepath)?;
         self.root.write().unwrap().modify()?;
         Ok(())
     }
@@ -387,7 +351,6 @@ impl Index {
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
                 let filepath = index_filepath(view.database_name(), view.name(), name.clone());
-                let file_append = obtain_append_file(filepath.clone())?;
                 let root: Arc<RwLock<dyn TNode>>;
                 match hd.index_type() {
                     IndexType::Dossier => root = ND::recovery(view.clone(), name.clone())?,
@@ -408,7 +371,6 @@ impl Index {
                     unique,
                     create_time,
                     metadata: hd.metadata(),
-                    file_append,
                     root,
                     key_type,
                     null,
