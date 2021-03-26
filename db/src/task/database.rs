@@ -22,8 +22,7 @@ use comm::errors::children::{ViewExistError, ViewNoExistError};
 use comm::errors::entrances::{err_string, err_strs, GeorgeError, GeorgeResult};
 use comm::strings::{StringHandler, Strings};
 use std::collections::HashMap;
-use std::fs::{read_dir, File, ReadDir};
-use std::io::{Seek, SeekFrom};
+use std::fs::{read_dir, ReadDir};
 use std::sync::{Arc, RwLock};
 
 #[derive(Debug, Clone)]
@@ -192,7 +191,7 @@ impl Database {
         archive_file_path: String,
     ) -> GeorgeResult<()> {
         self.view(view_name)?
-            .read()
+            .write()
             .unwrap()
             .archive(archive_file_path)
     }

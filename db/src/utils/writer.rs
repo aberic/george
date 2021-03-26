@@ -12,12 +12,12 @@
  * limitations under the License.
  */
 
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::{Seek, SeekFrom, Write};
 use std::sync::{Arc, RwLock};
 
+use comm::errors::entrances::err_strs;
 use comm::errors::entrances::GeorgeResult;
-use comm::errors::entrances::{err_string, err_strs};
 use comm::io::file::{Filer, FilerExecutor, FilerHandler, FilerNormal};
 
 #[derive(Debug, Clone)]

@@ -23,7 +23,7 @@ use chrono::{Duration, Local, NaiveDateTime};
 
 use comm::errors::children::IndexExistError;
 use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeError, GeorgeResult};
-use comm::io::file::{Filer, FilerNormal, FilerReader, FilerWriter};
+use comm::io::file::{Filer, FilerNormal};
 use comm::strings::{StringHandler, Strings};
 use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u48, trans_u32_2_bytes};
 use comm::vectors::{Vector, VectorHandler};
@@ -53,7 +53,7 @@ pub(crate) struct View {
     /// 根据文件路径获取该文件追加写入的写对象
     ///
     /// 需要借助对象包裹，以便更新file，避免self为mut
-    filer: Arc<RwLock<Filed>>,
+    filer: Filed,
     /// 索引集合
     indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
     /// 当前归档版本信息
@@ -77,7 +77,7 @@ fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
         name,
         create_time,
         metadata,
-        filer: Filed::create(filepath.clone())?,
+        filer: Filed::create_self(filepath.clone())?,
         indexes: Default::default(),
         pigeonhole: Pigeonhole::create(0, filepath, create_time),
     };
@@ -103,11 +103,11 @@ fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
 
 impl View {
     pub(crate) fn create(database_name: String, name: String) -> GeorgeResult<Arc<RwLock<View>>> {
-        let view = new_view(database_name, name)?;
+        let mut view = new_view(database_name, name)?;
         view.init()?;
         Ok(Arc::new(RwLock::new(view)))
     }
-    fn init(&self) -> GeorgeResult<()> {
+    fn init(&mut self) -> GeorgeResult<()> {
         let mut metadata_bytes = self.metadata_bytes();
         let mut description = self.description();
         // 初始化为32 + 8，即head长度加正文描述符长度
@@ -200,14 +200,13 @@ impl View {
     /// #Return
     ///
     /// seek_end_before 写之前文件字节数据长度
-    fn file_append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.filer.write().unwrap().append(content)
+    fn file_append(&mut self, content: Vec<u8>) -> GeorgeResult<u64> {
+        self.filer.append(content)
     }
     /// 视图变更
     pub(crate) fn modify(&mut self, database_name: String, name: String) -> GeorgeResult<()> {
         let old_name = self.name();
-        let filepath = view_filepath(database_name.clone(), old_name.clone());
-        let content_old = Filer::read_sub(filepath.clone(), 0, 40)?;
+        let content_old = self.filer.read(0, 40)?;
         self.name = name;
         let description = self.description();
         let seek_end = self.file_append(description.clone())?;
@@ -219,7 +218,7 @@ impl View {
         );
         let content_new = before_content_bytes(seek_end as u32, description.len() as u32);
         // 更新首部信息，初始化head为32，描述起始4字节，长度4字节
-        Filer::write_seek(filepath.clone(), 32, content_new)?;
+        self.filer.write(32, content_new)?;
         let view_path_old = view_path(database_name.clone(), old_name);
         let view_path_new = view_path(database_name.clone(), self.name());
         match std::fs::rename(view_path_old, view_path_new) {
@@ -232,7 +231,7 @@ impl View {
             }
             Err(err) => {
                 // 回滚数据
-                Filer::write_seek(filepath, 0, content_old)?;
+                self.filer.write(0, content_old)?;
                 Err(err_strs("file rename failed", err))
             }
         }
@@ -353,8 +352,8 @@ impl View {
     /// 整理归档
     ///
     /// archive_file_path 归档路径
-    pub(crate) fn archive(&self, archive_file_path: String) -> GeorgeResult<()> {
-        self.filer.write().unwrap().archive(archive_file_path)?;
+    pub(crate) fn archive(&mut self, archive_file_path: String) -> GeorgeResult<()> {
+        self.filer.archive(archive_file_path)?;
         self.init()
     }
     /// 取出可用数据集合
@@ -375,7 +374,7 @@ impl View {
     /// 组装写入视图的内容，即持续长度+该长度的原文内容
     ///
     /// 将数据存入view，返回数据在view中的起始偏移量坐标
-    pub(crate) fn write_content(&self, mut value: Vec<u8>) -> GeorgeResult<u64> {
+    pub(crate) fn write_content(&mut self, mut value: Vec<u8>) -> GeorgeResult<u64> {
         // 内容持续长度(4字节)
         let mut seed_bytes_len_bytes = trans_u32_2_bytes(value.len() as u32);
         // 真实存储内容，内容持续长度(4字节)+内容字节数组
@@ -541,7 +540,7 @@ impl View {
                     name,
                     create_time,
                     metadata: hd.metadata(),
-                    filer: Filed::recovery(filepath)?,
+                    filer: Filed::recovery_self(filepath)?,
                     indexes: Arc::new(Default::default()),
                     pigeonhole,
                 };
