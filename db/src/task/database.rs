@@ -67,7 +67,7 @@ fn new_database(name: String) -> GeorgeResult<Database> {
 
 impl Database {
     pub(crate) fn create(name: String) -> GeorgeResult<Arc<RwLock<Database>>> {
-        let mut database = new_database(name)?;
+        let database = new_database(name)?;
         let mut metadata_bytes = database.metadata_bytes();
         let mut description = database.description();
         // 初始化为32 + 8，即head长度加正文描述符长度
@@ -96,7 +96,7 @@ impl Database {
     /// #Return
     ///
     /// seek_end_before 写之前文件字节数据长度
-    fn file_append(&mut self, content: Vec<u8>) -> GeorgeResult<u64> {
+    fn file_append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
         self.filer.append(content)
     }
     /// 视图索引集合
@@ -296,7 +296,7 @@ impl Database {
 
 impl Database {
     /// 生成文件描述
-    fn description(&mut self) -> Vec<u8> {
+    fn description(&self) -> Vec<u8> {
         hex::encode(format!(
             "{}:#?{}",
             self.name(),

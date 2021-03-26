@@ -18,14 +18,12 @@ use std::sync::{Arc, RwLock};
 
 use comm::errors::entrances::err_strs;
 use comm::errors::entrances::GeorgeResult;
-use comm::io::file::{Filer, FilerExecutor, FilerHandler, FilerNormal};
+use comm::io::file::{Filer, FilerExecutor, FilerHandler, FilerNormal, FilerReader};
 
 #[derive(Debug, Clone)]
 pub struct Filed {
     filepath: String,
-    reader: Arc<File>,
-    writer: Arc<RwLock<File>>,
-    appender: Arc<RwLock<File>>,
+    exec: Arc<RwLock<FiledExec>>,
 }
 
 impl Filed {
@@ -36,53 +34,20 @@ impl Filed {
     pub fn recovery(filepath: String) -> GeorgeResult<Filed> {
         Ok(Filed {
             filepath: filepath.clone(),
-            reader: Arc::new(Filer::reader(filepath.clone())?),
-            writer: Arc::new(RwLock::new(Filer::writer(filepath.clone())?)),
-            appender: Arc::new(RwLock::new(Filer::appender(filepath)?)),
+            exec: Arc::new(RwLock::new(FiledExec {
+                writer: Filer::writer(filepath.clone())?,
+                appender: Filer::appender(filepath.clone())?,
+            })),
         })
     }
-    pub fn create_rw(filepath: String) -> GeorgeResult<Arc<RwLock<Filed>>> {
-        Filer::touch(filepath.clone())?;
-        Filed::recovery_rw(filepath)
-    }
-    pub fn recovery_rw(filepath: String) -> GeorgeResult<Arc<RwLock<Filed>>> {
-        Ok(Arc::new(RwLock::new(Filed {
-            filepath: filepath.clone(),
-            reader: Arc::new(Filer::reader(filepath.clone())?),
-            writer: Arc::new(RwLock::new(Filer::appender(filepath.clone())?)),
-            appender: Arc::new(RwLock::new(Filer::appender(filepath)?)),
-        })))
-    }
     pub fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
-        match self.reader.clone().try_clone() {
-            Ok(file) => Filer::read_subs(file, start, last),
-            Err(err) => Err(err_strs("filed read", err)),
-        }
+        self.exec.read().unwrap().read(self.filepath(), start, last)
     }
-    pub fn write(&mut self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
-        let writer = self.writer.clone();
-        let mut file_write = writer.write().unwrap();
-        match file_write.seek(SeekFrom::Start(seek)) {
-            Ok(_s) => match file_write.write_all(content.as_slice()) {
-                Ok(()) => Ok(()),
-                Err(err) => Err(err_strs("filed write while write all", err)),
-            },
-            Err(err) => Err(err_strs("filed write while seek", err)),
-        }
+    pub fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
+        self.exec.write().unwrap().write(seek, content)
     }
-    pub fn append(&mut self, content: Vec<u8>) -> GeorgeResult<u64> {
-        let appender = self.appender.clone();
-        let mut file_append = appender.write().unwrap();
-        match file_append.seek(SeekFrom::End(0)) {
-            Ok(seek_end_before) => match file_append.try_clone() {
-                Ok(f) => {
-                    Filer::appends(f, content.clone())?;
-                    Ok(seek_end_before)
-                }
-                Err(err) => Err(err_strs("write append file try clone2", err)),
-            },
-            Err(err) => Err(err_strs("write append file try clone1", err)),
-        }
+    pub fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
+        self.exec.write().unwrap().append(content)
     }
     fn filepath(&self) -> String {
         self.filepath.clone()
@@ -93,8 +58,48 @@ impl Filed {
     pub fn archive(&mut self, archive_filepath: String) -> GeorgeResult<()> {
         Filer::mv(self.filepath(), archive_filepath)?;
         Filer::touch(self.filepath())?;
-        self.appender = obtain_append_file(self.filepath())?;
+        self.exec.write().unwrap().recovery(self.filepath())
+    }
+}
+
+#[derive(Debug)]
+struct FiledExec {
+    writer: File,
+    appender: File,
+}
+
+impl FiledExec {
+    fn recovery(&mut self, filepath: String) -> GeorgeResult<()> {
+        self.writer = Filer::writer(filepath.clone())?;
+        self.appender = Filer::appender(filepath.clone())?;
         Ok(())
+    }
+    fn read(&self, filepath: String, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
+        Filer::read_sub(filepath, start, last)
+    }
+    fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
+        match self.writer.try_clone() {
+            Ok(mut file) => match file.seek(SeekFrom::Start(seek)) {
+                Ok(_s) => match file.write_all(content.as_slice()) {
+                    Ok(()) => Ok(()),
+                    Err(err) => Err(err_strs("filed write while write all", err)),
+                },
+                Err(err) => Err(err_strs("filed write while seek", err)),
+            },
+            Err(err) => Err(err_strs("filed read", err)),
+        }
+    }
+    fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
+        match self.appender.try_clone() {
+            Ok(mut file) => match file.seek(SeekFrom::End(0)) {
+                Ok(seek_end_before) => {
+                    Filer::appends(file, content.clone())?;
+                    Ok(seek_end_before)
+                }
+                Err(err) => Err(err_strs("write append file try clone1", err)),
+            },
+            Err(err) => Err(err_strs("filed read", err)),
+        }
     }
 }
 

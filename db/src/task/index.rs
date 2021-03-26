@@ -117,7 +117,7 @@ impl Index {
             IndexType::Block => root = NB::create(name.clone()),
             _ => return Err(err_str("unsupported engine type with none")),
         }
-        let mut index = new_index(
+        let index = new_index(
             view,
             name,
             primary,
@@ -143,7 +143,7 @@ impl Index {
     /// #Return
     ///
     /// seek_end_before 写之前文件字节数据长度
-    fn file_append(&mut self, content: Vec<u8>) -> GeorgeResult<u64> {
+    fn file_append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
         self.filer.append(content)
     }
 }

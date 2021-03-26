@@ -103,11 +103,11 @@ fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
 
 impl View {
     pub(crate) fn create(database_name: String, name: String) -> GeorgeResult<Arc<RwLock<View>>> {
-        let mut view = new_view(database_name, name)?;
+        let view = new_view(database_name, name)?;
         view.init()?;
         Ok(Arc::new(RwLock::new(view)))
     }
-    fn init(&mut self) -> GeorgeResult<()> {
+    fn init(&self) -> GeorgeResult<()> {
         let mut metadata_bytes = self.metadata_bytes();
         let mut description = self.description();
         // 初始化为32 + 8，即head长度加正文描述符长度
@@ -200,7 +200,7 @@ impl View {
     /// #Return
     ///
     /// seek_end_before 写之前文件字节数据长度
-    fn file_append(&mut self, content: Vec<u8>) -> GeorgeResult<u64> {
+    fn file_append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
         self.filer.append(content)
     }
     /// 视图变更
@@ -374,7 +374,7 @@ impl View {
     /// 组装写入视图的内容，即持续长度+该长度的原文内容
     ///
     /// 将数据存入view，返回数据在view中的起始偏移量坐标
-    pub(crate) fn write_content(&mut self, mut value: Vec<u8>) -> GeorgeResult<u64> {
+    pub(crate) fn write_content(&self, mut value: Vec<u8>) -> GeorgeResult<u64> {
         // 内容持续长度(4字节)
         let mut seed_bytes_len_bytes = trans_u32_2_bytes(value.len() as u32);
         // 真实存储内容，内容持续长度(4字节)+内容字节数组

@@ -25,7 +25,7 @@ use crate::utils::path::{index_path, linked_filepath, node_filepath};
 use crate::utils::writer::Filed;
 use comm::errors::children::{DataExistError, DataNoExistError};
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
-use comm::io::file::{Filer, FilerExecutor, FilerHandler, FilerNormal, FilerReader, FilerWriter};
+use comm::io::file::{Filer, FilerExecutor, FilerHandler, FilerNormal, FilerReader};
 use comm::strings::{StringHandler, Strings};
 use comm::trans::{trans_bytes_2_u32_as_u64, trans_u32_2_bytes};
 use comm::vectors::{Vector, VectorHandler};
@@ -53,7 +53,7 @@ pub(crate) struct Node {
     /// 根据文件路径获取该文件追加写入的写对象
     ///
     /// 需要借助对象包裹，以便更新file，避免self为mut
-    record_filer: Arc<RwLock<Filed>>,
+    record_filer: Filed,
 }
 
 impl Node {
@@ -63,8 +63,8 @@ impl Node {
     pub fn create(view: View, index_name: String, unique: bool) -> GeorgeResult<Arc<RwLock<Self>>> {
         let index_path = index_path(view.database_name(), view.name(), index_name.clone());
         let linked_filepath = linked_filepath(index_path.clone());
-        let record_filer = Filed::create_rw(linked_filepath.clone())?;
-        record_filer.write().unwrap().append(vec![0x86, 0x87])?;
+        let record_filer = Filed::create(linked_filepath.clone())?;
+        record_filer.append(vec![0x86, 0x87])?;
         Ok(Arc::new(RwLock::new(Node {
             view,
             index_name,
@@ -82,7 +82,7 @@ impl Node {
     ) -> GeorgeResult<Arc<RwLock<Self>>> {
         let index_path = index_path(view.database_name(), view.name(), index_name.clone());
         let linked_filepath = linked_filepath(index_path.clone());
-        let record_filer = Filed::recovery_rw(linked_filepath.clone())?;
+        let record_filer = Filed::recovery(linked_filepath.clone())?;
         Ok(Arc::new(RwLock::new(Node {
             view,
             index_name,
@@ -115,7 +115,7 @@ impl Node {
     ///
     /// seek_end_before 写之前文件字节数据长度
     fn linked_append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.record_filer.write().unwrap().append(content)
+        self.record_filer.append(content)
     }
 }
 
@@ -125,7 +125,7 @@ impl TNode for Node {
         let index_path = index_path(self.database_name(), self.view_name(), self.index_name());
         self.index_path = index_path.clone();
         self.linked_filepath = linked_filepath(index_path);
-        self.record_filer = Filed::recovery_rw(self.linked_filepath())?;
+        self.record_filer = Filed::recovery(self.linked_filepath())?;
         Ok(())
     }
     /// 插入数据<p><p>
