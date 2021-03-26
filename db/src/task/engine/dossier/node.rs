@@ -40,6 +40,10 @@ pub(crate) struct Node {
     atomic_key: Arc<AtomicU64>,
     index_name: String,
     node_filepath: String,
+    /// 根据文件路径获取该文件追加写入的写对象
+    ///
+    /// 需要借助对象包裹，以便更新file，避免self为mut
+    filer: Filed,
 }
 
 impl Node {
