@@ -112,40 +112,10 @@ impl Metadata {
             sequence: 0x00,
         }
     }
-    pub fn view_mem() -> Metadata {
-        Metadata {
-            tag: Tag::View,
-            index_type: IndexType::None,
-            view_type: ViewType::Memory,
-            version: VERSION,
-            sequence: 0x00,
-        }
-    }
     pub fn index(index_type: IndexType) -> GeorgeResult<Metadata> {
         match index_type {
             IndexType::None => Err(err_str("unsupported engine type with none")),
-            IndexType::Memory => Ok(Metadata {
-                tag: Tag::Index,
-                index_type,
-                view_type: ViewType::None,
-                version: VERSION,
-                sequence: 0x00,
-            }),
-            IndexType::Dossier => Ok(Metadata {
-                tag: Tag::Index,
-                index_type,
-                view_type: ViewType::None,
-                version: VERSION,
-                sequence: 0x00,
-            }),
-            IndexType::Library => Ok(Metadata {
-                tag: Tag::Index,
-                index_type,
-                view_type: ViewType::None,
-                version: VERSION,
-                sequence: 0x00,
-            }),
-            IndexType::Block => Ok(Metadata {
+            _ => Ok(Metadata {
                 tag: Tag::Index,
                 index_type,
                 view_type: ViewType::None,

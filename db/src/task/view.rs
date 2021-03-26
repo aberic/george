@@ -21,29 +21,23 @@ use std::thread;
 
 use chrono::{Duration, Local, NaiveDateTime};
 
-use comm::errors::children::{DataNoExistError, IndexExistError};
+use comm::errors::children::IndexExistError;
 use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerNormal, FilerReader, FilerWriter};
 use comm::strings::{StringHandler, Strings};
-use comm::trans::{
-    trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u48, trans_bytes_2_u64, trans_u32_2_bytes,
-};
+use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u48, trans_u32_2_bytes};
 use comm::vectors::{Vector, VectorHandler};
 
-use crate::task::engine::memory::seed::Seed as SeedMemory;
 use crate::task::engine::traits::{TIndex, TSeed};
 use crate::task::engine::DataReal;
 use crate::task::index::Index as IndexDefault;
 use crate::task::rich::{Expectation, Selector};
-use crate::task::seed::{IndexData, Seed as SeedDefault};
-use crate::utils::comm::{
-    key_fetch, INDEX_CATALOG, INDEX_MEMORY, INDEX_SEQUENCE, VALUE_TYPE_NORMAL,
-};
+use crate::task::seed::Seed;
+use crate::utils::comm::{hash_key, key_fetch, INDEX_CATALOG, INDEX_SEQUENCE};
 use crate::utils::enums::{IndexType, KeyType, ViewType};
 use crate::utils::path::{index_filepath, view_filepath, view_path};
 use crate::utils::store::{before_content_bytes, recovery_before_content, Metadata, HD};
 use crate::utils::writer::Filed;
-use std::sync::atomic::AtomicU64;
 
 /// 视图，类似表
 #[derive(Debug, Clone)]
@@ -60,8 +54,6 @@ pub(crate) struct View {
     ///
     /// 需要借助对象包裹，以便更新file，避免self为mut
     filer: Arc<RwLock<Filed>>,
-    /// 是否为内存视图
-    mem: bool,
     /// 索引集合
     indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
     /// 当前归档版本信息
@@ -79,49 +71,33 @@ fn new_view(database_name: String, name: String, mem: bool) -> GeorgeResult<View
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
     let filepath = view_filepath(database_name.clone(), name.clone());
-    let metadata: Metadata;
-    if mem {
-        metadata = Metadata::view_mem()
-    } else {
-        metadata = Metadata::view_disk()
-    }
+    let metadata = Metadata::view_disk();
     let view = View {
         database_name: database_name.clone(),
         name,
         create_time,
         metadata,
         filer: Filed::create(filepath.clone())?,
-        mem,
         indexes: Default::default(),
         pigeonhole: Pigeonhole::create(0, filepath, create_time),
     };
-    if mem {
-        view.create_index_in(
-            INDEX_MEMORY.to_string(),
-            IndexType::Memory,
-            KeyType::String,
-            true,
-            true,
-            false,
-        )?;
-    } else {
-        // view.create_index_in(
-        //     INDEX_CATALOG.to_string(),
-        //     IndexType::Library,
-        //     KeyType::String,
-        //     false,
-        //     true,
-        //     false,
-        // )?;
-        view.create_index_in(
-            INDEX_SEQUENCE.to_string(),
-            IndexType::Dossier,
-            KeyType::U64,
-            false,
-            true,
-            false,
-        )?;
-    }
+    // view.create_index(
+    //     INDEX_CATALOG.to_string(),
+    //     IndexType::Library,
+    //     KeyType::String,
+    //     false,
+    //     true,
+    //     false,
+    // )?;
+    view.create_index(
+        INDEX_SEQUENCE.to_string(),
+        IndexType::Dossier,
+        KeyType::U64,
+        false,
+        true,
+        false,
+    )?;
+
     Ok(view)
 }
 
@@ -286,21 +262,6 @@ impl View {
         unique: bool,
         null: bool,
     ) -> GeorgeResult<()> {
-        match self.view_type() {
-            ViewType::Memory => Err(err_str("this memory view allow only one index")),
-            _ => self.create_index_in(index_name, index_type, key_type, primary, unique, null),
-        }
-    }
-    /// 创建索引内部方法，绕开外部调用验证
-    fn create_index_in(
-        &self,
-        index_name: String,
-        index_type: IndexType,
-        key_type: KeyType,
-        primary: bool,
-        unique: bool,
-        null: bool,
-    ) -> GeorgeResult<()> {
         if self.exist_index(index_name.clone()) {
             return Err(GeorgeError::from(IndexExistError));
         }
@@ -368,10 +329,10 @@ impl View {
     /// Seed value信息
     pub(crate) fn get(&self, index_name: &str, key: String) -> GeorgeResult<Vec<u8>> {
         let index = self.index(index_name)?;
-        let idx = index.read().unwrap();
-        let view_info_index = idx.get(key.clone())?;
+        let index_read = index.read().unwrap();
+        let hash_key = hash_key(index_read.key_type(), key.clone())?;
+        let view_info_index = index_read.get(key.clone(), hash_key)?;
         match index_name {
-            INDEX_MEMORY => Ok(view_info_index),
             INDEX_CATALOG => Ok(view_info_index),
             _ => DataReal::value_bytes(self.read_content_by(view_info_index)?),
         }
@@ -478,7 +439,7 @@ impl View {
     ///
     /// IndexResult<()>
     fn save(&self, key: String, value: Vec<u8>, force: bool, remove: bool) -> GeorgeResult<()> {
-        let seed = SeedDefault::create(self.clone(), key.clone(), value.clone(), remove);
+        let seed = Seed::create(self.clone(), key.clone(), value.clone(), remove);
         let mut receives = Vec::new();
         for (index_name, index) in self.index_map().read().unwrap().iter() {
             let (sender, receive) = mpsc::channel();
@@ -491,33 +452,54 @@ impl View {
             thread::spawn(move || {
                 let index_read = index_clone.read().unwrap();
                 match index_name_clone.as_str() {
-                    INDEX_CATALOG => {
-                        if remove {
-                            sender.send(index_read.del(key_clone.clone()))
-                        } else {
-                            sender.send(index_read.put(key_clone.clone(), seed_clone, force))
+                    INDEX_CATALOG => match hash_key(index_read.key_type(), key_clone.clone()) {
+                        Ok(hash_key) => {
+                            if remove {
+                                sender.send(index_read.del(key_clone, hash_key))
+                            } else {
+                                sender.send(index_read.put(key_clone, hash_key, seed_clone, force))
+                            }
                         }
-                    }
+                        Err(err) => sender.send(GeorgeResult::Err(err)),
+                    },
                     INDEX_SEQUENCE => {
                         if remove {
-                            sender.send(index_read.del(key_clone.clone()))
+                            match hash_key(index_read.key_type(), key_clone.clone()) {
+                                Ok(hash_key) => sender.send(index_read.del(key_clone, hash_key)),
+                                Err(err) => sender.send(GeorgeResult::Err(err)),
+                            }
                         } else {
-                            sender.send(index_read.put(key_clone.clone(), seed_clone, force))
+                            sender.send(index_read.put(key_clone, 0, seed_clone, force))
                         }
                     }
-                    INDEX_MEMORY => {
-                        if remove {
-                            sender.send(index_read.del(key_clone.clone()))
-                        } else {
-                            sender.send(index_read.put(
-                                key_clone.clone(),
-                                Arc::new(RwLock::new(SeedMemory::create(key_clone, value_clone))),
-                                force,
-                            ))
-                        }
-                    }
+                    // INDEX_MEMORY => match hash_key(index_read.key_type(), key_clone.clone()) {
+                    //     Ok(hash_key) => {
+                    //         if remove {
+                    //             sender.send(index_read.del(key_clone, hash_key))
+                    //         } else {
+                    //             sender.send(index_read.put(
+                    //                 hash_key,
+                    //                 Arc::new(RwLock::new(SeedMemory::create(
+                    //                     key_clone,
+                    //                     value_clone,
+                    //                 ))),
+                    //                 force,
+                    //             ))
+                    //         }
+                    //     }
+                    //     Err(err) => sender.send(GeorgeResult::Err(err)),
+                    // },
                     _ => match key_fetch(index_name_clone, value_clone) {
-                        Ok(res) => sender.send(index_read.put(res, seed_clone, force)),
+                        Ok(res) => match hash_key(index_read.key_type(), res.clone()) {
+                            Ok(hash_key) => {
+                                if remove {
+                                    sender.send(index_read.del(res, hash_key))
+                                } else {
+                                    sender.send(index_read.put(res, hash_key, seed_clone, force))
+                                }
+                            }
+                            Err(err) => sender.send(GeorgeResult::Err(err)),
+                        },
                         Err(err) => {
                             log::debug!("key fetch error: {}", err);
                             sender.send(Ok(()))
@@ -548,9 +530,8 @@ impl View {
     /// 生成文件描述
     fn description(&self) -> Vec<u8> {
         hex::encode(format!(
-            "{}:#?{}:#?{}:#?{}",
+            "{}:#?{}:#?{}",
             self.name(),
-            self.mem,
             self.create_time().num_nanoseconds().unwrap().to_string(),
             self.pigeonhole().to_string()
         ))
@@ -564,7 +545,6 @@ impl View {
                 let real = Strings::from_utf8(vu8)?;
                 let mut split = real.split(":#?");
                 let name = split.next().unwrap().to_string();
-                let mem = split.next().unwrap().to_string().parse::<bool>().unwrap();
                 let create_time = Duration::nanoseconds(
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
@@ -576,7 +556,6 @@ impl View {
                     create_time,
                     metadata: hd.metadata(),
                     filer: Filed::recovery(filepath)?,
-                    mem,
                     indexes: Arc::new(Default::default()),
                     pigeonhole,
                 };

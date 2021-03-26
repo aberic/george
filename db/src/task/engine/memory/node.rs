@@ -17,9 +17,8 @@ use std::sync::{Arc, RwLock};
 
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
 
-use crate::task::engine::traits::{TNode, TSeed};
+use crate::task::engine::memory::seed::Seed;
 use crate::task::rich::Condition;
-use crate::task::view::View;
 use crate::utils::comm::level_distance_64;
 use comm::errors::children::{DataExistError, DataNoExistError, MethodNoSupportError, NoneError};
 
@@ -38,7 +37,7 @@ pub(crate) struct Node {
     nodes: Option<Arc<RwLock<Vec<Arc<Node>>>>>,
     /// 叶子结点下真实存储数据的集合，该集合主要目的在于解决Hash碰撞，允许为空Option，多线程共享数据Arc，
     /// 支持并发操作RWLock，集合内存储指针Box，指针类型为Link
-    seeds: Option<Arc<RwLock<Vec<Arc<RwLock<dyn TSeed>>>>>>,
+    seeds: Option<Arc<RwLock<Vec<Arc<RwLock<Seed>>>>>>,
 }
 
 /// 新建根结点
@@ -77,7 +76,7 @@ fn create_node_self(degree_index: u16) -> Node {
 ///
 /// 该结点的子结点集合必然为None
 fn create_leaf_self(degree_index: u16) -> Node {
-    let seeds: Option<Arc<RwLock<Vec<Arc<RwLock<dyn TSeed>>>>>> =
+    let seeds: Option<Arc<RwLock<Vec<Arc<RwLock<Seed>>>>>> =
         Some(Arc::new(RwLock::new(Vec::new())));
     return Node {
         degree_index,
@@ -111,22 +110,17 @@ impl Node {
     }
     /// 叶子结点下真实存储数据的集合，该集合主要目的在于解决Hash碰撞，允许为空Option，多线程共享数据Arc，
     /// 支持并发操作RWLock，集合内存储指针Box，指针类型为Seed
-    fn seeds(&self) -> Option<Arc<RwLock<Vec<Arc<RwLock<dyn TSeed>>>>>> {
+    fn seeds(&self) -> Option<Arc<RwLock<Vec<Arc<RwLock<Seed>>>>>> {
         self.seeds.clone()
     }
 }
 
 /// 封装方法函数
-impl TNode for Node {
+impl Node {
     fn modify(&mut self) -> GeorgeResult<()> {
         unimplemented!()
     }
-    fn put(
-        &self,
-        flexible_key: u64,
-        seed: Arc<RwLock<dyn TSeed>>,
-        force: bool,
-    ) -> GeorgeResult<()> {
+    fn put(&self, flexible_key: u64, seed: Arc<RwLock<Seed>>, force: bool) -> GeorgeResult<()> {
         self.put_in_node(1, flexible_key, seed, force)
     }
     fn get(&self, key: String, flexible_key: u64) -> GeorgeResult<Vec<u8>> {
@@ -180,7 +174,7 @@ impl Node {
         &self,
         level: u8,
         flexible_key: u64,
-        seed: Arc<RwLock<dyn TSeed>>,
+        seed: Arc<RwLock<Seed>>,
         force: bool,
     ) -> GeorgeResult<()> {
         let next_flexible_key: u64;
@@ -312,7 +306,7 @@ impl Node {
         }
         Err(GeorgeError::from(DataNoExistError))
     }
-    fn put_seed(&self, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
+    fn put_seed(&self, seed: Arc<RwLock<Seed>>, force: bool) -> GeorgeResult<()> {
         // 获取seed叶子，如果存在，则判断版本号，如果不存在，则新建一个空并返回
         return if force {
             self.exist_seed_save_force(seed.clone());
@@ -359,7 +353,7 @@ impl Node {
     /// 该方法用于set类型，即如果存在，则将待插入seed内容变更为已存在内容，同时删除已存在seed
     ///
     /// 这一步操作是为了方便前置传参方法更新seed索引数据，已达到真实存储的目的
-    fn exist_seed_save_force(&self, seed_new: Arc<RwLock<dyn TSeed>>) {
+    fn exist_seed_save_force(&self, seed_new: Arc<RwLock<Seed>>) {
         let arc = self.seeds().clone().unwrap().clone();
         let mut seeds = arc.write().unwrap();
         let mut seeds_rm_position = vec![];

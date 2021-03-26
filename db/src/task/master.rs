@@ -190,28 +190,6 @@ impl Master {
 
 /// db for disk
 impl Master {
-    /// 插入数据，如果存在冲突索引则返回已存在<p><p>
-    ///
-    /// ###Params
-    ///
-    /// view_name 视图名称<p><p>
-    ///
-    /// value 当前结果value信息<p><p>
-    ///
-    /// ###Return
-    ///
-    /// IndexResult<()>
-    pub(crate) fn insert(
-        &self,
-        database_name: String,
-        view_name: String,
-        value: Vec<u8>,
-    ) -> GeorgeResult<()> {
-        self.database(database_name)?
-            .read()
-            .unwrap()
-            .put(view_name, String::from("0"), value)
-    }
     /// 插入数据，如果存在则返回已存在<p><p>
     ///
     /// ###Params

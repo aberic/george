@@ -99,8 +99,6 @@ pub enum KeyType {
 pub enum IndexType {
     /// 占位
     None,
-    /// 内存存储引擎
-    Memory,
     /// 卷宗存储引擎(单文件索引存储-64位)，最合适用于自增
     Dossier,
     /// 文库存储引擎(多文件索引存储-64位)
@@ -114,8 +112,6 @@ pub enum IndexType {
 pub enum ViewType {
     /// 占位
     None,
-    /// 内存存储视图
-    Memory,
     /// 磁盘存储视图
     Disk,
 }
@@ -132,18 +128,16 @@ fn tag_u8(tag: Tag) -> u8 {
 fn index_type_u8(index_type: IndexType) -> u8 {
     match index_type {
         IndexType::None => 0x00,
-        IndexType::Memory => 0x01,
-        IndexType::Dossier => 0x02,
-        IndexType::Library => 0x03,
-        IndexType::Block => 0x04,
+        IndexType::Dossier => 0x01,
+        IndexType::Library => 0x02,
+        IndexType::Block => 0x03,
     }
 }
 
 fn view_type_u8(view_type: ViewType) -> u8 {
     match view_type {
         ViewType::None => 0x00,
-        ViewType::Memory => 0x01,
-        ViewType::Disk => 0x02,
+        ViewType::Disk => 0x01,
     }
 }
 
@@ -174,10 +168,9 @@ fn tag(b: u8) -> Tag {
 fn index_type(b: u8) -> IndexType {
     match b {
         0x00 => IndexType::None,
-        0x01 => IndexType::Memory,
-        0x02 => IndexType::Dossier,
-        0x03 => IndexType::Library,
-        0x04 => IndexType::Block,
+        0x01 => IndexType::Dossier,
+        0x02 => IndexType::Library,
+        0x03 => IndexType::Block,
         _ => IndexType::None,
     }
 }
@@ -185,8 +178,7 @@ fn index_type(b: u8) -> IndexType {
 fn view_type(b: u8) -> ViewType {
     match b {
         0x00 => ViewType::None,
-        0x01 => ViewType::Memory,
-        0x02 => ViewType::Disk,
+        0x01 => ViewType::Disk,
         _ => ViewType::None,
     }
 }

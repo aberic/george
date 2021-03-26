@@ -12,7 +12,6 @@
  * limitations under the License.
  */
 
-use std::io::{Seek, SeekFrom};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 
@@ -21,7 +20,6 @@ use comm::io::file::{Filer, FilerHandler, FilerNormal, FilerReader, FilerWriter}
 
 use crate::task::engine::check;
 use crate::task::engine::traits::{TNode, TSeed};
-use crate::task::master::GLOBAL_MASTER;
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::task::view::View;
@@ -29,7 +27,6 @@ use crate::utils::comm::is_bytes_fill;
 use crate::utils::enums::IndexType;
 use crate::utils::path::{index_path, node_filepath};
 use comm::errors::children::DataNoExistError;
-use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u48};
 use comm::vectors::{Vector, VectorHandler};
 
 /// 索引B+Tree结点结构
@@ -109,16 +106,15 @@ impl TNode for Node {
     /// EngineResult<()>
     fn put(
         &self,
+        key: String,
         mut hash_key: u64,
         seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
     ) -> GeorgeResult<()> {
         if hash_key == 0 {
             hash_key = self.atomic_key.fetch_add(1, Ordering::Relaxed);
-            self.put_in_node(hash_key, seed, force, false)
-        } else {
-            self.put_in_node(hash_key, seed, force, true)
         }
+        self.put_in_node(key, hash_key, seed, force)
     }
     fn get(&self, _key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
         self.get_in_node(hash_key)
@@ -154,10 +150,10 @@ impl Node {
     /// custom 是否用户自定义传入key
     fn put_in_node(
         &self,
+        key: String,
         hash_key: u64,
         seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
-        custom: bool,
     ) -> GeorgeResult<()>
     where
         Self: Sized,
@@ -167,18 +163,16 @@ impl Node {
             let file = Filer::reader(self.node_filepath())?;
             let res = Filer::read_subs(file, seek, 8)?;
             if is_bytes_fill(res) {
-                return if custom {
-                    Err(err_str("auto increment key has been used"))
-                } else {
-                    return self.put(0, seed, force);
-                };
+                return Err(err_str("auto increment key has been used"));
             }
         }
-        seed.write().unwrap().modify(IndexPolicy::bytes(
+        seed.write().unwrap().modify(IndexPolicy::create(
+            key,
             IndexType::Dossier,
             self.node_filepath(),
             seek,
-        )?)
+        ));
+        Ok(())
     }
     fn get_in_node(&self, hash_key: u64) -> GeorgeResult<Vec<u8>> {
         let seek = hash_key * 8;

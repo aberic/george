@@ -18,7 +18,6 @@ use crate::task::view::View;
 use crate::utils::comm::is_bytes_fill;
 use comm::errors::entrances::{err_strs, GeorgeResult};
 use comm::io::file::{Filer, FilerWriter};
-use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u48};
 use comm::vectors::{Vector, VectorHandler};
 use serde::{Deserialize, Serialize};
 
@@ -32,7 +31,7 @@ pub mod traits;
 fn check(
     view: View,
     node_filepath: String,
-    key: u64,
+    seek: u64,
     conditions: Vec<Condition>,
     delete: bool,
     view_info_index: Vec<u8>,
@@ -41,7 +40,7 @@ fn check(
         let value_bytes = DataReal::value_bytes(view.read_content_by(view_info_index)?)?;
         if Condition::validate(conditions.clone(), value_bytes.clone()) {
             if delete {
-                Filer::write_seek(node_filepath, key, Vector::create_empty_bytes(8))?;
+                Filer::write_seek(node_filepath, seek, Vector::create_empty_bytes(8))?;
             }
             Ok((true, value_bytes))
         } else {

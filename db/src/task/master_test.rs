@@ -174,7 +174,7 @@ fn sequence_test() {
     let mut i = 1;
     while i < 5 {
         // 循环体
-        insert(database_name, view_name, "world", i);
+        put(database_name, view_name, "", "world", i);
         get_by_index(
             database_name,
             view_name,
@@ -252,7 +252,13 @@ fn select_document_sequence_prepare() {
     while pos1 <= 100000 {
         print!("{} ", pos1);
         let user_str = serde_json::to_string(&create_t(pos1, 100000 - pos1)).unwrap();
-        insert(database_name, view_name, user_str.as_str(), pos1 as usize);
+        put(
+            database_name,
+            view_name,
+            pos1.to_string().as_str(),
+            user_str.as_str(),
+            pos1 as usize,
+        );
         pos1 += 1
     }
 }
@@ -352,6 +358,61 @@ fn select_document_delete_sequence1() {
     "Limit":1000
   }"#;
     delete(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
+}
+
+#[test]
+fn index_catalog_sequence_test_prepare() {
+    let database_name = "database_index_catalog_sequence_test";
+    let view_name = "view_index_test";
+    create_view(database_name, view_name);
+
+    let mut pos1: u32 = 1;
+    while pos1 <= 100000 {
+        print!("{} ", pos1);
+        let user_str = serde_json::to_string(&create_t(pos1, 100000 - pos1)).unwrap();
+        put(
+            database_name,
+            view_name,
+            format!("key{}", pos1).as_str(),
+            user_str.as_str(),
+            pos1 as usize,
+        );
+        pos1 += 1
+    }
+}
+
+#[test]
+fn index_catalog_sequence_test_select1() {
+    let database_name = "database_index_catalog_sequence_test";
+    let view_name = "view_index_test";
+    let cond_str0 = r#"
+  {
+    "Conditions":[
+        {
+            "Param":"george_db_index_sequence",
+            "Cond":"ge",
+            "Value":49900
+        },
+        {
+            "Param":"age",
+            "Cond":"ge",
+            "Value":49900,
+            "Type": "i64"
+        },
+        {
+            "Param":"age",
+            "Cond":"le",
+            "Value":90100
+        }
+    ],
+    "Sort":{
+        "Param":"height",
+        "Asc":true
+    },
+    "Skip":100,
+    "Limit":1000
+  }"#;
+    select(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
 }
 
 #[test]
@@ -523,21 +584,6 @@ fn create_index(
             "create index {} from database.view {}.{} error, {}",
             index_name, database_name, view_name, err
         ),
-    }
-}
-
-fn insert(database_name: &str, view_name: &str, value: &str, position: usize) {
-    match GLOBAL_MASTER.insert(
-        database_name.to_string(),
-        view_name.to_string(),
-        value.to_string().into_bytes(),
-    ) {
-        Err(ie) => println!(
-            "insert{} error is {:#?}",
-            position,
-            ie.source().unwrap().to_string()
-        ),
-        _ => {}
     }
 }
 

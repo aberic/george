@@ -19,6 +19,7 @@ use chrono::Duration;
 use comm::errors::entrances::GeorgeResult;
 
 use crate::task::rich::{Condition, Constraint, Expectation};
+use crate::task::seed::IndexPolicy;
 use crate::task::view::View;
 use crate::utils::enums::KeyType;
 use crate::utils::store::Metadata;
@@ -54,7 +55,13 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     /// ###Return
     ///
     /// EngineResult<()>
-    fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()>;
+    fn put(
+        &self,
+        key: String,
+        hash_key: u64,
+        seed: Arc<RwLock<dyn TSeed>>,
+        force: bool,
+    ) -> GeorgeResult<()>;
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -64,7 +71,7 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     /// ###Return
     ///
     /// Seed value信息
-    fn get(&self, key: String) -> GeorgeResult<Vec<u8>>;
+    fn get(&self, key: String, hash_key: u64) -> GeorgeResult<Vec<u8>>;
     /// 删除数据<p><p>
     ///
     /// ###Params
@@ -74,7 +81,7 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     /// ###Return
     ///
     /// Seed value信息
-    fn del(&self, key: String) -> GeorgeResult<()>;
+    fn del(&self, key: String, hash_key: u64) -> GeorgeResult<()>;
     /// 通过查询约束获取数据集
     ///
     /// ###Params
@@ -107,7 +114,13 @@ pub(crate) trait TNode: Send + Sync + Debug {
     /// ###Return
     ///
     /// EngineResult<()>
-    fn put(&self, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()>;
+    fn put(
+        &self,
+        key: String,
+        hash_key: u64,
+        seed: Arc<RwLock<dyn TSeed>>,
+        force: bool,
+    ) -> GeorgeResult<()>;
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -172,7 +185,7 @@ pub(crate) trait TSeed: Send + Sync + Debug {
     /// 值是否为空
     fn is_none(&self) -> bool;
     /// 修改value值
-    fn modify(&mut self, value: Vec<u8>) -> GeorgeResult<()>;
+    fn modify(&mut self, index_policy: IndexPolicy);
     /// 存储操作
     fn save(&mut self) -> GeorgeResult<()>;
     /// 删除操作

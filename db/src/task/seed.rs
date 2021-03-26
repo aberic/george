@@ -16,7 +16,7 @@ use std::fs::File;
 
 use serde::{Deserialize, Serialize};
 
-use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeResult};
+use comm::errors::entrances::{err_strs, GeorgeResult};
 use comm::io::file::{Filer, FilerHandler, FilerNormal, FilerWriter};
 use comm::trans::{
     trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u64, trans_u16_2_bytes, trans_u48_2_bytes,
@@ -133,40 +133,32 @@ pub(crate) struct IndexPolicy {
 }
 
 impl IndexPolicy {
-    fn from(v8s: Vec<u8>) -> GeorgeResult<IndexPolicy> {
-        match serde_json::from_slice(v8s.as_slice()) {
-            Ok(index_policy) => Ok(index_policy),
-            Err(err) => Err(err_string(err.to_string())),
-        }
-    }
-    pub fn bytes(index_type: IndexType, node_filepath: String, seek: u64) -> GeorgeResult<Vec<u8>> {
-        let policy = IndexPolicy {
+    pub fn create(
+        key: String,
+        index_type: IndexType,
+        node_filepath: String,
+        seek: u64,
+    ) -> IndexPolicy {
+        IndexPolicy {
             index_type,
-            original_key: "".to_string(),
+            original_key: key,
             node_filepath,
             seek,
             custom: vec![],
-        };
-        match serde_json::to_vec(&policy) {
-            Ok(v8s) => Ok(v8s),
-            Err(err) => Err(err_string(err.to_string())),
         }
     }
-    pub fn bytes_custom(
+    pub fn create_custom(
+        key: String,
         node_filepath: String,
         seek: u64,
         custom: Vec<u8>,
-    ) -> GeorgeResult<Vec<u8>> {
-        let policy = IndexPolicy {
+    ) -> IndexPolicy {
+        IndexPolicy {
             index_type: IndexType::None,
-            original_key: "".to_string(),
+            original_key: key,
             node_filepath,
             seek,
             custom,
-        };
-        match serde_json::to_vec(&policy) {
-            Ok(v8s) => Ok(v8s),
-            Err(err) => Err(err_string(err.to_string())),
         }
     }
     fn node_file_path(&self) -> String {
@@ -207,10 +199,6 @@ impl Seed {
             view,
         }))
     }
-    /// 获取当前结果原始key信息
-    fn key(&self) -> String {
-        self.key.clone()
-    }
 }
 
 /// 封装方法函数
@@ -224,14 +212,12 @@ impl TSeed for Seed {
     fn is_none(&self) -> bool {
         self.value.is_empty()
     }
-    fn modify(&mut self, value: Vec<u8>) -> GeorgeResult<()> {
-        let mut index_policy = IndexPolicy::from(value)?;
-        index_policy.original_key = self.key();
+    fn modify(&mut self, index_policy: IndexPolicy) {
         match index_policy.index_type {
             IndexType::Dossier => self.sequence = index_policy.seek / 8,
             _ => {}
         }
-        Ok(self.policies.push(index_policy))
+        self.policies.push(index_policy)
     }
     fn save(&mut self) -> GeorgeResult<()> {
         // todo 失败回滚
@@ -260,7 +246,6 @@ impl TSeed for Seed {
                 IndexType::None => {
                     Filer::write_seek(policy.node_file_path(), policy.seek, policy.custom)?
                 }
-                IndexType::Memory => return Err(err_str("index type memory is not support!")),
                 _ => Filer::write_seek(
                     policy.node_file_path(),
                     policy.seek,

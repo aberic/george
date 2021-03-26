@@ -137,8 +137,14 @@ impl TNode for Node {
     /// ###Return
     ///
     /// EngineResult<()>
-    fn put(&self, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
-        self.put_in_node(String::from(""), 1, hash_key, seed, force)
+    fn put(
+        &self,
+        key: String,
+        hash_key: u64,
+        seed: Arc<RwLock<dyn TSeed>>,
+        force: bool,
+    ) -> GeorgeResult<()> {
+        self.put_in_node(key, String::from(""), 1, hash_key, seed, force)
     }
     fn get(&self, key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
         self.get_in_node(key, String::from(""), 1, hash_key)
@@ -178,6 +184,7 @@ impl Node {
     /// node_seek 当前操作结点在文件中的真实起始位置
     fn put_in_node(
         &self,
+        key: String,
         mut index_filename: String,
         level: u8,
         flexible_key: u64,
@@ -194,15 +201,11 @@ impl Node {
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
             let node_filepath = node_filepath(self.index_path(), index_filename);
-            log::debug!(
-                "node_filepath = {}, degree = {}",
-                node_filepath,
-                next_degree
-            );
+            // log::debug!("node_filepath = {}, degree = {}",node_filepath,next_degree);
             let node_file_seek = next_degree * 4;
             // 在linked中的偏移量
             let linked_seek = self.linked_seek(node_filepath.clone(), node_file_seek)?;
-            log::debug!("linked_seek = {}", linked_seek);
+            // log::debug!("linked_seek = {}", linked_seek);
             let seek: u64;
             // 如果是唯一索引，则可能需要判断是否存在已有值
             if self.unique {
@@ -258,16 +261,18 @@ impl Node {
                     }
                 }
             }
-            seed.write().unwrap().modify(IndexPolicy::bytes(
+            seed.write().unwrap().modify(IndexPolicy::create(
+                key.clone(),
                 IndexType::Library,
                 self.linked_filepath(),
                 seek,
-            )?)?;
-            seed.write().unwrap().modify(IndexPolicy::bytes_custom(
+            ));
+            seed.write().unwrap().modify(IndexPolicy::create_custom(
+                key,
                 node_filepath,
                 node_file_seek,
                 trans_u32_2_bytes(seek as u32),
-            )?)?;
+            ));
             Ok(())
         } else {
             index_filename = index_filename.add(&Strings::left_fits(
@@ -277,7 +282,14 @@ impl Node {
             ));
             // 通过当前层真实key减去下一层的度数与间隔数的乘机获取结点所在下一层的真实key
             let next_flexible_key = flexible_key - next_degree * distance;
-            self.put_in_node(index_filename, level + 1, next_flexible_key, seed, force)
+            self.put_in_node(
+                key,
+                index_filename,
+                level + 1,
+                next_flexible_key,
+                seed,
+                force,
+            )
         }
     }
     fn get_in_node(
@@ -294,14 +306,10 @@ impl Node {
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
             let node_filepath = node_filepath(self.index_path(), index_filename);
-            log::debug!(
-                "node_filepath = {}, degree = {}",
-                node_filepath,
-                next_degree
-            );
+            // log::debug!("node_filepath = {}, degree = {}", node_filepath, next_degree);
             let node_file_seek = next_degree * 4;
             let linked_seek = self.linked_seek(node_filepath, node_file_seek)?;
-            log::debug!("linked_seek = {}", linked_seek);
+            // log::debug!("linked_seek = {}", linked_seek);
             let linked_file = Filer::reader(self.linked_filepath())?;
             let mut linked_loop_seek = linked_seek;
             loop {

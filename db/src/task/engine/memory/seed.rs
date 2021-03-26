@@ -12,8 +12,6 @@
  * limitations under the License.
  */
 
-use crate::task::engine::traits::TSeed;
-use crate::task::view::View;
 use comm::errors::children::DataNoExistError;
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
 
@@ -43,17 +41,17 @@ impl Seed {
 }
 
 /// 封装方法函数
-impl TSeed for Seed {
-    fn key(&self) -> String {
+impl Seed {
+    pub(crate) fn key(&self) -> String {
         self.key.clone()
     }
-    fn value(&self) -> GeorgeResult<Vec<u8>> {
+    pub(crate) fn value(&self) -> GeorgeResult<Vec<u8>> {
         match self.value.clone() {
             Some(v) => Ok(v),
             None => Err(GeorgeError::from(DataNoExistError)),
         }
     }
-    fn is_none(&self) -> bool {
+    pub(crate) fn is_none(&self) -> bool {
         self.value.is_none()
     }
     fn modify(&mut self, value: Vec<u8>) -> GeorgeResult<()> {

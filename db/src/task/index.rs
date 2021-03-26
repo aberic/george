@@ -25,11 +25,9 @@ use comm::strings::{StringHandler, Strings};
 use crate::task::engine::block::node::Node as NB;
 use crate::task::engine::dossier::node::Node as ND;
 use crate::task::engine::library::node::Node as NL;
-use crate::task::engine::memory::node::Node as NM;
 use crate::task::engine::traits::{TIndex, TNode, TSeed};
 use crate::task::rich::{Constraint, Expectation};
 use crate::task::view::View;
-use crate::utils::comm::hash_key;
 use crate::utils::enums::{Enum, EnumHandler, IndexType, KeyType};
 use crate::utils::path::index_filepath;
 use crate::utils::store::{before_content_bytes, Metadata, HD};
@@ -124,7 +122,6 @@ impl Index {
             IndexType::Dossier => root = ND::create(view.clone(), name.clone())?,
             IndexType::Library => root = NL::create(view.clone(), name.clone(), unique)?,
             IndexType::Block => root = NB::create(name.clone()),
-            IndexType::Memory => root = NM::create(),
             _ => return Err(err_str("unsupported engine type with none")),
         }
         let mut index = new_index(
@@ -214,16 +211,19 @@ impl TIndex for Index {
         self.root.write().unwrap().modify()?;
         Ok(())
     }
-    fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
-        let hash_key = hash_key(self.key_type(), key.clone())?;
-        self.root.write().unwrap().put(hash_key, seed, force)
+    fn put(
+        &self,
+        key: String,
+        hash_key: u64,
+        seed: Arc<RwLock<dyn TSeed>>,
+        force: bool,
+    ) -> GeorgeResult<()> {
+        self.root.write().unwrap().put(key, hash_key, seed, force)
     }
-    fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        let hash_key = hash_key(self.key_type(), key.clone())?;
+    fn get(&self, key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
         self.root.read().unwrap().get(key, hash_key)
     }
-    fn del(&self, key: String) -> GeorgeResult<()> {
-        let hash_key = hash_key(self.key_type(), key.clone())?;
+    fn del(&self, key: String, hash_key: u64) -> GeorgeResult<()> {
         self.root.write().unwrap().del(key, hash_key)
     }
     fn select(
@@ -388,7 +388,6 @@ impl Index {
                     IndexType::Dossier => root = ND::recovery(view.clone(), name.clone())?,
                     IndexType::Library => root = NL::recovery(view.clone(), name.clone(), unique)?,
                     IndexType::Block => root = NB::recovery(name.clone()),
-                    IndexType::Memory => root = NM::recovery(),
                     _ => return Err(err_str("unsupported engine type")),
                 }
                 log::info!(
