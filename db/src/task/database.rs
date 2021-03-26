@@ -16,11 +16,10 @@ use crate::task::rich::Expectation;
 use crate::task::view::View;
 use crate::utils::path::{database_filepath, database_path, view_filepath};
 use crate::utils::store::{before_content_bytes, recovery_before_content, Metadata, HD};
-use crate::utils::writer::obtain_write_append_file;
+use crate::utils::writer::Filed;
 use chrono::{Duration, Local, NaiveDateTime};
 use comm::errors::children::{ViewExistError, ViewNoExistError};
 use comm::errors::entrances::{err_string, err_strs, GeorgeError, GeorgeResult};
-use comm::io::file::{Filer, FilerExecutor, FilerHandler, FilerReader, FilerWriter};
 use comm::strings::{StringHandler, Strings};
 use std::collections::HashMap;
 use std::fs::{read_dir, File, ReadDir};
@@ -36,7 +35,9 @@ pub(crate) struct Database {
     /// 文件信息
     metadata: Metadata,
     /// 根据文件路径获取该文件追加写入的写对象
-    file_append: Arc<RwLock<File>>,
+    ///
+    /// 需要借助对象包裹，以便更新file，避免self为mut
+    filer: Filed,
     /// 视图索引集合
     views: Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>>,
 }
@@ -56,19 +57,17 @@ fn new_database(name: String) -> GeorgeResult<Database> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
     let filepath = database_filepath(name.clone());
-    let file_append = obtain_write_append_file(filepath)?;
     Ok(Database {
         name,
         create_time,
         metadata: Metadata::database(),
-        file_append,
+        filer: Filed::create_self(filepath)?,
         views: Arc::new(Default::default()),
     })
 }
 
 impl Database {
     pub(crate) fn create(name: String) -> GeorgeResult<Arc<RwLock<Database>>> {
-        Filer::touch(database_filepath(name.clone()))?;
         let mut database = new_database(name)?;
         let mut metadata_bytes = database.metadata_bytes();
         let mut description = database.description();
@@ -99,38 +98,7 @@ impl Database {
     ///
     /// seek_end_before 写之前文件字节数据长度
     fn file_append(&mut self, content: Vec<u8>) -> GeorgeResult<u64> {
-        let file_append = self.file_append.clone();
-        let mut file_write = file_append.write().unwrap();
-        match file_write.seek(SeekFrom::End(0)) {
-            Ok(seek_end_before) => match file_write.try_clone() {
-                Ok(f) => match Filer::appends(f, content.clone()) {
-                    Ok(()) => Ok(seek_end_before),
-                    Err(_err) => {
-                        self.file_append =
-                            obtain_write_append_file(database_filepath(self.name()))?;
-                        let file_write_again = self.file_append.write().unwrap();
-                        match file_write_again.try_clone() {
-                            Ok(f) => Filer::appends(f, content)?,
-                            Err(err) => {
-                                return Err(err_strs("database append file try clone3", err))
-                            }
-                        }
-                        Ok(seek_end_before)
-                    }
-                },
-                Err(err) => Err(err_strs("database append file try clone2", err)),
-            },
-            Err(_err) => {
-                self.file_append = obtain_write_append_file(database_filepath(self.name()))?;
-                let mut file_write_again = self.file_append.write().unwrap();
-                let seek_end_before_again = file_write_again.seek(SeekFrom::End(0)).unwrap();
-                match file_write_again.try_clone() {
-                    Ok(f) => Filer::appends(f, content)?,
-                    Err(err) => return Err(err_strs("database append file try clone1", err)),
-                }
-                Ok(seek_end_before_again)
-            }
-        }
+        self.filer.append(content)
     }
     /// 视图索引集合
     pub(crate) fn view_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>> {
@@ -138,8 +106,7 @@ impl Database {
     }
     pub(crate) fn modify(&mut self, name: String) -> GeorgeResult<()> {
         let old_name = self.name();
-        let filepath = database_filepath(old_name.clone());
-        let content = Filer::read_sub(filepath.clone(), 0, 40)?;
+        let content = self.filer.read(0, 40)?;
         self.name = name.clone();
         let description = self.description();
         let seek_end = self.file_append(description.clone())?;
@@ -151,12 +118,12 @@ impl Database {
         );
         let content_new = before_content_bytes(seek_end as u32, description.len() as u32);
         // 更新首部信息，初始化head为32，描述起始4字节，长度4字节
-        Filer::write_seek(filepath.clone(), 32, content_new)?;
+        self.filer.write(32, content_new)?;
         let database_path_old = database_path(old_name);
         let database_path_new = database_path(self.name());
         match std::fs::rename(database_path_old, database_path_new) {
             Ok(_) => {
-                self.file_append = obtain_write_append_file(database_filepath(self.name()))?;
+                self.filer = Filed::recovery_self(database_filepath(self.name()))?;
                 for (view_name, view) in self.views.write().unwrap().iter() {
                     view.write()
                         .unwrap()
@@ -166,7 +133,7 @@ impl Database {
             }
             Err(err) => {
                 // 回滚数据
-                Filer::write_seek(filepath, 0, content)?;
+                self.filer.write(0, content)?;
                 Err(err_strs("file rename failed", err.to_string()))
             }
         }
@@ -350,12 +317,11 @@ impl Database {
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
                 let filepath = database_filepath(name.clone());
-                let file_append = obtain_write_append_file(filepath)?;
                 let database = Database {
                     name,
                     create_time,
                     metadata: hd.metadata(),
-                    file_append,
+                    filer: Filed::recovery_self(filepath)?,
                     views: Arc::new(Default::default()),
                 };
                 log::info!("recovery database {}", database.name());

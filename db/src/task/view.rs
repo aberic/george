@@ -81,14 +81,14 @@ fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
         indexes: Default::default(),
         pigeonhole: Pigeonhole::create(0, filepath, create_time),
     };
-    view.create_index(
-        INDEX_CATALOG.to_string(),
-        IndexType::Library,
-        KeyType::String,
-        true,
-        true,
-        false,
-    )?;
+    // view.create_index(
+    //     INDEX_CATALOG.to_string(),
+    //     IndexType::Library,
+    //     KeyType::String,
+    //     true,
+    //     true,
+    //     false,
+    // )?;
     view.create_index(
         INDEX_SEQUENCE.to_string(),
         IndexType::Dossier,
@@ -256,23 +256,18 @@ impl View {
         if self.exist_index(index_name.clone()) {
             return Err(GeorgeError::from(IndexExistError));
         }
-        let name = index_name.clone();
-        let index;
-        match index_type {
-            IndexType::None => return Err(err_str("unsupported engine type with none")),
-            _ => {
-                index = IndexDefault::create(
-                    self.clone(),
-                    name,
-                    index_type,
-                    primary,
-                    unique,
-                    null,
-                    key_type,
-                )?
-            }
-        }
-        self.index_map().write().unwrap().insert(index_name, index);
+        self.index_map().write().unwrap().insert(
+            index_name.clone(),
+            IndexDefault::create(
+                self.clone(),
+                index_name,
+                index_type,
+                primary,
+                unique,
+                null,
+                key_type,
+            )?,
+        );
         Ok(())
     }
 }

@@ -243,7 +243,7 @@ fn create_t(a: u32, h: u32) -> Teacher {
 }
 
 #[test]
-fn select_document_sequence_prepare() {
+fn select_sequence_prepare() {
     let database_name = "database_select_sequence_base_test";
     let view_name = "view_select_base_test";
     create_view(database_name, view_name);
@@ -264,7 +264,7 @@ fn select_document_sequence_prepare() {
 }
 
 #[test]
-fn select_document_select_sequence1() {
+fn select_select_sequence1() {
     let database_name = "database_select_sequence_base_test";
     let view_name = "view_select_base_test";
     let cond_str0 = r#"
@@ -298,7 +298,7 @@ fn select_document_select_sequence1() {
 }
 
 #[test]
-fn select_document_select_sequence2() {
+fn select_select_sequence2() {
     let database_name = "database_select_sequence_base_test";
     let view_name = "view_select_base_test";
     let cond_str0 = r#"
@@ -327,7 +327,7 @@ fn select_document_select_sequence2() {
 }
 
 #[test]
-fn select_document_delete_sequence1() {
+fn select_delete_sequence1() {
     let database_name = "database_select_sequence_base_test";
     let view_name = "view_select_base_test";
     let cond_str0 = r#"

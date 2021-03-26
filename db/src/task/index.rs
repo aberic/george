@@ -31,7 +31,7 @@ use crate::task::view::View;
 use crate::utils::enums::{Enum, EnumHandler, IndexType, KeyType};
 use crate::utils::path::index_filepath;
 use crate::utils::store::{before_content_bytes, Metadata, HD};
-use crate::utils::writer::obtain_write_append_file;
+use crate::utils::writer::{obtain_append_file, Filed};
 use serde_json::Value;
 
 /// Siam索引
@@ -58,6 +58,10 @@ pub(crate) struct Index {
     create_time: Duration,
     /// 根据文件路径获取该文件追加写入的写对象
     file_append: Arc<RwLock<File>>,
+    /// 根据文件路径获取该文件追加写入的写对象
+    ///
+    /// 需要借助对象包裹，以便更新file，避免self为mut
+    filer: Filed,
 }
 
 /// 新建索引
@@ -86,7 +90,7 @@ fn new_index(
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
     let filepath = index_filepath(view.database_name(), view.name(), name.clone());
-    let file_append = obtain_write_append_file(filepath)?;
+    let file_append = obtain_append_file(filepath.clone())?;
     let index = Index {
         view,
         primary,
@@ -98,6 +102,7 @@ fn new_index(
         key_type,
         unique,
         null,
+        filer: Filed::recovery_self(filepath)?,
     };
     Ok(index)
 }
@@ -160,7 +165,7 @@ impl Index {
                     Err(_err) => {
                         let filepath =
                             index_filepath(self.database_name(), self.view_name(), self.name());
-                        self.file_append = obtain_write_append_file(filepath)?;
+                        self.file_append = obtain_append_file(filepath)?;
                         let file_write_again = self.file_append.write().unwrap();
                         Filer::appends(file_write_again.try_clone().unwrap(), content)?;
                         Ok(seek_end_before)
@@ -169,7 +174,7 @@ impl Index {
             }
             Err(_err) => {
                 let filepath = index_filepath(self.database_name(), self.view_name(), self.name());
-                self.file_append = obtain_write_append_file(filepath)?;
+                self.file_append = obtain_append_file(filepath)?;
                 let mut file_write_again = self.file_append.write().unwrap();
                 let seek_end_before_again = file_write_again.seek(SeekFrom::End(0)).unwrap();
                 Filer::appends(file_write_again.try_clone().unwrap(), content)?;
@@ -207,7 +212,7 @@ impl TIndex for Index {
     }
     fn modify(&mut self) -> GeorgeResult<()> {
         let filepath = index_filepath(self.database_name(), self.view_name(), self.name());
-        self.file_append = obtain_write_append_file(filepath)?;
+        self.file_append = obtain_append_file(filepath)?;
         self.root.write().unwrap().modify()?;
         Ok(())
     }
@@ -382,7 +387,7 @@ impl Index {
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
                 let filepath = index_filepath(view.database_name(), view.name(), name.clone());
-                let file_append = obtain_write_append_file(filepath)?;
+                let file_append = obtain_append_file(filepath.clone())?;
                 let root: Arc<RwLock<dyn TNode>>;
                 match hd.index_type() {
                     IndexType::Dossier => root = ND::recovery(view.clone(), name.clone())?,
@@ -407,6 +412,7 @@ impl Index {
                     root,
                     key_type,
                     null,
+                    filer: Filed::recovery_self(filepath)?,
                 };
                 Ok(Arc::new(RwLock::new(index)))
             }

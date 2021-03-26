@@ -533,7 +533,7 @@ fn file_len(filepath: String) -> GeorgeResult<u64> {
 
 /// 读取文件部分内容，从start开始，一直持续读取last长度
 fn read_subs(mut file: File, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
-    let file_len = file.try_clone().unwrap().seek(SeekFrom::End(0)).unwrap();
+    let file_len = file.seek(SeekFrom::End(0)).unwrap();
     if file_len < start + last as u64 {
         Ok(Vector::create_empty_bytes(last))
     } else {
