@@ -16,7 +16,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 
 use comm::errors::entrances::{err_str, GeorgeError, GeorgeResult};
-use comm::io::file::{Filer, FilerHandler, FilerNormal, FilerReader, FilerWriter};
+use comm::io::file::{Filer, FilerReader};
 
 use crate::task::engine::check;
 use crate::task::engine::traits::{TNode, TSeed};
@@ -26,6 +26,7 @@ use crate::task::view::View;
 use crate::utils::comm::is_bytes_fill;
 use crate::utils::enums::IndexType;
 use crate::utils::path::{index_path, node_filepath};
+use crate::utils::writer::Filed;
 use comm::errors::children::DataNoExistError;
 use comm::vectors::{Vector, VectorHandler};
 
@@ -54,13 +55,14 @@ impl Node {
         let atomic_key = Arc::new(AtomicU64::new(1));
         let index_path = index_path(view.database_name(), view.name(), index_name.clone());
         let node_filepath = node_filepath(index_path, String::from("increment"));
-        Filer::try_touch(node_filepath.clone())?;
-        Filer::append(node_filepath.clone(), Vector::create_empty_bytes(8))?;
+        let filer = Filed::create(node_filepath.clone())?;
+        filer.append(Vector::create_empty_bytes(8))?;
         Ok(Arc::new(RwLock::new(Node {
             view,
             atomic_key,
             index_name,
             node_filepath,
+            filer,
         })))
     }
     /// 恢复根结点
@@ -71,11 +73,13 @@ impl Node {
         let last_key = file_len / 8;
         // log::debug!("atomic_key_u32 = {}", atomic_key_u32);
         let atomic_key = Arc::new(AtomicU64::new(last_key));
+        let filer = Filed::recovery(node_filepath.clone())?;
         Ok(Arc::new(RwLock::new(Node {
             view,
             atomic_key,
             index_name,
             node_filepath,
+            filer,
         })))
     }
     fn index_name(&self) -> String {
@@ -89,6 +93,22 @@ impl Node {
     }
     fn node_filepath(&self) -> String {
         self.node_filepath.clone()
+    }
+    /// 根据文件路径获取该文件追加写入的写对象
+    ///
+    /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
+    ///
+    /// #Return
+    ///
+    /// seek_end_before 写之前文件字节数据长度
+    fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
+        self.filer.clone().append(content)
+    }
+    fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
+        self.filer.clone().read(start, last)
+    }
+    fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
+        self.filer.clone().write(seek, content)
     }
 }
 
@@ -164,8 +184,7 @@ impl Node {
     {
         let seek = hash_key * 8;
         if !force {
-            let file = Filer::reader(self.node_filepath())?;
-            let res = Filer::read_subs(file, seek, 8)?;
+            let res = self.read(seek, 8)?;
             if is_bytes_fill(res) {
                 return Err(err_str("auto increment key has been used"));
             }
@@ -180,7 +199,7 @@ impl Node {
     }
     fn get_in_node(&self, hash_key: u64) -> GeorgeResult<Vec<u8>> {
         let seek = hash_key * 8;
-        let res = Filer::read_sub(self.node_filepath(), seek, 8)?;
+        let res = self.read(seek, 8)?;
         return if is_bytes_fill(res.clone()) {
             Ok(res)
         } else {
@@ -189,7 +208,7 @@ impl Node {
     }
     fn del_in_node(&self, hash_key: u64) -> GeorgeResult<()> {
         let seek = hash_key * 8;
-        Filer::write_seek(self.node_filepath(), seek, Vector::create_empty_bytes(8))?;
+        self.write(seek, Vector::create_empty_bytes(8))?;
         Ok(())
     }
     /// 通过左查询约束获取数据集
@@ -237,7 +256,7 @@ impl Node {
             if limit <= 0 || key_start > key_end {
                 break;
             }
-            let res = Filer::read_sub(self.node_filepath(), key_start, 8)?;
+            let res = self.read(key_start, 8)?;
             let (valid, value_bytes) = check(
                 self.view.clone(),
                 self.node_filepath(),
@@ -305,7 +324,7 @@ impl Node {
             if limit <= 0 || key_start > key_end {
                 break;
             }
-            let res = Filer::read_sub(self.node_filepath(), key_end, 8)?;
+            let res = self.read(key_end, 8)?;
             let (valid, value_bytes) = check(
                 self.view.clone(),
                 self.node_filepath(),

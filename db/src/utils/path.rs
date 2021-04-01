@@ -104,7 +104,7 @@ pub fn node_filepath(index_path: String, index_file_name: String) -> String {
 }
 
 /// 索引文件目录 /var/lib/georgedb/data/database_name/view_name/index_name/index_file_name.ge
-pub fn linked_filepath(index_path: String) -> String {
+pub fn record_filepath(index_path: String) -> String {
     node_filepath(index_path, String::from("linked"))
 }
 

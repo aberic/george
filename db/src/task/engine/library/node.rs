@@ -21,11 +21,11 @@ use crate::task::seed::IndexPolicy;
 use crate::task::view::View;
 use crate::utils::comm::{is_bytes_fill, level_distance_64};
 use crate::utils::enums::IndexType;
-use crate::utils::path::{index_path, linked_filepath, node_filepath};
+use crate::utils::path::{index_path, node_filepath, record_filepath};
 use crate::utils::writer::Filed;
 use comm::errors::children::{DataExistError, DataNoExistError};
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
-use comm::io::file::{Filer, FilerExecutor, FilerHandler, FilerNormal, FilerReader};
+use comm::io::file::{Filer, FilerHandler, FilerNormal};
 use comm::strings::{StringHandler, Strings};
 use comm::trans::{trans_bytes_2_u32_as_u64, trans_u32_2_bytes};
 use comm::vectors::{Vector, VectorHandler};
@@ -47,7 +47,7 @@ pub(crate) struct Node {
     view: View,
     index_name: String,
     index_path: String,
-    linked_filepath: String,
+    record_filepath: String,
     /// 是否唯一索引
     unique: bool,
     /// 根据文件路径获取该文件追加写入的写对象
@@ -62,14 +62,14 @@ impl Node {
     /// 该结点没有Links，也没有preNode，是B+Tree的创世结点
     pub fn create(view: View, index_name: String, unique: bool) -> GeorgeResult<Arc<RwLock<Self>>> {
         let index_path = index_path(view.database_name(), view.name(), index_name.clone());
-        let linked_filepath = linked_filepath(index_path.clone());
-        let record_filer = Filed::create(linked_filepath.clone())?;
+        let record_filepath = record_filepath(index_path.clone());
+        let record_filer = Filed::create(record_filepath.clone())?;
         record_filer.append(vec![0x86, 0x87])?;
         Ok(Arc::new(RwLock::new(Node {
             view,
             index_name,
             index_path,
-            linked_filepath,
+            record_filepath,
             unique,
             record_filer,
         })))
@@ -81,13 +81,13 @@ impl Node {
         unique: bool,
     ) -> GeorgeResult<Arc<RwLock<Self>>> {
         let index_path = index_path(view.database_name(), view.name(), index_name.clone());
-        let linked_filepath = linked_filepath(index_path.clone());
-        let record_filer = Filed::recovery(linked_filepath.clone())?;
+        let record_filepath = record_filepath(index_path.clone());
+        let record_filer = Filed::recovery(record_filepath.clone())?;
         Ok(Arc::new(RwLock::new(Node {
             view,
             index_name,
             index_path,
-            linked_filepath,
+            record_filepath,
             unique,
             record_filer,
         })))
@@ -104,8 +104,8 @@ impl Node {
     fn index_path(&self) -> String {
         self.index_path.clone()
     }
-    fn linked_filepath(&self) -> String {
-        self.linked_filepath.clone()
+    fn record_filepath(&self) -> String {
+        self.record_filepath.clone()
     }
     /// 根据文件路径获取该文件追加写入的写对象
     ///
@@ -114,8 +114,14 @@ impl Node {
     /// #Return
     ///
     /// seek_end_before 写之前文件字节数据长度
-    fn linked_append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.record_filer.append(content)
+    fn record_append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
+        self.record_filer.clone().append(content)
+    }
+    fn record_read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
+        self.record_filer.clone().read(start, last)
+    }
+    fn record_write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
+        self.record_filer.clone().write(seek, content)
     }
 }
 
@@ -124,8 +130,8 @@ impl TNode for Node {
     fn modify(&mut self) -> GeorgeResult<()> {
         let index_path = index_path(self.database_name(), self.view_name(), self.index_name());
         self.index_path = index_path.clone();
-        self.linked_filepath = linked_filepath(index_path);
-        self.record_filer = Filed::recovery(self.linked_filepath())?;
+        self.record_filepath = record_filepath(index_path);
+        self.record_filer = Filed::recovery(self.record_filepath())?;
         Ok(())
     }
     /// 插入数据<p><p>
@@ -203,60 +209,49 @@ impl Node {
             let node_filepath = node_filepath(self.index_path(), index_filename);
             // log::debug!("node_filepath = {}, degree = {}",node_filepath,next_degree);
             let node_file_seek = next_degree * 4;
-            // 在linked中的偏移量
-            let linked_seek = self.linked_seek(node_filepath.clone(), node_file_seek)?;
-            // log::debug!("linked_seek = {}", linked_seek);
+            // 在record中的偏移量
+            let record_seek = self.record_seek(node_filepath.clone(), node_file_seek)?;
+            // log::debug!("record_seek = {}", record_seek);
             let seek: u64;
             // 如果是唯一索引，则可能需要判断是否存在已有值
             if self.unique {
                 // 如果唯一且强制覆盖
                 if force {
-                    seek = linked_seek;
+                    seek = record_seek;
                 } else {
-                    // 否则需要进一步判断
-                    let linked_file = Filer::reader(self.linked_filepath())?;
-                    // 判断索引是否为空
-                    let res = Filer::read_subs(linked_file.try_clone().unwrap(), linked_seek, 8)?;
+                    // 否则需要进一步判断，判断索引是否为空
+                    let res = self.record_read(record_seek, 8)?;
                     // 如果不为空
                     if is_bytes_fill(res) {
                         return Err(GeorgeError::from(DataExistError));
                     } else {
                         // 如果为空
-                        seek = linked_seek;
+                        seek = record_seek;
                     }
                 }
             } else {
                 // 如果非唯一索引，则需要读取链式结构
-                let linked_file = Filer::reader_writer(self.linked_filepath())?;
-                let mut linked_loop_seek = linked_seek;
+                let mut record_loop_seek = record_seek;
                 loop {
                     // 判断索引是否为空
-                    let res =
-                        Filer::read_subs(linked_file.try_clone().unwrap(), linked_loop_seek, 8)?;
+                    let res = self.record_read(record_loop_seek, 8)?;
                     // 如果不为空
                     if is_bytes_fill(res) {
                         // 先查询链式结构是否有后续内容
-                        let seek_next_bytes = Filer::read_subs(
-                            linked_file.try_clone().unwrap(),
-                            linked_loop_seek + 8,
-                            4,
-                        )?;
+                        let record_next = record_loop_seek + 8;
+                        let seek_next_bytes = self.record_read(record_next, 4)?;
                         // 如果有，则尝试读取后续内容
                         if is_bytes_fill(seek_next_bytes.clone()) {
-                            linked_loop_seek = trans_bytes_2_u32_as_u64(seek_next_bytes)?;
+                            record_loop_seek = trans_bytes_2_u32_as_u64(seek_next_bytes)?;
                         } else {
                             // 如果没有，则新建后续结构
-                            seek = self.linked_append(Vector::create_empty_bytes(12))?;
-                            Filer::write_seeks(
-                                linked_file.try_clone().unwrap(),
-                                linked_loop_seek + 8,
-                                trans_u32_2_bytes(seek as u32),
-                            )?;
+                            seek = self.record_append(Vector::create_empty_bytes(12))?;
+                            self.record_write(record_next, trans_u32_2_bytes(seek as u32))?;
                             break;
                         }
                     } else {
                         // 如果为空，使用当前空位补全
-                        seek = linked_seek;
+                        seek = record_seek;
                         break;
                     }
                 }
@@ -264,7 +259,7 @@ impl Node {
             seed.write().unwrap().modify(IndexPolicy::create(
                 key.clone(),
                 IndexType::Library,
-                self.linked_filepath(),
+                self.record_filepath(),
                 seek,
             ));
             seed.write().unwrap().modify(IndexPolicy::create_custom(
@@ -308,13 +303,13 @@ impl Node {
             let node_filepath = node_filepath(self.index_path(), index_filename);
             // log::debug!("node_filepath = {}, degree = {}", node_filepath, next_degree);
             let node_file_seek = next_degree * 4;
-            let linked_seek = self.linked_seek(node_filepath, node_file_seek)?;
-            // log::debug!("linked_seek = {}", linked_seek);
-            let linked_file = Filer::reader(self.linked_filepath())?;
-            let mut linked_loop_seek = linked_seek;
+            let record_seek = self.record_seek(node_filepath, node_file_seek)?;
+            // log::debug!("record_seek = {}", record_seek);
+            let record_file = Filer::reader(self.record_filepath())?;
+            let mut record_loop_seek = record_seek;
             loop {
                 // 判断索引是否为空
-                let res = Filer::read_subs(linked_file.try_clone().unwrap(), linked_loop_seek, 8)?;
+                let res = self.record_read(record_loop_seek, 8)?;
                 // 如果不为空
                 if is_bytes_fill(res.clone()) {
                     // 读取当前view视图中内容
@@ -324,14 +319,10 @@ impl Node {
                         return Ok(dr.value);
                     }
                     // 如果不匹配，继续查询链式结构是否有后续内容
-                    let seek_next_bytes = Filer::read_subs(
-                        linked_file.try_clone().unwrap(),
-                        linked_loop_seek + 8,
-                        4,
-                    )?;
+                    let seek_next_bytes = self.record_read(record_loop_seek + 8, 4)?;
                     // 如果有，则尝试读取后续内容
                     if is_bytes_fill(seek_next_bytes.clone()) {
-                        linked_loop_seek = trans_bytes_2_u32_as_u64(seek_next_bytes)?;
+                        record_loop_seek = trans_bytes_2_u32_as_u64(seek_next_bytes)?;
                     } else {
                         // 如果没有，则返回无此数据
                         return Err(GeorgeError::from(DataNoExistError));
@@ -353,20 +344,20 @@ impl Node {
         }
     }
     /// 在record中的偏移量
-    fn linked_seek(&self, node_filepath: String, node_file_seek: u64) -> GeorgeResult<u64> {
-        match Filer::read_sub(node_filepath.clone(), node_file_seek, 4) {
+    fn record_seek(&self, node_filepath: String, node_file_seek: u64) -> GeorgeResult<u64> {
+        match self.record_read(node_file_seek, 4) {
             Ok(seek_bytes) => {
                 // 判断从索引中读取在record中的偏移量字节数组是否为空
                 // 如果为空，则新插入占位字节，并以占位字节为起始变更偏移量
                 if is_bytes_fill(seek_bytes.clone()) {
                     trans_bytes_2_u32_as_u64(seek_bytes)
                 } else {
-                    self.linked_append(Vector::create_empty_bytes(12))
+                    self.record_append(Vector::create_empty_bytes(12))
                 }
             }
             _ => {
                 Filer::try_touch(node_filepath)?;
-                self.linked_append(Vector::create_empty_bytes(12))
+                self.record_append(Vector::create_empty_bytes(12))
             }
         }
     }
