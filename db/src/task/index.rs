@@ -174,17 +174,6 @@ impl TIndex for Index {
     fn create_time(&self) -> Duration {
         self.create_time.clone()
     }
-    fn modify(&mut self, database_name: String, view_name: String) -> GeorgeResult<()> {
-        self.view
-            .modify_clone(database_name.clone(), view_name.clone());
-        let filepath = index_filepath(self.database_name(), self.view_name(), self.name());
-        self.filer = Filed::recovery(filepath)?;
-        self.root
-            .write()
-            .unwrap()
-            .modify(database_name, view_name)?;
-        Ok(())
-    }
     fn put(
         &self,
         key: String,

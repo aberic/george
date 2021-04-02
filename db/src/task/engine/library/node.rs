@@ -127,14 +127,6 @@ impl Node {
 
 /// 封装方法函数
 impl TNode for Node {
-    fn modify(&mut self, database_name: String, view_name: String) -> GeorgeResult<()> {
-        self.view.modify_clone(database_name, view_name);
-        let index_path = index_path(self.database_name(), self.view_name(), self.index_name());
-        self.index_path = index_path.clone();
-        self.record_filepath = record_filepath(index_path);
-        self.record_filer = Filed::recovery(self.record_filepath())?;
-        Ok(())
-    }
     /// 插入数据<p><p>
     ///
     /// ###Params

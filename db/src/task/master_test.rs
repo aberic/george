@@ -29,11 +29,11 @@ fn database_map_test() {
 #[test]
 fn base_test() {
     // database_create_test
-    let database_name = "database_create_base_test1";
+    let database_name = "database_create_base_test";
     create_database(database_name);
     // database_modify_test
-    let database_name = "database_modify_base_test2";
-    let database_new_name = "database_modify_base_test3";
+    let database_name = "database_modify_base_test1";
+    let database_new_name = "database_modify_base_test2";
     create_database(database_name);
     modify_database(database_name, database_new_name);
     modify_database(database_name, database_new_name);
@@ -500,9 +500,11 @@ fn create_database(database_name: &str) {
 }
 
 fn modify_database(database_name: &str, database_new_name: &str) {
-    match GLOBAL_MASTER
-        .modify_database(String::from(database_name), String::from(database_new_name))
-    {
+    match GLOBAL_MASTER.modify_database(
+        String::from(database_name),
+        String::from(database_new_name),
+        String::from("comment"),
+    ) {
         Ok(()) => println!("modify database {} to {}", database_name, database_new_name),
         Err(err) => println!(
             "modify database {} to {} error, {}",

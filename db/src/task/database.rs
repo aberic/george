@@ -12,23 +12,28 @@
  * limitations under the License.
  */
 
+use std::collections::HashMap;
+use std::fs::{read_dir, ReadDir};
+use std::sync::{Arc, RwLock};
+
+use chrono::{Duration, Local, NaiveDateTime};
+
+use comm::errors::children::{ViewExistError, ViewNoExistError};
+use comm::errors::entrances::{err_string, err_strs, GeorgeError, GeorgeResult};
+use comm::strings::{StringHandler, Strings};
+
 use crate::task::rich::Expectation;
 use crate::task::view::View;
 use crate::utils::path::{database_filepath, database_path, view_filepath};
 use crate::utils::store::{before_content_bytes, recovery_before_content, Metadata, HD};
 use crate::utils::writer::Filed;
-use chrono::{Duration, Local, NaiveDateTime};
-use comm::errors::children::{ViewExistError, ViewNoExistError};
-use comm::errors::entrances::{err_string, err_strs, GeorgeError, GeorgeResult};
-use comm::strings::{StringHandler, Strings};
-use std::collections::HashMap;
-use std::fs::{read_dir, ReadDir};
-use std::sync::{Arc, RwLock};
 
 #[derive(Debug, Clone)]
 pub(crate) struct Database {
     /// 名称
     name: String,
+    /// 描述
+    comment: String,
     /// 创建时间
     create_time: Duration,
     /// 文件信息
@@ -52,12 +57,13 @@ pub(crate) struct Database {
 /// name 数据库名称
 ///
 /// comment 数据库描述
-fn new_database(name: String) -> GeorgeResult<Database> {
+fn new_database(name: String, comment: String) -> GeorgeResult<Database> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
     let filepath = database_filepath(name.clone());
     Ok(Database {
         name,
+        comment,
         create_time,
         metadata: Metadata::database(),
         filer: Filed::create(filepath)?,
@@ -66,8 +72,8 @@ fn new_database(name: String) -> GeorgeResult<Database> {
 }
 
 impl Database {
-    pub(crate) fn create(name: String) -> GeorgeResult<Arc<RwLock<Database>>> {
-        let database = new_database(name)?;
+    pub(crate) fn create(name: String, comment: String) -> GeorgeResult<Arc<RwLock<Database>>> {
+        let database = new_database(name, comment)?;
         let mut metadata_bytes = database.metadata_bytes();
         let mut description = database.description();
         // 初始化为32 + 8，即head长度加正文描述符长度
@@ -80,6 +86,10 @@ impl Database {
     /// 名称
     pub(crate) fn name(&self) -> String {
         self.name.clone()
+    }
+    /// 描述
+    pub(crate) fn comment(&self) -> String {
+        self.comment.clone()
     }
     /// 创建时间
     pub(crate) fn create_time(&self) -> Duration {
@@ -109,10 +119,11 @@ impl Database {
     pub(crate) fn view_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>> {
         self.views.clone()
     }
-    pub(crate) fn modify(&mut self, name: String) -> GeorgeResult<()> {
+    pub(crate) fn modify(&mut self, name: String, comment: String) -> GeorgeResult<()> {
         let old_name = self.name();
         let content = self.read(0, 44)?;
         self.name = name.clone();
+        self.comment = comment.clone();
         let description = self.description();
         let seek_end = self.append(description.clone())?;
         log::debug!(
@@ -127,15 +138,7 @@ impl Database {
         let database_path_old = database_path(old_name);
         let database_path_new = database_path(self.name());
         match std::fs::rename(database_path_old, database_path_new) {
-            Ok(_) => {
-                self.filer = Filed::recovery(database_filepath(self.name()))?;
-                for (view_name, view) in self.views.write().unwrap().iter() {
-                    view.write()
-                        .unwrap()
-                        .modify(name.clone(), view_name.clone())?;
-                }
-                Ok(())
-            }
+            Ok(_) => Ok(()),
             Err(err) => {
                 // 回滚数据
                 self.write(0, content)?;
@@ -169,24 +172,30 @@ impl Database {
             .insert(name.clone(), View::create(self.name(), name)?);
         Ok(())
     }
+    /// 删除视图
+    pub(super) fn remove_view(&self, view_name: String) -> GeorgeResult<()> {
+        if !self.exist_view(view_name.clone()) {
+            Err(GeorgeError::from(ViewExistError))
+        } else {
+            self.view_map().write().unwrap().remove(&view_name);
+            Ok(())
+        }
+    }
     /// 修改视图
-    pub(crate) fn modify_view(&self, name: String, new_name: String) -> GeorgeResult<()> {
-        if !self.exist_view(name.clone()) {
+    pub(crate) fn modify_view(&self, view_name: String, view_new_name: String) -> GeorgeResult<()> {
+        if !self.exist_view(view_name.clone()) {
             return Err(GeorgeError::from(ViewNoExistError));
         }
-        if self.exist_view(new_name.clone()) {
+        if self.exist_view(view_new_name.clone()) {
             return Err(GeorgeError::from(ViewNoExistError));
         }
-        let views = self.view_map();
-        let mut views_w = views.write().unwrap();
-        let view = views_w.get(&name).unwrap().clone();
+        let view = self.view(view_name.clone())?;
         view.clone()
             .write()
             .unwrap()
-            .modify(self.name(), new_name.clone())?;
-        views_w.remove(&name);
-        views_w.insert(new_name.clone(), view.clone());
-        Ok(())
+            .modify(self.name(), view_new_name.clone())?;
+        self.remove_view(view_name)?;
+        self.recovery_view(view_new_name)
     }
     /// 整理归档
     ///
@@ -304,8 +313,9 @@ impl Database {
     /// 生成文件描述
     fn description(&self) -> Vec<u8> {
         hex::encode(format!(
-            "{}:#?{}",
+            "{}:#?{}:#?{}",
             self.name(),
+            self.comment(),
             self.create_time().num_nanoseconds().unwrap().to_string(),
         ))
         .into_bytes()
@@ -318,12 +328,14 @@ impl Database {
                 let real = Strings::from_utf8(vu8)?;
                 let mut split = real.split(":#?");
                 let name = split.next().unwrap().to_string();
+                let comment = split.next().unwrap().to_string();
                 let create_time = Duration::nanoseconds(
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
                 let filepath = database_filepath(name.clone());
                 let database = Database {
                     name,
+                    comment,
                     create_time,
                     metadata: hd.metadata(),
                     filer: Filed::recovery(filepath)?,
@@ -334,20 +346,17 @@ impl Database {
                 match read_dir(database_path(database.name())) {
                     // 恢复views数据
                     Ok(paths) => {
-                        database.recovery_views(paths);
+                        database.recovery_views(paths)?;
+                        Ok(database)
                     }
-                    Err(err) => panic!("recovery databases read dir failed! error is {}", err),
+                    Err(err) => Err(err_strs("recovery databases read dir", err)),
                 }
-                Ok(database)
             }
-            Err(err) => Err(err_string(format!(
-                "recovery database decode failed! error is {}",
-                err
-            ))),
+            Err(err) => Err(err_strs("recovery database decode", err)),
         }
     }
     /// 恢复views数据
-    pub(crate) fn recovery_views(&self, paths: ReadDir) {
+    pub(crate) fn recovery_views(&self, paths: ReadDir) -> GeorgeResult<()> {
         // 遍历database目录下文件
         for path in paths {
             match path {
@@ -357,46 +366,38 @@ impl Database {
                         let view_name = dir.file_name().to_str().unwrap().to_string();
                         log::debug!("recovery view from {}", view_name);
                         // 恢复view数据
-                        self.recovery_view(view_name.clone());
+                        match self.recovery_view(view_name) {
+                            Err(err) => return Err(err_strs("recovery view", err)),
+                            _ => {}
+                        }
                     }
                 }
-                Err(err) => panic!("recovery views path failed! error is {}", err),
+                Err(err) => return Err(err_strs("recovery views path", err)),
             }
         }
+        Ok(())
     }
 
     /// 恢复view数据
-    fn recovery_view(&self, view_name: String) {
+    fn recovery_view(&self, view_name: String) -> GeorgeResult<()> {
         let view_file_path = view_filepath(self.name(), view_name);
-        match recovery_before_content(view_file_path.clone()) {
-            Ok(hd) => {
-                // 恢复view数据
-                match View::recover(self.name(), hd.clone()) {
-                    Ok(view) => {
-                        log::debug!(
-                            "view [db={}, name={}, create_time={}, pigeonhole={:#?}, {:#?}]",
-                            self.name(),
-                            view.name(),
-                            view.create_time().num_nanoseconds().unwrap().to_string(),
-                            view.pigeonhole(),
-                            hd.metadata()
-                        );
-                        // 如果已存在该view，则不处理
-                        if self.exist_view(view.name()) {
-                            return;
-                        }
-                        self.view_map()
-                            .write()
-                            .unwrap()
-                            .insert(view.name(), Arc::new(RwLock::new(view)));
-                    }
-                    Err(err) => panic!("recovery view failed! error is {}", err),
-                }
-            }
-            Err(err) => panic!(
-                "recovery view when recovery before content failed! error is {}",
-                err
-            ),
+        let hd = recovery_before_content(view_file_path.clone())?;
+        let view = View::recover(self.name(), hd.clone())?;
+        log::debug!(
+            "view [db={}, name={}, create_time={}, pigeonhole={:#?}, {:#?}]",
+            self.name(),
+            view.name(),
+            view.create_time().num_nanoseconds().unwrap().to_string(),
+            view.pigeonhole(),
+            hd.metadata()
+        );
+        // 如果已存在该view，则不处理
+        if !self.exist_view(view.name()) {
+            self.view_map()
+                .write()
+                .unwrap()
+                .insert(view.name(), Arc::new(RwLock::new(view)));
         }
+        Ok(())
     }
 }

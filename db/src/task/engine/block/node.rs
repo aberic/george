@@ -46,9 +46,6 @@ impl Node {
 
 /// 封装方法函数
 impl TNode for Node {
-    fn modify(&mut self, database_name: String, view_name: String) -> GeorgeResult<()> {
-        unimplemented!()
-    }
     /// 插入数据<p><p>
     ///
     /// ###Params

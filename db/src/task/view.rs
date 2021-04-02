@@ -235,19 +235,9 @@ impl View {
         let view_path_old = view_path(old_db_name.clone(), old_view_name.clone());
         let view_path_new = view_path(database_name.clone(), self.name());
         match std::fs::rename(view_path_old, view_path_new) {
-            Ok(_) => {
-                for (_name, index) in self.index_map().write().unwrap().iter() {
-                    index
-                        .write()
-                        .unwrap()
-                        .modify(database_name.clone(), name.clone())?
-                }
-                Ok(())
-            }
+            Ok(_) => Ok(()),
             Err(err) => {
                 // 回滚数据
-                self.name = old_view_name;
-                self.database_name = old_db_name;
                 self.write(0, content_old)?;
                 Err(err_strs("file rename failed", err))
             }
@@ -568,15 +558,14 @@ impl View {
                 );
                 match read_dir(view_path(database_name, view.name())) {
                     // 恢复indexes数据
-                    Ok(paths) => view.recovery_indexes(paths)?,
-                    Err(err) => panic!("recovery view read dir failed! error is {}", err),
+                    Ok(paths) => {
+                        view.recovery_indexes(paths)?;
+                        Ok(view)
+                    }
+                    Err(err) => Err(err_strs("recovery view read dir", err)),
                 }
-                Ok(view)
             }
-            Err(err) => Err(err_string(format!(
-                "recovery view decode failed! error is {}",
-                err
-            ))),
+            Err(err) => Err(err_strs("recovery view decode", err)),
         }
     }
     /// 恢复indexes数据
@@ -593,7 +582,7 @@ impl View {
                         self.recovery_index(index_name.clone())?;
                     }
                 }
-                Err(err) => panic!("recovery indexes path failed! error is {}", err),
+                Err(err) => return Err(err_strs("recovery indexes path", err)),
             }
         }
         Ok(())
@@ -607,7 +596,7 @@ impl View {
         let index;
         // 恢复index数据
         match hd.index_type() {
-            IndexType::None => panic!("index engine type error"),
+            IndexType::None => return Err(err_str("index engine type error")),
             _ => index = IndexDefault::recover(self.clone(), hd)?,
         }
         log::debug!(

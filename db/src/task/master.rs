@@ -24,7 +24,7 @@ use crate::utils::store::recovery_before_content;
 use chrono::{Duration, Local, NaiveDateTime};
 use comm::env;
 use comm::errors::children::{DatabaseExistError, DatabaseNoExistError};
-use comm::errors::entrances::{GeorgeError, GeorgeResult};
+use comm::errors::entrances::{err_strs, GeorgeError, GeorgeResult};
 use comm::io::dir::{Dir, DirHandler};
 use comm::io::file::{Filer, FilerHandler, FilerWriter};
 use log::LevelFilter;
@@ -53,12 +53,12 @@ impl Master {
     pub(super) fn create_database(
         &self,
         database_name: String,
-        _database_comment: String,
+        database_comment: String,
     ) -> GeorgeResult<()> {
         if self.exist_database(database_name.clone()) {
             return Err(GeorgeError::from(DatabaseExistError));
         }
-        let db = Database::create(database_name.clone())?;
+        let db = Database::create(database_name.clone(), database_comment.clone())?;
         self.database_map()
             .write()
             .unwrap()
@@ -66,21 +66,36 @@ impl Master {
         log::debug!("create database {} success!", database_name);
         Ok(())
     }
+    /// 删除数据库
+    pub(super) fn remove_database(&self, database_name: String) -> GeorgeResult<()> {
+        if !self.exist_database(database_name.clone()) {
+            Err(GeorgeError::from(DatabaseExistError))
+        } else {
+            self.database_map().write().unwrap().remove(&database_name);
+            Ok(())
+        }
+    }
     /// 修改数据库
-    pub(super) fn modify_database(&self, name: String, new_name: String) -> GeorgeResult<()> {
-        if !self.exist_database(name.clone()) {
+    pub(super) fn modify_database(
+        &self,
+        database_name: String,
+        database_new_name: String,
+        database_comment: String,
+    ) -> GeorgeResult<()> {
+        if !self.exist_database(database_name.clone()) {
             return Err(GeorgeError::from(DatabaseNoExistError));
         }
-        if self.exist_database(new_name.clone()) {
+        if self.exist_database(database_new_name.clone()) {
             return Err(GeorgeError::from(DatabaseExistError));
         }
-        let databases = self.database_map();
-        let mut databases_w = databases.write().unwrap();
-        let database = databases_w.get(&name).unwrap().clone();
-        database.clone().write().unwrap().modify(new_name.clone())?;
-        databases_w.remove(&name);
-        databases_w.insert(new_name.clone(), database.clone());
-        Ok(())
+        let database = self.database(database_name.clone())?;
+        database
+            .clone()
+            .write()
+            .unwrap()
+            .modify(database_new_name.clone(), database_comment)?;
+        self.remove_database(database_name)?;
+        self.recovery_database(database_new_name)
     }
     /// 根据库name获取库
     pub(super) fn database(&self, database_name: String) -> GeorgeResult<Arc<RwLock<Database>>> {
@@ -415,7 +430,7 @@ impl Master {
 
 impl Master {
     /// 初始化或恢复数据
-    fn init_or_recovery(&self) {
+    fn init_or_recovery(&self) -> GeorgeResult<()> {
         let bootstrap_file = bootstrap_filepath();
         match read_to_string(bootstrap_file.clone()) {
             Ok(text) => {
@@ -428,48 +443,41 @@ impl Master {
                     self.recovery()
                 }
             }
-            Err(err) => panic!("init_or_recovery failed! error is {}", err),
+            Err(err) => Err(err_strs("init_or_recovery", err)),
         }
     }
 
     /// 初始化
-    fn init(&self) {
+    fn init(&self) -> GeorgeResult<()> {
         log::info!("bootstrap init!");
         // 创建系统库，用户表(含权限等信息)、库历史记录表(含变更、归档等信息) todo
         match Filer::write_force(bootstrap_filepath(), vec![0x01]) {
-            Err(err) => panic!("init failed! error is {}", err),
+            Err(err) => Err(err_strs("init", err)),
             _ => self.init_default(),
         }
     }
 
-    fn init_default(&self) {
-        match self.create_database(DEFAULT_DATABASE.to_string(), DEFAULT_COMMENT.to_string()) {
-            _ => {}
-        }
-        match self.create_view(
+    fn init_default(&self) -> GeorgeResult<()> {
+        self.create_database(DEFAULT_DATABASE.to_string(), DEFAULT_COMMENT.to_string())?;
+        self.create_view(
             DEFAULT_DATABASE.to_string(),
             DEFAULT_VIEW.to_string(),
             DEFAULT_COMMENT.to_string(),
-        ) {
-            _ => {}
-        }
+        )
     }
 
     /// 恢复sky数据
-    fn recovery(&self) {
+    fn recovery(&self) -> GeorgeResult<()> {
         log::info!("bootstrap recovery!");
         // 读取data目录下所有文件
         match read_dir(data_path()) {
-            Ok(paths) => {
-                self.init_default();
-                self.recovery_databases(paths)
-            }
-            Err(err) => panic!("recovery failed! error is {}", err),
+            Ok(paths) => self.recovery_databases(paths),
+            Err(err) => Err(err_strs("recovery", err)),
         }
     }
 
     /// 恢复databases数据
-    fn recovery_databases(&self, paths: ReadDir) {
+    fn recovery_databases(&self, paths: ReadDir) -> GeorgeResult<()> {
         // 遍历data目录下文件
         for path in paths {
             match path {
@@ -478,41 +486,37 @@ impl Master {
                     if dir.path().is_dir() {
                         let database_name = dir.file_name().to_str().unwrap().to_string();
                         log::debug!("recovery database from {}", database_name);
-                        self.recovery_database(database_name);
+                        match self.recovery_database(database_name) {
+                            Err(err) => return Err(err_strs("recovery database", err)),
+                            _ => {}
+                        }
                     }
                 }
-                Err(err) => panic!("recovery databases failed! error is {}", err),
+                Err(err) => return Err(err_strs("recovery databases path", err)),
             }
         }
+        Ok(())
     }
 
     /// 恢复database数据
-    fn recovery_database(&self, database_name: String) {
-        match recovery_before_content(database_filepath(database_name)) {
-            Ok(hd) => {
-                // 恢复database数据
-                match Database::recover(hd.clone()) {
-                    Ok(db) => {
-                        log::debug!(
-                            "db [name={}, create time = {}, {:#?}]",
-                            db.name(),
-                            db.create_time().num_nanoseconds().unwrap().to_string(),
-                            hd.metadata()
-                        );
-                        // 如果已存在该database，则不处理
-                        if self.exist_database(db.name()) {
-                            return;
-                        }
-                        self.database_map()
-                            .write()
-                            .unwrap()
-                            .insert(db.name(), Arc::new(RwLock::new(db)));
-                    }
-                    Err(err) => panic!("recovery database failed! error is {}", err),
-                }
-            }
-            Err(err) => panic!("{}", err),
+    fn recovery_database(&self, database_name: String) -> GeorgeResult<()> {
+        let hd = recovery_before_content(database_filepath(database_name))?;
+        // 恢复database数据
+        let db = Database::recover(hd.clone())?;
+        log::debug!(
+            "db [name={}, create time = {}, {:#?}]",
+            db.name(),
+            db.create_time().num_nanoseconds().unwrap().to_string(),
+            hd.metadata()
+        );
+        // 如果已存在该database，则不处理
+        if !self.exist_database(db.name()) {
+            self.database_map()
+                .write()
+                .unwrap()
+                .insert(db.name(), Arc::new(RwLock::new(db)));
         }
+        Ok(())
     }
 }
 
@@ -545,7 +549,7 @@ pub(super) static GLOBAL_MASTER: Lazy<Arc<Master>> = Lazy::new(|| {
         }
         Err(err) => panic!("create bootstrap file failed! error is {}", err),
     }
-    master_arc.clone().init_or_recovery();
+    master_arc.clone().init_or_recovery().unwrap();
     master_arc
 });
 
