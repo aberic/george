@@ -71,10 +71,10 @@ impl Database {
         let mut metadata_bytes = database.metadata_bytes();
         let mut description = database.description();
         // 初始化为32 + 8，即head长度加正文描述符长度
-        let mut before_description = before_content_bytes(40, description.len() as u32);
+        let mut before_description = before_content_bytes(44, description.len() as u32);
         metadata_bytes.append(&mut before_description);
         metadata_bytes.append(&mut description);
-        database.file_append(metadata_bytes)?;
+        database.append(metadata_bytes)?;
         Ok(Arc::new(RwLock::new(database)))
     }
     /// 名称
@@ -96,8 +96,14 @@ impl Database {
     /// #Return
     ///
     /// seek_end_before 写之前文件字节数据长度
-    fn file_append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.filer.append(content)
+    fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
+        self.filer.clone().append(content)
+    }
+    fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
+        self.filer.clone().read(start, last)
+    }
+    fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
+        self.filer.clone().write(seek, content)
     }
     /// 视图索引集合
     pub(crate) fn view_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>> {
@@ -105,19 +111,19 @@ impl Database {
     }
     pub(crate) fn modify(&mut self, name: String) -> GeorgeResult<()> {
         let old_name = self.name();
-        let content = self.filer.read(0, 40)?;
+        let content = self.read(0, 44)?;
         self.name = name.clone();
         let description = self.description();
-        let seek_end = self.file_append(description.clone())?;
+        let seek_end = self.append(description.clone())?;
         log::debug!(
             "database {} modify to {} with file seek_end = {}",
             old_name.clone(),
             self.name(),
             seek_end
         );
-        let content_new = before_content_bytes(seek_end as u32, description.len() as u32);
+        let content_new = before_content_bytes(seek_end, description.len() as u32);
         // 更新首部信息，初始化head为32，描述起始4字节，长度4字节
-        self.filer.write(32, content_new)?;
+        self.write(32, content_new)?;
         let database_path_old = database_path(old_name);
         let database_path_new = database_path(self.name());
         match std::fs::rename(database_path_old, database_path_new) {
@@ -132,7 +138,7 @@ impl Database {
             }
             Err(err) => {
                 // 回滚数据
-                self.filer.write(0, content)?;
+                self.write(0, content)?;
                 Err(err_strs("file rename failed", err.to_string()))
             }
         }

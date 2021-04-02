@@ -18,7 +18,9 @@ use std::fs::File;
 use comm::errors::entrances::GeorgeResult;
 use comm::errors::entrances::{err_str, err_string};
 use comm::io::file::{Filer, FilerNormal};
-use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_u32_2_bytes};
+use comm::trans::{
+    trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u64, trans_u32_2_bytes, trans_u64_2_bytes,
+};
 
 use crate::utils::deploy::VERSION;
 use crate::utils::enums::{Enum, EnumHandler, IndexType, Tag};
@@ -226,34 +228,15 @@ impl Metadata {
 
 /// 正文前所有信息，包括头部信息和正文描述信息
 ///
-/// start 正文描述起始位置，初始化为32 + 8，即head长度加正文描述符长度
+/// start 正文描述起始位置，初始化为32 + 12，即head长度加正文描述符长度
 ///
 /// description_len 正文描述内容持续长度
-pub fn before_content_bytes(start: u32, description_len: u32) -> Vec<u8> {
-    let mut start_bytes = trans_u32_2_bytes(start);
+pub fn before_content_bytes(start: u64, description_len: u32) -> Vec<u8> {
+    let mut start_bytes = trans_u64_2_bytes(start);
     let mut last_bytes = trans_u32_2_bytes(description_len);
     start_bytes.append(&mut last_bytes);
     start_bytes
 }
-
-/// index 正文前所有信息，包括头部信息和正文描述信息
-///
-/// start 正文描述起始位置，初始化为32 + 8，即head长度加正文描述符长度
-///
-/// description_len 正文描述内容持续长度
-pub fn before_content_bytes_for_index(start: u32, description_len: u32) -> Vec<u8> {
-    let mut start_bytes = trans_u32_2_bytes(start);
-    let mut last_bytes = trans_u32_2_bytes(description_len);
-    // println!(
-    //     "start_bytes = {:#?}, last_bytes = {:#?}",
-    //     start_bytes, last_bytes
-    // );
-    start_bytes.append(&mut last_bytes);
-    // println!("start_bytes = {:#?}", start_bytes);
-    start_bytes
-}
-
-// pub fn parse_before_content_bytes(bytes: Vec<u8>) -> Vec<u8> {}
 
 #[derive(Debug, Clone)]
 pub struct HD {
@@ -280,8 +263,8 @@ pub fn recovery_before_content(filepath: String) -> GeorgeResult<HD> {
             match file.try_clone() {
                 Ok(file_clone) => {
                     // before_content包括head以及正文描述信息
-                    // head长度已知32，正文描述长度已知8，总长度40
-                    let content = Filer::read_subs(file_clone, 0, 40)?;
+                    // head长度已知32，正文描述长度已知12，总长度44
+                    let content = Filer::read_subs(file_clone, 0, 44)?;
                     let mut metadata_bytes: Vec<u8> = vec![];
                     let mut start_bytes: Vec<u8> = vec![];
                     let mut last_bytes: Vec<u8> = vec![];
@@ -289,14 +272,14 @@ pub fn recovery_before_content(filepath: String) -> GeorgeResult<HD> {
                     for b in content {
                         if position < 32 {
                             metadata_bytes.push(b)
-                        } else if position >= 36 {
+                        } else if position >= 40 {
                             last_bytes.push(b)
                         } else {
                             start_bytes.push(b)
                         }
                         position += 1
                     }
-                    let start = trans_bytes_2_u32(start_bytes.clone())? as u64;
+                    let start = trans_bytes_2_u64(start_bytes.clone())?;
                     let last = trans_bytes_2_u32(last_bytes.clone())? as usize;
                     let metadata = Metadata::from_bytes(metadata_bytes)?;
                     // 读取正文描述

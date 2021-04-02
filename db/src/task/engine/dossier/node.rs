@@ -114,7 +114,8 @@ impl Node {
 
 /// 封装方法函数
 impl TNode for Node {
-    fn modify(&mut self) -> GeorgeResult<()> {
+    fn modify(&mut self, database_name: String, view_name: String) -> GeorgeResult<()> {
+        self.view.modify_clone(database_name, view_name);
         let index_path = index_path(self.database_name(), self.view_name(), self.index_name());
         self.node_filepath = node_filepath(index_path, String::from("increment"));
         Ok(())
