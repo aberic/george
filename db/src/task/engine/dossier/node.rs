@@ -266,6 +266,7 @@ impl Node {
             }
             let res = self.read(key_start, 8)?;
             let (valid, value_bytes) = check(
+                self.index_name(),
                 self.view.clone(),
                 self.node_filepath(),
                 key_end,
@@ -334,6 +335,7 @@ impl Node {
             }
             let res = self.read(key_end, 8)?;
             let (valid, value_bytes) = check(
+                self.index_name(),
                 self.view.clone(),
                 self.node_filepath(),
                 key_end,

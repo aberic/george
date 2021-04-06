@@ -174,11 +174,9 @@ impl TSeed for Seed {
         // 将在数据在view中的空坐标存入各个index
         for policy in self.policies.to_vec() {
             match policy.index_type {
-                IndexType::None => Filer::write_seek(
-                    policy.node_file_path(),
-                    policy.seek,
-                    Vector::create_empty_bytes(8),
-                )?,
+                IndexType::None => {
+                    Filer::write_seek(policy.node_file_path(), policy.seek, policy.custom)?
+                }
                 _ => Filer::write_seek(
                     policy.node_file_path(),
                     policy.seek,

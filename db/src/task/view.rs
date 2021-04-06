@@ -338,8 +338,17 @@ impl View {
     /// ###Return
     ///
     /// IndexResult<()>
-    pub(crate) fn remove(&self, escape_index_name: String, key: String) -> GeorgeResult<()> {
-        self.del(escape_index_name, key)
+    pub(crate) fn remove(
+        &self,
+        escape_index_name: String,
+        key: String,
+        mut value: Vec<u8>,
+    ) -> GeorgeResult<()> {
+        // todo need 2 check
+        if escape_index_name.is_empty() {
+            value = self.get(INDEX_CATALOG, key.clone())?;
+        }
+        self.del(escape_index_name, key, value)
     }
     /// 条件检索
     ///
@@ -509,8 +518,8 @@ impl View {
     /// ###Return
     ///
     /// IndexResult<()>
-    fn del(&self, escape_index_name: String, key: String) -> GeorgeResult<()> {
-        let seed = Seed::create(self.clone(), key.clone(), vec![]);
+    fn del(&self, escape_index_name: String, key: String, value: Vec<u8>) -> GeorgeResult<()> {
+        let seed = Seed::create(self.clone(), key.clone(), value.clone());
         let mut receives = Vec::new();
         for (index_name, index) in self.index_map().read().unwrap().iter() {
             if escape_index_name.eq(index_name) {
@@ -521,6 +530,7 @@ impl View {
             let index_name_clone = index_name.clone();
             let index_clone = index.clone();
             let key_clone = key.clone();
+            let value_clone = value.clone();
             let seed_clone = seed.clone();
             thread::spawn(move || {
                 let index_read = index_clone.read().unwrap();
@@ -537,7 +547,16 @@ impl View {
                         }
                         Err(err) => sender.send(GeorgeResult::Err(err)),
                     },
-                    _ => sender.send(Ok(())),
+                    _ => match key_fetch(index_name_clone, value_clone) {
+                        Ok(res) => match hash_key(index_read.key_type(), res.clone()) {
+                            Ok(hash_key) => sender.send(index_read.del(res, hash_key, seed_clone)),
+                            Err(err) => sender.send(GeorgeResult::Err(err)),
+                        },
+                        Err(err) => {
+                            log::debug!("key fetch error: {}", err);
+                            sender.send(Ok(()))
+                        }
+                    },
                 }
             });
         }

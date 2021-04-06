@@ -282,7 +282,7 @@ impl Database {
         self.view(view_name)?
             .read()
             .unwrap()
-            .remove(String::from(""), key)
+            .remove(String::from(""), key, vec![])
     }
     /// 条件检索
     ///

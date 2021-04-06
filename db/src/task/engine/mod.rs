@@ -29,6 +29,7 @@ pub mod traits;
 
 /// 检查值有效性
 fn check(
+    index_name: String,
     view: View,
     node_filepath: String,
     seek: u64,
@@ -37,10 +38,12 @@ fn check(
     view_info_index: Vec<u8>,
 ) -> GeorgeResult<(bool, Vec<u8>)> {
     if is_bytes_fill(view_info_index.clone()) {
-        let value_bytes = DataReal::value_bytes(view.read_content_by(view_info_index)?)?;
+        let real = DataReal::from(view.read_content_by(view_info_index)?)?;
+        let value_bytes = real.value();
         if Condition::validate(conditions.clone(), value_bytes.clone()) {
             if delete {
-                Filer::write_seek(node_filepath, seek, Vector::create_empty_bytes(8))?;
+                view.remove(index_name, real.key(), real.value())?;
+                Filer::write_seek(node_filepath, seek, Vector::create_empty_bytes(8))?
             }
             Ok((true, value_bytes))
         } else {
