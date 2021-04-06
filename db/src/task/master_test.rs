@@ -472,8 +472,7 @@ fn database_map() {
             );
 
             for (index_name, index) in view_r.index_map().read().unwrap().iter().into_iter() {
-                let index_c = index.clone();
-                let index_r = index_c.read().unwrap();
+                let index_r = index.clone();
 
                 let duration: Duration = index_r.create_time();
                 let time_from_stamp = NaiveDateTime::from_timestamp(duration.num_seconds(), 0);

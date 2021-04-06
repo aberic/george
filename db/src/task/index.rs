@@ -48,7 +48,7 @@ pub(crate) struct Index {
     /// 索引值类型
     key_type: KeyType,
     /// 结点
-    root: Arc<RwLock<dyn TNode>>,
+    root: Arc<dyn TNode>,
     /// 文件信息
     metadata: Metadata,
     /// 创建时间
@@ -79,7 +79,7 @@ fn new_index(
     unique: bool,
     null: bool,
     key_type: KeyType,
-    root: Arc<RwLock<dyn TNode>>,
+    root: Arc<dyn TNode>,
     metadata: Metadata,
 ) -> GeorgeResult<Index> {
     let now: NaiveDateTime = Local::now().naive_local();
@@ -109,8 +109,8 @@ impl Index {
         unique: bool,
         null: bool,
         key_type: KeyType,
-    ) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
-        let root: Arc<RwLock<dyn TNode>>;
+    ) -> GeorgeResult<Arc<dyn TIndex>> {
+        let root: Arc<dyn TNode>;
         match index_type {
             IndexType::Dossier => root = ND::create(view.clone(), name.clone())?,
             IndexType::Library => root = NL::create(view.clone(), name.clone(), unique)?,
@@ -134,7 +134,7 @@ impl Index {
         metadata_bytes.append(&mut before_description);
         metadata_bytes.append(&mut description);
         index.append(metadata_bytes)?;
-        Ok(Arc::new(RwLock::new(index)))
+        Ok(Arc::new(index))
     }
     /// 根据文件路径获取该文件追加写入的写对象
     ///
@@ -181,13 +181,13 @@ impl TIndex for Index {
         seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
     ) -> GeorgeResult<()> {
-        self.root.write().unwrap().put(key, hash_key, seed, force)
+        self.root.put(key, hash_key, seed, force)
     }
     fn get(&self, key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
-        self.root.read().unwrap().get(key, hash_key)
+        self.root.get(key, hash_key)
     }
     fn del(&self, key: String, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
-        self.root.write().unwrap().del(key, hash_key, seed)
+        self.root.del(key, hash_key, seed)
     }
     fn select(
         &self,
@@ -209,8 +209,6 @@ impl TIndex for Index {
         let delete = constraint.delete();
         let (total, count, mut values) = self
             .root
-            .read()
-            .unwrap()
             .select(left, start, end, skip, limit, delete, conditions)?;
         match constraint.sort() {
             Some(sort) => {
@@ -328,7 +326,7 @@ impl Index {
         .into_bytes()
     }
     /// 通过文件描述恢复结构信息
-    pub(crate) fn recover(view: View, hd: HD) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
+    pub(crate) fn recover(view: View, hd: HD) -> GeorgeResult<Arc<dyn TIndex>> {
         let des_bytes = hd.description();
         let description_str = Strings::from_utf8(des_bytes)?;
         match hex::decode(description_str) {
@@ -345,7 +343,7 @@ impl Index {
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
                 let filepath = index_filepath(view.database_name(), view.name(), name.clone());
-                let root: Arc<RwLock<dyn TNode>>;
+                let root: Arc<dyn TNode>;
                 match hd.index_type() {
                     IndexType::Dossier => root = ND::recovery(view.clone(), name.clone())?,
                     IndexType::Library => root = NL::recovery(view.clone(), name.clone(), unique)?,
@@ -370,7 +368,7 @@ impl Index {
                     null,
                     filer: Filed::recovery(filepath)?,
                 };
-                Ok(Arc::new(RwLock::new(index)))
+                Ok(Arc::new(index))
             }
             Err(err) => Err(err_string(format!(
                 "recovery index decode failed! error is {}",

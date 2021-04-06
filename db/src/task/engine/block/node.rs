@@ -32,12 +32,12 @@ impl Node {
     /// 新建根结点
     ///
     /// 该结点没有Links，也没有preNode，是B+Tree的创世结点
-    pub fn create(index_name: String) -> Arc<RwLock<Self>> {
-        return Arc::new(RwLock::new(Node { index_name }));
+    pub fn create(index_name: String) -> Arc<Self> {
+        return Arc::new(Node { index_name });
     }
     /// 恢复根结点
-    pub fn recovery(index_name: String) -> Arc<RwLock<Self>> {
-        return Arc::new(RwLock::new(Node { index_name }));
+    pub fn recovery(index_name: String) -> Arc<Self> {
+        return Arc::new(Node { index_name });
     }
     fn index_name(&self) -> String {
         self.index_name.clone()

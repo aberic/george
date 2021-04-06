@@ -56,7 +56,7 @@ pub struct Condition {
     /// 比较对象为bool
     value_bool: bool,
     /// 索引
-    index: Option<Arc<RwLock<dyn TIndex>>>,
+    index: Option<Arc<dyn TIndex>>,
 }
 
 impl Condition {
@@ -66,7 +66,7 @@ impl Condition {
         key_type: KeyType,
         value: String,
         value_bool: bool,
-        index: Option<Arc<RwLock<dyn TIndex>>>,
+        index: Option<Arc<dyn TIndex>>,
     ) -> GeorgeResult<Condition> {
         let value_hash = hash_key(key_type, value.clone())?;
         Ok(Condition {
@@ -215,7 +215,7 @@ impl Constraint {
     /// delete 是否删除检索结果
     fn new(
         constraint_json_bytes: Vec<u8>,
-        indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
+        indexes: Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>,
         delete: bool,
     ) -> GeorgeResult<Constraint> {
         let mut constraint = Constraint {
@@ -281,7 +281,7 @@ impl Constraint {
     /// 解析`json value`并获取条件索引
     fn fit_conditions(
         &mut self,
-        indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
+        indexes: Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>,
         value: Value,
     ) -> GeorgeResult<()> {
         if value.is_array() {
@@ -342,11 +342,11 @@ impl Constraint {
                 }
                 let indexes_clone = indexes.clone();
                 let index_r = indexes_clone.read().unwrap();
-                let mut index: Option<Arc<RwLock<dyn TIndex>>> = None;
+                let mut index: Option<Arc<dyn TIndex>> = None;
                 match index_r.get(vp) {
                     Some(idx) => {
                         index = Some(idx.clone());
-                        let idx_key_type = idx.read().unwrap().key_type();
+                        let idx_key_type = idx.key_type();
                         match key_type {
                             KeyType::None => key_type = idx_key_type,
                             _ => {
@@ -428,7 +428,7 @@ impl Constraint {
 #[derive(Debug, Clone)]
 pub struct IndexStatus {
     /// 索引
-    index: Arc<RwLock<dyn TIndex>>,
+    index: Arc<dyn TIndex>,
     /// 是否顺序
     asc: bool,
     /// 查询起始值
@@ -447,7 +447,7 @@ pub struct IndexStatus {
 
 impl IndexStatus {
     fn new(
-        index: Arc<RwLock<dyn TIndex>>,
+        index: Arc<dyn TIndex>,
         asc: bool,
         start: u64,
         end: u64,
@@ -465,10 +465,10 @@ impl IndexStatus {
             level,
         }
     }
-    fn index(&mut self) -> Arc<RwLock<dyn TIndex>> {
+    fn index(&mut self) -> Arc<dyn TIndex> {
         self.index.clone()
     }
-    fn fit_index(&mut self, index: Arc<RwLock<dyn TIndex>>) {
+    fn fit_index(&mut self, index: Arc<dyn TIndex>) {
         self.index = index
     }
     fn fit_start(&mut self, start: u64) {
@@ -492,7 +492,7 @@ impl IndexStatus {
         if self.start_update && self.end_update && self.start > self.end {
             Err(err_string(format!(
                 "condition {} end {} can't start from {}",
-                self.index.read().unwrap().name(),
+                self.index.name(),
                 self.end,
                 self.start
             )))
@@ -523,7 +523,7 @@ pub struct Expectation {
 #[derive(Debug, Clone)]
 pub struct Selector {
     /// 索引集合
-    indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
+    indexes: Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>,
     /// 查询约束
     constraint: Constraint,
 }
@@ -538,7 +538,7 @@ impl Selector {
     /// delete 是否删除检索结果
     pub(crate) fn run(
         constraint_json_bytes: Vec<u8>,
-        indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
+        indexes: Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>,
         delete: bool,
     ) -> GeorgeResult<Expectation> {
         let constraint = Constraint::new(constraint_json_bytes, indexes.clone(), delete)?;
@@ -565,7 +565,7 @@ impl Selector {
         // status自测
         status.check()?;
         self.constraint.conditions = status.conditions;
-        status.index.clone().read().unwrap().select(
+        status.index.clone().select(
             status.asc,
             status.start,
             status.end,
@@ -647,7 +647,7 @@ impl Selector {
         level: u8,
         asc: bool,
         idx_name: String,
-        idx: &Arc<RwLock<dyn TIndex>>,
+        idx: &Arc<dyn TIndex>,
     ) -> IndexStatus {
         let mut status = IndexStatus::new(idx.clone(), asc, 0, 0, vec![], level);
         // 确认排序索引是否存在条件区间

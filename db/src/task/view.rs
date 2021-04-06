@@ -55,7 +55,7 @@ pub(crate) struct View {
     /// 需要借助对象包裹，以便更新file，避免self为mut
     filer: Filed,
     /// 索引集合
-    indexes: Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>>,
+    indexes: Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>,
     /// 当前归档版本信息
     pigeonhole: Pigeonhole,
 }
@@ -138,18 +138,18 @@ impl View {
         self.metadata.bytes()
     }
     /// 索引集合
-    pub(crate) fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<dyn TIndex>>>>> {
+    pub(crate) fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>> {
         self.indexes.clone()
     }
     /// 获取默认索引
-    pub(crate) fn index_catalog(&self) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
+    pub(crate) fn index_catalog(&self) -> GeorgeResult<Arc<dyn TIndex>> {
         match self.index_map().read().unwrap().get(INDEX_CATALOG) {
             Some(idx) => Ok(idx.clone()),
             None => Err(err_str("index catalog does't found")),
         }
     }
     /// 获取索引
-    pub(crate) fn index(&self, index_name: &str) -> GeorgeResult<Arc<RwLock<dyn TIndex>>> {
+    pub(crate) fn index(&self, index_name: &str) -> GeorgeResult<Arc<dyn TIndex>> {
         match self.index_map().read().unwrap().get(index_name) {
             Some(idx) => Ok(idx.clone()),
             None => Err(err_string(format!("index {} doesn't found", index_name))),
@@ -321,9 +321,8 @@ impl View {
     /// Seed value信息
     pub(crate) fn get(&self, index_name: &str, key: String) -> GeorgeResult<Vec<u8>> {
         let index = self.index(index_name)?;
-        let index_read = index.read().unwrap();
-        let hash_key = hash_key(index_read.key_type(), key.clone())?;
-        let view_info_index = index_read.get(key.clone(), hash_key)?;
+        let hash_key = hash_key(index.key_type(), key.clone())?;
+        let view_info_index = index.get(key.clone(), hash_key)?;
         match index_name {
             INDEX_CATALOG => Ok(view_info_index),
             _ => DataReal::value_bytes(self.read_content_by(view_info_index)?),
@@ -451,15 +450,14 @@ impl View {
             let value_clone = value.clone();
             let seed_clone = seed.clone();
             thread::spawn(move || {
-                let index_read = index_clone.read().unwrap();
                 match index_name_clone.as_str() {
-                    INDEX_CATALOG => match hash_key(index_read.key_type(), key_clone.clone()) {
+                    INDEX_CATALOG => match hash_key(index_clone.key_type(), key_clone.clone()) {
                         Ok(hash_key) => {
-                            sender.send(index_read.put(key_clone, hash_key, seed_clone, force))
+                            sender.send(index_clone.put(key_clone, hash_key, seed_clone, force))
                         }
                         Err(err) => sender.send(GeorgeResult::Err(err)),
                     },
-                    INDEX_SEQUENCE => sender.send(index_read.put(key_clone, 0, seed_clone, force)),
+                    INDEX_SEQUENCE => sender.send(index_clone.put(key_clone, 0, seed_clone, force)),
                     // INDEX_MEMORY => match hash_key(index_read.key_type(), key_clone.clone()) {
                     //     Ok(hash_key) => {
                     //         if remove {
@@ -478,9 +476,9 @@ impl View {
                     //     Err(err) => sender.send(GeorgeResult::Err(err)),
                     // },
                     _ => match key_fetch(index_name_clone, value_clone) {
-                        Ok(res) => match hash_key(index_read.key_type(), res.clone()) {
+                        Ok(res) => match hash_key(index_clone.key_type(), res.clone()) {
                             Ok(hash_key) => {
-                                sender.send(index_read.put(res, hash_key, seed_clone, force))
+                                sender.send(index_clone.put(res, hash_key, seed_clone, force))
                             }
                             Err(err) => sender.send(GeorgeResult::Err(err)),
                         },
@@ -532,32 +530,25 @@ impl View {
             let key_clone = key.clone();
             let value_clone = value.clone();
             let seed_clone = seed.clone();
-            thread::spawn(move || {
-                let index_read = index_clone.read().unwrap();
-                match index_name_clone.as_str() {
-                    INDEX_CATALOG => match hash_key(index_read.key_type(), key_clone.clone()) {
-                        Ok(hash_key) => {
-                            sender.send(index_read.del(key_clone, hash_key, seed_clone))
-                        }
+            thread::spawn(move || match index_name_clone.as_str() {
+                INDEX_CATALOG => match hash_key(index_clone.key_type(), key_clone.clone()) {
+                    Ok(hash_key) => sender.send(index_clone.del(key_clone, hash_key, seed_clone)),
+                    Err(err) => sender.send(GeorgeResult::Err(err)),
+                },
+                INDEX_SEQUENCE => match hash_key(index_clone.key_type(), key_clone.clone()) {
+                    Ok(hash_key) => sender.send(index_clone.del(key_clone, hash_key, seed_clone)),
+                    Err(err) => sender.send(GeorgeResult::Err(err)),
+                },
+                _ => match key_fetch(index_name_clone, value_clone) {
+                    Ok(res) => match hash_key(index_clone.key_type(), res.clone()) {
+                        Ok(hash_key) => sender.send(index_clone.del(res, hash_key, seed_clone)),
                         Err(err) => sender.send(GeorgeResult::Err(err)),
                     },
-                    INDEX_SEQUENCE => match hash_key(index_read.key_type(), key_clone.clone()) {
-                        Ok(hash_key) => {
-                            sender.send(index_read.del(key_clone, hash_key, seed_clone))
-                        }
-                        Err(err) => sender.send(GeorgeResult::Err(err)),
-                    },
-                    _ => match key_fetch(index_name_clone, value_clone) {
-                        Ok(res) => match hash_key(index_read.key_type(), res.clone()) {
-                            Ok(hash_key) => sender.send(index_read.del(res, hash_key, seed_clone)),
-                            Err(err) => sender.send(GeorgeResult::Err(err)),
-                        },
-                        Err(err) => {
-                            log::debug!("key fetch error: {}", err);
-                            sender.send(Ok(()))
-                        }
-                    },
-                }
+                    Err(err) => {
+                        log::debug!("key fetch error: {}", err);
+                        sender.send(Ok(()))
+                    }
+                },
             });
         }
         for receive in receives.iter() {
@@ -661,14 +652,7 @@ impl View {
             self.database_name(),
             self.name(),
             index_name.clone(),
-            index
-                .clone()
-                .read()
-                .unwrap()
-                .create_time()
-                .num_nanoseconds()
-                .unwrap()
-                .to_string(),
+            index.create_time().num_nanoseconds().unwrap().to_string(),
             metadata
         );
         // 如果已存在该view，则不处理

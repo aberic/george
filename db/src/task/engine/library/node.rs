@@ -47,6 +47,9 @@ pub(crate) struct Node {
     view: View,
     index_name: String,
     index_path: String,
+    /// 用于记录重复索引链式结构信息
+    ///
+    /// 记录值长度8，
     record_filepath: String,
     /// 是否唯一索引
     unique: bool,
@@ -60,37 +63,33 @@ impl Node {
     /// 新建根结点
     ///
     /// 该结点没有Links，也没有preNode，是B+Tree的创世结点
-    pub fn create(view: View, index_name: String, unique: bool) -> GeorgeResult<Arc<RwLock<Self>>> {
+    pub fn create(view: View, index_name: String, unique: bool) -> GeorgeResult<Arc<Self>> {
         let index_path = index_path(view.database_name(), view.name(), index_name.clone());
         let record_filepath = record_filepath(index_path.clone());
         let record_filer = Filed::create(record_filepath.clone())?;
         record_filer.append(vec![0x86, 0x87])?;
-        Ok(Arc::new(RwLock::new(Node {
+        Ok(Arc::new(Node {
             view,
             index_name,
             index_path,
             record_filepath,
             unique,
             record_filer,
-        })))
+        }))
     }
     /// 恢复根结点
-    pub fn recovery(
-        view: View,
-        index_name: String,
-        unique: bool,
-    ) -> GeorgeResult<Arc<RwLock<Self>>> {
+    pub fn recovery(view: View, index_name: String, unique: bool) -> GeorgeResult<Arc<Self>> {
         let index_path = index_path(view.database_name(), view.name(), index_name.clone());
         let record_filepath = record_filepath(index_path.clone());
         let record_filer = Filed::recovery(record_filepath.clone())?;
-        Ok(Arc::new(RwLock::new(Node {
+        Ok(Arc::new(Node {
             view,
             index_name,
             index_path,
             record_filepath,
             unique,
             record_filer,
-        })))
+        }))
     }
     fn database_name(&self) -> String {
         self.view.database_name()
