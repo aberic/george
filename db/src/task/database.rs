@@ -386,20 +386,19 @@ impl Database {
         let view_file_path = view_filepath(self.name(), view_name);
         let hd = recovery_before_content(view_file_path.clone())?;
         let view = View::recover(self.name(), hd.clone())?;
+        let view_c = view.clone();
+        let view_r = view_c.read().unwrap();
         log::debug!(
             "view [db={}, name={}, create_time={}, pigeonhole={:#?}, {:#?}]",
             self.name(),
-            view.name(),
-            view.create_time().num_nanoseconds().unwrap().to_string(),
-            view.pigeonhole(),
+            view_r.name(),
+            view_r.create_time().num_nanoseconds().unwrap().to_string(),
+            view_r.pigeonhole(),
             hd.metadata()
         );
         // 如果已存在该view，则不处理
-        if !self.exist_view(view.name()) {
-            self.view_map()
-                .write()
-                .unwrap()
-                .insert(view.name(), Arc::new(RwLock::new(view)));
+        if !self.exist_view(view_r.name()) {
+            self.view_map().write().unwrap().insert(view_r.name(), view);
         }
         Ok(())
     }

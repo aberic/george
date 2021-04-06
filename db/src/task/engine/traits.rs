@@ -29,7 +29,7 @@ use serde::__private::fmt::Debug;
 ///
 /// 该特性包含了索引的基本方法，理论上都需要进行实现才能使用
 pub(crate) trait TIndex: Send + Sync + Debug {
-    fn view(&self) -> View;
+    fn view(&self) -> Arc<RwLock<View>>;
     fn database_name(&self) -> String;
     fn view_name(&self) -> String;
     /// 索引名称，可以自定义；<p>

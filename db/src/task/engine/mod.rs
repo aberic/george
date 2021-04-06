@@ -20,6 +20,7 @@ use comm::errors::entrances::{err_strs, GeorgeResult};
 use comm::io::file::{Filer, FilerWriter};
 use comm::vectors::{Vector, VectorHandler};
 use serde::{Deserialize, Serialize};
+use std::sync::{Arc, RwLock};
 
 pub(super) mod block;
 pub(super) mod dossier;
@@ -30,7 +31,7 @@ pub mod traits;
 /// 检查值有效性
 fn check(
     index_name: String,
-    view: View,
+    view: Arc<RwLock<View>>,
     node_filepath: String,
     seek: u64,
     conditions: Vec<Condition>,
@@ -38,11 +39,12 @@ fn check(
     view_info_index: Vec<u8>,
 ) -> GeorgeResult<(bool, Vec<u8>)> {
     if is_bytes_fill(view_info_index.clone()) {
-        let real = DataReal::from(view.read_content_by(view_info_index)?)?;
+        let v_r = view.read().unwrap();
+        let real = DataReal::from(v_r.read_content_by(view_info_index)?)?;
         let value_bytes = real.value();
         if Condition::validate(conditions.clone(), value_bytes.clone()) {
             if delete {
-                view.remove(index_name, real.key(), real.value())?;
+                v_r.remove(index_name, real.key(), real.value())?;
                 Filer::write_seek(node_filepath, seek, Vector::create_empty_bytes(8))?
             }
             Ok((true, value_bytes))

@@ -44,7 +44,7 @@ use std::ops::Add;
 /// record存储固定长度的数据，长度为12，即view视图真实数据8+链式后续数据4，总计可存3.57913941亿条数据
 #[derive(Debug, Clone)]
 pub(crate) struct Node {
-    view: View,
+    view: Arc<RwLock<View>>,
     index_name: String,
     index_path: String,
     /// 用于记录重复索引链式结构信息
@@ -63,8 +63,14 @@ impl Node {
     /// 新建根结点
     ///
     /// 该结点没有Links，也没有preNode，是B+Tree的创世结点
-    pub fn create(view: View, index_name: String, unique: bool) -> GeorgeResult<Arc<Self>> {
-        let index_path = index_path(view.database_name(), view.name(), index_name.clone());
+    pub fn create(
+        view: Arc<RwLock<View>>,
+        index_name: String,
+        unique: bool,
+    ) -> GeorgeResult<Arc<Self>> {
+        let v_c = view.clone();
+        let v_r = v_c.read().unwrap();
+        let index_path = index_path(v_r.database_name(), v_r.name(), index_name.clone());
         let record_filepath = record_filepath(index_path.clone());
         let record_filer = Filed::create(record_filepath.clone())?;
         record_filer.append(vec![0x86, 0x87])?;
@@ -78,8 +84,14 @@ impl Node {
         }))
     }
     /// 恢复根结点
-    pub fn recovery(view: View, index_name: String, unique: bool) -> GeorgeResult<Arc<Self>> {
-        let index_path = index_path(view.database_name(), view.name(), index_name.clone());
+    pub fn recovery(
+        view: Arc<RwLock<View>>,
+        index_name: String,
+        unique: bool,
+    ) -> GeorgeResult<Arc<Self>> {
+        let v_c = view.clone();
+        let v_r = v_c.read().unwrap();
+        let index_path = index_path(v_r.database_name(), v_r.name(), index_name.clone());
         let record_filepath = record_filepath(index_path.clone());
         let record_filer = Filed::recovery(record_filepath.clone())?;
         Ok(Arc::new(Node {
@@ -92,10 +104,10 @@ impl Node {
         }))
     }
     fn database_name(&self) -> String {
-        self.view.database_name()
+        self.view.clone().read().unwrap().database_name()
     }
     fn view_name(&self) -> String {
-        self.view.name()
+        self.view.clone().read().unwrap().name()
     }
     fn index_name(&self) -> String {
         self.index_name.clone()

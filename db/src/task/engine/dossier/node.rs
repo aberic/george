@@ -37,7 +37,7 @@ use comm::vectors::{Vector, VectorHandler};
 /// 叶子结点中才会存在Link，其余结点Link为None
 #[derive(Debug, Clone)]
 pub(crate) struct Node {
-    view: View,
+    view: Arc<RwLock<View>>,
     atomic_key: Arc<AtomicU64>,
     index_name: String,
     node_filepath: String,
@@ -51,9 +51,11 @@ impl Node {
     /// 新建根结点
     ///
     /// 该结点没有Links，也没有preNode，是B+Tree的创世结点
-    pub fn create(view: View, index_name: String) -> GeorgeResult<Arc<Self>> {
+    pub fn create(view: Arc<RwLock<View>>, index_name: String) -> GeorgeResult<Arc<Self>> {
         let atomic_key = Arc::new(AtomicU64::new(1));
-        let index_path = index_path(view.database_name(), view.name(), index_name.clone());
+        let v_c = view.clone();
+        let v_r = v_c.read().unwrap();
+        let index_path = index_path(v_r.database_name(), v_r.name(), index_name.clone());
         let node_filepath = node_filepath(index_path, String::from("increment"));
         let filer = Filed::create(node_filepath.clone())?;
         filer.append(Vector::create_empty_bytes(8))?;
@@ -66,8 +68,10 @@ impl Node {
         }))
     }
     /// 恢复根结点
-    pub fn recovery(view: View, index_name: String) -> GeorgeResult<Arc<Self>> {
-        let index_path = index_path(view.database_name(), view.name(), index_name.clone());
+    pub fn recovery(view: Arc<RwLock<View>>, index_name: String) -> GeorgeResult<Arc<Self>> {
+        let v_c = view.clone();
+        let v_r = v_c.read().unwrap();
+        let index_path = index_path(v_r.database_name(), v_r.name(), index_name.clone());
         let node_filepath = node_filepath(index_path, String::from("increment"));
         let file_len = Filer::len(node_filepath.clone())?;
         let last_key = file_len / 8;
@@ -86,10 +90,10 @@ impl Node {
         self.index_name.clone()
     }
     fn database_name(&self) -> String {
-        self.view.database_name()
+        self.view.clone().read().unwrap().database_name()
     }
     fn view_name(&self) -> String {
-        self.view.name()
+        self.view.clone().read().unwrap().name()
     }
     fn node_filepath(&self) -> String {
         self.node_filepath.clone()

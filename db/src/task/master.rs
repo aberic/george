@@ -194,11 +194,10 @@ impl Master {
     ) -> GeorgeResult<()> {
         let database = self.database(database_name)?;
         let database_read = database.read().unwrap();
-        database_read
-            .view(view_name)?
-            .read()
-            .unwrap()
-            .create_index(index_name, index_type, key_type, primary, unique, null)
+        let view = database_read.view(view_name)?;
+        view.clone().read().unwrap().create_index(
+            view, index_name, index_type, key_type, primary, unique, null,
+        )
     }
 }
 

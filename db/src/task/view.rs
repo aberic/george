@@ -81,31 +81,32 @@ fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
         indexes: Default::default(),
         pigeonhole: Pigeonhole::create(0, filepath, create_time),
     };
-    // view.create_index(
-    //     INDEX_CATALOG.to_string(),
-    //     IndexType::Library,
-    //     KeyType::String,
-    //     true,
-    //     true,
-    //     false,
-    // )?;
-    view.create_index(
-        INDEX_SEQUENCE.to_string(),
-        IndexType::Dossier,
-        KeyType::U64,
-        false,
-        true,
-        false,
-    )?;
-
     Ok(view)
 }
 
 impl View {
     pub(crate) fn create(database_name: String, name: String) -> GeorgeResult<Arc<RwLock<View>>> {
         let view = new_view(database_name, name)?;
-        view.init()?;
-        Ok(Arc::new(RwLock::new(view)))
+        let view_bak = Arc::new(RwLock::new(view));
+        view_bak.clone().read().unwrap().init()?;
+        // view.create_index(
+        //     INDEX_CATALOG.to_string(),
+        //     IndexType::Library,
+        //     KeyType::String,
+        //     true,
+        //     true,
+        //     false,
+        // )?;
+        view_bak.read().unwrap().create_index(
+            view_bak.clone(),
+            INDEX_SEQUENCE.to_string(),
+            IndexType::Dossier,
+            KeyType::U64,
+            false,
+            true,
+            false,
+        )?;
+        Ok(view_bak)
     }
     fn init(&self) -> GeorgeResult<()> {
         let mut metadata_bytes = self.metadata_bytes();
@@ -252,6 +253,7 @@ impl View {
     /// 创建索引
     pub(crate) fn create_index(
         &self,
+        view: Arc<RwLock<View>>,
         index_name: String,
         index_type: IndexType,
         key_type: KeyType,
@@ -265,13 +267,7 @@ impl View {
         self.index_map().write().unwrap().insert(
             index_name.clone(),
             IndexDefault::create(
-                self.clone(),
-                index_name,
-                index_type,
-                primary,
-                unique,
-                null,
-                key_type,
+                view, index_name, index_type, primary, unique, null, key_type,
             )?,
         );
         Ok(())
@@ -578,7 +574,7 @@ impl View {
         .into_bytes()
     }
     /// 通过文件描述恢复结构信息
-    pub(crate) fn recover(database_name: String, hd: HD) -> GeorgeResult<View> {
+    pub(crate) fn recover(database_name: String, hd: HD) -> GeorgeResult<Arc<RwLock<View>>> {
         let description_str = Strings::from_utf8(hd.description())?;
         match hex::decode(description_str) {
             Ok(vu8) => {
@@ -604,11 +600,15 @@ impl View {
                     view.name(),
                     database_name,
                 );
+                let view_bak = Arc::new(RwLock::new(view.clone()));
                 match read_dir(view_path(database_name, view.name())) {
                     // 恢复indexes数据
                     Ok(paths) => {
-                        view.recovery_indexes(paths)?;
-                        Ok(view)
+                        view_bak
+                            .read()
+                            .unwrap()
+                            .recovery_indexes(view_bak.clone(), paths)?;
+                        Ok(view_bak)
                     }
                     Err(err) => Err(err_strs("recovery view read dir", err)),
                 }
@@ -617,7 +617,7 @@ impl View {
         }
     }
     /// 恢复indexes数据
-    fn recovery_indexes(&mut self, paths: ReadDir) -> GeorgeResult<()> {
+    fn recovery_indexes(&self, view: Arc<RwLock<View>>, paths: ReadDir) -> GeorgeResult<()> {
         // 遍历view目录下文件
         for path in paths {
             match path {
@@ -627,7 +627,7 @@ impl View {
                         let index_name = dir.file_name().to_str().unwrap().to_string();
                         log::debug!("recovery index from {}", index_name);
                         // 恢复index数据
-                        self.recovery_index(index_name.clone())?;
+                        self.recovery_index(view.clone(), index_name.clone())?;
                     }
                 }
                 Err(err) => return Err(err_strs("recovery indexes path", err)),
@@ -637,7 +637,7 @@ impl View {
     }
 
     /// 恢复view数据
-    fn recovery_index(&self, index_name: String) -> GeorgeResult<()> {
+    fn recovery_index(&self, view: Arc<RwLock<View>>, index_name: String) -> GeorgeResult<()> {
         let index_file_path = index_filepath(self.database_name(), self.name(), index_name.clone());
         let hd = recovery_before_content(index_file_path.clone())?;
         let metadata = hd.metadata();
@@ -645,7 +645,7 @@ impl View {
         // 恢复index数据
         match hd.index_type() {
             IndexType::None => return Err(err_str("index engine type error")),
-            _ => index = IndexDefault::recover(self.clone(), hd)?,
+            _ => index = IndexDefault::recover(view, hd)?,
         }
         log::debug!(
             "index [db={}, view={}, name={}, create_time={}, {:#?}]",

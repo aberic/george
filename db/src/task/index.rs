@@ -36,7 +36,7 @@ use serde_json::Value;
 /// 5位key及16位md5后key及5位起始seek和4位持续seek
 #[derive(Debug)]
 pub(crate) struct Index {
-    view: View,
+    view: Arc<RwLock<View>>,
     /// 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
     name: String,
     /// 是否主键，主键也是唯一索引，即默认列表依赖索引
@@ -73,7 +73,7 @@ pub(crate) struct Index {
 ///
 /// metadata 文件信息
 fn new_index(
-    view: View,
+    view: Arc<RwLock<View>>,
     name: String,
     primary: bool,
     unique: bool,
@@ -84,7 +84,9 @@ fn new_index(
 ) -> GeorgeResult<Index> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
-    let filepath = index_filepath(view.database_name(), view.name(), name.clone());
+    let v_c = view.clone();
+    let v_r = v_c.read().unwrap();
+    let filepath = index_filepath(v_r.database_name(), v_r.name(), name.clone());
     let index = Index {
         view,
         primary,
@@ -102,7 +104,7 @@ fn new_index(
 
 impl Index {
     pub(crate) fn create(
-        view: View,
+        view: Arc<RwLock<View>>,
         name: String,
         index_type: IndexType,
         primary: bool,
@@ -150,14 +152,14 @@ impl Index {
 
 /// 封装方法函数w
 impl TIndex for Index {
-    fn view(&self) -> View {
+    fn view(&self) -> Arc<RwLock<View>> {
         self.view.clone()
     }
     fn database_name(&self) -> String {
-        self.view.database_name()
+        self.view().read().unwrap().database_name()
     }
     fn view_name(&self) -> String {
-        self.view.name()
+        self.view().read().unwrap().name()
     }
     fn name(&self) -> String {
         self.name.clone()
@@ -326,7 +328,7 @@ impl Index {
         .into_bytes()
     }
     /// 通过文件描述恢复结构信息
-    pub(crate) fn recover(view: View, hd: HD) -> GeorgeResult<Arc<dyn TIndex>> {
+    pub(crate) fn recover(view: Arc<RwLock<View>>, hd: HD) -> GeorgeResult<Arc<dyn TIndex>> {
         let des_bytes = hd.description();
         let description_str = Strings::from_utf8(des_bytes)?;
         match hex::decode(description_str) {
@@ -342,7 +344,9 @@ impl Index {
                 let create_time = Duration::nanoseconds(
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
-                let filepath = index_filepath(view.database_name(), view.name(), name.clone());
+                let v_c = view.clone();
+                let v_r = v_c.read().unwrap();
+                let filepath = index_filepath(v_r.database_name(), v_r.name(), name.clone());
                 let root: Arc<dyn TNode>;
                 match hd.index_type() {
                     IndexType::Dossier => root = ND::recovery(view.clone(), name.clone())?,
@@ -353,8 +357,8 @@ impl Index {
                 log::info!(
                     "recovery index {} from database.view {}.{}",
                     name.clone(),
-                    view.database_name(),
-                    view.name()
+                    v_r.database_name(),
+                    v_r.name()
                 );
                 let index = Index {
                     view,
