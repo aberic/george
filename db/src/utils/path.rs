@@ -89,12 +89,8 @@ pub fn view_filepath(database_name: String, view_name: String) -> String {
 /// 索引文件目录 /var/lib/georgedb/data/database_name/view_name/index_name/index.ge
 pub fn index_filepath(database_name: String, view_name: String, index_name: String) -> String {
     format!(
-        "{}/{}/{}/{}/{}/index.ge",
-        GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
-        "data",
-        database_name,
-        view_name,
-        index_name
+        "{}/index.ge",
+        index_path(database_name, view_name, index_name)
     )
 }
 
@@ -103,19 +99,7 @@ pub fn node_filepath(index_path: String, index_file_name: String) -> String {
     format!("{}/{}.ge", index_path, index_file_name)
 }
 
-/// 索引文件目录 /var/lib/georgedb/data/database_name/view_name/index_name/index_file_name.ge
+/// 索引文件目录 /var/lib/georgedb/data/database_name/view_name/index_name/record.ge
 pub fn record_filepath(index_path: String) -> String {
-    node_filepath(index_path, String::from("linked"))
-}
-
-/// 索引文件目录 /var/lib/georgedb/data/database/view/index.ge
-pub fn index_filepath_yet(database_id: String, view_id: String, index_file_name: String) -> String {
-    format!(
-        "{}/{}/{}/{}/{}",
-        GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
-        "data",
-        database_id,
-        view_id,
-        index_file_name
-    )
+    node_filepath(index_path, String::from("record"))
 }

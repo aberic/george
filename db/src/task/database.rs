@@ -107,13 +107,13 @@ impl Database {
     ///
     /// seek_end_before 写之前文件字节数据长度
     fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.filer.clone().append(content)
+        self.filer.append(content)
     }
     fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
-        self.filer.clone().read(start, last)
+        self.filer.read(start, last)
     }
     fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
-        self.filer.clone().write(seek, content)
+        self.filer.write(seek, content)
     }
     /// 视图索引集合
     pub(crate) fn view_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>> {

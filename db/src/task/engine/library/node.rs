@@ -115,13 +115,13 @@ impl Node {
     ///
     /// seek_end_before 写之前文件字节数据长度
     fn record_append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.record_filer.clone().append(content)
+        self.record_filer.append(content)
     }
     fn record_read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         self.record_filer.clone().read(start, last)
     }
     fn record_write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
-        self.record_filer.clone().write(seek, content)
+        self.record_filer.write(seek, content)
     }
 }
 

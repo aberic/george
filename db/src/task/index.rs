@@ -133,7 +133,7 @@ impl Index {
         let mut before_description = before_content_bytes(44, description.len() as u32);
         metadata_bytes.append(&mut before_description);
         metadata_bytes.append(&mut description);
-        index.file_append(metadata_bytes)?;
+        index.append(metadata_bytes)?;
         Ok(Arc::new(RwLock::new(index)))
     }
     /// 根据文件路径获取该文件追加写入的写对象
@@ -143,7 +143,7 @@ impl Index {
     /// #Return
     ///
     /// seek_end_before 写之前文件字节数据长度
-    fn file_append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
+    fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
         self.filer.append(content)
     }
 }
