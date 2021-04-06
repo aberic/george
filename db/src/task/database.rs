@@ -279,7 +279,10 @@ impl Database {
     ///
     /// IndexResult<()>
     pub(crate) fn remove(&self, view_name: String, key: String) -> GeorgeResult<()> {
-        self.view(view_name)?.read().unwrap().remove(key)
+        self.view(view_name)?
+            .read()
+            .unwrap()
+            .remove(String::from(""), key)
     }
     /// 条件检索
     ///

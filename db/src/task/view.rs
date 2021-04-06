@@ -292,7 +292,7 @@ impl View {
     ///
     /// IndexResult<()>
     pub(crate) fn put(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        self.save(key, value, false, false)
+        self.save(key, value, false)
     }
     /// 插入数据，无论存在与否都会插入或更新数据<p><p>
     ///
@@ -306,7 +306,7 @@ impl View {
     ///
     /// IndexResult<()>
     pub(crate) fn set(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        self.save(key, value, true, false)
+        self.save(key, value, true)
     }
     /// 获取数据，返回存储对象<p><p>
     ///
@@ -338,8 +338,8 @@ impl View {
     /// ###Return
     ///
     /// IndexResult<()>
-    pub(crate) fn remove(&self, key: String) -> GeorgeResult<()> {
-        self.save(key, vec![], true, true)
+    pub(crate) fn remove(&self, escape_index_name: String, key: String) -> GeorgeResult<()> {
+        self.del(escape_index_name, key)
     }
     /// 条件检索
     ///
@@ -430,8 +430,8 @@ impl View {
     /// ###Return
     ///
     /// IndexResult<()>
-    fn save(&self, key: String, value: Vec<u8>, force: bool, remove: bool) -> GeorgeResult<()> {
-        let seed = Seed::create(self.clone(), key.clone(), value.clone(), remove);
+    fn save(&self, key: String, value: Vec<u8>, force: bool) -> GeorgeResult<()> {
+        let seed = Seed::create(self.clone(), key.clone(), value.clone());
         let mut receives = Vec::new();
         for (index_name, index) in self.index_map().read().unwrap().iter() {
             let (sender, receive) = mpsc::channel();
@@ -446,24 +446,11 @@ impl View {
                 match index_name_clone.as_str() {
                     INDEX_CATALOG => match hash_key(index_read.key_type(), key_clone.clone()) {
                         Ok(hash_key) => {
-                            if remove {
-                                sender.send(index_read.del(key_clone, hash_key))
-                            } else {
-                                sender.send(index_read.put(key_clone, hash_key, seed_clone, force))
-                            }
+                            sender.send(index_read.put(key_clone, hash_key, seed_clone, force))
                         }
                         Err(err) => sender.send(GeorgeResult::Err(err)),
                     },
-                    INDEX_SEQUENCE => {
-                        if remove {
-                            match hash_key(index_read.key_type(), key_clone.clone()) {
-                                Ok(hash_key) => sender.send(index_read.del(key_clone, hash_key)),
-                                Err(err) => sender.send(GeorgeResult::Err(err)),
-                            }
-                        } else {
-                            sender.send(index_read.put(key_clone, 0, seed_clone, force))
-                        }
-                    }
+                    INDEX_SEQUENCE => sender.send(index_read.put(key_clone, 0, seed_clone, force)),
                     // INDEX_MEMORY => match hash_key(index_read.key_type(), key_clone.clone()) {
                     //     Ok(hash_key) => {
                     //         if remove {
@@ -484,11 +471,7 @@ impl View {
                     _ => match key_fetch(index_name_clone, value_clone) {
                         Ok(res) => match hash_key(index_read.key_type(), res.clone()) {
                             Ok(hash_key) => {
-                                if remove {
-                                    sender.send(index_read.del(res, hash_key))
-                                } else {
-                                    sender.send(index_read.put(res, hash_key, seed_clone, force))
-                                }
+                                sender.send(index_read.put(res, hash_key, seed_clone, force))
                             }
                             Err(err) => sender.send(GeorgeResult::Err(err)),
                         },
@@ -510,11 +493,66 @@ impl View {
                 Err(err) => return Err(err_string(err.to_string())),
             }
         }
-        if remove {
-            seed.write().unwrap().remove()
-        } else {
-            seed.write().unwrap().save()
+        let seed_w = seed.write().unwrap();
+        seed_w.save()
+    }
+    /// 插入数据业务方法<p><p>
+    ///
+    /// ###Params
+    ///
+    /// key string
+    ///
+    /// value 当前结果value信息<p><p>
+    ///
+    /// force 如果存在原值，是否覆盖原结果<p><p>
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    fn del(&self, escape_index_name: String, key: String) -> GeorgeResult<()> {
+        let seed = Seed::create(self.clone(), key.clone(), vec![]);
+        let mut receives = Vec::new();
+        for (index_name, index) in self.index_map().read().unwrap().iter() {
+            if escape_index_name.eq(index_name) {
+                continue;
+            }
+            let (sender, receive) = mpsc::channel();
+            receives.push(receive);
+            let index_name_clone = index_name.clone();
+            let index_clone = index.clone();
+            let key_clone = key.clone();
+            let seed_clone = seed.clone();
+            thread::spawn(move || {
+                let index_read = index_clone.read().unwrap();
+                match index_name_clone.as_str() {
+                    INDEX_CATALOG => match hash_key(index_read.key_type(), key_clone.clone()) {
+                        Ok(hash_key) => {
+                            sender.send(index_read.del(key_clone, hash_key, seed_clone))
+                        }
+                        Err(err) => sender.send(GeorgeResult::Err(err)),
+                    },
+                    INDEX_SEQUENCE => match hash_key(index_read.key_type(), key_clone.clone()) {
+                        Ok(hash_key) => {
+                            sender.send(index_read.del(key_clone, hash_key, seed_clone))
+                        }
+                        Err(err) => sender.send(GeorgeResult::Err(err)),
+                    },
+                    _ => sender.send(Ok(())),
+                }
+            });
         }
+        for receive in receives.iter() {
+            let res = receive.recv();
+            match res {
+                Ok(gr) => match gr {
+                    Err(err) => return Err(err),
+                    _ => {}
+                },
+                Err(err) => return Err(err_string(err.to_string())),
+            }
+        }
+        let seed_w = seed.write().unwrap();
+        seed_w.remove()
     }
 }
 

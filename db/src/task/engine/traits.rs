@@ -80,7 +80,7 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     /// ###Return
     ///
     /// Seed value信息
-    fn del(&self, key: String, hash_key: u64) -> GeorgeResult<()>;
+    fn del(&self, key: String, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()>;
     /// 通过查询约束获取数据集
     ///
     /// ###Params
@@ -138,7 +138,7 @@ pub(crate) trait TNode: Send + Sync + Debug {
     /// ###Return
     ///
     /// Seed value信息
-    fn del(&self, key: String, hash_key: u64) -> GeorgeResult<()>;
+    fn del(&self, key: String, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()>;
     /// 通过查询约束获取数据集
     ///
     /// ###Params
@@ -183,7 +183,7 @@ pub(crate) trait TSeed: Send + Sync + Debug {
     /// 修改value值
     fn modify(&mut self, index_policy: IndexPolicy);
     /// 存储操作
-    fn save(&mut self) -> GeorgeResult<()>;
+    fn save(&self) -> GeorgeResult<()>;
     /// 删除操作
-    fn remove(&mut self) -> GeorgeResult<()>;
+    fn remove(&self) -> GeorgeResult<()>;
 }

@@ -186,8 +186,8 @@ impl TIndex for Index {
     fn get(&self, key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
         self.root.read().unwrap().get(key, hash_key)
     }
-    fn del(&self, key: String, hash_key: u64) -> GeorgeResult<()> {
-        self.root.write().unwrap().del(key, hash_key)
+    fn del(&self, key: String, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
+        self.root.write().unwrap().del(key, hash_key, seed)
     }
     fn select(
         &self,

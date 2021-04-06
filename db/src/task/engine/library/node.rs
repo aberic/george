@@ -148,7 +148,7 @@ impl TNode for Node {
     fn get(&self, key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
         self.get_in_node(key, String::from(""), 1, hash_key)
     }
-    fn del(&self, _key: String, _hash_key: u64) -> GeorgeResult<()> {
+    fn del(&self, _key: String, _hash_key: u64, _seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
         unimplemented!()
     }
     fn select(

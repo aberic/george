@@ -22,6 +22,7 @@ use crate::task::engine::traits::TSeed;
 use crate::task::engine::DataReal;
 use crate::task::view::View;
 use crate::utils::enums::IndexType;
+use comm::vectors::{Vector, VectorHandler};
 use std::sync::{Arc, RwLock};
 
 /// 待处理索引操作策略
@@ -83,8 +84,6 @@ impl IndexPolicy {
 #[derive(Debug)]
 pub(crate) struct Seed {
     real: DataReal,
-    /// 是否删除
-    delete: bool,
     /// 除主键索引外的其它索引操作策略集合
     policies: Vec<IndexPolicy>,
     view: View,
@@ -93,23 +92,30 @@ pub(crate) struct Seed {
 /// 封装方法函数
 impl Seed {
     /// 新建seed
-    pub fn create(view: View, key: String, value: Vec<u8>, delete: bool) -> Arc<RwLock<Seed>> {
+    pub fn create(view: View, key: String, value: Vec<u8>) -> Arc<RwLock<Seed>> {
         Arc::new(RwLock::new(Seed {
             real: DataReal {
                 sequence: 0,
                 key,
                 value,
             },
-            delete,
             policies: Vec::new(),
             view,
         }))
     }
-    fn real(&self) -> DataReal {
-        self.real.clone()
+    pub fn empty(view: View) -> Arc<RwLock<Seed>> {
+        Arc::new(RwLock::new(Seed {
+            real: DataReal {
+                sequence: 0,
+                key: String::new(),
+                value: vec![],
+            },
+            policies: Vec::new(),
+            view,
+        }))
     }
     fn values(&self) -> GeorgeResult<Vec<u8>> {
-        self.real().values()
+        self.real.values()
     }
 }
 
@@ -128,7 +134,7 @@ impl TSeed for Seed {
         }
         self.policies.push(index_policy)
     }
-    fn save(&mut self) -> GeorgeResult<()> {
+    fn save(&self) -> GeorgeResult<()> {
         // todo 失败回滚
         if self.policies.len() == 0 {
             // return Err(err_string(format!(
@@ -164,7 +170,22 @@ impl TSeed for Seed {
         }
         Ok(())
     }
-    fn remove(&mut self) -> GeorgeResult<()> {
+    fn remove(&self) -> GeorgeResult<()> {
+        // 将在数据在view中的空坐标存入各个index
+        for policy in self.policies.to_vec() {
+            match policy.index_type {
+                IndexType::None => Filer::write_seek(
+                    policy.node_file_path(),
+                    policy.seek,
+                    Vector::create_empty_bytes(8),
+                )?,
+                _ => Filer::write_seek(
+                    policy.node_file_path(),
+                    policy.seek,
+                    Vector::create_empty_bytes(8),
+                )?,
+            }
+        }
         Ok(())
     }
 }

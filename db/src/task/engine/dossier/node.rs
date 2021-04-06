@@ -138,8 +138,8 @@ impl TNode for Node {
     fn get(&self, _key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
         self.get_in_node(hash_key)
     }
-    fn del(&self, _key: String, hash_key: u64) -> GeorgeResult<()> {
-        self.del_in_node(hash_key)
+    fn del(&self, key: String, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
+        self.del_in_node(key, hash_key, seed)
     }
     fn select(
         &self,
@@ -201,9 +201,22 @@ impl Node {
             Err(GeorgeError::from(DataNoExistError))
         };
     }
-    fn del_in_node(&self, hash_key: u64) -> GeorgeResult<()> {
+    fn del_in_node(
+        &self,
+        key: String,
+        hash_key: u64,
+        seed: Arc<RwLock<dyn TSeed>>,
+    ) -> GeorgeResult<()> {
         let seek = hash_key * 8;
-        self.write(seek, Vector::create_empty_bytes(8))?;
+        let res = self.read(seek, 8)?;
+        if is_bytes_fill(res) {
+            seed.write().unwrap().modify(IndexPolicy::create(
+                key,
+                IndexType::Dossier,
+                self.node_filepath(),
+                seek,
+            ));
+        }
         Ok(())
     }
     /// 通过左查询约束获取数据集

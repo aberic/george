@@ -67,20 +67,13 @@ impl DataReal {
         self.value.clone()
     }
     pub(crate) fn values(&self) -> GeorgeResult<Vec<u8>> {
-        DataReal::bytes(self.sequence, self.key(), self.value.clone())
-    }
-    pub(crate) fn set_seq(&mut self, sequence: u64) {
-        self.sequence = sequence
-    }
-    pub(crate) fn bytes(sequence: u64, key: String, value: Vec<u8>) -> GeorgeResult<Vec<u8>> {
-        match serde_json::to_vec(&DataReal {
-            sequence,
-            key,
-            value,
-        }) {
+        match serde_json::to_vec(&self) {
             Ok(v8s) => Ok(v8s),
             Err(err) => Err(err_strs("data real 2 bytes", err)),
         }
+    }
+    pub(crate) fn set_seq(&mut self, sequence: u64) {
+        self.sequence = sequence
     }
     pub(crate) fn value_bytes(real_bytes: Vec<u8>) -> GeorgeResult<Vec<u8>> {
         Ok(DataReal::from(real_bytes)?.value)
