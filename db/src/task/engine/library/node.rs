@@ -25,7 +25,7 @@ use crate::utils::path::{index_path, node_filepath, record_filepath};
 use crate::utils::writer::Filed;
 use comm::errors::children::{DataExistError, DataNoExistError};
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
-use comm::io::file::{Filer, FilerHandler, FilerNormal};
+use comm::io::file::{Filer, FilerHandler};
 use comm::strings::{StringHandler, Strings};
 use comm::trans::{trans_bytes_2_u32_as_u64, trans_u32_2_bytes};
 use comm::vectors::{Vector, VectorHandler};

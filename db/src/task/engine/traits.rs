@@ -180,8 +180,6 @@ pub(crate) trait TSeed: Send + Sync + Debug {
     fn key(&self) -> String;
     /// value最终存储在文件中的内容
     fn value(&self) -> GeorgeResult<Vec<u8>>;
-    /// 值是否为空
-    fn is_none(&self) -> bool;
     /// 修改value值
     fn modify(&mut self, index_policy: IndexPolicy);
     /// 存储操作

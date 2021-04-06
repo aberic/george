@@ -54,12 +54,24 @@ fn check(
 /// 真实存储数据
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DataReal {
-    sequence: u64,
-    key: String,
-    value: Vec<u8>,
+    pub(crate) sequence: u64,
+    pub(crate) key: String,
+    pub(crate) value: Vec<u8>,
 }
 
 impl DataReal {
+    pub(crate) fn key(&self) -> String {
+        self.key.clone()
+    }
+    pub(crate) fn value(&self) -> Vec<u8> {
+        self.value.clone()
+    }
+    pub(crate) fn values(&self) -> GeorgeResult<Vec<u8>> {
+        DataReal::bytes(self.sequence, self.key(), self.value.clone())
+    }
+    pub(crate) fn set_seq(&mut self, sequence: u64) {
+        self.sequence = sequence
+    }
     pub(crate) fn bytes(sequence: u64, key: String, value: Vec<u8>) -> GeorgeResult<Vec<u8>> {
         match serde_json::to_vec(&DataReal {
             sequence,

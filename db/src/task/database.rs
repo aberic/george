@@ -19,7 +19,7 @@ use std::sync::{Arc, RwLock};
 use chrono::{Duration, Local, NaiveDateTime};
 
 use comm::errors::children::{ViewExistError, ViewNoExistError};
-use comm::errors::entrances::{err_string, err_strs, GeorgeError, GeorgeResult};
+use comm::errors::entrances::{err_strs, GeorgeError, GeorgeResult};
 use comm::strings::{StringHandler, Strings};
 
 use crate::task::rich::Expectation;

@@ -12,111 +12,17 @@
  * limitations under the License.
  */
 
-use std::fs::File;
-
 use serde::{Deserialize, Serialize};
 
-use comm::errors::entrances::{err_strs, GeorgeResult};
-use comm::io::file::{Filer, FilerHandler, FilerNormal, FilerWriter};
-use comm::trans::{
-    trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u64, trans_u16_2_bytes, trans_u48_2_bytes,
-};
-use comm::vectors::{Vector, VectorHandler};
+use comm::errors::entrances::GeorgeResult;
+use comm::io::file::{Filer, FilerWriter};
+use comm::trans::{trans_u16_2_bytes, trans_u48_2_bytes};
 
 use crate::task::engine::traits::TSeed;
 use crate::task::engine::DataReal;
 use crate::task::view::View;
-use crate::utils::comm::is_bytes_fill;
 use crate::utils::enums::IndexType;
-use comm::strings::{StringHandler, Strings};
 use std::sync::{Arc, RwLock};
-
-/// B+Tree索引叶子结点内防hash碰撞数组结构中单体结构
-///
-/// 搭配Index使用
-///
-/// 叶子节点下真实存储数据的集合单体结构
-#[derive(Debug)]
-pub(crate) struct Seed {
-    sequence: u64,
-    /// 获取当前结果原始key信息，用于内存版索引
-    key: String,
-    /// 存储值
-    value: Vec<u8>,
-    /// 是否删除
-    delete: bool,
-    /// 除主键索引外的其它索引操作策略集合
-    policies: Vec<IndexPolicy>,
-    view: View,
-}
-
-/// 视图索引内容
-#[derive(Debug, Clone)]
-pub(crate) struct IndexData {
-    /// 视图文件属性，版本号(2字节)
-    version: u16,
-    /// 数据在表文件中起始偏移量p(6字节)
-    data_seek: u64,
-    /// 使用当前索引的原始key
-    original_key: String,
-    /// 真实存储数据内容
-    value: Vec<u8>,
-}
-
-impl IndexData {
-    /// 创建视图索引内容
-    ///
-    /// view_index_info 循环定位记录使用文件属性
-    pub(crate) fn create(view: View, view_info_index: Vec<u8>) -> GeorgeResult<IndexData> {
-        let version = trans_bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
-        let path = view.path(version)?;
-        let original_key_len = trans_bytes_2_u64(Vector::sub(view_info_index.clone(), 8, 10)?)?;
-        let original_key = Strings::from_utf8(Vector::sub(
-            view_info_index.clone(),
-            10,
-            10 + original_key_len as usize,
-        )?)?;
-        let data_seek = trans_bytes_2_u64(Vector::sub(view_info_index.clone(), 2, 8)?)?;
-        // 当前数据所在文件对象
-        let file = Filer::reader(path)?;
-        let file_value_len: File;
-        let file_value: File;
-        match file.try_clone() {
-            Ok(f) => file_value_len = f,
-            Err(err) => return Err(err_strs("index data create file try clone", err)),
-        }
-        match file.try_clone() {
-            Ok(f) => file_value = f,
-            Err(err) => return Err(err_strs("index data create file try clone", err)),
-        }
-        let value_len = trans_bytes_2_u32(Filer::read_subs(file_value_len, data_seek, 4)?)?;
-        let value = Filer::read_subs(file_value, data_seek + 4, value_len as usize)?;
-        Ok(IndexData {
-            version,
-            data_seek,
-            original_key,
-            value,
-        })
-    }
-    pub(crate) fn equal_key(&self, key: String) -> bool {
-        key.eq(&self.original_key)
-    }
-    pub(crate) fn value(&self) -> Vec<u8> {
-        self.value.clone()
-    }
-    /// 匹配视图索引key
-    ///
-    /// view_index_info 循环定位记录使用文件属性
-    pub(crate) fn key_exist(key: String, view_index_info: Vec<u8>) -> GeorgeResult<bool> {
-        let original_key_len = trans_bytes_2_u64(Vector::sub(view_index_info.clone(), 8, 10)?)?;
-        let original_key = Strings::from_utf8(Vector::sub(
-            view_index_info.clone(),
-            10,
-            original_key_len as usize,
-        )?)?;
-        Ok(key.eq(&original_key))
-    }
-}
 
 /// 待处理索引操作策略
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -167,23 +73,21 @@ impl IndexPolicy {
     fn original_key(&self) -> String {
         self.original_key.clone()
     }
-    /// 检出索引记录表文档属性
-    ///
-    /// view_version_bytes 视图文件属性，版本号(2字节)
-    pub(super) fn check_out_bytes(&self, mut view_version_bytes: Vec<u8>) -> GeorgeResult<Vec<u8>> {
-        Filer::try_touch(self.node_file_path())?;
-        let file = Filer::reader_writer(self.node_file_path())?;
-        // 表内容索引(8字节)，记录表文件属性(数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
-        let check_out_bytes = Filer::read_subs(file, self.seek, 8)?;
-        // 如果读取到不为空，则表明该数据已经存在
-        if is_bytes_fill(check_out_bytes.clone()) {
-            Ok(check_out_bytes)
-        } else {
-            // 如果读取到为空，则表明该数据为首次插入
-            view_version_bytes.append(&mut Vector::create_empty_bytes(6));
-            Ok(view_version_bytes)
-        }
-    }
+}
+
+/// B+Tree索引叶子结点内防hash碰撞数组结构中单体结构
+///
+/// 搭配Index使用
+///
+/// 叶子节点下真实存储数据的集合单体结构
+#[derive(Debug)]
+pub(crate) struct Seed {
+    real: DataReal,
+    /// 是否删除
+    delete: bool,
+    /// 除主键索引外的其它索引操作策略集合
+    policies: Vec<IndexPolicy>,
+    view: View,
 }
 
 /// 封装方法函数
@@ -191,30 +95,35 @@ impl Seed {
     /// 新建seed
     pub fn create(view: View, key: String, value: Vec<u8>, delete: bool) -> Arc<RwLock<Seed>> {
         Arc::new(RwLock::new(Seed {
-            sequence: 0,
-            key,
-            value,
+            real: DataReal {
+                sequence: 0,
+                key,
+                value,
+            },
             delete,
             policies: Vec::new(),
             view,
         }))
+    }
+    fn real(&self) -> DataReal {
+        self.real.clone()
+    }
+    fn values(&self) -> GeorgeResult<Vec<u8>> {
+        self.real().values()
     }
 }
 
 /// 封装方法函数
 impl TSeed for Seed {
     fn key(&self) -> String {
-        self.key.clone()
+        self.real.key()
     }
     fn value(&self) -> GeorgeResult<Vec<u8>> {
-        DataReal::bytes(self.sequence, self.key(), self.value.clone())
-    }
-    fn is_none(&self) -> bool {
-        self.value.is_empty()
+        Ok(self.real.value())
     }
     fn modify(&mut self, index_policy: IndexPolicy) {
         match index_policy.index_type {
-            IndexType::Dossier => self.sequence = index_policy.seek / 8,
+            IndexType::Dossier => self.real.set_seq(index_policy.seek / 8),
             _ => {}
         }
         self.policies.push(index_policy)
@@ -229,7 +138,7 @@ impl TSeed for Seed {
             return Ok(());
         }
         // 执行真实存储操作，即索引将seed存入后，允许检索到该结果，但该结果值不存在，仅当所有索引存入都成功，才会执行本方法完成真实存储操作
-        let view_seek_start = self.view.write_content(self.value()?)?;
+        let view_seek_start = self.view.write_content(self.values()?)?;
         // 记录视图文件属性(版本号/数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
         // 数据在视图文件中起始偏移量p(6字节)
         let mut view_seek_start_bytes = trans_u48_2_bytes(view_seek_start);
