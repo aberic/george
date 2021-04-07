@@ -129,7 +129,7 @@ impl TSeed for Seed {
     }
     fn modify(&mut self, index_policy: IndexPolicy) {
         match index_policy.index_type {
-            IndexType::Dossier => self.real.set_seq(index_policy.seek / 8),
+            IndexType::Sequence => self.real.set_seq(index_policy.seek / 8),
             _ => {}
         }
         self.policies.push(index_policy)

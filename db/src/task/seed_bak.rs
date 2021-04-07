@@ -327,7 +327,7 @@
 //             match policy.index_type {
 //                 IndexType::None => return Err(err_str("index type none is not support!")),
 //                 IndexType::Memory => return Err(err_str("index type memory is not support!")),
-//                 IndexType::Dossier => return Err(err_str("dossier index need to be complete!")),
+//                 IndexType::Dossier => return Err(err_str("sequence index need to be complete!")),
 //                 _ => policy.exec(
 //                     view.clone(),
 //                     view_version_bytes.clone(),

@@ -22,6 +22,7 @@ use comm::strings::{StringHandler, Strings};
 use crate::task::engine::block::node::Node as NB;
 use crate::task::engine::dossier::node::Node as ND;
 use crate::task::engine::library::node::Node as NL;
+use crate::task::engine::sequence::node::Node as NS;
 use crate::task::engine::traits::{TIndex, TNode, TSeed};
 use crate::task::rich::{Constraint, Expectation};
 use crate::task::view::View;
@@ -114,7 +115,8 @@ impl Index {
     ) -> GeorgeResult<Arc<dyn TIndex>> {
         let root: Arc<dyn TNode>;
         match index_type {
-            IndexType::Dossier => root = ND::create(view.clone(), name.clone())?,
+            IndexType::Sequence => root = NS::create(view.clone(), name.clone())?,
+            IndexType::Dossier => root = ND::create(view.clone(), name.clone(), unique)?,
             IndexType::Library => root = NL::create(view.clone(), name.clone(), unique)?,
             IndexType::Block => root = NB::create(name.clone()),
             _ => return Err(err_str("unsupported engine type with none")),
@@ -349,7 +351,8 @@ impl Index {
                 let filepath = index_filepath(v_r.database_name(), v_r.name(), name.clone());
                 let root: Arc<dyn TNode>;
                 match hd.index_type() {
-                    IndexType::Dossier => root = ND::recovery(view.clone(), name.clone())?,
+                    IndexType::Sequence => root = NS::recovery(view.clone(), name.clone())?,
+                    IndexType::Dossier => root = ND::recovery(view.clone(), name.clone(), unique)?,
                     IndexType::Library => root = NL::recovery(view.clone(), name.clone(), unique)?,
                     IndexType::Block => root = NB::recovery(name.clone()),
                     _ => return Err(err_str("unsupported engine type")),

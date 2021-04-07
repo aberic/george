@@ -139,6 +139,22 @@ pub fn hash_key(key_type: KeyType, key: String) -> GeorgeResult<u64> {
     Ok(hash_key)
 }
 
+pub fn hash_key_64(key_type: KeyType, key: String) -> GeorgeResult<u64> {
+    let mut hash_key: u64 = 0;
+    match key_type {
+        KeyType::String => hash_key = Hash::crc64(HashType::String, key)?,
+        KeyType::Bool => hash_key = Hash::crc64(HashType::Bool, key)?,
+        KeyType::U32 => hash_key = Hash::crc64(HashType::U32, key)?,
+        KeyType::U64 => hash_key = Hash::crc64(HashType::U64, key)?,
+        KeyType::F32 => hash_key = Hash::crc64(HashType::F32, key)?,
+        KeyType::F64 => hash_key = Hash::crc64(HashType::F64, key)?,
+        KeyType::I32 => hash_key = Hash::crc64(HashType::I32, key)?,
+        KeyType::I64 => hash_key = Hash::crc64(HashType::I64, key)?,
+        _ => return Err(err_str("key type not support!")),
+    }
+    Ok(hash_key)
+}
+
 pub fn hash_key_number(key_type: KeyType, key: &Number) -> GeorgeResult<u64> {
     let mut hash_key: u64 = 0;
     match key_type {

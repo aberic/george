@@ -100,7 +100,7 @@ impl View {
         view_bak.read().unwrap().create_index(
             view_bak.clone(),
             INDEX_SEQUENCE.to_string(),
-            IndexType::Dossier,
+            IndexType::Sequence,
             KeyType::U64,
             false,
             true,

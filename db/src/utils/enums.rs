@@ -92,6 +92,8 @@ pub enum IndexType {
     /// 占位
     None,
     /// 卷宗存储引擎(单文件索引存储-64位)，最合适用于自增
+    Sequence,
+    /// 卷宗存储引擎(单文件索引存储-32位)
     Dossier,
     /// 文库存储引擎(多文件索引存储-64位)
     Library,
@@ -111,9 +113,10 @@ fn tag_u8(tag: Tag) -> u8 {
 fn index_type_u8(index_type: IndexType) -> u8 {
     match index_type {
         IndexType::None => 0x00,
-        IndexType::Dossier => 0x01,
-        IndexType::Library => 0x02,
-        IndexType::Block => 0x03,
+        IndexType::Sequence => 0x01,
+        IndexType::Dossier => 0x02,
+        IndexType::Library => 0x03,
+        IndexType::Block => 0x04,
     }
 }
 
@@ -144,9 +147,10 @@ fn tag(b: u8) -> Tag {
 fn index_type(b: u8) -> IndexType {
     match b {
         0x00 => IndexType::None,
-        0x01 => IndexType::Dossier,
-        0x02 => IndexType::Library,
-        0x03 => IndexType::Block,
+        0x01 => IndexType::Sequence,
+        0x02 => IndexType::Dossier,
+        0x03 => IndexType::Library,
+        0x04 => IndexType::Block,
         _ => IndexType::None,
     }
 }

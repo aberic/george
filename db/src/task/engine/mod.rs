@@ -26,7 +26,8 @@ pub(super) mod block;
 pub(super) mod dossier;
 pub(super) mod library;
 pub(super) mod memory;
-pub mod traits;
+pub(super) mod sequence;
+pub(super) mod traits;
 
 /// 检查值有效性
 fn check(
