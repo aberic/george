@@ -16,6 +16,7 @@ use crate::task::engine::traits::TIndex;
 use crate::utils::comm::{hash_key, hash_key_number};
 use crate::utils::enums::KeyType;
 use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeResult};
+use comm::trans::trans_u64_2_bytes;
 use serde_json::{Error, Value};
 use std::collections::HashMap;
 use std::ops::Add;
@@ -565,11 +566,18 @@ impl Selector {
         // status自测
         status.check()?;
         self.constraint.conditions = status.conditions;
-        status.index.clone().select(
+        log::debug!(
+            "index status with left = {} & start = {} & end = {} & constraint = {:#?}",
             status.asc,
             status.start,
             status.end,
-            self.constraint.clone(),
+            self.constraint()
+        );
+        status.index.clone().select(
+            status.asc,
+            trans_u64_2_bytes(status.start),
+            trans_u64_2_bytes(status.end),
+            self.constraint(),
         )
     }
 

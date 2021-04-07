@@ -173,8 +173,8 @@ impl TNode for Node {
     fn select(
         &self,
         _left: bool,
-        _start: u64,
-        _end: u64,
+        _start_bytes: Vec<u8>,
+        _end_bytes: Vec<u8>,
         _skip: u64,
         _limit: u64,
         _delete: bool,
