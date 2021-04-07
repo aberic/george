@@ -115,10 +115,10 @@ impl Index {
     ) -> GeorgeResult<Arc<dyn TIndex>> {
         let root: Arc<dyn TNode>;
         match index_type {
-            IndexType::Sequence => root = NS::create(view.clone(), name.clone())?,
-            IndexType::Dossier => root = ND::create(view.clone(), name.clone(), unique)?,
-            IndexType::Library => root = NL::create(view.clone(), name.clone(), unique)?,
-            IndexType::Block => root = NB::create(name.clone()),
+            IndexType::Sequence => root = NS::create(view.clone(), name.clone(), key_type)?,
+            IndexType::Dossier => root = ND::create(view.clone(), name.clone(), key_type, unique)?,
+            IndexType::Library => root = NL::create(view.clone(), name.clone(), key_type, unique)?,
+            IndexType::Block => root = NB::create(name.clone(), key_type),
             _ => return Err(err_str("unsupported engine type with none")),
         }
         let index = new_index(
@@ -178,20 +178,14 @@ impl TIndex for Index {
     fn create_time(&self) -> Duration {
         self.create_time.clone()
     }
-    fn put(
-        &self,
-        key: String,
-        hash_key: u64,
-        seed: Arc<RwLock<dyn TSeed>>,
-        force: bool,
-    ) -> GeorgeResult<()> {
-        self.root.put(key, hash_key, seed, force)
+    fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
+        self.root.put(key, seed, force)
     }
-    fn get(&self, key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
-        self.root.get(key, hash_key)
+    fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
+        self.root.get(key)
     }
-    fn del(&self, key: String, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
-        self.root.del(key, hash_key, seed)
+    fn del(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
+        self.root.del(key, seed)
     }
     fn select(
         &self,
@@ -351,10 +345,16 @@ impl Index {
                 let filepath = index_filepath(v_r.database_name(), v_r.name(), name.clone());
                 let root: Arc<dyn TNode>;
                 match hd.index_type() {
-                    IndexType::Sequence => root = NS::recovery(view.clone(), name.clone())?,
-                    IndexType::Dossier => root = ND::recovery(view.clone(), name.clone(), unique)?,
-                    IndexType::Library => root = NL::recovery(view.clone(), name.clone(), unique)?,
-                    IndexType::Block => root = NB::recovery(name.clone()),
+                    IndexType::Sequence => {
+                        root = NS::recovery(view.clone(), name.clone(), key_type)?
+                    }
+                    IndexType::Dossier => {
+                        root = ND::recovery(view.clone(), name.clone(), key_type, unique)?
+                    }
+                    IndexType::Library => {
+                        root = NL::recovery(view.clone(), name.clone(), key_type, unique)?
+                    }
+                    IndexType::Block => root = NB::recovery(name.clone(), key_type),
                     _ => return Err(err_str("unsupported engine type")),
                 }
                 log::info!(

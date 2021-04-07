@@ -33,7 +33,7 @@ use crate::task::engine::DataReal;
 use crate::task::index::Index as IndexDefault;
 use crate::task::rich::{Expectation, Selector};
 use crate::task::seed::Seed;
-use crate::utils::comm::{hash_key, key_fetch, INDEX_CATALOG, INDEX_SEQUENCE};
+use crate::utils::comm::{key_fetch, INDEX_CATALOG, INDEX_SEQUENCE};
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::{index_filepath, view_filepath, view_path};
 use crate::utils::store::{before_content_bytes, recovery_before_content, Metadata, HD};
@@ -317,8 +317,7 @@ impl View {
     /// Seed value信息
     pub(crate) fn get(&self, index_name: &str, key: String) -> GeorgeResult<Vec<u8>> {
         let index = self.index(index_name)?;
-        let hash_key = hash_key(index.key_type(), key.clone())?;
-        let view_info_index = index.get(key.clone(), hash_key)?;
+        let view_info_index = index.get(key.clone())?;
         match index_name {
             INDEX_CATALOG => Ok(view_info_index),
             _ => DataReal::value_bytes(self.read_content_by(view_info_index)?),
@@ -447,13 +446,8 @@ impl View {
             let seed_clone = seed.clone();
             thread::spawn(move || {
                 match index_name_clone.as_str() {
-                    INDEX_CATALOG => match hash_key(index_clone.key_type(), key_clone.clone()) {
-                        Ok(hash_key) => {
-                            sender.send(index_clone.put(key_clone, hash_key, seed_clone, force))
-                        }
-                        Err(err) => sender.send(GeorgeResult::Err(err)),
-                    },
-                    INDEX_SEQUENCE => sender.send(index_clone.put(key_clone, 0, seed_clone, force)),
+                    INDEX_CATALOG => sender.send(index_clone.put(key_clone, seed_clone, force)),
+                    INDEX_SEQUENCE => sender.send(index_clone.put(key_clone, seed_clone, force)),
                     // INDEX_MEMORY => match hash_key(index_read.key_type(), key_clone.clone()) {
                     //     Ok(hash_key) => {
                     //         if remove {
@@ -472,12 +466,7 @@ impl View {
                     //     Err(err) => sender.send(GeorgeResult::Err(err)),
                     // },
                     _ => match key_fetch(index_name_clone, value_clone) {
-                        Ok(res) => match hash_key(index_clone.key_type(), res.clone()) {
-                            Ok(hash_key) => {
-                                sender.send(index_clone.put(res, hash_key, seed_clone, force))
-                            }
-                            Err(err) => sender.send(GeorgeResult::Err(err)),
-                        },
+                        Ok(res) => sender.send(index_clone.put(res, seed_clone, force)),
                         Err(err) => {
                             log::debug!("key fetch error: {}", err);
                             sender.send(Ok(()))
@@ -527,19 +516,10 @@ impl View {
             let value_clone = value.clone();
             let seed_clone = seed.clone();
             thread::spawn(move || match index_name_clone.as_str() {
-                INDEX_CATALOG => match hash_key(index_clone.key_type(), key_clone.clone()) {
-                    Ok(hash_key) => sender.send(index_clone.del(key_clone, hash_key, seed_clone)),
-                    Err(err) => sender.send(GeorgeResult::Err(err)),
-                },
-                INDEX_SEQUENCE => match hash_key(index_clone.key_type(), key_clone.clone()) {
-                    Ok(hash_key) => sender.send(index_clone.del(key_clone, hash_key, seed_clone)),
-                    Err(err) => sender.send(GeorgeResult::Err(err)),
-                },
+                INDEX_CATALOG => sender.send(index_clone.del(key_clone, seed_clone)),
+                INDEX_SEQUENCE => sender.send(index_clone.del(key_clone, seed_clone)),
                 _ => match key_fetch(index_name_clone, value_clone) {
-                    Ok(res) => match hash_key(index_clone.key_type(), res.clone()) {
-                        Ok(hash_key) => sender.send(index_clone.del(res, hash_key, seed_clone)),
-                        Err(err) => sender.send(GeorgeResult::Err(err)),
-                    },
+                    Ok(res) => sender.send(index_clone.del(res, seed_clone)),
                     Err(err) => {
                         log::debug!("key fetch error: {}", err);
                         sender.send(Ok(()))

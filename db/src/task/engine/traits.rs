@@ -54,13 +54,7 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     /// ###Return
     ///
     /// EngineResult<()>
-    fn put(
-        &self,
-        key: String,
-        hash_key: u64,
-        seed: Arc<RwLock<dyn TSeed>>,
-        force: bool,
-    ) -> GeorgeResult<()>;
+    fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()>;
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -70,7 +64,7 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     /// ###Return
     ///
     /// Seed value信息
-    fn get(&self, key: String, hash_key: u64) -> GeorgeResult<Vec<u8>>;
+    fn get(&self, key: String) -> GeorgeResult<Vec<u8>>;
     /// 删除数据<p><p>
     ///
     /// ###Params
@@ -80,7 +74,7 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     /// ###Return
     ///
     /// Seed value信息
-    fn del(&self, key: String, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()>;
+    fn del(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()>;
     /// 通过查询约束获取数据集
     ///
     /// ###Params
@@ -112,13 +106,7 @@ pub(crate) trait TNode: Send + Sync + Debug {
     /// ###Return
     ///
     /// EngineResult<()>
-    fn put(
-        &self,
-        key: String,
-        hash_key: u64,
-        seed: Arc<RwLock<dyn TSeed>>,
-        force: bool,
-    ) -> GeorgeResult<()>;
+    fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()>;
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -128,7 +116,7 @@ pub(crate) trait TNode: Send + Sync + Debug {
     /// ###Return
     ///
     /// Seed value信息
-    fn get(&self, key: String, hash_key: u64) -> GeorgeResult<Vec<u8>>;
+    fn get(&self, key: String) -> GeorgeResult<Vec<u8>>;
     /// 删除数据<p><p>
     ///
     /// ###Params
@@ -138,7 +126,7 @@ pub(crate) trait TNode: Send + Sync + Debug {
     /// ###Return
     ///
     /// Seed value信息
-    fn del(&self, key: String, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()>;
+    fn del(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()>;
     /// 通过查询约束获取数据集
     ///
     /// ###Params

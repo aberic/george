@@ -16,6 +16,7 @@ use std::sync::{Arc, RwLock};
 
 use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::rich::Condition;
+use crate::utils::enums::KeyType;
 use comm::errors::entrances::GeorgeResult;
 
 /// 索引B+Tree结点结构
@@ -26,21 +27,31 @@ use comm::errors::entrances::GeorgeResult;
 #[derive(Debug, Clone)]
 pub(crate) struct Node {
     index_name: String,
+    key_type: KeyType,
 }
 
 impl Node {
     /// 新建根结点
     ///
     /// 该结点没有Links，也没有preNode，是B+Tree的创世结点
-    pub fn create(index_name: String) -> Arc<Self> {
-        return Arc::new(Node { index_name });
+    pub fn create(index_name: String, key_type: KeyType) -> Arc<Self> {
+        return Arc::new(Node {
+            index_name,
+            key_type,
+        });
     }
     /// 恢复根结点
-    pub fn recovery(index_name: String) -> Arc<Self> {
-        return Arc::new(Node { index_name });
+    pub fn recovery(index_name: String, key_type: KeyType) -> Arc<Self> {
+        return Arc::new(Node {
+            index_name,
+            key_type,
+        });
     }
     fn index_name(&self) -> String {
         self.index_name.clone()
+    }
+    fn key_type(&self) -> KeyType {
+        self.key_type.clone()
     }
 }
 
@@ -55,19 +66,13 @@ impl TNode for Node {
     /// ###Return
     ///
     /// EngineResult<()>
-    fn put(
-        &self,
-        key: String,
-        hash_key: u64,
-        seed: Arc<RwLock<dyn TSeed>>,
-        force: bool,
-    ) -> GeorgeResult<()> {
+    fn put(&self, _key: String, _seed: Arc<RwLock<dyn TSeed>>, _force: bool) -> GeorgeResult<()> {
         unimplemented!()
     }
-    fn get(&self, key: String, hash_key: u64) -> GeorgeResult<Vec<u8>> {
+    fn get(&self, _key: String) -> GeorgeResult<Vec<u8>> {
         unimplemented!()
     }
-    fn del(&self, key: String, hash_key: u64, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
+    fn del(&self, _key: String, _seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
         unimplemented!()
     }
     fn select(
