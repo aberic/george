@@ -501,7 +501,8 @@ fn select_document1() {
         {
             "Param":"age",
             "Cond":"ge",
-            "Value":49900
+            "Value":49900,
+            "Type": "bool", // int,uint,bool,float,string
         },
         {
             "Param":"age",

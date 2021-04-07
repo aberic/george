@@ -15,12 +15,12 @@
 use std::sync::{Arc, RwLock};
 
 use chrono::Duration;
-use serde::export::fmt::Debug;
 
 use comm::errors::entrances::GeorgeResult;
 
 use crate::engine::siam::selector::{Constraint, Expectation};
 use crate::utils::comm::{Category, IndexMold};
+use std::fmt::Debug;
 
 /// B+Tree索引叶子结点内防hash碰撞数组对象中对象特性
 ///
