@@ -14,8 +14,7 @@
 
 use crate::utils::enums::KeyType;
 use comm::cryptos::hash::{
-    hashcode64_bl, hashcode64_f64, hashcode64_f64_real, hashcode64_i64, hashcode64_i64_real,
-    hashcode64_str, hashcode64_u64,
+    hashcode64_f64_real, hashcode64_i64_real, CRCTypeHandler, Hash, HashType,
 };
 use comm::errors::entrances::{err_str, err_string, GeorgeResult};
 use comm::strings::{StringHandler, Strings};
@@ -127,14 +126,14 @@ pub fn is_bytes_fill(bs: Vec<u8>) -> bool {
 pub fn hash_key(key_type: KeyType, key: String) -> GeorgeResult<u64> {
     let mut hash_key: u64 = 0;
     match key_type {
-        KeyType::String => hash_key = hashcode64_str(key),
-        KeyType::Bool => hash_key = hashcode64_bl(key)?,
-        KeyType::U32 => hash_key = hashcode64_u64(key)?,
-        KeyType::U64 => hash_key = hashcode64_u64(key)?,
-        KeyType::F32 => hash_key = hashcode64_f64(key)?,
-        KeyType::F64 => hash_key = hashcode64_f64(key)?,
-        KeyType::I32 => hash_key = hashcode64_i64(key)?,
-        KeyType::I64 => hash_key = hashcode64_i64(key)?,
+        KeyType::String => hash_key = Hash::crc64(HashType::String, key)?,
+        KeyType::Bool => hash_key = Hash::crc64(HashType::Bool, key)?,
+        KeyType::U32 => hash_key = Hash::crc64(HashType::U32, key)?,
+        KeyType::U64 => hash_key = Hash::crc64(HashType::U64, key)?,
+        KeyType::F32 => hash_key = Hash::crc64(HashType::F32, key)?,
+        KeyType::F64 => hash_key = Hash::crc64(HashType::F64, key)?,
+        KeyType::I32 => hash_key = Hash::crc64(HashType::I32, key)?,
+        KeyType::I64 => hash_key = Hash::crc64(HashType::I64, key)?,
         _ => return Err(err_str("key type not support!")),
     }
     Ok(hash_key)

@@ -34,7 +34,7 @@ pub trait DirHandler<T>: Sized {
     fn mv(_: T, _: T, force: bool) -> GeorgeResult<()>;
 }
 
-pub struct Dir {}
+pub struct Dir;
 
 impl DirHandler<String> for Dir {
     fn exist(path: String) -> GeorgeResult<bool> {

@@ -49,7 +49,11 @@ pub(crate) struct Node {
     index_path: String,
     /// 用于记录重复索引链式结构信息
     ///
-    /// 记录值长度8，
+    /// 当有新的数据加入时，新数据存储地址在`node_file`中记录4位，为`数据地址`
+    ///
+    /// `数据地址`指向`record_file`中起始偏移量，持续12位，组成为`view中真实数据地址8位 + 下一数据地址4位`
+    ///
+    /// 当下一数据地址为空时，则表示当前链式结构已到尾部
     record_filepath: String,
     /// 是否唯一索引
     unique: bool,

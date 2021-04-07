@@ -15,8 +15,8 @@
 #[cfg(test)]
 mod md5 {
     use crate::cryptos::hash::{
-        hashcode32, hashcode32_enhance, hashcode64, hashcode64_bl, hashcode64_f64, hashcode64_i64,
-        hashcode64_str, hashcode_enhance, md5, md516,
+        hashcode32_enhance, hashcode32_u8s, hashcode64, hashcode64_bl, hashcode64_f64,
+        hashcode64_i64, hashcode64_u8s, hashcode_enhance, md5, md516,
     };
 
     #[test]
@@ -37,10 +37,10 @@ mod md5 {
         let bytes1 = "test1".as_bytes();
         let bytes2 = "test2".as_bytes();
 
-        println!("bytes1 = {}", hashcode32(bytes1));
-        println!("bytes1u64 = {}", hashcode32(bytes1) as u64);
-        println!("bytes2 = {}", hashcode32(bytes2));
-        println!("bytes2u64 = {}", hashcode32(bytes2) as u64);
+        println!("bytes1 = {}", hashcode32_u8s(bytes1));
+        println!("bytes1u64 = {}", hashcode32_u8s(bytes1) as u64);
+        println!("bytes2 = {}", hashcode32_u8s(bytes2));
+        println!("bytes2u64 = {}", hashcode32_u8s(bytes2) as u64);
     }
 
     #[test]
@@ -50,17 +50,27 @@ mod md5 {
         let x3: i32 = -3;
         let x4: i32 = 301047507;
         let x5: i32 = 1;
+        let x6: i64 = 1;
         let x1b = x1.to_be_bytes();
         let x2b = x2.to_be_bytes();
         let x3b = x3.to_be_bytes();
         let x4b = x4.to_be_bytes();
         let x5b = x5.to_be_bytes();
+        let x6b = x6.to_be_bytes();
 
-        println!("x1b = {}, bytes = {:#?}", hashcode32(&x1b), x1b);
-        println!("x2b = {}, bytes = {:#?}", hashcode32(&x2b), x2b);
-        println!("x3b = {}, bytes = {:#?}", hashcode32(&x3b), x3b);
-        println!("x4b = {}, bytes = {:#?}", hashcode32(&x4b), x4b);
-        println!("x5b = {}, bytes = {:#?}", hashcode32(&x5b), x5b);
+        println!("x1b = {}, bytes = {:#?}", hashcode32_u8s(&x1b), x1b);
+        println!("x2b = {}, bytes = {:#?}", hashcode32_u8s(&x2b), x2b);
+        println!("x3b = {}, bytes = {:#?}", hashcode32_u8s(&x3b), x3b);
+        println!("x4b = {}, bytes = {:#?}", hashcode32_u8s(&x4b), x4b);
+        println!("x5b = {}, bytes = {:#?}", hashcode32_u8s(&x5b), x5b);
+        println!("x6b = {}, bytes = {:#?}", hashcode32_u8s(&x6b), x6b);
+
+        println!("x1b {} | x1 {}", hashcode32_u8s(&x1b), x1);
+        println!("x2b {} | x2 {}", hashcode32_u8s(&x2b), x2);
+        println!("x3b {} | x3 {}", hashcode32_u8s(&x3b), x3);
+        println!("x4b {} | x4 {}", hashcode32_u8s(&x4b), x4);
+        println!("x5b {} | x5 {}", hashcode32_u8s(&x5b), x5);
+        println!("x6b {} | x6 {}", hashcode32_u8s(&x6b), x6);
     }
 
     #[test]
@@ -80,19 +90,19 @@ mod md5 {
         let bytes10 = &16_u64.to_be_bytes();
         let bytes11 = &16_f64.to_be_bytes();
 
-        println!("res1 = {}", hashcode64(bytes1));
-        println!("res2 = {}", hashcode64(bytes2));
-        println!("res3 = {}", hashcode64(bytes3));
-        println!("res4 = {}", hashcode64(bytes4));
-        println!("res41 = {}", hashcode64(bytes41));
-        println!("res42 = {}", hashcode64(bytes42));
-        println!("res5 = {}", hashcode64(bytes5));
-        println!("res6 = {}", hashcode64(bytes6));
-        println!("res7 = {}", hashcode64(bytes7));
-        println!("res8 = {}", hashcode64(bytes8));
-        println!("res9 = {}", hashcode64(bytes9));
-        println!("res10 = {}", hashcode64(bytes10));
-        println!("res11 = {}", hashcode64(bytes11));
+        println!("res1 = {}", hashcode64_u8s(bytes1));
+        println!("res2 = {}", hashcode64_u8s(bytes2));
+        println!("res3 = {}", hashcode64_u8s(bytes3));
+        println!("res4 = {}", hashcode64_u8s(bytes4));
+        println!("res41 = {}", hashcode64_u8s(bytes41));
+        println!("res42 = {}", hashcode64_u8s(bytes42));
+        println!("res5 = {}", hashcode64_u8s(bytes5));
+        println!("res6 = {}", hashcode64_u8s(bytes6));
+        println!("res7 = {}", hashcode64_u8s(bytes7));
+        println!("res8 = {}", hashcode64_u8s(bytes8));
+        println!("res9 = {}", hashcode64_u8s(bytes9));
+        println!("res10 = {}", hashcode64_u8s(bytes10));
+        println!("res11 = {}", hashcode64_u8s(bytes11));
     }
 
     #[test]
@@ -108,11 +118,11 @@ mod md5 {
         let x4b = x4.to_be_bytes();
         let x5b = x5.to_be_bytes();
 
-        println!("x1b = {}, bytes = {:#?}", hashcode64(&x1b), x1b);
-        println!("x2b = {}, bytes = {:#?}", hashcode64(&x2b), x2b);
-        println!("x3b = {}, bytes = {:#?}", hashcode64(&x3b), x3b);
-        println!("x4b = {}, bytes = {:#?}", hashcode64(&x4b), x4b);
-        println!("x5b = {}, bytes = {:#?}", hashcode64(&x5b), x5b);
+        println!("x1b = {}, bytes = {:#?}", hashcode64_u8s(&x1b), x1b);
+        println!("x2b = {}, bytes = {:#?}", hashcode64_u8s(&x2b), x2b);
+        println!("x3b = {}, bytes = {:#?}", hashcode64_u8s(&x3b), x3b);
+        println!("x4b = {}, bytes = {:#?}", hashcode64_u8s(&x4b), x4b);
+        println!("x5b = {}, bytes = {:#?}", hashcode64_u8s(&x5b), x5b);
     }
 
     #[test]
@@ -301,9 +311,9 @@ mod md5 {
         println!("x1 = {}", hashcode32_enhance(x1.clone()) + 1);
         println!("x2 = {}", hashcode32_enhance(x2.clone()) + 1);
         println!("x3 = {}", hashcode32_enhance(x3.clone()) + 1);
-        println!("x1 = {}", hashcode64_str(x1.clone()) + 2);
-        println!("x2 = {}", hashcode64_str(x2.clone()) + 2);
-        println!("x3 = {}", hashcode64_str(x3.clone()) + 2);
+        println!("x1 = {}", hashcode64(x1.clone()) + 2);
+        println!("x2 = {}", hashcode64(x2.clone()) + 2);
+        println!("x3 = {}", hashcode64(x3.clone()) + 2);
 
         println!("x3 = {:#?}", hashcode_enhance(true, x3.clone()));
         println!("x3 = {:#?}", hashcode_enhance(false, x3.clone()));
@@ -320,14 +330,14 @@ mod md5 {
         let x3 = String::from("-8446744073709551615");
         let x4 = String::from("18446744073709551615");
 
-        println!("bytes1 = {}", hashcode64(bytes1));
-        println!("t1 = {}", hashcode64_str(t1));
-        println!("bytes2 = {}", hashcode64(bytes2));
-        println!("t2 = {}", hashcode64_str(t2));
-        println!("x1 = {}", hashcode64_str(x1));
-        println!("x2 = {}", hashcode64_str(x2));
-        println!("x3 = {}", hashcode64_str(x3));
-        println!("x4 = {}", hashcode64_str(x4));
+        println!("bytes1 = {}", hashcode64_u8s(bytes1));
+        println!("t1 = {}", hashcode64(t1));
+        println!("bytes2 = {}", hashcode64_u8s(bytes2));
+        println!("t2 = {}", hashcode64(t2));
+        println!("x1 = {}", hashcode64(x1));
+        println!("x2 = {}", hashcode64(x2));
+        println!("x3 = {}", hashcode64(x3));
+        println!("x4 = {}", hashcode64(x4));
 
         let m: u64 = 1 << 63;
         println!("2^64 = {}", m);

@@ -62,7 +62,7 @@ pub trait FilerReader<T>: Sized {
     fn len(filepath: T) -> GeorgeResult<u64>;
 }
 
-pub struct Filer {}
+pub struct Filer;
 
 impl FilerNormal for Filer {
     fn read_subs(file: File, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
