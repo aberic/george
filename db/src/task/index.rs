@@ -30,7 +30,6 @@ use crate::utils::enums::{Enum, EnumHandler, IndexType, KeyType};
 use crate::utils::path::index_filepath;
 use crate::utils::store::{before_content_bytes, Metadata, HD};
 use crate::utils::writer::Filed;
-use comm::trans::trans_bytes_2_u64;
 use serde_json::Value;
 
 /// Siam索引
@@ -191,23 +190,24 @@ impl TIndex for Index {
     fn select(
         &self,
         left: bool,
-        start_bytes: Vec<u8>,
-        end_bytes: Vec<u8>,
+        start: u64,
+        end: u64,
         constraint: Constraint,
     ) -> GeorgeResult<Expectation> {
+        log::debug!(
+            "index status with left = {} & start = {} & end = {} & constraint = {:#?}",
+            left,
+            start,
+            end,
+            constraint
+        );
         let conditions = constraint.conditions();
         let skip = constraint.skip();
         let limit = constraint.limit();
         let delete = constraint.delete();
-        let (total, count, mut values) = self.root.select(
-            left,
-            start_bytes,
-            end_bytes,
-            skip,
-            limit,
-            delete,
-            conditions,
-        )?;
+        let (total, count, mut values) = self
+            .root
+            .select(left, start, end, skip, limit, delete, conditions)?;
         match constraint.sort() {
             Some(sort) => {
                 values.sort_by(|a, b| {

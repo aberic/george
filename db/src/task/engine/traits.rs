@@ -89,8 +89,8 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     fn select(
         &self,
         left: bool,
-        start_bytes: Vec<u8>,
-        end_bytes: Vec<u8>,
+        start: u64,
+        end: u64,
         constraint: Constraint,
     ) -> GeorgeResult<Expectation>;
 }
@@ -145,8 +145,8 @@ pub(crate) trait TNode: Send + Sync + Debug {
     fn select(
         &self,
         left: bool,
-        start_bytes: Vec<u8>,
-        end_bytes: Vec<u8>,
+        start: u64,
+        end: u64,
         skip: u64,
         limit: u64,
         delete: bool,

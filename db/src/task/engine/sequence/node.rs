@@ -28,7 +28,6 @@ use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::{index_path, node_filepath};
 use crate::utils::writer::Filed;
 use comm::errors::children::DataNoExistError;
-use comm::trans::trans_bytes_2_u64;
 use comm::vectors::{Vector, VectorHandler};
 
 /// 索引B+Tree结点结构
@@ -157,15 +156,13 @@ impl TNode for Node {
     fn select(
         &self,
         left: bool,
-        start_bytes: Vec<u8>,
-        end_bytes: Vec<u8>,
+        start: u64,
+        end: u64,
         skip: u64,
         limit: u64,
         delete: bool,
         conditions: Vec<Condition>,
     ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)> {
-        let start = trans_bytes_2_u64(start_bytes)?;
-        let end = trans_bytes_2_u64(end_bytes)?;
         if left {
             self.left_query(start, end, conditions, skip, limit, delete)
         } else {
