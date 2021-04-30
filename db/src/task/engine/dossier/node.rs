@@ -298,27 +298,11 @@ impl Node {
                 // 索引执行插入真实坐标
                 next_node_seek = trans_bytes_2_u64(next_node_seek_bytes)?;
                 // 已存在该索引值，需要继续判断插入可行性
-                // 如果是唯一索引，则可能需要判断是否强制覆盖
-                if self.unique {
-                    // 如果唯一且非强制覆盖，返回执行失败
-                    if !force {
-                        return Err(GeorgeError::from(DataExistError));
-                    } else {
-                        // 如果强制覆盖，则执行插入操作
-                        // 唯一索引执行插入操作
-                        seed.write().unwrap().modify(IndexPolicy::create(
-                            key.clone(),
-                            IndexType::Dossier,
-                            self.node_filepath(),
-                            next_node_seek,
-                        ));
-                    }
-                } else {
-                    // 如果唯一索引且强制覆盖，或如果非唯一索引
-                    // 则进入防碰撞流程，防碰撞过程中依旧需要根据key判定强制覆盖情况
-                    // todo 进入record碰撞流程
+                // 如果唯一且非强制覆盖，返回数据已存在
+                if self.unique && !force {
+                    return Err(GeorgeError::from(DataExistError));
                 }
-                record_view_info_seek = self.records(key, next_node_seek, force)?;
+                record_view_info_seek = self.record_view_info_seek(key, next_node_seek, force)?;
             } else {
                 // 不存在下一坐标值，新建
                 // record追加新链式子结构
@@ -327,26 +311,15 @@ impl Node {
                 let record_seek_bytes = trans_u64_2_bytes(record_view_info_seek);
                 // record起始链式结构在node文件中真实坐标
                 next_node_seek = node_bytes_seek + next_node_start as u64;
-
-                // 不存在索引值，需要新建结果，该过程根据索引唯一性判定，无需考虑强制覆盖与否
-                if self.unique {
-                    // 唯一索引执行插入操作
-                    next_node_seek = node_bytes_seek + next_node_start as u64;
-                    seed.write().unwrap().modify(IndexPolicy::create(
-                        key.clone(),
-                        IndexType::Dossier,
-                        self.node_filepath(),
-                        next_node_seek,
-                    ));
-                } else {
-                    // todo 进入record碰撞流程
-                }
+                // 将record新追加链式子结构坐标字节数组写入record起始链式结构在node文件中真实坐标
+                self.node_write(next_node_seek, record_seek_bytes)?;
             }
-            // 如果唯一索引且强制覆盖，或如果非唯一索引
-            // 则进入防碰撞流程，防碰撞过程中依旧需要根据key判定强制覆盖情况
-            // todo 进入record碰撞流程
-            // 索引执行插入真实坐标
-            let record_seek = self.records(key, next_node_seek, force)?;
+            seed.write().unwrap().modify(IndexPolicy::create(
+                key.clone(),
+                IndexType::Dossier,
+                self.record_filepath(),
+                record_view_info_seek,
+            ));
             Ok(())
         } else {
             // 下一结点字节数组
@@ -379,7 +352,13 @@ impl Node {
         }
     }
 
-    fn records(&self, key: String, record_seek: u64, force: bool) -> GeorgeResult<u64> {
+    /// 获取由view视图执行save操作时反写进record文件中value起始seek
+    fn record_view_info_seek(
+        &self,
+        key: String,
+        record_seek: u64,
+        force: bool,
+    ) -> GeorgeResult<u64> {
         // 读取record中该坐标值
         let res = self.record_read(record_seek, 16)?;
         // record存储固定长度的数据，长度为16，即view视图真实数据8+链式后续数据8
@@ -416,7 +395,7 @@ impl Node {
                 // 如果链式后续数据有值，则进入下一轮判定
                 if is_bytes_fill(record_next_seek_bytes.clone()) {
                     let record_next_seek = trans_bytes_2_u64(record_next_seek_bytes)?;
-                    self.records(key, record_next_seek, force)
+                    self.record_view_info_seek(key, record_next_seek, force)
                 // 如果链式后续数据无值，则插入新数据
                 } else {
                     // record追加新链式子结构

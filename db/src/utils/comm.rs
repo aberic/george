@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-use crate::utils::enums::KeyType;
+use crate::utils::enums::{IndexType, KeyType};
 use comm::cryptos::hash::{
     hashcode64_f64_real, hashcode64_i64_real, CRCTypeHandler, Hash, HashType,
 };
@@ -123,48 +123,79 @@ pub fn is_bytes_fill(bs: Vec<u8>) -> bool {
     false
 }
 
-pub fn hash_key(key_type: KeyType, key: String) -> GeorgeResult<u64> {
-    let mut hash_key: u64 = 0;
-    match key_type {
-        KeyType::String => hash_key = Hash::crc64(HashType::String, key)?,
-        KeyType::Bool => hash_key = Hash::crc64(HashType::Bool, key)?,
-        KeyType::U32 => hash_key = Hash::crc64(HashType::U32, key)?,
-        KeyType::U64 => hash_key = Hash::crc64(HashType::U64, key)?,
-        KeyType::F32 => hash_key = Hash::crc64(HashType::F32, key)?,
-        KeyType::F64 => hash_key = Hash::crc64(HashType::F64, key)?,
-        KeyType::I32 => hash_key = Hash::crc64(HashType::I32, key)?,
-        KeyType::I64 => hash_key = Hash::crc64(HashType::I64, key)?,
-        _ => return Err(err_str("key type not support!")),
+pub struct HashKey;
+
+pub(crate) trait HashKeyHandler<T> {
+    fn obtain(index_type: IndexType, key_type: KeyType, key: String) -> GeorgeResult<T>;
+}
+
+impl HashKeyHandler<u32> for HashKey {
+    fn obtain(index_type: IndexType, key_type: KeyType, key: String) -> GeorgeResult<u32> {
+        match index_type {
+            IndexType::Dossier => hash_key_32(key_type, key),
+            IndexType::Block => hash_key_32(key_type, key),
+            _ => Err(err_str("key type not support!")),
+        }
     }
-    Ok(hash_key)
+}
+
+impl HashKeyHandler<u64> for HashKey {
+    fn obtain(index_type: IndexType, key_type: KeyType, key: String) -> GeorgeResult<u64> {
+        match index_type {
+            IndexType::Sequence => hash_key_64(key_type, key),
+            IndexType::Library => hash_key_64(key_type, key),
+            _ => Err(err_str("key type not support!")),
+        }
+    }
+}
+
+pub fn hash_key(key_type: KeyType, key: String) -> GeorgeResult<u64> {
+    match key_type {
+        KeyType::String => Ok(Hash::crc64(HashType::String, key)?),
+        KeyType::Bool => Ok(Hash::crc64(HashType::Bool, key)?),
+        KeyType::U32 => Ok(Hash::crc64(HashType::U32, key)?),
+        KeyType::U64 => Ok(Hash::crc64(HashType::U64, key)?),
+        KeyType::F32 => Ok(Hash::crc64(HashType::F32, key)?),
+        KeyType::F64 => Ok(Hash::crc64(HashType::F64, key)?),
+        KeyType::I32 => Ok(Hash::crc64(HashType::I32, key)?),
+        KeyType::I64 => Ok(Hash::crc64(HashType::I64, key)?),
+        _ => Err(err_str("key type not support!")),
+    }
+}
+
+pub fn hash_key_32(key_type: KeyType, key: String) -> GeorgeResult<u32> {
+    match key_type {
+        KeyType::String => Ok(Hash::crc32(HashType::String, key)?),
+        KeyType::Bool => Ok(Hash::crc32(HashType::Bool, key)?),
+        KeyType::U32 => Ok(Hash::crc32(HashType::U32, key)?),
+        KeyType::F32 => Ok(Hash::crc32(HashType::F32, key)?),
+        KeyType::I32 => Ok(Hash::crc32(HashType::I32, key)?),
+        _ => Err(err_str("key type not support!")),
+    }
 }
 
 pub fn hash_key_64(key_type: KeyType, key: String) -> GeorgeResult<u64> {
-    let mut hash_key: u64 = 0;
     match key_type {
-        KeyType::String => hash_key = Hash::crc64(HashType::String, key)?,
-        KeyType::Bool => hash_key = Hash::crc64(HashType::Bool, key)?,
-        KeyType::U32 => hash_key = Hash::crc64(HashType::U32, key)?,
-        KeyType::U64 => hash_key = Hash::crc64(HashType::U64, key)?,
-        KeyType::F32 => hash_key = Hash::crc64(HashType::F32, key)?,
-        KeyType::F64 => hash_key = Hash::crc64(HashType::F64, key)?,
-        KeyType::I32 => hash_key = Hash::crc64(HashType::I32, key)?,
-        KeyType::I64 => hash_key = Hash::crc64(HashType::I64, key)?,
-        _ => return Err(err_str("key type not support!")),
+        KeyType::String => Ok(Hash::crc64(HashType::String, key)?),
+        KeyType::Bool => Ok(Hash::crc64(HashType::Bool, key)?),
+        KeyType::U32 => Ok(Hash::crc64(HashType::U32, key)?),
+        KeyType::U64 => Ok(Hash::crc64(HashType::U64, key)?),
+        KeyType::F32 => Ok(Hash::crc64(HashType::F32, key)?),
+        KeyType::F64 => Ok(Hash::crc64(HashType::F64, key)?),
+        KeyType::I32 => Ok(Hash::crc64(HashType::I32, key)?),
+        KeyType::I64 => Ok(Hash::crc64(HashType::I64, key)?),
+        _ => Err(err_str("key type not support!")),
     }
-    Ok(hash_key)
 }
 
 pub fn hash_key_number(key_type: KeyType, key: &Number) -> GeorgeResult<u64> {
-    let mut hash_key: u64 = 0;
     match key_type {
-        KeyType::U32 => hash_key = key.as_u64().unwrap(),
-        KeyType::U64 => hash_key = key.as_u64().unwrap(),
-        KeyType::F32 => hash_key = hashcode64_f64_real(key.as_f64().unwrap()),
-        KeyType::F64 => hash_key = hashcode64_f64_real(key.as_f64().unwrap()),
-        KeyType::I32 => hash_key = hashcode64_i64_real(key.as_i64().unwrap()),
-        KeyType::I64 => hash_key = hashcode64_i64_real(key.as_i64().unwrap()),
-        _ => return Err(err_str("key type not support!")),
+        KeyType::U32 => Ok(key.as_u64().unwrap()),
+        KeyType::U64 => Ok(key.as_u64().unwrap()),
+        KeyType::F32 => Ok(hashcode64_f64_real(key.as_f64().unwrap())),
+        KeyType::F64 => Ok(hashcode64_f64_real(key.as_f64().unwrap())),
+        KeyType::I32 => Ok(hashcode64_i64_real(key.as_i64().unwrap())),
+        KeyType::I64 => Ok(hashcode64_i64_real(key.as_i64().unwrap())),
+        _ => Err(err_str("key type not support!")),
     }
-    Ok(hash_key)
 }
