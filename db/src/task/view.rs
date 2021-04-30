@@ -113,14 +113,15 @@ impl View {
         let view = new_view(database_name, name)?;
         let view_bak = Arc::new(RwLock::new(view));
         view_bak.clone().read().unwrap().init()?;
-        // view.create_index(
-        //     INDEX_CATALOG.to_string(),
-        //     IndexType::Library,
-        //     KeyType::String,
-        //     true,
-        //     true,
-        //     false,
-        // )?;
+        view_bak.read().unwrap().create_index(
+            view_bak.clone(),
+            INDEX_CATALOG.to_string(),
+            IndexType::Dossier,
+            KeyType::String,
+            true,
+            true,
+            false,
+        )?;
         view_bak.read().unwrap().create_index(
             view_bak.clone(),
             INDEX_SEQUENCE.to_string(),
