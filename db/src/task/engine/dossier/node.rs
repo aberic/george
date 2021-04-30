@@ -302,7 +302,8 @@ impl Node {
                 if self.unique && !force {
                     return Err(GeorgeError::from(DataExistError));
                 }
-                record_view_info_seek = self.record_view_info_seek(key, next_node_seek, force)?;
+                record_view_info_seek =
+                    self.record_view_info_seek_put(key.clone(), next_node_seek, force)?;
             } else {
                 // 不存在下一坐标值，新建
                 // record追加新链式子结构
@@ -315,7 +316,7 @@ impl Node {
                 self.node_write(next_node_seek, record_seek_bytes)?;
             }
             seed.write().unwrap().modify(IndexPolicy::create(
-                key.clone(),
+                key,
                 IndexType::Dossier,
                 self.record_filepath(),
                 record_view_info_seek,
@@ -353,7 +354,7 @@ impl Node {
     }
 
     /// 获取由view视图执行save操作时反写进record文件中value起始seek
-    fn record_view_info_seek(
+    fn record_view_info_seek_put(
         &self,
         key: String,
         record_seek: u64,
@@ -395,7 +396,7 @@ impl Node {
                 // 如果链式后续数据有值，则进入下一轮判定
                 if is_bytes_fill(record_next_seek_bytes.clone()) {
                     let record_next_seek = trans_bytes_2_u64(record_next_seek_bytes)?;
-                    self.record_view_info_seek(key, record_next_seek, force)
+                    self.record_view_info_seek_put(key, record_next_seek, force)
                 // 如果链式后续数据无值，则插入新数据
                 } else {
                     // record追加新链式子结构
@@ -431,20 +432,9 @@ impl Node {
         if level == 4 {
             // 如果存在坐标值，则继续，否则新建
             if is_bytes_fill(next_node_seek_bytes.clone()) {
-                // 如果是唯一索引，则直接读取值
-                if self.unique {
-                    // todo 从view中读取内容
-                    let res = self
-                        .view
-                        .read()
-                        .unwrap()
-                        .read_content_by(next_node_seek_bytes)?;
-                    Ok(DataReal::value_bytes(res)?)
-                } else {
-                    // 如果非唯一索引，则通过防碰撞流程后，从view中读取内容
-                    // todo 进入record碰撞流程，从view中读取内容
-                    Ok(vec![])
-                }
+                // 索引执行插入真实坐标
+                let next_node_seek = trans_bytes_2_u64(next_node_seek_bytes)?;
+                self.record_view_info_seek_get(key, next_node_seek)
             } else {
                 // 如果为空，则返回无此数据
                 Err(GeorgeError::from(DataNoExistError))
@@ -462,6 +452,54 @@ impl Node {
             } else {
                 // 如果为空，则返回无此数据
                 Err(GeorgeError::from(DataNoExistError))
+            }
+        }
+    }
+
+    /// 获取由view视图执行save操作时反写进record文件中value起始seek
+    fn record_view_info_seek_get(&self, key: String, record_seek: u64) -> GeorgeResult<Vec<u8>> {
+        // 读取record中该坐标值
+        let res = self.record_read(record_seek, 16)?;
+        // record存储固定长度的数据，长度为16，即view视图真实数据8+链式后续数据8
+        // 读取view视图真实数据坐标
+        let view_info_seek_bytes = Vector::sub_last(res.clone(), 0, 8)?;
+        // 如果view视图真实数据坐标为空
+        // 处理因断点、宕机等意外导致后续索引数据写入成功而视图数据写入失败的问题
+        if !is_bytes_fill(view_info_seek_bytes.clone()) {
+            // record存储固定长度的数据，长度为16，即view视图真实数据8+链式后续数据8
+            // 读取链式后续数据坐标
+            let record_next_seek_bytes = Vector::sub_last(res, 8, 8)?;
+            if is_bytes_fill(record_next_seek_bytes.clone()) {
+                let record_next_seek = trans_bytes_2_u64(record_next_seek_bytes)?;
+                self.record_view_info_seek_get(key, record_next_seek)
+            } else {
+                Err(GeorgeError::from(DataExistError))
+            }
+        } else {
+            // 从view视图中读取真实数据内容
+            let info = self
+                .view
+                .read()
+                .unwrap()
+                .read_content_by(view_info_seek_bytes)?;
+            // 将字节数组内容转换为可读kv
+            let date = DataReal::from(info)?;
+            // 因为hash key指向同一碰撞，对比key是否相同
+            if date.key == key {
+                Ok(date.value)
+            // 如果key不同，则发生hash碰撞，开启索引链式结构循环坐标定位
+            } else {
+                // record存储固定长度的数据，长度为16，即view视图真实数据8+链式后续数据8
+                // 读取链式后续数据坐标
+                let record_next_seek_bytes = Vector::sub_last(res, 8, 8)?;
+                // 如果链式后续数据有值，则进入下一轮判定
+                if is_bytes_fill(record_next_seek_bytes.clone()) {
+                    let record_next_seek = trans_bytes_2_u64(record_next_seek_bytes)?;
+                    self.record_view_info_seek_get(key, record_next_seek)
+                // 如果链式后续数据无值，则返回无数据
+                } else {
+                    Err(GeorgeError::from(DataExistError))
+                }
             }
         }
     }
