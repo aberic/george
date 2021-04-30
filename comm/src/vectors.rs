@@ -31,6 +31,14 @@ pub trait VectorHandler {
     ///
     /// end 截取终止下标
     fn sub<T: Clone>(source: Vec<T>, start: usize, end: usize) -> GeorgeResult<Vec<T>>;
+    /// 截取数组
+    ///
+    /// source 原始数组
+    ///
+    /// start 截取起始下标
+    ///
+    /// 持续读取个数
+    fn sub_last<T: Clone>(source: Vec<T>, start: usize, last: usize) -> GeorgeResult<Vec<T>>;
     /// 从可被`eq`整除的bytes长度的字节数组中查找最后不为0的`eq`个字节组成新的数组
     fn find_last_eq_bytes(bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<u8>>;
     /// 从可被`eq`整除的bytes长度的字节数组中查找所有与`eq`长度相同的不为0的字节数组集合
@@ -47,6 +55,9 @@ impl VectorHandler for Vector {
     }
     fn sub<T: Clone>(source: Vec<T>, start: usize, end: usize) -> GeorgeResult<Vec<T>> {
         vector_sub(source, start, end)
+    }
+    fn sub_last<T: Clone>(source: Vec<T>, start: usize, last: usize) -> GeorgeResult<Vec<T>> {
+        vector_sub(source, start, start + last)
     }
     fn find_last_eq_bytes(bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<u8>> {
         vector_find_last_eq_bytes(bytes, eq)

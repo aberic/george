@@ -22,11 +22,6 @@ use comm::strings::{StringHandler, Strings};
 use std::error::Error;
 
 #[test]
-fn database_map_test() {
-    database_map();
-}
-
-#[test]
 fn base_test() {
     // database_create_test
     let database_name = "database_create_base_test";
@@ -51,7 +46,7 @@ fn base_test() {
     // index_create_test
     let database_name = "database_index_create_test";
     let view_name = "view_index_create_test";
-    let index_name = "index_create_test";
+    let index_name = "index_create_library_test";
     create_index(
         database_name,
         view_name,
@@ -62,6 +57,22 @@ fn base_test() {
         true,
         false,
     );
+    let index_name = "index_create_dossier_test";
+    create_index(
+        database_name,
+        view_name,
+        index_name,
+        IndexType::Dossier,
+        KeyType::String,
+        false,
+        true,
+        false,
+    );
+    database_map();
+}
+
+#[test]
+fn database_map_test() {
     database_map();
 }
 

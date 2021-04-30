@@ -266,7 +266,7 @@ impl Node {
         let mut values: Vec<Vec<u8>> = vec![];
 
         let mut key_start = start * 8;
-        let mut key_end: u64;
+        let key_end: u64;
         if end == 0 {
             key_end = (self.atomic_key.load(Ordering::Relaxed) - 1) * 8;
         } else {
@@ -334,7 +334,7 @@ impl Node {
         let mut count: u64 = 0;
         let mut values: Vec<Vec<u8>> = vec![];
 
-        let mut key_start = start * 8;
+        let key_start = start * 8;
         let mut key_end: u64;
         if end == 0 {
             key_end = (self.atomic_key.load(Ordering::Relaxed) - 1) * 8;

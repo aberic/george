@@ -84,6 +84,30 @@ fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
     Ok(view)
 }
 
+/// 新建视图
+///
+/// 具体传参参考如下定义：<p><p>
+///
+/// ###Params
+///
+/// mem 是否为内存视图
+fn mock_new_view(database_name: String, name: String) -> GeorgeResult<View> {
+    let now: NaiveDateTime = Local::now().naive_local();
+    let create_time = Duration::nanoseconds(now.timestamp_nanos());
+    let filepath = view_filepath(database_name.clone(), name.clone());
+    let metadata = Metadata::view_disk();
+    let view = View {
+        database_name: database_name.clone(),
+        name,
+        create_time,
+        metadata,
+        filer: Filed::mock(filepath.clone())?,
+        indexes: Default::default(),
+        pigeonhole: Pigeonhole::create(0, filepath, create_time),
+    };
+    Ok(view)
+}
+
 impl View {
     pub(crate) fn create(database_name: String, name: String) -> GeorgeResult<Arc<RwLock<View>>> {
         let view = new_view(database_name, name)?;
@@ -566,7 +590,7 @@ impl View {
                 );
                 let pigeonhole = Pigeonhole::from_string(split.next().unwrap().to_string())?;
                 let filepath = view_filepath(database_name.clone(), name.clone());
-                let mut view = View {
+                let view = View {
                     database_name: database_name.clone(),
                     name,
                     create_time,
@@ -640,6 +664,23 @@ impl View {
             self.index_map().write().unwrap().insert(index_name, index);
         }
         Ok(())
+    }
+}
+
+impl View {
+    pub(crate) fn mock_create(
+        database_name: String,
+        name: String,
+    ) -> GeorgeResult<Arc<RwLock<View>>> {
+        let view = mock_new_view(database_name, name)?;
+        let view_bak = Arc::new(RwLock::new(view));
+        view_bak.clone().read().unwrap().init()?;
+        Ok(view_bak)
+    }
+    pub(crate) fn mock_create_single(database_name: String, name: String) -> GeorgeResult<View> {
+        let view = mock_new_view(database_name, name)?;
+        view.init()?;
+        Ok(view)
     }
 }
 

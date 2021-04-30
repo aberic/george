@@ -536,17 +536,12 @@ pub(super) static GLOBAL_MASTER: Lazy<Arc<Master>> = Lazy::new(|| {
         Err(err) => panic!("create data path failed! error is {}", err),
     }
     let bootstrap_file_path = bootstrap_filepath();
-    match Filer::exist(bootstrap_file_path.clone()) {
-        Ok(b) => {
-            if !b {
-                // 创建引导文件
-                match Filer::touch(bootstrap_file_path) {
-                    Err(err) => panic!("create bootstrap file failed! error is {}", err),
-                    _ => {}
-                }
-            }
+    if !Filer::exist(bootstrap_file_path.clone()) {
+        // 创建引导文件
+        match Filer::touch(bootstrap_file_path) {
+            Err(err) => panic!("create bootstrap file failed! error is {}", err),
+            _ => {}
         }
-        Err(err) => panic!("create bootstrap file failed! error is {}", err),
     }
     master_arc.clone().init_or_recovery().unwrap();
     master_arc

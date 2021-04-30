@@ -32,7 +32,7 @@ pub trait FilerNormal {
 }
 
 pub trait FilerHandler<T>: Sized {
-    fn exist(path: T) -> GeorgeResult<bool>;
+    fn exist(path: T) -> bool;
     fn touch(path: T) -> GeorgeResult<()>;
     fn try_touch(path: T) -> GeorgeResult<()>;
     fn rm(path: T) -> GeorgeResult<()>;
@@ -86,7 +86,7 @@ impl FilerNormal for Filer {
 }
 
 impl FilerHandler<String> for Filer {
-    fn exist(path: String) -> GeorgeResult<bool> {
+    fn exist(path: String) -> bool {
         file_exist(path)
     }
     fn touch(path: String) -> GeorgeResult<()> {
@@ -110,7 +110,7 @@ impl FilerHandler<String> for Filer {
 }
 
 impl FilerHandler<&str> for Filer {
-    fn exist(path: &str) -> GeorgeResult<bool> {
+    fn exist(path: &str) -> bool {
         file_exist(path.to_string())
     }
     fn touch(path: &str) -> GeorgeResult<()> {
@@ -314,22 +314,22 @@ impl FilerReader<&str> for Filer {
 }
 
 /// 判断文件是否存在，如果为文件夹则报错，否则返回判断结果
-fn file_exist(path: String) -> GeorgeResult<bool> {
+fn file_exist(path: String) -> bool {
     let path_check = Path::new(&path);
     if path_check.exists() {
         if path_check.is_dir() {
-            Err(err_string(format!("path {} is dir", path)))
+            false
         } else {
-            Ok(true)
+            true
         }
     } else {
-        Ok(false)
+        false
     }
 }
 
 /// 创建文件
 fn file_touch(path: String) -> GeorgeResult<()> {
-    if file_exist(path.clone())? {
+    if file_exist(path.clone()) {
         Err(err_string(format!("file {} already exist!", path)))
     } else {
         let path_check = Path::new(&path);
@@ -350,7 +350,7 @@ fn file_touch(path: String) -> GeorgeResult<()> {
 
 /// 尝试创建文件，如果存在该文件，则复用该文件
 fn file_try_touch(path: String) -> GeorgeResult<()> {
-    if file_exist(path.clone())? {
+    if file_exist(path.clone()) {
         Ok(())
     } else {
         let path_check = Path::new(&path);
@@ -371,7 +371,7 @@ fn file_try_touch(path: String) -> GeorgeResult<()> {
 
 /// 删除目录
 fn file_remove(path: String) -> GeorgeResult<()> {
-    if file_exist(path.clone())? {
+    if file_exist(path.clone()) {
         match fs::remove_file(path.clone()) {
             Ok(()) => Ok(()),
             Err(err) => Err(err_strings(format!("path {} remove error: ", path), err)),
@@ -385,7 +385,7 @@ fn file_remove(path: String) -> GeorgeResult<()> {
 ///
 /// 如果存在且为文件夹则报错
 fn file_absolute(path: String) -> GeorgeResult<String> {
-    if file_exist(path.clone())? {
+    if file_exist(path.clone()) {
         match fs::canonicalize(path.clone()) {
             Ok(path_buf) => Ok(path_buf.to_str().unwrap().to_string()),
             Err(err) => Err(err_strings(
@@ -400,7 +400,7 @@ fn file_absolute(path: String) -> GeorgeResult<String> {
 
 /// 判断目录是否存在，如果目录为文件夹则报错，否则返回判断结果
 fn file_last_name(path: String) -> GeorgeResult<String> {
-    if file_exist(path.clone())? {
+    if file_exist(path.clone()) {
         Ok(Path::new(&path)
             .file_name()
             .unwrap()
@@ -468,7 +468,7 @@ pub fn file_write(filepath: String, content: &[u8]) -> GeorgeResult<usize> {
 ///
 /// 返回写入的字节长度
 pub fn file_write_force(filepath: String, content: &[u8]) -> GeorgeResult<usize> {
-    if !file_exist(filepath.clone())? {
+    if !file_exist(filepath.clone()) {
         file_touch(filepath.clone())?;
     }
     file_write(filepath, content)
@@ -535,7 +535,11 @@ fn file_len(filepath: String) -> GeorgeResult<u64> {
 fn read_subs(mut file: File, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
     let file_len = file.seek(SeekFrom::End(0)).unwrap();
     if file_len < start + last as u64 {
-        Ok(Vector::create_empty_bytes(last))
+        // Ok(Vector::create_empty_bytes(last))
+        Err(err_string(format!(
+            "read sub file read failed! file_len is {} while start {} and last {}",
+            file_len, start, last
+        )))
     } else {
         match file.seek(SeekFrom::Start(start)) {
             Ok(_u) => {

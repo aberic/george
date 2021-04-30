@@ -16,7 +16,7 @@ use crate::task::master::GLOBAL_MASTER;
 use crate::task::rich::Condition;
 use crate::task::view::View;
 use crate::utils::comm::is_bytes_fill;
-use comm::errors::entrances::{err_strs, GeorgeResult};
+use comm::errors::entrances::{err_string, err_strs, GeorgeResult};
 use comm::io::file::{Filer, FilerWriter};
 use comm::vectors::{Vector, VectorHandler};
 use serde::{Deserialize, Serialize};
@@ -96,5 +96,38 @@ impl DataReal {
             Ok(dr) => Ok(dr),
             Err(err) => Err(err_strs("data real from u8s", err)),
         }
+    }
+}
+
+/// 根结点所属各子结点坐标顺序字节数组
+#[derive(Debug, Clone)]
+pub struct RootBytes {
+    /// 存储根结点所属各子结点坐标顺序字节数组
+    ///
+    /// 如果子项是32位node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
+    pub(crate) bytes: Vec<u8>,
+}
+
+impl RootBytes {
+    pub(crate) fn create(len: usize) -> RootBytes {
+        let bytes = Vector::create_empty_bytes(len);
+        RootBytes { bytes }
+    }
+    pub(crate) fn recovery(bytes: Vec<u8>, len: usize) -> GeorgeResult<RootBytes> {
+        let bytes_len = bytes.len();
+        if bytes_len != len {
+            Err(err_string(format!(
+                "bytes len is {}, while expect {}",
+                bytes_len, len
+            )))
+        } else {
+            Ok(RootBytes { bytes })
+        }
+    }
+    pub(crate) fn bytes(&self) -> Vec<u8> {
+        self.bytes.clone()
+    }
+    pub(crate) fn modify(&mut self, source: Vec<u8>, target: Vec<u8>, start: usize) {
+        self.bytes = Vector::modify(source, target, start)
     }
 }

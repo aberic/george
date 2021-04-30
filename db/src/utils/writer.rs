@@ -27,6 +27,12 @@ pub struct Filed {
 }
 
 impl Filed {
+    pub fn mock(filepath: String) -> GeorgeResult<Filed> {
+        if !Filer::exist(filepath.clone()) {
+            Filer::touch(filepath.clone())?;
+        }
+        Filed::recovery(filepath)
+    }
     pub fn create(filepath: String) -> GeorgeResult<Filed> {
         Filer::touch(filepath.clone())?;
         Filed::recovery(filepath)

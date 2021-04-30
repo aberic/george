@@ -363,7 +363,7 @@ impl Node {
                 seeds_rm_position.push(position);
                 continue;
             }
-            let mut seed_new_w = seed_new.write().unwrap();
+            let seed_new_w = seed_new.write().unwrap();
             if seed_r.key().eq(&seed_new_w.key()) {
                 seeds_rm_position.push(position);
             }
