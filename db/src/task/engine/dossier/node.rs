@@ -469,6 +469,7 @@ impl Node {
             // record存储固定长度的数据，长度为16，即view视图真实数据8+链式后续数据8
             // 读取链式后续数据坐标
             let record_next_seek_bytes = Vector::sub_last(res, 8, 8)?;
+            // todo 重复方法，封装
             if is_bytes_fill(record_next_seek_bytes.clone()) {
                 let record_next_seek = trans_bytes_2_u64(record_next_seek_bytes)?;
                 self.record_view_info_seek_get(key, record_next_seek)
