@@ -427,18 +427,10 @@ impl Node {
         // 相对当前结点字节数组，下一结点在字节数组中的偏移量
         let next_node_start = (next_degree * 8) as usize;
         // 下一结点字节数组起始坐标
-        let mut next_node_seek_bytes = Vector::sub_last(node_bytes, next_node_start, 8)?;
+        let next_node_seek_bytes = Vector::sub_last(node_bytes, next_node_start, 8)?;
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
-            // 如果存在坐标值，则继续，否则新建
-            if is_bytes_fill(next_node_seek_bytes.clone()) {
-                // 索引执行插入真实坐标
-                let next_node_seek = trans_bytes_2_u64(next_node_seek_bytes)?;
-                self.record_view_info_seek_get(key, next_node_seek)
-            } else {
-                // 如果为空，则返回无此数据
-                Err(GeorgeError::from(DataNoExistError))
-            }
+            self.judge_seek_bytes(key, next_node_seek_bytes)
         } else {
             // 如果存在坐标值，则继续，否则新建
             if is_bytes_fill(next_node_seek_bytes.clone()) {
@@ -456,6 +448,25 @@ impl Node {
         }
     }
 
+    /// 期望根据`下一结点偏移量字节数组`获取由view视图执行save操作时反写进record文件中value起始seek
+    ///
+    /// 如果存在坐标值，则继续，否则返回无此数据
+    fn judge_seek_bytes(
+        &self,
+        key: String,
+        next_node_seek_bytes: Vec<u8>,
+    ) -> GeorgeResult<Vec<u8>> {
+        // 如果存在坐标值，则继续，否则返回无此数据
+        if is_bytes_fill(next_node_seek_bytes.clone()) {
+            // 索引执行插入真实坐标
+            let next_node_seek = trans_bytes_2_u64(next_node_seek_bytes)?;
+            self.record_view_info_seek_get(key, next_node_seek)
+        } else {
+            // 如果为空，则返回无此数据
+            Err(GeorgeError::from(DataNoExistError))
+        }
+    }
+
     /// 获取由view视图执行save操作时反写进record文件中value起始seek
     fn record_view_info_seek_get(&self, key: String, record_seek: u64) -> GeorgeResult<Vec<u8>> {
         // 读取record中该坐标值
@@ -469,13 +480,7 @@ impl Node {
             // record存储固定长度的数据，长度为16，即view视图真实数据8+链式后续数据8
             // 读取链式后续数据坐标
             let record_next_seek_bytes = Vector::sub_last(res, 8, 8)?;
-            // todo 重复方法，封装
-            if is_bytes_fill(record_next_seek_bytes.clone()) {
-                let record_next_seek = trans_bytes_2_u64(record_next_seek_bytes)?;
-                self.record_view_info_seek_get(key, record_next_seek)
-            } else {
-                Err(GeorgeError::from(DataExistError))
-            }
+            self.judge_seek_bytes(key, record_next_seek_bytes)
         } else {
             // 从view视图中读取真实数据内容
             let info = self
@@ -493,14 +498,7 @@ impl Node {
                 // record存储固定长度的数据，长度为16，即view视图真实数据8+链式后续数据8
                 // 读取链式后续数据坐标
                 let record_next_seek_bytes = Vector::sub_last(res, 8, 8)?;
-                // 如果链式后续数据有值，则进入下一轮判定
-                if is_bytes_fill(record_next_seek_bytes.clone()) {
-                    let record_next_seek = trans_bytes_2_u64(record_next_seek_bytes)?;
-                    self.record_view_info_seek_get(key, record_next_seek)
-                // 如果链式后续数据无值，则返回无数据
-                } else {
-                    Err(GeorgeError::from(DataExistError))
-                }
+                self.judge_seek_bytes(key, record_next_seek_bytes)
             }
         }
     }
