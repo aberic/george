@@ -83,22 +83,27 @@ impl Database {
         database.append(metadata_bytes)?;
         Ok(Arc::new(RwLock::new(database)))
     }
+
     /// 名称
     pub(crate) fn name(&self) -> String {
         self.name.clone()
     }
+
     /// 描述
     pub(crate) fn comment(&self) -> String {
         self.comment.clone()
     }
+
     /// 创建时间
     pub(crate) fn create_time(&self) -> Duration {
         self.create_time.clone()
     }
+
     /// 文件字节信息
     pub(crate) fn metadata_bytes(&self) -> Vec<u8> {
         self.metadata.bytes()
     }
+
     /// 根据文件路径获取该文件追加写入的写对象
     ///
     /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
@@ -109,16 +114,20 @@ impl Database {
     fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
         self.filer.append(content)
     }
+
     fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         self.filer.read(start, last)
     }
+
     fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
         self.filer.write(seek, content)
     }
+
     /// 视图索引集合
     pub(crate) fn view_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>> {
         self.views.clone()
     }
+
     pub(crate) fn modify(&mut self, name: String, comment: String) -> GeorgeResult<()> {
         let old_name = self.name();
         let content = self.read(0, 44)?;
@@ -146,6 +155,7 @@ impl Database {
             }
         }
     }
+
     /// 根据视图name获取视图
     pub(super) fn view(&self, view_name: String) -> GeorgeResult<Arc<RwLock<View>>> {
         match self.view_map().read().unwrap().get(&view_name) {
@@ -153,12 +163,14 @@ impl Database {
             None => Err(GeorgeError::from(ViewNoExistError)),
         }
     }
+
     pub(crate) fn exist_view(&self, view_name: String) -> bool {
         return match self.view(view_name) {
             Ok(_) => true,
             Err(_) => false,
         };
     }
+
     /// 创建视图
     ///
     /// mem 是否为内存视图
@@ -172,6 +184,7 @@ impl Database {
             .insert(name.clone(), View::create(self.name(), name)?);
         Ok(())
     }
+
     /// 删除视图
     pub(super) fn remove_view(&self, view_name: String) -> GeorgeResult<()> {
         if !self.exist_view(view_name.clone()) {
@@ -181,6 +194,7 @@ impl Database {
             Ok(())
         }
     }
+
     /// 修改视图
     pub(crate) fn modify_view(&self, view_name: String, view_new_name: String) -> GeorgeResult<()> {
         if !self.exist_view(view_name.clone()) {
@@ -197,6 +211,7 @@ impl Database {
         self.remove_view(view_name)?;
         self.recovery_view(view_new_name)
     }
+
     /// 整理归档
     ///
     /// archive_file_path 归档路径
@@ -230,6 +245,7 @@ impl Database {
     pub(crate) fn put(&self, view_name: String, key: String, value: Vec<u8>) -> GeorgeResult<()> {
         self.view(view_name)?.read().unwrap().put(key, value)
     }
+
     /// 插入数据，无论存在与否都会插入或更新数据<p><p>
     ///
     /// ###Params
@@ -246,6 +262,7 @@ impl Database {
     pub(crate) fn set(&self, view_name: String, key: String, value: Vec<u8>) -> GeorgeResult<()> {
         self.view(view_name)?.read().unwrap().set(key, value)
     }
+
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -267,6 +284,7 @@ impl Database {
     ) -> GeorgeResult<Vec<u8>> {
         self.view(view_name)?.read().unwrap().get(index_name, key)
     }
+
     /// 删除数据<p><p>
     ///
     /// ###Params
@@ -284,6 +302,7 @@ impl Database {
             .unwrap()
             .remove(String::from(""), key, vec![])
     }
+
     /// 条件检索
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
@@ -297,6 +316,7 @@ impl Database {
             _ => Err(GeorgeError::ViewNoExistError(ViewNoExistError)),
         };
     }
+
     /// 条件删除
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
@@ -323,6 +343,7 @@ impl Database {
         ))
         .into_bytes()
     }
+
     /// 通过文件描述恢复结构信息
     pub(crate) fn recover(hd: HD) -> GeorgeResult<Database> {
         let description_str = Strings::from_utf8(hd.description())?;
@@ -358,6 +379,7 @@ impl Database {
             Err(err) => Err(err_strs("recovery database decode", err)),
         }
     }
+
     /// 恢复views数据
     pub(crate) fn recovery_views(&self, paths: ReadDir) -> GeorgeResult<()> {
         // 遍历database目录下文件

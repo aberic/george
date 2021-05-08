@@ -54,12 +54,15 @@ impl Master {
     pub(super) fn page_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Page>>>>> {
         self.pages.clone()
     }
+
     pub(super) fn database_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Database>>>>> {
         self.databases.clone()
     }
+
     pub(super) fn create_time(&self) -> Duration {
         self.create_time
     }
+
     /// 创建缓存页
     pub(super) fn create_page(&self, name: String, comment: String) -> GeorgeResult<()> {
         if self.exist_page(name.clone()) {
@@ -70,6 +73,7 @@ impl Master {
         log::debug!("create page {} success!", name);
         Ok(())
     }
+
     /// 删除缓存页
     pub(super) fn remove_page(&self, page_name: String) -> GeorgeResult<()> {
         if !self.exist_page(page_name.clone()) {
@@ -79,6 +83,7 @@ impl Master {
             Ok(())
         }
     }
+
     /// 修改缓存页
     pub(super) fn modify_page(&self, page_name: String, page_new_name: String) -> GeorgeResult<()> {
         if !self.exist_page(page_name.clone()) {
@@ -94,6 +99,7 @@ impl Master {
             .insert(page_new_name.clone(), page);
         self.remove_page(page_name)
     }
+
     /// 根据缓存页name获取库
     pub(super) fn page(&self, page_name: String) -> GeorgeResult<Arc<RwLock<Page>>> {
         match self.page_map().read().unwrap().get(&page_name) {
@@ -101,15 +107,18 @@ impl Master {
             None => Err(GeorgeError::from(PageNoExistError)),
         }
     }
+
     pub(super) fn page_default(&self) -> GeorgeResult<Arc<RwLock<Page>>> {
         self.page(self.default_page_name.clone())
     }
+
     fn exist_page(&self, page_name: String) -> bool {
         return match self.page(page_name) {
             Ok(_) => true,
             Err(_) => false,
         };
     }
+
     /// 创建数据库
     pub(super) fn create_database(
         &self,
@@ -127,6 +136,7 @@ impl Master {
         log::debug!("create database {} success!", database_name);
         Ok(())
     }
+
     /// 删除数据库
     pub(super) fn remove_database(&self, database_name: String) -> GeorgeResult<()> {
         if !self.exist_database(database_name.clone()) {
@@ -136,6 +146,7 @@ impl Master {
             Ok(())
         }
     }
+
     /// 修改数据库
     pub(super) fn modify_database(
         &self,
@@ -158,6 +169,7 @@ impl Master {
         self.remove_database(database_name)?;
         self.recovery_database(database_new_name)
     }
+
     /// 根据库name获取库
     pub(super) fn database(&self, database_name: String) -> GeorgeResult<Arc<RwLock<Database>>> {
         match self.database_map().read().unwrap().get(&database_name) {
@@ -165,12 +177,14 @@ impl Master {
             None => Err(GeorgeError::from(DatabaseNoExistError)),
         }
     }
+
     fn exist_database(&self, database_name: String) -> bool {
         return match self.database(database_name) {
             Ok(_) => true,
             Err(_) => false,
         };
     }
+
     /// 创建视图
     ///
     /// mem 是否为内存视图
@@ -189,6 +203,7 @@ impl Master {
         }
         Ok(())
     }
+
     /// 修改视图
     pub(super) fn modify_view(
         &self,
@@ -204,6 +219,7 @@ impl Master {
             None => return Err(GeorgeError::from(DatabaseNoExistError)),
         }
     }
+
     /// 整理归档
     ///
     /// archive_file_path 归档路径
@@ -218,6 +234,7 @@ impl Master {
             .unwrap()
             .archive_view(view_name, archive_file_path)
     }
+
     /// 当前视图文件地址
     pub(super) fn read_content_by(
         &self,
@@ -233,6 +250,7 @@ impl Master {
             .unwrap()
             .read_content_by(view_info_index)
     }
+
     /// 在指定库及视图中创建索引
     ///
     /// 该索引需要定义ID，此外索引所表达的字段组成内容也是必须的，并通过primary判断索引类型，具体传参参考如下定义：<p><p>
@@ -289,6 +307,7 @@ impl Master {
             .unwrap()
             .put(view_name, key, value)
     }
+
     /// 插入数据，无论存在与否都会插入或更新数据<p><p>
     ///
     /// ###Params
@@ -314,6 +333,7 @@ impl Master {
             .unwrap()
             .set(view_name, key, value)
     }
+
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -336,6 +356,7 @@ impl Master {
             .unwrap()
             .get(view_name, INDEX_CATALOG, key)
     }
+
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -384,6 +405,7 @@ impl Master {
             .unwrap()
             .remove(view_name, key)
     }
+
     /// 条件检索
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
@@ -398,6 +420,7 @@ impl Master {
             .unwrap()
             .select(view_name, constraint_json_bytes)
     }
+
     /// 条件删除
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
@@ -430,6 +453,7 @@ impl Master {
     pub(crate) fn put_memory_default(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
         self.page_default()?.read().unwrap().put(key, value)
     }
+
     /// 插入数据，无论存在与否都会插入或更新数据<p><p>
     ///
     /// ###Params
@@ -446,6 +470,7 @@ impl Master {
     pub(crate) fn set_memory_default(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
         self.page_default()?.read().unwrap().set(key, value)
     }
+
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -460,6 +485,7 @@ impl Master {
     pub(crate) fn get_memory_default(&self, key: String) -> GeorgeResult<Vec<u8>> {
         self.page_default()?.read().unwrap().get(key)
     }
+
     /// 删除数据<p><p>
     ///
     /// ###Params
@@ -497,6 +523,7 @@ impl Master {
     ) -> GeorgeResult<()> {
         self.page(page_name)?.read().unwrap().put(key, value)
     }
+
     /// 插入数据，无论存在与否都会插入或更新数据<p><p>
     ///
     /// ###Params
@@ -518,6 +545,7 @@ impl Master {
     ) -> GeorgeResult<()> {
         self.page(page_name)?.read().unwrap().set(key, value)
     }
+
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -532,6 +560,7 @@ impl Master {
     pub(crate) fn get_memory(&self, page_name: String, key: String) -> GeorgeResult<Vec<u8>> {
         self.page(page_name)?.read().unwrap().get(key)
     }
+
     /// 删除数据<p><p>
     ///
     /// ###Params

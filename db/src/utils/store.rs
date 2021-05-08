@@ -66,6 +66,7 @@ impl Metadata {
             sequence,
         }
     }
+
     pub fn from_page(version: [u8; 2], sequence: u8) -> Metadata {
         Metadata {
             tag: Tag::Page,
@@ -74,6 +75,7 @@ impl Metadata {
             sequence,
         }
     }
+
     pub fn from_database(version: [u8; 2], sequence: u8) -> Metadata {
         Metadata {
             tag: Tag::Database,
@@ -82,6 +84,7 @@ impl Metadata {
             sequence,
         }
     }
+
     pub fn from_view(version: [u8; 2], sequence: u8) -> Metadata {
         Metadata {
             tag: Tag::View,
@@ -90,6 +93,7 @@ impl Metadata {
             sequence,
         }
     }
+
     pub fn from_index(index_type: IndexType, version: [u8; 2], sequence: u8) -> Metadata {
         Metadata {
             tag: Tag::Index,
@@ -98,6 +102,7 @@ impl Metadata {
             sequence,
         }
     }
+
     pub fn page() -> Metadata {
         Metadata {
             tag: Tag::Page,
@@ -106,6 +111,7 @@ impl Metadata {
             sequence: 0x00,
         }
     }
+
     pub fn database() -> Metadata {
         Metadata {
             tag: Tag::Database,
@@ -114,6 +120,7 @@ impl Metadata {
             sequence: 0x00,
         }
     }
+
     pub fn view_disk() -> Metadata {
         Metadata {
             tag: Tag::View,
@@ -122,6 +129,7 @@ impl Metadata {
             sequence: 0x00,
         }
     }
+
     pub fn index(index_type: IndexType) -> GeorgeResult<Metadata> {
         match index_type {
             IndexType::None => Err(err_str("unsupported engine type with none")),
@@ -133,6 +141,7 @@ impl Metadata {
             }),
         }
     }
+
     fn from_bytes(head: Vec<u8>) -> GeorgeResult<Metadata> {
         if 0x20 != head.get(0).unwrap().clone() || 0x19 != head.get(1).unwrap().clone() {
             Err(err_str("recovery head failed! front is invalid!"))
@@ -162,22 +171,27 @@ impl Metadata {
             }
         }
     }
+
     /// 标识符
     pub fn tag(&self) -> Tag {
         self.tag.clone()
     }
+
     /// 索引引擎类型
     pub fn index_type(&self) -> IndexType {
         self.index_type.clone()
     }
+
     /// 版本号
     pub fn version(&self) -> GeorgeResult<u16> {
         trans_bytes_2_u16(vec![self.version[0], self.version[1]])
     }
+
     /// 序号
     pub fn sequence(&self) -> u8 {
         self.sequence
     }
+
     /// 生成sr文件首部信息字符串，长度32个字节<p>
     ///
     /// 文件包括文件首部和正文两部分组成，文件首部告知了文件组成的所有有效信息，损坏将无法使用<p>
@@ -268,9 +282,11 @@ impl HD {
     pub fn metadata(&self) -> Metadata {
         self.metadata.clone()
     }
+
     pub fn index_type(&self) -> IndexType {
         self.metadata().index_type.clone()
     }
+
     pub fn description(&self) -> Vec<u8> {
         self.description.clone()
     }
