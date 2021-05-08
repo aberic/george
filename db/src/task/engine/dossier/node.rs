@@ -119,6 +119,7 @@ impl Node {
             root_bytes,
         }))
     }
+
     /// 恢复根结点
     pub fn recovery(
         view: Arc<RwLock<View>>,
@@ -148,27 +149,35 @@ impl Node {
             root_bytes,
         }))
     }
+
     fn database_name(&self) -> String {
         self.view.clone().read().unwrap().database_name()
     }
+
     fn view_name(&self) -> String {
         self.view.clone().read().unwrap().name()
     }
+
     fn index_name(&self) -> String {
         self.index_name.clone()
     }
+
     fn key_type(&self) -> KeyType {
         self.key_type.clone()
     }
+
     fn index_path(&self) -> String {
         self.index_path.clone()
     }
+
     fn node_filepath(&self) -> String {
         self.node_filepath.clone()
     }
+
     fn node_bytes(&self) -> Vec<u8> {
         self.root_bytes.read().unwrap().bytes()
     }
+
     /// 根据文件路径获取该文件追加写入的写对象
     ///
     /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
@@ -179,15 +188,19 @@ impl Node {
     fn node_append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
         self.node_filer.append(content)
     }
+
     fn node_read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         self.node_filer.clone().read(start, last)
     }
+
     fn node_write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
         self.node_filer.write(seek, content)
     }
+
     fn record_filepath(&self) -> String {
         self.record_filepath.clone()
     }
+
     /// 根据文件路径获取该文件追加写入的写对象
     ///
     /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
@@ -198,9 +211,11 @@ impl Node {
     fn record_append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
         self.record_filer.append(content)
     }
+
     fn record_read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         self.record_filer.clone().read(start, last)
     }
+
     fn record_write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
         self.record_filer.write(seek, content)
     }
@@ -221,13 +236,16 @@ impl TNode for Node {
         let hash_key = HashKey::obtain(IndexType::Dossier, self.key_type(), key.clone())?;
         self.put_in_node(0, self.node_bytes(), key, 1, hash_key, seed, force)
     }
+
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
         let hash_key = HashKey::obtain(IndexType::Dossier, self.key_type(), key.clone())?;
         self.get_in_node(self.node_bytes(), key, 1, hash_key)
     }
+
     fn del(&self, _key: String, _seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
         unimplemented!()
     }
+
     fn select(
         &self,
         _left: bool,
@@ -529,6 +547,7 @@ impl Node {
             root_bytes,
         }))
     }
+
     pub fn mock_recovery(
         view: Arc<RwLock<View>>,
         index_name: String,

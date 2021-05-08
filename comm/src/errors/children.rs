@@ -43,6 +43,17 @@ impl Display for DataExistError {
 impl Error for DataExistError {}
 
 #[derive(Debug)]
+pub struct PageExistError;
+
+impl Display for PageExistError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "page already exist!")
+    }
+}
+
+impl Error for PageExistError {}
+
+#[derive(Debug)]
 pub struct DatabaseExistError;
 
 impl Display for DatabaseExistError {
@@ -85,6 +96,17 @@ impl Display for DataNoExistError {
 }
 
 impl Error for DataNoExistError {}
+
+#[derive(Debug)]
+pub struct PageNoExistError;
+
+impl Display for PageNoExistError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "page is not exist!")
+    }
+}
+
+impl Error for PageNoExistError {}
 
 #[derive(Debug)]
 pub struct DatabaseNoExistError;

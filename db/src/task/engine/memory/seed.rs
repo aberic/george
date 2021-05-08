@@ -54,15 +54,4 @@ impl Seed {
     pub(crate) fn is_none(&self) -> bool {
         self.value.is_none()
     }
-    fn modify(&mut self, value: Vec<u8>) -> GeorgeResult<()> {
-        self.value = Some(value);
-        Ok(())
-    }
-    fn save(&mut self) -> GeorgeResult<()> {
-        Ok(())
-    }
-    fn remove(&mut self) -> GeorgeResult<()> {
-        self.value = None;
-        Ok(())
-    }
 }

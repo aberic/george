@@ -13,9 +13,10 @@
  */
 
 use crate::task::database::Database;
+use crate::task::engine::memory::node::Node;
 use crate::task::rich::Expectation;
 use crate::utils::comm::{
-    DEFAULT_COMMENT, DEFAULT_DATABASE, DEFAULT_VIEW, GEORGE_DB_CONFIG, INDEX_CATALOG, INDEX_MEMORY,
+    DEFAULT_COMMENT, DEFAULT_DATABASE, DEFAULT_VIEW, GEORGE_DB_CONFIG, INDEX_CATALOG,
 };
 use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
 use crate::utils::enums::{IndexType, KeyType};
@@ -23,7 +24,9 @@ use crate::utils::path::{bootstrap_filepath, data_path, database_filepath};
 use crate::utils::store::recovery_before_content;
 use chrono::{Duration, Local, NaiveDateTime};
 use comm::env;
-use comm::errors::children::{DatabaseExistError, DatabaseNoExistError};
+use comm::errors::children::{
+    DatabaseExistError, DatabaseNoExistError, PageExistError, PageNoExistError,
+};
 use comm::errors::entrances::{err_strs, GeorgeError, GeorgeResult};
 use comm::io::dir::{Dir, DirHandler};
 use comm::io::file::{Filer, FilerHandler, FilerWriter};
@@ -36,18 +39,78 @@ use std::sync::{Arc, RwLock};
 
 /// 数据库
 pub(super) struct Master {
-    /// 视图索引集合
+    /// 默认缓存页
+    page_default: Arc<RwLock<Node>>,
+    /// 缓存页集合
+    pages: Arc<RwLock<HashMap<String, Arc<RwLock<Node>>>>>,
+    /// 库集合
     databases: Arc<RwLock<HashMap<String, Arc<RwLock<Database>>>>>,
     /// 创建时间
     create_time: Duration,
 }
 
 impl Master {
+    pub(super) fn page_default(&self) -> Arc<RwLock<Node>> {
+        self.page_default.clone()
+    }
+    pub(super) fn page_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Node>>>>> {
+        self.pages.clone()
+    }
     pub(super) fn database_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Database>>>>> {
         self.databases.clone()
     }
     pub(super) fn create_time(&self) -> Duration {
         self.create_time
+    }
+    /// 创建缓存页
+    pub(super) fn create_page(&self, page_name: String) -> GeorgeResult<()> {
+        if self.exist_page(page_name.clone()) {
+            return Err(GeorgeError::from(PageExistError));
+        }
+        let page = Node::create();
+        self.page_map()
+            .write()
+            .unwrap()
+            .insert(page_name.clone(), page);
+        log::debug!("create page {} success!", page_name);
+        Ok(())
+    }
+    /// 删除缓存页
+    pub(super) fn remove_page(&self, page_name: String) -> GeorgeResult<()> {
+        if !self.exist_page(page_name.clone()) {
+            Err(GeorgeError::from(PageExistError))
+        } else {
+            self.page_map().write().unwrap().remove(&page_name);
+            Ok(())
+        }
+    }
+    /// 修改缓存页
+    pub(super) fn modify_page(&self, page_name: String, page_new_name: String) -> GeorgeResult<()> {
+        if !self.exist_page(page_name.clone()) {
+            return Err(GeorgeError::from(PageNoExistError));
+        }
+        if self.exist_page(page_new_name.clone()) {
+            return Err(GeorgeError::from(PageExistError));
+        }
+        let page = self.page(page_name.clone())?;
+        self.page_map()
+            .write()
+            .unwrap()
+            .insert(page_new_name.clone(), page);
+        self.remove_page(page_name)
+    }
+    /// 根据缓存页name获取库
+    pub(super) fn page(&self, page_name: String) -> GeorgeResult<Arc<RwLock<Node>>> {
+        match self.page_map().read().unwrap().get(&page_name) {
+            Some(page) => Ok(page.clone()),
+            None => Err(GeorgeError::from(PageNoExistError)),
+        }
+    }
+    fn exist_page(&self, page_name: String) -> bool {
+        return match self.page(page_name) {
+            Ok(_) => true,
+            Err(_) => false,
+        };
     }
     /// 创建数据库
     pub(super) fn create_database(
@@ -62,7 +125,7 @@ impl Master {
         self.database_map()
             .write()
             .unwrap()
-            .insert(database_name.clone(), db.clone());
+            .insert(database_name.clone(), db);
         log::debug!("create database {} success!", database_name);
         Ok(())
     }
@@ -216,7 +279,7 @@ impl Master {
     /// ###Return
     ///
     /// IndexResult<()>
-    pub(crate) fn put(
+    pub(crate) fn put_disk(
         &self,
         database_name: String,
         view_name: String,
@@ -241,7 +304,7 @@ impl Master {
     /// ###Return
     ///
     /// IndexResult<()>
-    pub(crate) fn set(
+    pub(crate) fn set_disk(
         &self,
         database_name: String,
         view_name: String,
@@ -264,7 +327,7 @@ impl Master {
     /// ###Return
     ///
     /// Seed value信息
-    pub(crate) fn get(
+    pub(crate) fn get_disk(
         &self,
         database_name: String,
         view_name: String,
@@ -288,7 +351,7 @@ impl Master {
     /// ###Return
     ///
     /// Seed value信息
-    pub(crate) fn get_by_index(
+    pub(crate) fn get_disk_by_index(
         &self,
         database_name: String,
         view_name: String,
@@ -312,7 +375,7 @@ impl Master {
     /// ###Return
     ///
     /// IndexResult<()>
-    pub(crate) fn remove(
+    pub(crate) fn remove_disk(
         &self,
         database_name: String,
         view_name: String,
@@ -326,7 +389,7 @@ impl Master {
     /// 条件检索
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
-    pub fn select(
+    pub fn select_disk(
         &self,
         database_name: String,
         view_name: String,
@@ -340,7 +403,7 @@ impl Master {
     /// 条件删除
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
-    pub fn delete(
+    pub fn delete_disk(
         &self,
         database_name: String,
         view_name: String,
@@ -350,6 +413,68 @@ impl Master {
             .read()
             .unwrap()
             .delete(view_name, constraint_json_bytes)
+    }
+}
+
+/// db for default memory
+impl Master {
+    /// 插入数据，如果存在则返回已存在<p><p>
+    ///
+    /// ###Params
+    ///
+    /// key string
+    ///
+    /// value 当前结果value信息<p><p>
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    pub(crate) fn put_memory_default(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
+        self.page_default().read().unwrap().put(key, value, false)
+    }
+    /// 插入数据，无论存在与否都会插入或更新数据<p><p>
+    ///
+    /// ###Params
+    ///
+    /// view_name 视图名称<p><p>
+    ///
+    /// key string
+    ///
+    /// value 当前结果value信息<p><p>
+    ///
+    /// ###Return
+    ///
+    /// IndexResult<()>
+    pub(crate) fn set_memory_default(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
+        self.page_default().read().unwrap().put(key, value, true)
+    }
+    /// 获取数据，返回存储对象<p><p>
+    ///
+    /// ###Params
+    ///
+    /// view_name 视图名称
+    ///
+    /// key string
+    ///
+    /// ###Return
+    ///
+    /// Seed value信息
+    pub(crate) fn get_memory_default(&self, key: String) -> GeorgeResult<Vec<u8>> {
+        self.page_default().read().unwrap().get(key)
+    }
+    /// 删除数据<p><p>
+    ///
+    /// ###Params
+    ///
+    /// view_name 视图名称
+    ///
+    /// key string
+    ///
+    /// ###Return
+    ///
+    /// Seed value信息
+    pub(crate) fn remove_memory_default(&self, key: String) -> GeorgeResult<()> {
+        self.page_default().read().unwrap().del(key)
     }
 }
 
@@ -366,11 +491,13 @@ impl Master {
     /// ###Return
     ///
     /// IndexResult<()>
-    pub(crate) fn put_m(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        self.database(DEFAULT_DATABASE.to_string())?
-            .read()
-            .unwrap()
-            .put(DEFAULT_VIEW.to_string(), key, value)
+    pub(crate) fn put_memory(
+        &self,
+        page_name: String,
+        key: String,
+        value: Vec<u8>,
+    ) -> GeorgeResult<()> {
+        self.page(page_name)?.read().unwrap().put(key, value, false)
     }
     /// 插入数据，无论存在与否都会插入或更新数据<p><p>
     ///
@@ -385,11 +512,13 @@ impl Master {
     /// ###Return
     ///
     /// IndexResult<()>
-    pub(crate) fn set_m(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        self.database(DEFAULT_DATABASE.to_string())?
-            .read()
-            .unwrap()
-            .set(DEFAULT_VIEW.to_string(), key, value)
+    pub(crate) fn set_memory(
+        &self,
+        page_name: String,
+        key: String,
+        value: Vec<u8>,
+    ) -> GeorgeResult<()> {
+        self.page(page_name)?.read().unwrap().put(key, value, true)
     }
     /// 获取数据，返回存储对象<p><p>
     ///
@@ -402,11 +531,8 @@ impl Master {
     /// ###Return
     ///
     /// Seed value信息
-    pub(crate) fn get_m(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        self.database(DEFAULT_DATABASE.to_string())?
-            .read()
-            .unwrap()
-            .get(DEFAULT_VIEW.to_string(), INDEX_MEMORY, key)
+    pub(crate) fn get_memory(&self, page_name: String, key: String) -> GeorgeResult<Vec<u8>> {
+        self.page(page_name)?.read().unwrap().get(key)
     }
     /// 删除数据<p><p>
     ///
@@ -419,11 +545,8 @@ impl Master {
     /// ###Return
     ///
     /// Seed value信息
-    pub(crate) fn remove_m(&self, key: String) -> GeorgeResult<()> {
-        self.database(DEFAULT_DATABASE.to_string())?
-            .read()
-            .unwrap()
-            .remove(DEFAULT_VIEW.to_string(), key)
+    pub(crate) fn remove_memory(&self, page_name: String, key: String) -> GeorgeResult<()> {
+        self.page(page_name)?.read().unwrap().del(key)
     }
 }
 
@@ -526,6 +649,8 @@ pub(super) static GLOBAL_MASTER: Lazy<Arc<Master>> = Lazy::new(|| {
     init_log();
     log::info!("config & log init success!");
     let master = Master {
+        page_default: Node::create(),
+        pages: Arc::new(Default::default()),
         databases: Default::default(),
         create_time,
     };

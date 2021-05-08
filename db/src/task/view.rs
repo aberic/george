@@ -469,35 +469,16 @@ impl View {
             let key_clone = key.clone();
             let value_clone = value.clone();
             let seed_clone = seed.clone();
-            thread::spawn(move || {
-                match index_name_clone.as_str() {
-                    INDEX_CATALOG => sender.send(index_clone.put(key_clone, seed_clone, force)),
-                    INDEX_SEQUENCE => sender.send(index_clone.put(key_clone, seed_clone, force)),
-                    // INDEX_MEMORY => match hash_key(index_read.key_type(), key_clone.clone()) {
-                    //     Ok(hash_key) => {
-                    //         if remove {
-                    //             sender.send(index_read.del(key_clone, hash_key))
-                    //         } else {
-                    //             sender.send(index_read.put(
-                    //                 hash_key,
-                    //                 Arc::new(RwLock::new(SeedMemory::create(
-                    //                     key_clone,
-                    //                     value_clone,
-                    //                 ))),
-                    //                 force,
-                    //             ))
-                    //         }
-                    //     }
-                    //     Err(err) => sender.send(GeorgeResult::Err(err)),
-                    // },
-                    _ => match key_fetch(index_name_clone, value_clone) {
-                        Ok(res) => sender.send(index_clone.put(res, seed_clone, force)),
-                        Err(err) => {
-                            log::debug!("key fetch error: {}", err);
-                            sender.send(Ok(()))
-                        }
-                    },
-                }
+            thread::spawn(move || match index_name_clone.as_str() {
+                INDEX_CATALOG => sender.send(index_clone.put(key_clone, seed_clone, force)),
+                INDEX_SEQUENCE => sender.send(index_clone.put(key_clone, seed_clone, force)),
+                _ => match key_fetch(index_name_clone, value_clone) {
+                    Ok(res) => sender.send(index_clone.put(res, seed_clone, force)),
+                    Err(err) => {
+                        log::debug!("key fetch error: {}", err);
+                        sender.send(Ok(()))
+                    }
+                },
             });
         }
         for receive in receives.iter() {

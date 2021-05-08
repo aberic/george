@@ -42,7 +42,7 @@ pub(crate) struct Database {
     ///
     /// 需要借助对象包裹，以便更新file，避免self为mut
     filer: Filed,
-    /// 视图索引集合
+    /// 视图集合
     views: Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>>,
 }
 

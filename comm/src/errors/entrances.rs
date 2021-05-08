@@ -17,8 +17,8 @@ use std::fmt::{Display, Formatter, Result};
 
 use crate::errors::children::{
     DataExistError, DataNoExistError, DatabaseExistError, DatabaseNoExistError, IndexExistError,
-    IndexNoExistError, MethodNoSupportError, NoneError, StringError, ViewExistError,
-    ViewNoExistError,
+    IndexNoExistError, MethodNoSupportError, NoneError, PageExistError, PageNoExistError,
+    StringError, ViewExistError, ViewNoExistError,
 };
 
 pub trait GeorgeStringErr<M, N>: Sized {
@@ -37,6 +37,8 @@ pub type GeorgeResult<T> = std::result::Result<T, GeorgeError>;
 pub enum GeorgeError {
     StringError(StringError),
     DataExistError(DataExistError),
+    PageExistError(PageExistError),
+    PageNoExistError(PageNoExistError),
     DatabaseExistError(DatabaseExistError),
     ViewExistError(ViewExistError),
     IndexExistError(IndexExistError),
@@ -53,6 +55,8 @@ impl Error for GeorgeError {
         match &self {
             GeorgeError::StringError(ref e) => Some(e),
             GeorgeError::DataExistError(ref e) => Some(e),
+            GeorgeError::PageExistError(ref e) => Some(e),
+            GeorgeError::PageNoExistError(ref e) => Some(e),
             GeorgeError::DatabaseExistError(ref e) => Some(e),
             GeorgeError::ViewExistError(ref e) => Some(e),
             GeorgeError::IndexExistError(ref e) => Some(e),
@@ -71,6 +75,8 @@ impl Display for GeorgeError {
         match &self {
             GeorgeError::StringError(ref e) => e.fmt(f),
             GeorgeError::DataExistError(ref e) => e.fmt(f),
+            GeorgeError::PageExistError(ref e) => e.fmt(f),
+            GeorgeError::PageNoExistError(ref e) => e.fmt(f),
             GeorgeError::DatabaseExistError(ref e) => e.fmt(f),
             GeorgeError::ViewExistError(ref e) => e.fmt(f),
             GeorgeError::IndexExistError(ref e) => e.fmt(f),
@@ -93,6 +99,18 @@ impl From<StringError> for GeorgeError {
 impl From<DataExistError> for GeorgeError {
     fn from(s: DataExistError) -> Self {
         GeorgeError::DataExistError(s)
+    }
+}
+
+impl From<PageExistError> for GeorgeError {
+    fn from(s: PageExistError) -> Self {
+        GeorgeError::PageExistError(s)
+    }
+}
+
+impl From<PageNoExistError> for GeorgeError {
+    fn from(s: PageNoExistError) -> Self {
+        GeorgeError::PageNoExistError(s)
     }
 }
 

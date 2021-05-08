@@ -19,7 +19,8 @@ use comm::errors::entrances::{GeorgeError, GeorgeResult};
 
 use crate::task::engine::memory::seed::Seed;
 use crate::task::rich::Condition;
-use crate::utils::comm::level_distance_64;
+use crate::utils::comm::{hash_key_64, level_distance_64};
+use crate::utils::enums::KeyType;
 use comm::errors::children::{DataExistError, DataNoExistError, MethodNoSupportError, NoneError};
 
 /// 索引B+Tree结点结构
@@ -92,8 +93,9 @@ impl Node {
     pub(crate) fn create() -> Arc<RwLock<Self>> {
         Arc::new(RwLock::new(create_root_self()))
     }
+
     /// 恢复根结点
-    pub fn recovery() -> Arc<RwLock<Self>> {
+    pub(crate) fn recovery() -> Arc<RwLock<Self>> {
         Arc::new(RwLock::new(create_root_self()))
     }
 }
@@ -104,10 +106,12 @@ impl Node {
     fn degree_index(&self) -> u16 {
         self.degree_index
     }
+
     /// 子结点集合Vec，允许为空Option，多线程共享数据Arc，支持并发操作RWLock，集合内存储指针Box，指针类型为Node
     fn nodes(&self) -> Option<Arc<RwLock<Vec<Arc<Self>>>>> {
         self.nodes.clone()
     }
+
     /// 叶子结点下真实存储数据的集合，该集合主要目的在于解决Hash碰撞，允许为空Option，多线程共享数据Arc，
     /// 支持并发操作RWLock，集合内存储指针Box，指针类型为Seed
     fn seeds(&self) -> Option<Arc<RwLock<Vec<Arc<RwLock<Seed>>>>>> {
@@ -117,29 +121,20 @@ impl Node {
 
 /// 封装方法函数
 impl Node {
-    fn modify(&mut self) -> GeorgeResult<()> {
-        unimplemented!()
-    }
-    fn put(&self, flexible_key: u64, seed: Arc<RwLock<Seed>>, force: bool) -> GeorgeResult<()> {
+    pub(crate) fn put(&self, key: String, value: Vec<u8>, force: bool) -> GeorgeResult<()> {
+        let flexible_key = hash_key_64(KeyType::String, key.clone())?;
+        let seed = Arc::new(RwLock::new(Seed::create(key, value)));
         self.put_in_node(1, flexible_key, seed, force)
     }
-    fn get(&self, key: String, flexible_key: u64) -> GeorgeResult<Vec<u8>> {
+
+    pub(crate) fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
+        let flexible_key = hash_key_64(KeyType::String, key.clone())?;
         self.get_in_node(1, key, flexible_key)
     }
-    fn del(&self, key: String, flexible_key: u64) -> GeorgeResult<()> {
+
+    pub(crate) fn del(&self, key: String) -> GeorgeResult<()> {
+        let flexible_key = hash_key_64(KeyType::String, key.clone())?;
         self.del_in_node(1, key, flexible_key)
-    }
-    fn select(
-        &self,
-        _left: bool,
-        _start: u64,
-        _end: u64,
-        _skip: u64,
-        _limit: u64,
-        _delete: bool,
-        _conditions: Vec<Condition>,
-    ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)> {
-        Err(GeorgeError::from(MethodNoSupportError))
     }
 }
 
@@ -193,6 +188,7 @@ impl Node {
             node_next.put_in_node(node_next_level, next_flexible_key, seed, force)
         }
     }
+
     /// 新建普通结点
     ///
     /// 该结点需要定义层和度
@@ -203,6 +199,7 @@ impl Node {
     fn create_node(&self, degree_index: u16) -> Arc<Self> {
         return Arc::new(create_node_self(degree_index));
     }
+
     /// 新建叶子结点
     ///
     /// 该结点需要定义层和度
@@ -221,6 +218,7 @@ impl Node {
     fn create_or_take_leaf(&self, index: u16) -> Arc<Node> {
         self.create_or_take(index, true)
     }
+
     /// 从指定父节点中尝试取出一个子节点，如果子节点不存在则创建一个并返回
     ///
     /// node 指定父节点
@@ -250,6 +248,7 @@ impl Node {
             }
         };
     }
+
     /// 节点数组二分查找基本方法前置方法
     ///
     /// node 所查找的集合根
@@ -267,6 +266,7 @@ impl Node {
             None => Err(GeorgeError::from(NoneError)),
         };
     }
+
     /// 节点数组二分查找基本方法<p><p>
     ///
     /// ###Params
@@ -306,6 +306,7 @@ impl Node {
         }
         Err(GeorgeError::from(DataNoExistError))
     }
+
     fn put_seed(&self, seed: Arc<RwLock<Seed>>, force: bool) -> GeorgeResult<()> {
         // 获取seed叶子，如果存在，则判断版本号，如果不存在，则新建一个空并返回
         return if force {
@@ -321,6 +322,7 @@ impl Node {
             }
         };
     }
+
     /// 指定节点中是否存在匹配key的seed
     ///
     /// 该方法用于put类型，即如果存在，则返回已存在值，没有额外操作
@@ -372,6 +374,7 @@ impl Node {
             seeds.remove(position);
         }
     }
+
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -410,6 +413,7 @@ impl Node {
         let node_next = self.binary_match_data_pre(next_degree)?;
         node_next.get_in_node(level + 1, key, next_flexible_key)
     }
+
     /// 指定节点中是否存在匹配md516_key的seed
     ///
     /// 该方法用于get类型，在检索的同时会删除已发现的空seed
@@ -439,6 +443,7 @@ impl Node {
             Err(GeorgeError::from(DataNoExistError))
         }
     }
+
     /// 删除数据<p><p>
     ///
     /// ###Params
@@ -479,6 +484,7 @@ impl Node {
             _ => Ok(()),
         }
     }
+
     /// 删除指定节点中存在匹配md516_key的seed
     fn remove_seed_value(&self, key: String) -> GeorgeResult<()> {
         let arc = self.seeds().clone().unwrap().clone();

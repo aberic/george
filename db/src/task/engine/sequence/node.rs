@@ -23,7 +23,7 @@ use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::task::view::View;
-use crate::utils::comm::{hash_key, is_bytes_fill};
+use crate::utils::comm::{hash_key_64, is_bytes_fill};
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::{index_path, node_filepath};
 use crate::utils::writer::Filed;
@@ -146,11 +146,11 @@ impl TNode for Node {
         self.put_in_node(key, hash_key, seed, force)
     }
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        let hash_key = hash_key(self.key_type(), key)?;
+        let hash_key = hash_key_64(self.key_type(), key)?;
         self.get_in_node(hash_key)
     }
     fn del(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
-        let hash_key = hash_key(self.key_type(), key.clone())?;
+        let hash_key = hash_key_64(self.key_type(), key.clone())?;
         self.del_in_node(key, hash_key, seed)
     }
     fn select(

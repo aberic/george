@@ -37,8 +37,6 @@ pub const DEFAULT_COMMENT: &str = "system default";
 pub const INDEX_CATALOG: &str = "george_db_index_catalog";
 /// 默认自增序列ID索引，不保证连续性，只保证有序性
 pub const INDEX_SEQUENCE: &str = "george_db_index_sequence";
-/// 默认KV存储索引内存版
-pub const INDEX_MEMORY: &str = "george_db_index_memory";
 
 /// 数据结果数据类型，正常数据类型
 pub const VALUE_TYPE_NORMAL: u8 = 0x00;
@@ -146,20 +144,6 @@ impl HashKeyHandler<u64> for HashKey {
             IndexType::Library => hash_key_64(key_type, key),
             _ => Err(err_str("key type not support!")),
         }
-    }
-}
-
-pub fn hash_key(key_type: KeyType, key: String) -> GeorgeResult<u64> {
-    match key_type {
-        KeyType::String => Ok(Hash::crc64(HashType::String, key)?),
-        KeyType::Bool => Ok(Hash::crc64(HashType::Bool, key)?),
-        KeyType::U32 => Ok(Hash::crc64(HashType::U32, key)?),
-        KeyType::U64 => Ok(Hash::crc64(HashType::U64, key)?),
-        KeyType::F32 => Ok(Hash::crc64(HashType::F32, key)?),
-        KeyType::F64 => Ok(Hash::crc64(HashType::F64, key)?),
-        KeyType::I32 => Ok(Hash::crc64(HashType::I32, key)?),
-        KeyType::I64 => Ok(Hash::crc64(HashType::I64, key)?),
-        _ => Err(err_str("key type not support!")),
     }
 }
 

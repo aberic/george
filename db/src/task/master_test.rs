@@ -599,7 +599,7 @@ fn create_index(
 }
 
 fn put(database_name: &str, view_name: &str, key: &str, value: &str, position: usize) {
-    match GLOBAL_MASTER.put(
+    match GLOBAL_MASTER.put_disk(
         database_name.to_string(),
         view_name.to_string(),
         key.to_string(),
@@ -615,7 +615,7 @@ fn put(database_name: &str, view_name: &str, key: &str, value: &str, position: u
 }
 
 fn set(database_name: &str, view_name: &str, key: &str, value: &str, position: usize) {
-    match GLOBAL_MASTER.set(
+    match GLOBAL_MASTER.set_disk(
         database_name.to_string(),
         view_name.to_string(),
         key.to_string(),
@@ -631,7 +631,7 @@ fn set(database_name: &str, view_name: &str, key: &str, value: &str, position: u
 }
 
 fn get(database_name: &str, view_name: &str, key: &str, position: usize) {
-    match GLOBAL_MASTER.get(
+    match GLOBAL_MASTER.get_disk(
         database_name.to_string(),
         view_name.to_string(),
         key.to_string(),
@@ -646,7 +646,7 @@ fn get(database_name: &str, view_name: &str, key: &str, position: usize) {
 }
 
 fn del(database_name: &str, view_name: &str, key: &str, position: usize) {
-    match GLOBAL_MASTER.remove(
+    match GLOBAL_MASTER.remove_disk(
         database_name.to_string(),
         view_name.to_string(),
         key.to_string(),
@@ -663,7 +663,7 @@ fn get_by_index(
     key: &str,
     position: usize,
 ) {
-    match GLOBAL_MASTER.get_by_index(
+    match GLOBAL_MASTER.get_disk_by_index(
         database_name.to_string(),
         view_name.to_string(),
         index_name.to_string(),
@@ -679,7 +679,7 @@ fn get_by_index(
 }
 
 fn remove(database_name: &str, view_name: &str, key: &str, position: usize) {
-    match GLOBAL_MASTER.remove(
+    match GLOBAL_MASTER.remove_disk(
         database_name.to_string(),
         view_name.to_string(),
         key.to_string(),
@@ -694,7 +694,7 @@ fn remove(database_name: &str, view_name: &str, key: &str, position: usize) {
 }
 
 fn put_m(key: &str, value: &str, position: usize) {
-    match GLOBAL_MASTER.put_m(key.to_string(), value.to_string().into_bytes()) {
+    match GLOBAL_MASTER.put_memory_default(key.to_string(), value.to_string().into_bytes()) {
         Err(ie) => println!(
             "put{} error is {:#?}",
             position,
@@ -705,7 +705,7 @@ fn put_m(key: &str, value: &str, position: usize) {
 }
 
 fn set_m(key: &str, value: &str, position: usize) {
-    match GLOBAL_MASTER.set_m(key.to_string(), value.to_string().into_bytes()) {
+    match GLOBAL_MASTER.set_memory_default(key.to_string(), value.to_string().into_bytes()) {
         Err(ie) => println!(
             "put{} error is {:#?}",
             position,
@@ -716,7 +716,7 @@ fn set_m(key: &str, value: &str, position: usize) {
 }
 
 fn get_m(key: &str, position: usize) {
-    match GLOBAL_MASTER.get_m(key.to_string()) {
+    match GLOBAL_MASTER.get_memory_default(key.to_string()) {
         Ok(vu8) => println!(
             "get{} is {:#?}",
             position,
@@ -727,7 +727,7 @@ fn get_m(key: &str, position: usize) {
 }
 
 fn remove_m(key: &str, position: usize) {
-    match GLOBAL_MASTER.remove_m(key.to_string()) {
+    match GLOBAL_MASTER.remove_memory_default(key.to_string()) {
         Ok(_) => println!("remove{} success!", position),
         Err(ie) => println!(
             "remove{} is {:#?}",
@@ -738,7 +738,7 @@ fn remove_m(key: &str, position: usize) {
 }
 
 fn select(database_name: &str, view_name: &str, constraint_json_bytes: Vec<u8>, position: usize) {
-    match GLOBAL_MASTER.select(
+    match GLOBAL_MASTER.select_disk(
         database_name.to_string(),
         view_name.to_string(),
         constraint_json_bytes,
@@ -761,7 +761,7 @@ fn select(database_name: &str, view_name: &str, constraint_json_bytes: Vec<u8>, 
 }
 
 fn delete(database_name: &str, view_name: &str, constraint_json_bytes: Vec<u8>, position: usize) {
-    match GLOBAL_MASTER.delete(
+    match GLOBAL_MASTER.delete_disk(
         database_name.to_string(),
         view_name.to_string(),
         constraint_json_bytes,

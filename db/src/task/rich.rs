@@ -13,7 +13,7 @@
  */
 
 use crate::task::engine::traits::TIndex;
-use crate::utils::comm::{hash_key, hash_key_number};
+use crate::utils::comm::{hash_key_64, hash_key_number};
 use crate::utils::enums::KeyType;
 use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeResult};
 use serde_json::{Error, Value};
@@ -68,7 +68,7 @@ impl Condition {
         value_bool: bool,
         index: Option<Arc<dyn TIndex>>,
     ) -> GeorgeResult<Condition> {
-        let value_hash = hash_key(key_type, value.clone())?;
+        let value_hash = hash_key_64(key_type, value.clone())?;
         Ok(Condition {
             param,
             compare,

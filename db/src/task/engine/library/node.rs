@@ -19,7 +19,7 @@ use crate::task::engine::DataReal;
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::task::view::View;
-use crate::utils::comm::{hash_key, is_bytes_fill, level_distance_64};
+use crate::utils::comm::{hash_key_64, is_bytes_fill, level_distance_64};
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::{index_path, node_filepath, record_filepath};
 use crate::utils::writer::Filed;
@@ -160,11 +160,11 @@ impl TNode for Node {
     ///
     /// EngineResult<()>
     fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
-        let hash_key = hash_key(self.key_type(), key.clone())?;
+        let hash_key = hash_key_64(self.key_type(), key.clone())?;
         self.put_in_node(key, String::from(""), 1, hash_key, seed, force)
     }
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        let hash_key = hash_key(self.key_type(), key.clone())?;
+        let hash_key = hash_key_64(self.key_type(), key.clone())?;
         self.get_in_node(key, String::from(""), 1, hash_key)
     }
     fn del(&self, _key: String, _seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {

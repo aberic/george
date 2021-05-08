@@ -83,7 +83,7 @@ mod node_test {
         .unwrap();
         match node.get("yes".to_string()) {
             Ok(v8s) => println!("res = {:#?}", String::from_utf8(v8s).unwrap().as_str()),
-            Err(err) => println!("put error! error is {}", err),
+            Err(err) => println!("get error! error is {}", err),
         }
     }
 }
