@@ -23,7 +23,7 @@ use chrono::{Duration, Local, NaiveDateTime};
 
 use comm::errors::children::IndexExistError;
 use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeError, GeorgeResult};
-use comm::io::file::{Filer, FilerNormal};
+use comm::io::file::{Filer, FilerNormal, FilerReader};
 use comm::strings::{StringHandler, Strings};
 use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u48, trans_u32_2_bytes};
 use comm::vectors::{Vector, VectorHandler};
@@ -427,12 +427,12 @@ impl View {
         let last: u32;
         match file.try_clone() {
             Ok(f) => {
-                let bs = Filer::read_subs(f, seek, 4)?;
+                let bs = Filer::read_sub(f, seek, 4)?;
                 last = trans_bytes_2_u32(bs)?
             }
             Err(err) => return Err(err_strs("get while file try clone", err)),
         }
-        Filer::read_subs(file, seek + 4, last as usize)
+        Filer::read_sub(file, seek + 4, last as usize)
     }
     /// 读取已组装写入视图的内容，即持续长度+该长度的原文内容
     ///

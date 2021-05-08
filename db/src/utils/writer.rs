@@ -49,6 +49,12 @@ impl Filed {
     pub fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         self.exec.read().unwrap().read(self.filepath(), start, last)
     }
+    pub fn read_allow_none(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
+        self.exec
+            .read()
+            .unwrap()
+            .read_allow_none(self.filepath(), start, last)
+    }
     pub fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
         self.exec.write().unwrap().write(seek, content)
     }
@@ -82,6 +88,9 @@ impl FiledExec {
     }
     fn read(&self, filepath: String, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         Filer::read_sub(filepath, start, last)
+    }
+    fn read_allow_none(&self, filepath: String, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
+        Filer::read_sub_allow_none(filepath, start, last)
     }
     fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
         match self.writer.try_clone() {

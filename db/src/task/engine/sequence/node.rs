@@ -123,7 +123,7 @@ impl Node {
         self.filer.clone().append(content)
     }
     fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
-        self.filer.clone().read(start, last)
+        self.filer.clone().read_allow_none(start, last)
     }
     fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
         self.filer.clone().write(seek, content)

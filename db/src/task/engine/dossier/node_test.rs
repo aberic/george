@@ -20,7 +20,7 @@ mod node_test {
     use crate::task::view::View;
     use crate::utils::enums::KeyType;
     use comm::errors::entrances::GeorgeResult;
-    use std::sync::{Arc, RwLock};
+    use std::sync::Arc;
 
     fn create_node(
         database_name: String,

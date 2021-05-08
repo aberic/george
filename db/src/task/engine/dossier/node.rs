@@ -12,16 +12,12 @@
  * limitations under the License.
  */
 
-use std::ops::Add;
 use std::sync::{Arc, RwLock};
 
 use comm::errors::children::{DataExistError, DataNoExistError};
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerHandler};
-use comm::strings::{StringHandler, Strings};
-use comm::trans::{
-    trans_bytes_2_u32_as_u64, trans_bytes_2_u64, trans_u32_2_bytes, trans_u64_2_bytes,
-};
+use comm::trans::{trans_bytes_2_u64, trans_u64_2_bytes};
 use comm::vectors::{Vector, VectorHandler};
 
 use crate::task::engine::traits::{TNode, TSeed};
@@ -29,11 +25,9 @@ use crate::task::engine::{DataReal, RootBytes};
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::task::view::View;
-use crate::utils::comm::{
-    hash_key, is_bytes_fill, level_distance_32, level_distance_64, HashKey, HashKeyHandler,
-};
+use crate::utils::comm::{is_bytes_fill, level_distance_32, HashKey, HashKeyHandler};
 use crate::utils::enums::{IndexType, KeyType};
-use crate::utils::path::{index_filepath, index_path, node_filepath, record_filepath};
+use crate::utils::path::{index_path, node_filepath, record_filepath};
 use crate::utils::writer::Filed;
 
 const BYTES_LEN_FOR_DOSSIER: usize = 2048;

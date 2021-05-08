@@ -15,7 +15,7 @@
 #[cfg(test)]
 mod file {
     use crate::errors::entrances::GeorgeError;
-    use crate::io::file::{Filer, FilerHandler, FilerReader, FilerWriter};
+    use crate::io::file::{Filer, FilerHandler, FilerNormal, FilerReader, FilerWriter};
     use std::fs;
     use std::io::{Read, Write};
 
@@ -115,13 +115,32 @@ mod file {
             Ok(s) => println!("write success with s = {}", s),
             Err(err) => println!("file write err = {}", err),
         }
+        match Filer::write("src/test/file/y.txt", vec![0x01, 0x02, 0x03]) {
+            Ok(s) => println!("write success with s = {}", s),
+            Err(err) => println!("file write err = {}", err),
+        }
     }
 
     #[test]
     fn writer_append_test() {
-        Filer::touch("src/test/file/g.txt").unwrap();
+        Filer::try_touch("src/test/file/g.txt").unwrap();
         match Filer::append(
             "src/test/file/g.txt",
+            vec![
+                0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
+            ],
+        ) {
+            Ok(()) => {
+                let vs: Vec<u8> = vec![0x0b, 0x0c, 0x0d, 0x0e];
+                match Filer::write_seek("src/test/file/g.txt", 3, vs) {
+                    Err(err) => println!("err = {}", err),
+                    _ => {}
+                }
+            }
+            Err(err) => println!("err = {}", err),
+        }
+        match Filer::append(
+            "src/test/file/h.txt",
             vec![
                 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
             ],
@@ -197,7 +216,17 @@ mod file {
     }
 
     #[test]
-    fn read_sub_bytes_test() {
+    fn reader_test3() {
+        let s1 = Filer::read("src/examples/conf.yaml").unwrap();
+        println!("s = {}", s1);
+        let file = Filer::reader("src/examples/conf.yaml").unwrap();
+        let s2 = Filer::read(file).unwrap();
+        println!("s = {}", s2);
+        assert_eq!(s1, s2);
+    }
+
+    #[test]
+    fn read_sub_bytes_test1() {
         println!(
             "res1 = {:#?}",
             Filer::read_sub("src/examples/29f459a44fee58c7.ge".to_string(), 448, 8,).unwrap()
@@ -206,5 +235,25 @@ mod file {
             "res2 = {:#?}",
             Filer::read_sub("src/examples/29f459a44fee58c7.ge".to_string(), 0, 2048,).unwrap()
         );
+    }
+
+    #[test]
+    fn read_sub_bytes_test2() {
+        println!(
+            "res1 = {:#?}",
+            Filer::read_sub("src/examples/conf.yaml", 448, 8).unwrap()
+        );
+        let file = Filer::reader("src/examples/conf.yaml").unwrap();
+        println!("res2 = {:#?}", Filer::read_sub(file, 448, 8).unwrap());
+    }
+
+    #[test]
+    fn file_len_test() {
+        println!(
+            "len1 = {:#?}",
+            Filer::len("src/examples/conf.yaml").unwrap()
+        );
+        let file = Filer::reader("src/examples/conf.yaml").unwrap();
+        println!("len2 = {:#?}", Filer::len(file).unwrap());
     }
 }

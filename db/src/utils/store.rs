@@ -17,7 +17,7 @@ use std::fs::File;
 
 use comm::errors::entrances::GeorgeResult;
 use comm::errors::entrances::{err_str, err_string};
-use comm::io::file::{Filer, FilerNormal};
+use comm::io::file::{Filer, FilerReader};
 use comm::trans::{
     trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u64, trans_u32_2_bytes, trans_u64_2_bytes,
 };
@@ -264,7 +264,7 @@ pub fn recovery_before_content(filepath: String) -> GeorgeResult<HD> {
                 Ok(file_clone) => {
                     // before_content包括head以及正文描述信息
                     // head长度已知32，正文描述长度已知12，总长度44
-                    let content = Filer::read_subs(file_clone, 0, 44)?;
+                    let content = Filer::read_sub(file_clone, 0, 44)?;
                     let mut metadata_bytes: Vec<u8> = vec![];
                     let mut start_bytes: Vec<u8> = vec![];
                     let mut last_bytes: Vec<u8> = vec![];
@@ -283,7 +283,7 @@ pub fn recovery_before_content(filepath: String) -> GeorgeResult<HD> {
                     let last = trans_bytes_2_u32(last_bytes.clone())? as usize;
                     let metadata = Metadata::from_bytes(metadata_bytes)?;
                     // 读取正文描述
-                    let description = Filer::read_subs(file, start, last)?;
+                    let description = Filer::read_sub(file, start, last)?;
                     log::debug!(
                         "{:#?} recovery before content from file {}",
                         metadata.tag,
