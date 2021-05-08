@@ -18,10 +18,9 @@ use std::sync::{Arc, RwLock};
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
 
 use crate::task::engine::memory::seed::Seed;
-use crate::task::rich::Condition;
 use crate::utils::comm::{hash_key_64, level_distance_64};
 use crate::utils::enums::KeyType;
-use comm::errors::children::{DataExistError, DataNoExistError, MethodNoSupportError, NoneError};
+use comm::errors::children::{DataExistError, DataNoExistError, NoneError};
 
 /// 索引B+Tree结点结构
 ///

@@ -66,6 +66,14 @@ impl Metadata {
             sequence,
         }
     }
+    pub fn from_page(version: [u8; 2], sequence: u8) -> Metadata {
+        Metadata {
+            tag: Tag::Page,
+            index_type: IndexType::None,
+            version,
+            sequence,
+        }
+    }
     pub fn from_database(version: [u8; 2], sequence: u8) -> Metadata {
         Metadata {
             tag: Tag::Database,
@@ -88,6 +96,14 @@ impl Metadata {
             index_type,
             version,
             sequence,
+        }
+    }
+    pub fn page() -> Metadata {
+        Metadata {
+            tag: Tag::Page,
+            index_type: IndexType::None,
+            version: VERSION,
+            sequence: 0x00,
         }
     }
     pub fn database() -> Metadata {
@@ -135,6 +151,10 @@ impl Metadata {
                 )),
                 Tag::Index => Ok(Metadata::from_index(
                     Enum::index_type(head.get(3).unwrap().clone()),
+                    [head.get(4).unwrap().clone(), head.get(5).unwrap().clone()],
+                    head.get(6).unwrap().clone(),
+                )),
+                Tag::Page => Ok(Metadata::from_page(
                     [head.get(4).unwrap().clone(), head.get(5).unwrap().clone()],
                     head.get(6).unwrap().clone(),
                 )),

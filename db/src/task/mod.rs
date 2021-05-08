@@ -16,6 +16,7 @@ pub mod engine;
 mod index;
 pub mod master;
 mod master_test;
+mod page;
 mod rich;
 mod seed;
 mod view;

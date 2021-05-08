@@ -574,7 +574,7 @@ fn file_touch(path: String) -> GeorgeResult<()> {
         match path_check.parent() {
             Some(p) => {
                 if !p.exists() {
-                    Dir::mk(p.to_str().unwrap())?
+                    Dir::mk_uncheck(p.to_str().unwrap())?
                 }
             }
             None => {}
@@ -595,7 +595,7 @@ fn file_try_touch(path: String) -> GeorgeResult<()> {
         match path_check.parent() {
             Some(p) => {
                 if !p.exists() {
-                    Dir::mk(p.to_str().unwrap())?
+                    Dir::mk_uncheck(p.to_str().unwrap())?
                 }
             }
             None => {}

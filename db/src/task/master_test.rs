@@ -133,22 +133,43 @@ fn index_create_test() {
 }
 
 #[test]
-fn memory_test() {
+fn memory_test1() {
     let key1 = "a";
     let key2 = "b";
     let key3 = "c";
-    put_m(key1, "test1", 1);
-    put_m(key2, "test2", 2);
-    get_m(key1, 1);
-    get_m(key2, 2);
-    remove_m(key2, 3);
-    get_m(key2, 3);
-    put_m(key3, "test4", 4);
-    get_m(key3, 4);
-    put_m(key3, "test5", 5);
-    get_m(key3, 5);
-    set_m(key3, "test6", 6);
-    get_m(key3, 6);
+    put_memory_default(key1, "test1", 1);
+    put_memory_default(key2, "test2", 2);
+    get_memory_default(key1, 1);
+    get_memory_default(key2, 2);
+    remove_memory_default(key2, 3);
+    get_memory_default(key2, 3);
+    put_memory_default(key3, "test4", 4);
+    get_memory_default(key3, 4);
+    put_memory_default(key3, "test5", 5);
+    get_memory_default(key3, 5);
+    set_memory_default(key3, "test6", 6);
+    get_memory_default(key3, 6);
+}
+
+#[test]
+fn memory_test2() {
+    let page_name = "page_test2";
+    create_page(page_name);
+    let key1 = "a";
+    let key2 = "b";
+    let key3 = "c";
+    put_memory(page_name, key1, "test1", 1);
+    put_memory(page_name, key2, "test2", 2);
+    get_memory(page_name, key1, 1);
+    get_memory(page_name, key2, 2);
+    remove_memory(page_name, key2, 3);
+    get_memory(page_name, key2, 3);
+    put_memory(page_name, key3, "test4", 4);
+    get_memory(page_name, key3, 4);
+    put_memory(page_name, key3, "test5", 5);
+    get_memory(page_name, key3, 5);
+    set_memory(page_name, key3, "test6", 6);
+    get_memory(page_name, key3, 6);
 }
 
 #[test]
@@ -502,6 +523,13 @@ fn database_map() {
     }
 }
 
+fn create_page(page_name: &str) {
+    match GLOBAL_MASTER.create_page(String::from(page_name), String::from("comment")) {
+        Ok(()) => println!("create page {}", page_name),
+        Err(err) => println!("create page {} error, {}", page_name, err),
+    }
+}
+
 fn create_database(database_name: &str) {
     match GLOBAL_MASTER.create_database(String::from(database_name), String::from("comment")) {
         Ok(()) => println!("create database {}", database_name),
@@ -693,7 +721,59 @@ fn remove(database_name: &str, view_name: &str, key: &str, position: usize) {
     }
 }
 
-fn put_m(key: &str, value: &str, position: usize) {
+fn put_memory(page_name: &str, key: &str, value: &str, position: usize) {
+    match GLOBAL_MASTER.put_memory(
+        page_name.to_string(),
+        key.to_string(),
+        value.to_string().into_bytes(),
+    ) {
+        Err(ie) => println!(
+            "put{} error is {:#?}",
+            position,
+            ie.source().unwrap().to_string()
+        ),
+        _ => {}
+    }
+}
+
+fn set_memory(page_name: &str, key: &str, value: &str, position: usize) {
+    match GLOBAL_MASTER.set_memory(
+        page_name.to_string(),
+        key.to_string(),
+        value.to_string().into_bytes(),
+    ) {
+        Err(ie) => println!(
+            "put{} error is {:#?}",
+            position,
+            ie.source().unwrap().to_string()
+        ),
+        _ => {}
+    }
+}
+
+fn get_memory(page_name: &str, key: &str, position: usize) {
+    match GLOBAL_MASTER.get_memory(page_name.to_string(), key.to_string()) {
+        Ok(vu8) => println!(
+            "get{} is {:#?}",
+            position,
+            String::from_utf8(vu8).unwrap().as_str()
+        ),
+        Err(ie) => println!("get{} is {:#?}", position, ie.source().unwrap().to_string()),
+    }
+}
+
+fn remove_memory(page_name: &str, key: &str, position: usize) {
+    match GLOBAL_MASTER.remove_memory(page_name.to_string(), key.to_string()) {
+        Ok(_) => println!("remove{} success!", position),
+        Err(ie) => println!(
+            "remove{} is {:#?}",
+            position,
+            ie.source().unwrap().to_string()
+        ),
+    }
+}
+
+fn put_memory_default(key: &str, value: &str, position: usize) {
     match GLOBAL_MASTER.put_memory_default(key.to_string(), value.to_string().into_bytes()) {
         Err(ie) => println!(
             "put{} error is {:#?}",
@@ -704,7 +784,7 @@ fn put_m(key: &str, value: &str, position: usize) {
     }
 }
 
-fn set_m(key: &str, value: &str, position: usize) {
+fn set_memory_default(key: &str, value: &str, position: usize) {
     match GLOBAL_MASTER.set_memory_default(key.to_string(), value.to_string().into_bytes()) {
         Err(ie) => println!(
             "put{} error is {:#?}",
@@ -715,7 +795,7 @@ fn set_m(key: &str, value: &str, position: usize) {
     }
 }
 
-fn get_m(key: &str, position: usize) {
+fn get_memory_default(key: &str, position: usize) {
     match GLOBAL_MASTER.get_memory_default(key.to_string()) {
         Ok(vu8) => println!(
             "get{} is {:#?}",
@@ -726,7 +806,7 @@ fn get_m(key: &str, position: usize) {
     }
 }
 
-fn remove_m(key: &str, position: usize) {
+fn remove_memory_default(key: &str, position: usize) {
     match GLOBAL_MASTER.remove_memory_default(key.to_string()) {
         Ok(_) => println!("remove{} success!", position),
         Err(ie) => println!(

@@ -43,7 +43,7 @@ mod node_test {
             true,
         )
         .unwrap();
-        println!("node create success!");
+        println!("node create success! {:#?}", node);
     }
 
     #[test]
@@ -72,7 +72,7 @@ mod node_test {
 
     #[test]
     fn get_test() {
-        let view = View::mock_create_single("db".to_string(), "view".to_string()).unwrap();
+        View::mock_create_single("db".to_string(), "view".to_string()).unwrap();
         let node = create_node(
             "db".to_string(),
             "view".to_string(),

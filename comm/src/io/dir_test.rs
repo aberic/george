@@ -16,7 +16,7 @@ use crate::io::dir::{Dir, DirHandler};
 
 #[test]
 fn create_dir_test() {
-    Dir::mk("src/test/test/dir").unwrap();
+    Dir::mk_uncheck("src/test/test/dir").unwrap();
 }
 
 #[test]

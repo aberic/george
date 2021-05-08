@@ -16,9 +16,9 @@ use std::error::Error;
 use std::fmt::{Display, Formatter, Result};
 
 use crate::errors::children::{
-    DataExistError, DataNoExistError, DatabaseExistError, DatabaseNoExistError, IndexExistError,
-    IndexNoExistError, MethodNoSupportError, NoneError, PageExistError, PageNoExistError,
-    StringError, ViewExistError, ViewNoExistError,
+    DataExistError, DataNoExistError, DatabaseExistError, DatabaseNoExistError, DirExistError,
+    FileExistError, IndexExistError, IndexNoExistError, MethodNoSupportError, NoneError,
+    PageExistError, PageNoExistError, StringError, ViewExistError, ViewNoExistError,
 };
 
 pub trait GeorgeStringErr<M, N>: Sized {
@@ -36,6 +36,8 @@ pub type GeorgeResult<T> = std::result::Result<T, GeorgeError>;
 #[derive(Debug)]
 pub enum GeorgeError {
     StringError(StringError),
+    DirExistError(DirExistError),
+    FileExistError(FileExistError),
     DataExistError(DataExistError),
     PageExistError(PageExistError),
     PageNoExistError(PageNoExistError),
@@ -54,6 +56,8 @@ impl Error for GeorgeError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match &self {
             GeorgeError::StringError(ref e) => Some(e),
+            GeorgeError::DirExistError(ref e) => Some(e),
+            GeorgeError::FileExistError(ref e) => Some(e),
             GeorgeError::DataExistError(ref e) => Some(e),
             GeorgeError::PageExistError(ref e) => Some(e),
             GeorgeError::PageNoExistError(ref e) => Some(e),
@@ -74,6 +78,8 @@ impl Display for GeorgeError {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match &self {
             GeorgeError::StringError(ref e) => e.fmt(f),
+            GeorgeError::DirExistError(ref e) => e.fmt(f),
+            GeorgeError::FileExistError(ref e) => e.fmt(f),
             GeorgeError::DataExistError(ref e) => e.fmt(f),
             GeorgeError::PageExistError(ref e) => e.fmt(f),
             GeorgeError::PageNoExistError(ref e) => e.fmt(f),
@@ -93,6 +99,18 @@ impl Display for GeorgeError {
 impl From<StringError> for GeorgeError {
     fn from(s: StringError) -> Self {
         GeorgeError::StringError(s)
+    }
+}
+
+impl From<DirExistError> for GeorgeError {
+    fn from(s: DirExistError) -> Self {
+        GeorgeError::DirExistError(s)
+    }
+}
+
+impl From<FileExistError> for GeorgeError {
+    fn from(s: FileExistError) -> Self {
+        GeorgeError::FileExistError(s)
     }
 }
 

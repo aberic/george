@@ -15,12 +15,16 @@
 use std::fs;
 use std::ops::Add;
 
-use crate::errors::entrances::{err_str, err_string, err_strings, err_strs, GeorgeResult};
+use crate::errors::children::DirExistError;
+use crate::errors::entrances::{
+    err_str, err_string, err_strings, err_strs, GeorgeError, GeorgeResult,
+};
 use std::path::Path;
 
 pub trait DirHandler<T>: Sized {
     fn exist(_: T) -> GeorgeResult<bool>;
     fn mk(_: T) -> GeorgeResult<()>;
+    fn mk_uncheck(_: T) -> GeorgeResult<()>;
     fn rm(_: T) -> GeorgeResult<()>;
     /// 指定路径下目录文件夹名称
     fn name(_: T) -> GeorgeResult<String>;
@@ -40,20 +44,29 @@ impl DirHandler<String> for Dir {
     fn exist(path: String) -> GeorgeResult<bool> {
         dir_exist(path)
     }
+
     fn mk(path: String) -> GeorgeResult<()> {
         dir_create(path)
     }
+
+    fn mk_uncheck(path: String) -> GeorgeResult<()> {
+        dir_create_uncheck(path)
+    }
+
     fn rm(path: String) -> GeorgeResult<()> {
         dir_remove(path)
     }
+
     fn name(path: String) -> GeorgeResult<String> {
         dir_last_name(path)
     }
+
     fn cp(from_path: String, to_path: String, force: bool) -> GeorgeResult<()> {
         let from_dir_name = dir_last_name(from_path.clone())?;
         let to_path = to_path.add("/").add(&from_dir_name);
         dir_copy(from_path, to_path, force)
     }
+
     fn mv(from_path: String, to_path: String, force: bool) -> GeorgeResult<()> {
         let from_dir_name = dir_last_name(from_path.clone())?;
         let to_path = to_path.add("/").add(&from_dir_name);
@@ -65,20 +78,29 @@ impl DirHandler<&str> for Dir {
     fn exist(path: &str) -> GeorgeResult<bool> {
         dir_exist(path.to_string())
     }
+
     fn mk(path: &str) -> GeorgeResult<()> {
         dir_create(path.to_string())
     }
+
+    fn mk_uncheck(path: &str) -> GeorgeResult<()> {
+        dir_create_uncheck(path.to_string())
+    }
+
     fn rm(path: &str) -> GeorgeResult<()> {
         dir_remove(path.to_string())
     }
+
     fn name(path: &str) -> GeorgeResult<String> {
         dir_last_name(path.to_string())
     }
+
     fn cp(from_path: &str, to_path: &str, force: bool) -> GeorgeResult<()> {
         let from_dir_name = dir_last_name(from_path.to_string())?;
         let to_path = to_path.to_string().add("/").add(&from_dir_name);
         dir_copy(from_path.to_string(), to_path, force)
     }
+
     fn mv(from_path: &str, to_path: &str, force: bool) -> GeorgeResult<()> {
         let from_dir_name = dir_last_name(from_path.to_string())?;
         let to_path = to_path.to_string().add("/").add(&from_dir_name);
@@ -102,6 +124,18 @@ fn dir_exist(path: String) -> GeorgeResult<bool> {
 
 /// 创建目录
 fn dir_create(path: String) -> GeorgeResult<()> {
+    if dir_exist(path.clone())? {
+        Err(GeorgeError::from(DirExistError))
+    } else {
+        match fs::create_dir_all(path.clone()) {
+            Ok(_) => Ok(()),
+            Err(err) => Err(err_strings(format!("path {} create error: ", path), err)),
+        }
+    }
+}
+
+/// 创建目录
+fn dir_create_uncheck(path: String) -> GeorgeResult<()> {
     if dir_exist(path.clone())? {
         Ok(())
     } else {
@@ -131,12 +165,12 @@ fn dir_absolute(path: String, force: bool) -> GeorgeResult<String> {
     if dir_exist(path.clone())? {
         if force {
             match fs::remove_dir_all(path.clone()) {
-                Ok(()) => dir_create(path.clone())?,
+                Ok(()) => dir_create_uncheck(path.clone())?,
                 Err(err) => return Err(err_strings(format!("remove dir {} error: ", path), err)),
             }
         }
     } else {
-        dir_create(path.clone())?;
+        dir_create_uncheck(path.clone())?;
     }
     match fs::canonicalize(path.clone()) {
         Ok(path_buf) => Ok(path_buf.to_str().unwrap().to_string()),
@@ -185,7 +219,7 @@ fn dir_copy(from_path: String, to_path: String, force: bool) -> GeorgeResult<()>
                             let dir_name = dir.file_name().to_string_lossy().to_string();
                             let now_to_path = to_path.clone().add("/").add(&dir_name);
                             if dir.path().is_dir() {
-                                match dir_create(now_to_path.clone()) {
+                                match dir_create_uncheck(now_to_path.clone()) {
                                     Ok(()) => {
                                         dir_copy(now_from_path.to_string(), now_to_path, true)?
                                     }

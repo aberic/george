@@ -15,10 +15,6 @@
 #[cfg(test)]
 mod node_test {
     use crate::task::engine::memory::node::Node;
-    use crate::task::engine::memory::seed::Seed;
-    use crate::utils::comm::hash_key_64;
-    use crate::utils::enums::KeyType;
-    use std::sync::{Arc, RwLock};
 
     #[test]
     fn put_get_test() {

@@ -30,6 +30,32 @@ impl Display for StringError {
 impl Error for StringError {}
 
 #[derive(Debug)]
+pub struct DirExistError;
+
+/// 实现Display的trait，并实现fmt方法
+impl Display for DirExistError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "dir already exist!")
+    }
+}
+
+/// 实现Error的trait,因为没有子Error,不需要覆盖source()方法
+impl Error for DirExistError {}
+
+#[derive(Debug)]
+pub struct FileExistError;
+
+/// 实现Display的trait，并实现fmt方法
+impl Display for FileExistError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "file already exist!")
+    }
+}
+
+/// 实现Error的trait,因为没有子Error,不需要覆盖source()方法
+impl Error for FileExistError {}
+
+#[derive(Debug)]
 pub struct DataExistError;
 
 /// 实现Display的trait，并实现fmt方法

@@ -55,6 +55,8 @@ impl EnumHandler for Enum {
 pub enum Tag {
     /// 引导文件
     Bootstrap,
+    /// 缓存页文件
+    Page,
     /// 数据库文件
     Database,
     /// 表数据文件
@@ -107,6 +109,7 @@ fn tag_u8(tag: Tag) -> u8 {
         Tag::Database => 0x01,
         Tag::View => 0x02,
         Tag::Index => 0x03,
+        Tag::Page => 0x04,
     }
 }
 
@@ -140,6 +143,7 @@ fn tag(b: u8) -> Tag {
         0x01 => Tag::Database,
         0x02 => Tag::View,
         0x03 => Tag::Index,
+        0x04 => Tag::Page,
         _ => Tag::Bootstrap,
     }
 }
