@@ -25,7 +25,7 @@ use crate::task::engine::{DataReal, RootBytes};
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::task::view::View;
-use crate::utils::comm::{is_bytes_fill, level_distance_32, HashKey, HashKeyHandler};
+use crate::utils::comm::{level_distance_32, HashKey, HashKeyHandler};
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::{index_path, node_filepath, record_filepath};
 use crate::utils::writer::Filed;
@@ -306,7 +306,7 @@ impl Node {
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
             // 如果存在坐标值，则继续，否则新建
-            if is_bytes_fill(next_node_seek_bytes.clone()) {
+            if Vector::is_fill(next_node_seek_bytes.clone()) {
                 // 索引执行插入真实坐标
                 next_node_seek = trans_bytes_2_u64(next_node_seek_bytes)?;
                 // 已存在该索引值，需要继续判断插入可行性
@@ -338,7 +338,7 @@ impl Node {
             // 下一结点字节数组
             let next_node_bytes: Vec<u8>;
             // 如果存在坐标值，则继续，否则新建
-            if is_bytes_fill(next_node_seek_bytes.clone()) {
+            if Vector::is_fill(next_node_seek_bytes.clone()) {
                 next_node_seek = trans_bytes_2_u64(next_node_seek_bytes)?;
                 next_node_bytes = self.node_read(next_node_seek, BYTES_LEN_FOR_DOSSIER)?;
             } else {
@@ -379,7 +379,7 @@ impl Node {
         let view_info_seek_bytes = Vector::sub_last(res.clone(), 0, 8)?;
         // 如果view视图真实数据坐标为空
         // 处理因断点、宕机等意外导致后续索引数据写入成功而视图数据写入失败的问题
-        if !is_bytes_fill(view_info_seek_bytes.clone()) {
+        if !Vector::is_fill(view_info_seek_bytes.clone()) {
             Ok(record_seek)
         } else {
             // 从view视图中读取真实数据内容
@@ -406,7 +406,7 @@ impl Node {
                 // 读取链式后续数据坐标
                 let record_next_seek_bytes = Vector::sub_last(res, 8, 8)?;
                 // 如果链式后续数据有值，则进入下一轮判定
-                if is_bytes_fill(record_next_seek_bytes.clone()) {
+                if Vector::is_fill(record_next_seek_bytes.clone()) {
                     let record_next_seek = trans_bytes_2_u64(record_next_seek_bytes)?;
                     self.record_view_info_seek_put(key, record_next_seek, force)
                 // 如果链式后续数据无值，则插入新数据
@@ -445,7 +445,7 @@ impl Node {
             self.judge_seek_bytes(key, next_node_seek_bytes)
         } else {
             // 如果存在坐标值，则继续，否则新建
-            if is_bytes_fill(next_node_seek_bytes.clone()) {
+            if Vector::is_fill(next_node_seek_bytes.clone()) {
                 // 下一结点的真实坐标
                 let next_node_seek = trans_bytes_2_u64(next_node_seek_bytes)?;
                 // 下一结点字节数组
@@ -469,7 +469,7 @@ impl Node {
         next_node_seek_bytes: Vec<u8>,
     ) -> GeorgeResult<Vec<u8>> {
         // 如果存在坐标值，则继续，否则返回无此数据
-        if is_bytes_fill(next_node_seek_bytes.clone()) {
+        if Vector::is_fill(next_node_seek_bytes.clone()) {
             // 索引执行插入真实坐标
             let next_node_seek = trans_bytes_2_u64(next_node_seek_bytes)?;
             self.record_view_info_seek_get(key, next_node_seek)
@@ -488,7 +488,7 @@ impl Node {
         let view_info_seek_bytes = Vector::sub_last(res.clone(), 0, 8)?;
         // 如果view视图真实数据坐标为空
         // 处理因断点、宕机等意外导致后续索引数据写入成功而视图数据写入失败的问题
-        if !is_bytes_fill(view_info_seek_bytes.clone()) {
+        if !Vector::is_fill(view_info_seek_bytes.clone()) {
             // record存储固定长度的数据，长度为16，即view视图真实数据8+链式后续数据8
             // 读取链式后续数据坐标
             let record_next_seek_bytes = Vector::sub_last(res, 8, 8)?;

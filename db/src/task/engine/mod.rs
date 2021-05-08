@@ -15,7 +15,6 @@
 use crate::task::master::GLOBAL_MASTER;
 use crate::task::rich::Condition;
 use crate::task::view::View;
-use crate::utils::comm::is_bytes_fill;
 use comm::errors::entrances::{err_string, err_strs, GeorgeResult};
 use comm::io::file::{Filer, FilerWriter};
 use comm::vectors::{Vector, VectorHandler};
@@ -39,7 +38,9 @@ fn check(
     delete: bool,
     view_info_index: Vec<u8>,
 ) -> GeorgeResult<(bool, Vec<u8>)> {
-    if is_bytes_fill(view_info_index.clone()) {
+    if Vector::is_empty(view_info_index.clone()) {
+        Ok((false, vec![]))
+    } else {
         let v_r = view.read().unwrap();
         let real = DataReal::from(v_r.read_content_by(view_info_index)?)?;
         let value_bytes = real.value();
@@ -52,8 +53,6 @@ fn check(
         } else {
             Ok((false, vec![]))
         }
-    } else {
-        Ok((false, vec![]))
     }
 }
 

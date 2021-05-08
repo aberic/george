@@ -23,7 +23,7 @@ use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::task::view::View;
-use crate::utils::comm::{hash_key_64, is_bytes_fill};
+use crate::utils::comm::hash_key_64;
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::{index_path, node_filepath};
 use crate::utils::writer::Filed;
@@ -192,7 +192,7 @@ impl Node {
         let seek = hash_key * 8;
         if !force {
             let res = self.read(seek, 8)?;
-            if is_bytes_fill(res) {
+            if Vector::is_fill(res) {
                 return Err(err_str("auto increment key has been used"));
             }
         }
@@ -207,7 +207,7 @@ impl Node {
     fn get_in_node(&self, hash_key: u64) -> GeorgeResult<Vec<u8>> {
         let seek = hash_key * 8;
         let res = self.read(seek, 8)?;
-        return if is_bytes_fill(res.clone()) {
+        return if Vector::is_fill(res.clone()) {
             Ok(res)
         } else {
             Err(GeorgeError::from(DataNoExistError))
@@ -221,7 +221,7 @@ impl Node {
     ) -> GeorgeResult<()> {
         let seek = hash_key * 8;
         let res = self.read(seek, 8)?;
-        if is_bytes_fill(res) {
+        if Vector::is_fill(res) {
             seed.write().unwrap().modify(IndexPolicy::create(
                 key,
                 IndexType::Sequence,

@@ -16,6 +16,7 @@
 mod file {
     use crate::errors::entrances::GeorgeError;
     use crate::io::file::{Filer, FilerHandler, FilerNormal, FilerReader, FilerWriter};
+    use crate::vectors::{Vector, VectorHandler};
     use std::fs;
     use std::io::{Read, Write};
 
@@ -182,11 +183,11 @@ mod file {
     #[test]
     fn reader_test1() {
         let x1 = Filer::read_sub("src/test/file/seek.txt", 150000000, 7).unwrap();
-        println!("x1 is empty = {}", is_bytes_fill(x1.clone()));
+        println!("x1 is empty = {}", Vector::is_fill(x1.clone()));
         println!("x1 = {}", String::from_utf8(x1).unwrap());
 
         let x2 = Filer::read_sub("src/test/file/seek.txt", 160000000, 8).unwrap();
-        println!("x2 is empty = {}", is_bytes_fill(x2.clone()));
+        println!("x2 is empty = {}", Vector::is_fill(x2.clone()));
         println!("x2 = {}", String::from_utf8(x2).unwrap());
 
         Filer::try_touch("src/test/file/read_sub.txt");
@@ -194,19 +195,6 @@ mod file {
             Ok(x3) => println!("x3 = {}", String::from_utf8(x3).unwrap()),
             Err(err) => println!("read_sub err = {}", err.to_string()),
         }
-    }
-
-    /// 检查字节数组是否已有数据，即不为空且每一个字节都不是0x00
-    pub fn is_bytes_fill(bs: Vec<u8>) -> bool {
-        let bs_len = bs.len();
-        let mut i = 0;
-        while i < bs_len {
-            if bs[i].ne(&0x00) {
-                return true;
-            }
-            i += 1;
-        }
-        false
     }
 
     #[test]

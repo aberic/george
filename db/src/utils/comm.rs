@@ -13,9 +13,7 @@
  */
 
 use crate::utils::enums::{IndexType, KeyType};
-use comm::cryptos::hash::{
-    hashcode64_f64_real, hashcode64_i64_real, CRCTypeHandler, Hash, HashType,
-};
+use comm::cryptos::hash::{Hash, HashCRCHandler, HashCRCTypeHandler};
 use comm::errors::entrances::{err_str, err_string, GeorgeResult};
 use comm::strings::{StringHandler, Strings};
 use serde_json::{Error, Number, Value};
@@ -107,19 +105,6 @@ pub fn key_fetch(index_name: String, value: Vec<u8>) -> GeorgeResult<String> {
     }
 }
 
-/// 检查字节数组是否已有数据，即不为空且每一个字节都不是0x00
-pub fn is_bytes_fill(bs: Vec<u8>) -> bool {
-    let bs_len = bs.len();
-    let mut i = 0;
-    while i < bs_len {
-        if bs[i].ne(&0x00) {
-            return true;
-        }
-        i += 1;
-    }
-    false
-}
-
 pub struct HashKey;
 
 pub(crate) trait HashKeyHandler<T> {
@@ -148,25 +133,25 @@ impl HashKeyHandler<u64> for HashKey {
 
 pub fn hash_key_32(key_type: KeyType, key: String) -> GeorgeResult<u32> {
     match key_type {
-        KeyType::String => Ok(Hash::crc32(HashType::String, key)?),
-        KeyType::Bool => Ok(Hash::crc32(HashType::Bool, key)?),
-        KeyType::U32 => Ok(Hash::crc32(HashType::U32, key)?),
-        KeyType::F32 => Ok(Hash::crc32(HashType::F32, key)?),
-        KeyType::I32 => Ok(Hash::crc32(HashType::I32, key)?),
+        KeyType::String => Hash::crc32_string(key),
+        KeyType::Bool => Hash::crc32_bool(key),
+        KeyType::U32 => Hash::crc32_u32(key),
+        KeyType::F32 => Hash::crc32_f32(key),
+        KeyType::I32 => Hash::crc32_i32(key),
         _ => Err(err_str("key type not support!")),
     }
 }
 
 pub fn hash_key_64(key_type: KeyType, key: String) -> GeorgeResult<u64> {
     match key_type {
-        KeyType::String => Ok(Hash::crc64(HashType::String, key)?),
-        KeyType::Bool => Ok(Hash::crc64(HashType::Bool, key)?),
-        KeyType::U32 => Ok(Hash::crc64(HashType::U32, key)?),
-        KeyType::U64 => Ok(Hash::crc64(HashType::U64, key)?),
-        KeyType::F32 => Ok(Hash::crc64(HashType::F32, key)?),
-        KeyType::F64 => Ok(Hash::crc64(HashType::F64, key)?),
-        KeyType::I32 => Ok(Hash::crc64(HashType::I32, key)?),
-        KeyType::I64 => Ok(Hash::crc64(HashType::I64, key)?),
+        KeyType::String => Hash::crc64_string(key),
+        KeyType::Bool => Hash::crc64_bool(key),
+        KeyType::U32 => Hash::crc64_u32(key),
+        KeyType::U64 => Hash::crc64_u64(key),
+        KeyType::F32 => Hash::crc64_f32(key),
+        KeyType::F64 => Hash::crc64_f64(key),
+        KeyType::I32 => Hash::crc64_i32(key),
+        KeyType::I64 => Hash::crc64_i64(key),
         _ => Err(err_str("key type not support!")),
     }
 }
@@ -175,10 +160,10 @@ pub fn hash_key_number(key_type: KeyType, key: &Number) -> GeorgeResult<u64> {
     match key_type {
         KeyType::U32 => Ok(key.as_u64().unwrap()),
         KeyType::U64 => Ok(key.as_u64().unwrap()),
-        KeyType::F32 => Ok(hashcode64_f64_real(key.as_f64().unwrap())),
-        KeyType::F64 => Ok(hashcode64_f64_real(key.as_f64().unwrap())),
-        KeyType::I32 => Ok(hashcode64_i64_real(key.as_i64().unwrap())),
-        KeyType::I64 => Ok(hashcode64_i64_real(key.as_i64().unwrap())),
+        KeyType::F32 => Ok(Hash::crc64(key.as_f64().unwrap())),
+        KeyType::F64 => Ok(Hash::crc64(key.as_f64().unwrap())),
+        KeyType::I32 => Ok(Hash::crc64(key.as_i64().unwrap())),
+        KeyType::I64 => Ok(Hash::crc64(key.as_i64().unwrap())),
         _ => Err(err_str("key type not support!")),
     }
 }

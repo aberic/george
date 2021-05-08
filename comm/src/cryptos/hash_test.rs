@@ -14,22 +14,34 @@
 
 #[cfg(test)]
 mod md5 {
-    use crate::cryptos::hash::{
-        hashcode32_enhance, hashcode32_u8s, hashcode64, hashcode64_bl, hashcode64_f64,
-        hashcode64_i64, hashcode64_u8s, hashcode_enhance, md5, md516,
-    };
+    use crate::cryptos::hash::{Hash, HashCRCHandler, HashCRCTypeHandler, HashMD5Handler};
 
     #[test]
     fn md5_test() {
         let str = "test".to_string();
-        let md5_1 = md5(str.clone());
-        let md5_2 = md5(str.clone());
+        let md5_1 = Hash::md5(str.clone());
+        let md5_2 = Hash::md5(str.clone());
         println!("test md5 1 = {}", md5_1);
         println!("test md5 2 = {}", md5_2);
-        let md516_1 = md516(str.clone());
-        let md516_2 = md516(str.clone());
+        let md516_1 = Hash::md516(str.clone());
+        let md516_2 = Hash::md516(str.clone());
         println!("test md516 1 = {}", md516_1);
         println!("test md516 2 = {}", md516_2);
+    }
+
+    #[test]
+    fn sm3_test() {
+        let str = "test".to_string();
+        let str_u8s = "test".as_bytes();
+        let str_v8s = "test".as_bytes().to_vec();
+        let sm3_1 = Hash::sm3(str.clone());
+        let sm3_2 = Hash::sm3(str.clone());
+        let sm3_3 = Hash::sm3(str_u8s);
+        let sm3_4 = Hash::sm3(str_v8s);
+        println!("test sm3 1 = {}", sm3_1);
+        println!("test sm3 2 = {}", sm3_2);
+        println!("test sm3 3 = {}", sm3_3);
+        println!("test sm3 4 = {}", sm3_4);
     }
 
     #[test]
@@ -37,10 +49,10 @@ mod md5 {
         let bytes1 = "test1".as_bytes();
         let bytes2 = "test2".as_bytes();
 
-        println!("bytes1 = {}", hashcode32_u8s(bytes1));
-        println!("bytes1u64 = {}", hashcode32_u8s(bytes1) as u64);
-        println!("bytes2 = {}", hashcode32_u8s(bytes2));
-        println!("bytes2u64 = {}", hashcode32_u8s(bytes2) as u64);
+        println!("bytes1 = {}", Hash::crc32(bytes1));
+        println!("bytes1u64 = {}", Hash::crc32(bytes1) as u64);
+        println!("bytes2 = {}", Hash::crc32(bytes2));
+        println!("bytes2u64 = {}", Hash::crc32(bytes2) as u64);
     }
 
     #[test]
@@ -58,19 +70,43 @@ mod md5 {
         let x5b = x5.to_be_bytes();
         let x6b = x6.to_be_bytes();
 
-        println!("x1b = {}, bytes = {:#?}", hashcode32_u8s(&x1b), x1b);
-        println!("x2b = {}, bytes = {:#?}", hashcode32_u8s(&x2b), x2b);
-        println!("x3b = {}, bytes = {:#?}", hashcode32_u8s(&x3b), x3b);
-        println!("x4b = {}, bytes = {:#?}", hashcode32_u8s(&x4b), x4b);
-        println!("x5b = {}, bytes = {:#?}", hashcode32_u8s(&x5b), x5b);
-        println!("x6b = {}, bytes = {:#?}", hashcode32_u8s(&x6b), x6b);
+        println!(
+            "x1b = {}, bytes = {:#?}",
+            Hash::crc32(x1b.to_vec().as_slice()),
+            x1b
+        );
+        println!(
+            "x2b = {}, bytes = {:#?}",
+            Hash::crc32(x2b.to_vec().as_slice()),
+            x2b
+        );
+        println!(
+            "x3b = {}, bytes = {:#?}",
+            Hash::crc32(x3b.to_vec().as_slice()),
+            x3b
+        );
+        println!(
+            "x4b = {}, bytes = {:#?}",
+            Hash::crc32(x4b.to_vec().as_slice()),
+            x4b
+        );
+        println!(
+            "x5b = {}, bytes = {:#?}",
+            Hash::crc32(x5b.to_vec().as_slice()),
+            x5b
+        );
+        println!(
+            "x6b = {}, bytes = {:#?}",
+            Hash::crc32(x6b.to_vec().as_slice()),
+            x6b
+        );
 
-        println!("x1b {} | x1 {}", hashcode32_u8s(&x1b), x1);
-        println!("x2b {} | x2 {}", hashcode32_u8s(&x2b), x2);
-        println!("x3b {} | x3 {}", hashcode32_u8s(&x3b), x3);
-        println!("x4b {} | x4 {}", hashcode32_u8s(&x4b), x4);
-        println!("x5b {} | x5 {}", hashcode32_u8s(&x5b), x5);
-        println!("x6b {} | x6 {}", hashcode32_u8s(&x6b), x6);
+        println!("x1b {} | x1 {}", Hash::crc32(x1b.to_vec().as_slice()), x1);
+        println!("x2b {} | x2 {}", Hash::crc32(x2b.to_vec().as_slice()), x2);
+        println!("x3b {} | x3 {}", Hash::crc32(x3b.to_vec().as_slice()), x3);
+        println!("x4b {} | x4 {}", Hash::crc32(x4b.to_vec().as_slice()), x4);
+        println!("x5b {} | x5 {}", Hash::crc32(x5b.to_vec().as_slice()), x5);
+        println!("x6b {} | x6 {}", Hash::crc32(x6b.to_vec().as_slice()), x6);
     }
 
     #[test]
@@ -90,19 +126,19 @@ mod md5 {
         let bytes10 = &16_u64.to_be_bytes();
         let bytes11 = &16_f64.to_be_bytes();
 
-        println!("res1 = {}", hashcode64_u8s(bytes1));
-        println!("res2 = {}", hashcode64_u8s(bytes2));
-        println!("res3 = {}", hashcode64_u8s(bytes3));
-        println!("res4 = {}", hashcode64_u8s(bytes4));
-        println!("res41 = {}", hashcode64_u8s(bytes41));
-        println!("res42 = {}", hashcode64_u8s(bytes42));
-        println!("res5 = {}", hashcode64_u8s(bytes5));
-        println!("res6 = {}", hashcode64_u8s(bytes6));
-        println!("res7 = {}", hashcode64_u8s(bytes7));
-        println!("res8 = {}", hashcode64_u8s(bytes8));
-        println!("res9 = {}", hashcode64_u8s(bytes9));
-        println!("res10 = {}", hashcode64_u8s(bytes10));
-        println!("res11 = {}", hashcode64_u8s(bytes11));
+        println!("res1 = {}", Hash::crc64(bytes1));
+        println!("res2 = {}", Hash::crc64(bytes2));
+        println!("res3 = {}", Hash::crc64(bytes3.to_vec().as_slice()));
+        println!("res4 = {}", Hash::crc64(bytes4.to_vec().as_slice()));
+        println!("res41 = {}", Hash::crc64(bytes41.to_vec().as_slice()));
+        println!("res42 = {}", Hash::crc64(bytes42.to_vec().as_slice()));
+        println!("res5 = {}", Hash::crc64(bytes5.to_vec().as_slice()));
+        println!("res6 = {}", Hash::crc64(bytes6.to_vec().as_slice()));
+        println!("res7 = {}", Hash::crc64(bytes7.to_vec().as_slice()));
+        println!("res8 = {}", Hash::crc64(bytes8.to_vec().as_slice()));
+        println!("res9 = {}", Hash::crc64(bytes9.to_vec().as_slice()));
+        println!("res10 = {}", Hash::crc64(bytes10.to_vec().as_slice()));
+        println!("res11 = {}", Hash::crc64(bytes11.to_vec().as_slice()));
     }
 
     #[test]
@@ -118,11 +154,31 @@ mod md5 {
         let x4b = x4.to_be_bytes();
         let x5b = x5.to_be_bytes();
 
-        println!("x1b = {}, bytes = {:#?}", hashcode64_u8s(&x1b), x1b);
-        println!("x2b = {}, bytes = {:#?}", hashcode64_u8s(&x2b), x2b);
-        println!("x3b = {}, bytes = {:#?}", hashcode64_u8s(&x3b), x3b);
-        println!("x4b = {}, bytes = {:#?}", hashcode64_u8s(&x4b), x4b);
-        println!("x5b = {}, bytes = {:#?}", hashcode64_u8s(&x5b), x5b);
+        println!(
+            "x1b = {}, bytes = {:#?}",
+            Hash::crc64(x1b.to_vec().as_slice()),
+            x1b
+        );
+        println!(
+            "x2b = {}, bytes = {:#?}",
+            Hash::crc64(x2b.to_vec().as_slice()),
+            x2b
+        );
+        println!(
+            "x3b = {}, bytes = {:#?}",
+            Hash::crc64(x3b.to_vec().as_slice()),
+            x3b
+        );
+        println!(
+            "x4b = {}, bytes = {:#?}",
+            Hash::crc64(x4b.to_vec().as_slice()),
+            x4b
+        );
+        println!(
+            "x5b = {}, bytes = {:#?}",
+            Hash::crc64(x5b.to_vec().as_slice()),
+            x5b
+        );
     }
 
     #[test]
@@ -131,12 +187,12 @@ mod md5 {
         let sbl2 = String::from("false");
         println!(
             "u64 = {}, sbl1 = {}",
-            hashcode64_bl(sbl1.clone()).unwrap(),
+            Hash::crc64_bool(sbl1.clone()).unwrap(),
             sbl1.clone()
         );
         println!(
             "u64 = {}, sbl2 = {}",
-            hashcode64_bl(sbl2.clone()).unwrap(),
+            Hash::crc64_bool(sbl2.clone()).unwrap(),
             sbl2.clone()
         );
 
@@ -162,92 +218,92 @@ mod md5 {
         let sf6417 = String::from("123.34523412");
         println!(
             "u64 = {}, 0 = {}",
-            hashcode64_f64(sf640.clone()).unwrap(),
+            Hash::crc64_f64(sf640.clone()).unwrap(),
             sf640.clone()
         );
         println!(
             "u64 = {}, 1 = {}",
-            hashcode64_f64(sf641.clone()).unwrap(),
+            Hash::crc64_f64(sf641.clone()).unwrap(),
             sf641.clone()
         );
         println!(
             "u64 = {}, 2 = {}",
-            hashcode64_f64(sf642.clone()).unwrap(),
+            Hash::crc64_f64(sf642.clone()).unwrap(),
             sf642.clone()
         );
         println!(
             "u64 = {}, 3 = {}",
-            hashcode64_f64(sf643.clone()).unwrap(),
+            Hash::crc64_f64(sf643.clone()).unwrap(),
             sf643.clone()
         );
         println!(
             "u64 = {}, 4 = {}",
-            hashcode64_f64(sf644.clone()).unwrap(),
+            Hash::crc64_f64(sf644.clone()).unwrap(),
             sf644.clone()
         );
         println!(
             "u64 = {}, 5 = {}",
-            hashcode64_f64(sf645.clone()).unwrap(),
+            Hash::crc64_f64(sf645.clone()).unwrap(),
             sf645.clone()
         );
         println!(
             "u64 = {}, 6 = {}",
-            hashcode64_f64(sf646.clone()).unwrap(),
+            Hash::crc64_f64(sf646.clone()).unwrap(),
             sf646.clone()
         );
         println!(
             "u64 = {}, 7 = {}",
-            hashcode64_f64(sf647.clone()).unwrap(),
+            Hash::crc64_f64(sf647.clone()).unwrap(),
             sf647.clone()
         );
         println!(
             "u64 = {}, 8 = {}",
-            hashcode64_f64(sf648.clone()).unwrap(),
+            Hash::crc64_f64(sf648.clone()).unwrap(),
             sf648.clone()
         );
         println!(
             "u64 = {}, 9 = {}",
-            hashcode64_f64(sf649.clone()).unwrap(),
+            Hash::crc64_f64(sf649.clone()).unwrap(),
             sf649.clone()
         );
         println!(
             "u64 = {}, 10 = {}",
-            hashcode64_f64(sf6410.clone()).unwrap(),
+            Hash::crc64_f64(sf6410.clone()).unwrap(),
             sf6410.clone()
         );
         println!(
             "u64 = {}, 11 = {}",
-            hashcode64_f64(sf6411.clone()).unwrap(),
+            Hash::crc64_f64(sf6411.clone()).unwrap(),
             sf6411.clone()
         );
         println!(
             "u64 = {}, 12 = {}",
-            hashcode64_f64(sf6412.clone()).unwrap(),
+            Hash::crc64_f64(sf6412.clone()).unwrap(),
             sf6412.clone()
         );
         println!(
             "u64 = {}, 13 = {}",
-            hashcode64_f64(sf6413.clone()).unwrap(),
+            Hash::crc64_f64(sf6413.clone()).unwrap(),
             sf6413.clone()
         );
         println!(
             "u64 = {}, 14 = {}",
-            hashcode64_f64(sf6414.clone()).unwrap(),
+            Hash::crc64_f64(sf6414.clone()).unwrap(),
             sf6414.clone()
         );
         println!(
             "u64 = {}, 15 = {}",
-            hashcode64_f64(sf6415.clone()).unwrap(),
+            Hash::crc64_f64(sf6415.clone()).unwrap(),
             sf6415.clone()
         );
         println!(
             "u64 = {}, 16 = {}",
-            hashcode64_f64(sf6416.clone()).unwrap(),
+            Hash::crc64_f64(sf6416.clone()).unwrap(),
             sf6416.clone()
         );
         println!(
             "u64 = {}, 17 = {}",
-            hashcode64_f64(sf6417.clone()).unwrap(),
+            Hash::crc64_f64(sf6417.clone()).unwrap(),
             sf6417.clone()
         );
 
@@ -263,64 +319,48 @@ mod md5 {
         let i7 = String::from("9223372036854775807");
         println!(
             "i64 = {}, i0 = {}",
-            hashcode64_i64(i0.clone()).unwrap(),
+            Hash::crc64_i64(i0.clone()).unwrap(),
             i0.clone()
         );
         println!(
             "i64 = {}, i1 = {}",
-            hashcode64_i64(i1.clone()).unwrap(),
+            Hash::crc64_i64(i1.clone()).unwrap(),
             i1.clone()
         );
         println!(
             "i64 = {}, i2 = {}",
-            hashcode64_i64(i2.clone()).unwrap(),
+            Hash::crc64_i64(i2.clone()).unwrap(),
             i2.clone()
         );
         println!(
             "i64 = {}, i3 = {}",
-            hashcode64_i64(i3.clone()).unwrap(),
+            Hash::crc64_i64(i3.clone()).unwrap(),
             i3.clone()
         );
         println!(
             "i64 = {}, i4 = {}",
-            hashcode64_i64(i4.clone()).unwrap(),
+            Hash::crc64_i64(i4.clone()).unwrap(),
             i4.clone()
         );
         println!(
             "i64 = {}, i5 = {}",
-            hashcode64_i64(i5.clone()).unwrap(),
+            Hash::crc64_i64(i5.clone()).unwrap(),
             i5.clone()
         );
         println!(
             "i64 = {}, i6 = {}",
-            hashcode64_i64(i6.clone()).unwrap(),
+            Hash::crc64_i64(i6.clone()).unwrap(),
             i6.clone()
         );
         println!(
             "i64 = {}, i7 = {}",
-            hashcode64_i64(i7.clone()).unwrap(),
+            Hash::crc64_i64(i7.clone()).unwrap(),
             i7.clone()
         );
     }
 
     #[test]
-    fn hashcode_enhance_test() {
-        let x1 = String::from("1");
-        let x2 = String::from("100");
-        let x3 = String::from("10000");
-        println!("x1 = {}", hashcode32_enhance(x1.clone()) + 1);
-        println!("x2 = {}", hashcode32_enhance(x2.clone()) + 1);
-        println!("x3 = {}", hashcode32_enhance(x3.clone()) + 1);
-        println!("x1 = {}", hashcode64(x1.clone()) + 2);
-        println!("x2 = {}", hashcode64(x2.clone()) + 2);
-        println!("x3 = {}", hashcode64(x3.clone()) + 2);
-
-        println!("x3 = {:#?}", hashcode_enhance(true, x3.clone()));
-        println!("x3 = {:#?}", hashcode_enhance(false, x3.clone()));
-    }
-
-    #[test]
-    fn hashcode64_enhance_test() {
+    fn hashcode64_test() {
         let t1 = String::from("test1");
         let t2 = String::from("test2");
         let bytes1 = "test1".as_bytes();
@@ -330,14 +370,14 @@ mod md5 {
         let x3 = String::from("-8446744073709551615");
         let x4 = String::from("18446744073709551615");
 
-        println!("bytes1 = {}", hashcode64_u8s(bytes1));
-        println!("t1 = {}", hashcode64(t1));
-        println!("bytes2 = {}", hashcode64_u8s(bytes2));
-        println!("t2 = {}", hashcode64(t2));
-        println!("x1 = {}", hashcode64(x1));
-        println!("x2 = {}", hashcode64(x2));
-        println!("x3 = {}", hashcode64(x3));
-        println!("x4 = {}", hashcode64(x4));
+        println!("bytes1 = {}", Hash::crc64(bytes1));
+        println!("t1 = {}", Hash::crc64(t1));
+        println!("bytes2 = {}", Hash::crc64(bytes2));
+        println!("t2 = {}", Hash::crc64(t2));
+        println!("x1 = {}", Hash::crc64(x1));
+        println!("x2 = {}", Hash::crc64(x2));
+        println!("x3 = {}", Hash::crc64(x3));
+        println!("x4 = {}", Hash::crc64(x4));
 
         let m: u64 = 1 << 63;
         println!("2^64 = {}", m);

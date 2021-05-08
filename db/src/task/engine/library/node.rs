@@ -19,7 +19,7 @@ use crate::task::engine::DataReal;
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::task::view::View;
-use crate::utils::comm::{hash_key_64, is_bytes_fill, level_distance_64};
+use crate::utils::comm::{hash_key_64, level_distance_64};
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::{index_path, node_filepath, record_filepath};
 use crate::utils::writer::Filed;
@@ -234,7 +234,7 @@ impl Node {
                     // 否则需要进一步判断，判断索引是否为空
                     let res = self.record_read(record_seek, 8)?;
                     // 如果不为空
-                    if is_bytes_fill(res) {
+                    if Vector::is_fill(res) {
                         return Err(GeorgeError::from(DataExistError));
                     } else {
                         // 如果为空
@@ -248,12 +248,12 @@ impl Node {
                     // 判断索引是否为空
                     let res = self.record_read(record_loop_seek, 8)?;
                     // 如果不为空
-                    if is_bytes_fill(res) {
+                    if Vector::is_fill(res) {
                         // 先查询链式结构是否有后续内容
                         let record_next = record_loop_seek + 8;
                         let seek_next_bytes = self.record_read(record_next, 4)?;
                         // 如果有，则尝试读取后续内容
-                        if is_bytes_fill(seek_next_bytes.clone()) {
+                        if Vector::is_fill(seek_next_bytes.clone()) {
                             record_loop_seek = trans_bytes_2_u32_as_u64(seek_next_bytes)?;
                         } else {
                             // 如果没有，则新建后续结构
@@ -322,7 +322,7 @@ impl Node {
                 // 判断索引是否为空
                 let res = self.record_read(record_loop_seek, 8)?;
                 // 如果不为空
-                if is_bytes_fill(res.clone()) {
+                if Vector::is_fill(res.clone()) {
                     // 读取当前view视图中内容
                     let dr = DataReal::froms(self.database_name(), self.view_name(), res)?;
                     // 如果与查询key匹配，则直接返回
@@ -332,7 +332,7 @@ impl Node {
                     // 如果不匹配，继续查询链式结构是否有后续内容
                     let seek_next_bytes = self.record_read(record_loop_seek + 8, 4)?;
                     // 如果有，则尝试读取后续内容
-                    if is_bytes_fill(seek_next_bytes.clone()) {
+                    if Vector::is_fill(seek_next_bytes.clone()) {
                         record_loop_seek = trans_bytes_2_u32_as_u64(seek_next_bytes)?;
                     } else {
                         // 如果没有，则返回无此数据
@@ -360,7 +360,7 @@ impl Node {
             Ok(seek_bytes) => {
                 // 判断从索引中读取在record中的偏移量字节数组是否为空
                 // 如果为空，则新插入占位字节，并以占位字节为起始变更偏移量
-                if is_bytes_fill(seek_bytes.clone()) {
+                if Vector::is_fill(seek_bytes.clone()) {
                     trans_bytes_2_u32_as_u64(seek_bytes)
                 } else {
                     self.record_append(Vector::create_empty_bytes(12))

@@ -45,6 +45,10 @@ pub trait VectorHandler {
     fn find_eq_vec_bytes(bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<Vec<u8>>>;
     /// 创建长度为len且字节均为0x00的字节数组
     fn create_empty_bytes(len: usize) -> Vec<u8>;
+    /// 检查字节数组是否被填充，即数组中任意字节不为`0x00`
+    fn is_fill(bytes: Vec<u8>) -> bool;
+    /// 检查字节数组是否为空或都不为`0x00`
+    fn is_empty(bytes: Vec<u8>) -> bool;
 }
 
 pub struct Vector {}
@@ -67,6 +71,30 @@ impl VectorHandler for Vector {
     }
     fn create_empty_bytes(len: usize) -> Vec<u8> {
         create_empty_bytes(len)
+    }
+
+    fn is_fill(bytes: Vec<u8>) -> bool {
+        let bs_len = bytes.len();
+        let mut i = 0;
+        while i < bs_len {
+            if bytes[i].ne(&0x00) {
+                return true;
+            }
+            i += 1;
+        }
+        false
+    }
+
+    fn is_empty(bytes: Vec<u8>) -> bool {
+        let bs_len = bytes.len();
+        let mut i = 0;
+        while i < bs_len {
+            if bytes[i].ne(&0x00) {
+                return false;
+            }
+            i += 1;
+        }
+        true
     }
 }
 

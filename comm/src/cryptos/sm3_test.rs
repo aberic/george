@@ -19,10 +19,16 @@ mod sm3 {
     #[test]
     fn sm3_test() {
         let str = "test".to_string();
-        let sm3_1 = sm3::hash(str.clone());
-        let sm3_2 = sm3::hash(str.clone());
+        let str_u8s = "test".as_bytes();
+        let str_v8s = "test".as_bytes().to_vec();
+        let sm3_1 = sm3::hash_string(str.clone());
+        let sm3_2 = sm3::hash_string(str.clone());
+        let sm3_3 = sm3::hash(str_u8s);
+        let sm3_4 = sm3::hash_v8s(str_v8s);
         println!("test sm3 1 = {}", sm3_1);
         println!("test sm3 2 = {}", sm3_2);
+        println!("test sm3 3 = {}", sm3_3);
+        println!("test sm3 4 = {}", sm3_4);
         match hex::decode(sm3_1) {
             Ok(v8) => println!("u8s = {:#?}", v8.as_slice()),
             Err(err) => println!("err = {}", err.to_string()),

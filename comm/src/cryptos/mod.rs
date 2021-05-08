@@ -24,3 +24,5 @@ pub mod sm2;
 mod sm2_test;
 pub mod sm3;
 mod sm3_test;
+pub mod sm4;
+mod sm4_test;

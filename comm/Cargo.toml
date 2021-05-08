@@ -12,8 +12,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-openssl = "0.10.33"
-openssl-sys = "0.9.61"
+openssl = "0.10.34"
+openssl-sys = "0.9.63"
 phf = { version = "0.8.0", features = ["macros"] }
 phf_macros = "0.8.0"
 serde = "1.0.125"
