@@ -14,11 +14,8 @@
 
 #[cfg(test)]
 mod file {
-    use crate::errors::entrances::GeorgeError;
     use crate::io::file::{Filer, FilerHandler, FilerNormal, FilerReader, FilerWriter};
     use crate::vectors::{Vector, VectorHandler};
-    use std::fs;
-    use std::io::{Read, Write};
 
     #[test]
     fn create_file_test() {

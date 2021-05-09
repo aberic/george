@@ -14,17 +14,17 @@
 
 #[cfg(test)]
 mod sm3 {
-    use crate::cryptos::sm3;
+    use crate::cryptos::sm3::{SM3Handler, SM3};
 
     #[test]
     fn sm3_test() {
         let str = "test".to_string();
         let str_u8s = "test".as_bytes();
         let str_v8s = "test".as_bytes().to_vec();
-        let sm3_1 = sm3::hash_string(str.clone());
-        let sm3_2 = sm3::hash_string(str.clone());
-        let sm3_3 = sm3::hash(str_u8s);
-        let sm3_4 = sm3::hash_v8s(str_v8s);
+        let sm3_1 = SM3::hash(str.clone());
+        let sm3_2 = SM3::hash(str.clone());
+        let sm3_3 = SM3::hash(str_u8s);
+        let sm3_4 = SM3::hash(str_v8s);
         println!("test sm3 1 = {}", sm3_1);
         println!("test sm3 2 = {}", sm3_2);
         println!("test sm3 3 = {}", sm3_3);

@@ -15,8 +15,8 @@
 use crypto::digest::Digest;
 use crypto::md5::Md5;
 
-use crate::cryptos::sm3;
-use crate::errors::entrances::{err_str, err_strings, GeorgeResult};
+use crate::cryptos::sm3::{SM3Handler, SM3};
+use crate::errors::entrances::{err_strings, GeorgeResult};
 use crate::strings::{StringHandler, Strings};
 use std::ops::Add;
 
@@ -67,7 +67,7 @@ impl HashMD5Handler<&[u8]> for Hash {
     }
 
     fn sm3(comment: &[u8]) -> String {
-        sm3::hash(comment)
+        SM3::hash(comment)
     }
 }
 
@@ -81,7 +81,7 @@ impl HashMD5Handler<Vec<u8>> for Hash {
     }
 
     fn sm3(comment: Vec<u8>) -> String {
-        sm3::hash_v8s(comment)
+        SM3::hash(comment)
     }
 }
 
@@ -95,7 +95,7 @@ impl HashMD5Handler<String> for Hash {
     }
 
     fn sm3(comment: String) -> String {
-        sm3::hash_string(comment)
+        SM3::hash(comment)
     }
 }
 
