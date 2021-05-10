@@ -12,6 +12,8 @@
  * limitations under the License.
  */
 
+pub mod base64;
+mod base64_test;
 pub mod ca;
 mod ca_test;
 pub mod ecdsa;
@@ -26,3 +28,4 @@ pub mod sm3;
 mod sm3_test;
 pub mod sm4;
 mod sm4_test;
+pub mod traits;
