@@ -50,6 +50,10 @@ pub trait FilerHandler<T>: Sized {
     fn cp(file_from_path: T, file_to_path: T) -> GeorgeResult<()>;
     /// 移动`from`文件至`to`目录下
     fn mv(file_from_path: T, file_to_path: T) -> GeorgeResult<()>;
+    /// 获取path目录的绝对路径
+    ///
+    /// 如果存在且为文件夹则报错
+    fn absolute(path: T) -> GeorgeResult<String>;
 }
 
 pub trait FilerExecutor<T>: Sized {
@@ -153,6 +157,10 @@ impl FilerHandler<String> for Filer {
     fn mv(file_from_path: String, file_to_path: String) -> GeorgeResult<()> {
         file_move(file_from_path, file_to_path)
     }
+
+    fn absolute(path: String) -> GeorgeResult<String> {
+        file_absolute(path)
+    }
 }
 
 impl FilerHandler<&str> for Filer {
@@ -182,6 +190,10 @@ impl FilerHandler<&str> for Filer {
 
     fn mv(file_from_path: &str, file_to_path: &str) -> GeorgeResult<()> {
         file_move(file_from_path.to_string(), file_to_path.to_string())
+    }
+
+    fn absolute(path: &str) -> GeorgeResult<String> {
+        file_absolute(path.to_string())
     }
 }
 

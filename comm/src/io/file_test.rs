@@ -94,6 +94,15 @@ mod file {
                 println!("file_test err = {}", err);
             }
         }
+        match Filer::absolute("src/test/test/file/move_from.txt") {
+            Ok(res) => {
+                // file.write_all("move_from".as_bytes()).unwrap();
+                println!("file absolute = {}", res)
+            }
+            Err(err) => {
+                println!("file_test err = {}", err);
+            }
+        }
         match Filer::mv(
             "src/test/test/file/move_from.txt",
             "src/test/test/file/move_to.txt",
@@ -187,7 +196,10 @@ mod file {
         println!("x2 is empty = {}", Vector::is_fill(x2.clone()));
         println!("x2 = {}", String::from_utf8(x2).unwrap());
 
-        Filer::try_touch("src/test/file/read_sub.txt");
+        match Filer::try_touch("src/test/file/read_sub.txt") {
+            Err(err) => println!("try_touch err = {}", err.to_string()),
+            _ => {}
+        }
         match Filer::read_sub("src/test/file/read_sub.txt", 150000000, 7) {
             Ok(x3) => println!("x3 = {}", String::from_utf8(x3).unwrap()),
             Err(err) => println!("read_sub err = {}", err.to_string()),

@@ -55,13 +55,13 @@ mod errors_index_test {
         }
     }
 
-    fn index_test5() -> GeorgeResult<u32> {
-        // let x = index_no_exist_err()?;
-        match Dir::exist("src/cryptos/mod.rs") {
-            Ok(_) => Ok(1),
-            Err(err) => Err(GeorgeError::string("test5".to_string(), err)),
-        }
-    }
+    // fn index_test5() -> GeorgeResult<u32> {
+    //     // let x = index_no_exist_err()?;
+    //     match Dir::exist("src/cryptos/mod.rs") {
+    //         Ok(_) => Ok(1),
+    //         Err(err) => Err(GeorgeError::string("test5".to_string(), err)),
+    //     }
+    // }
 
     fn matches(ir: GeorgeResult<u32>) {
         match ir {

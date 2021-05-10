@@ -24,6 +24,24 @@ use crate::io::file::{Filer, FilerWriter};
 
 pub struct SM2;
 
+pub trait SM2SKNew {
+    /// 生成SM私钥，返回sk字节数组
+    fn generate() -> Vec<u8>;
+    /// 生成SM私钥，返回sk字符串
+    fn generate_string() -> String;
+}
+
+pub trait SM2SKNewStore<T> {
+    /// 生成SM私钥，返回sk字节数组
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate(sk_filepath: T) -> GeorgeResult<Vec<u8>>;
+    /// 生成SM私钥，返回sk字符串
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_string(sk_filepath: T) -> GeorgeResult<String>;
+}
+
 pub trait SM2New {
     /// 生成SM公私钥，返回sk、pk字节数组
     fn generate() -> (Vec<u8>, Vec<u8>);
@@ -119,6 +137,36 @@ pub trait SM2VerifyPath<M, N> {
 }
 
 ////////// sm generate start //////////
+
+impl SM2SKNew for SM2 {
+    fn generate() -> Vec<u8> {
+        generate_sk()
+    }
+
+    fn generate_string() -> String {
+        generate_sk_hex()
+    }
+}
+
+impl SM2SKNewStore<String> for SM2 {
+    fn generate(sk_filepath: String) -> GeorgeResult<Vec<u8>> {
+        generate_sk_in_file(sk_filepath)
+    }
+
+    fn generate_string(sk_filepath: String) -> GeorgeResult<String> {
+        generate_sk_hex_in_file(sk_filepath)
+    }
+}
+
+impl SM2SKNewStore<&str> for SM2 {
+    fn generate(sk_filepath: &str) -> GeorgeResult<Vec<u8>> {
+        generate_sk_in_file(sk_filepath.to_string())
+    }
+
+    fn generate_string(sk_filepath: &str) -> GeorgeResult<String> {
+        generate_sk_hex_in_file(sk_filepath.to_string())
+    }
+}
 
 impl SM2New for SM2 {
     fn generate() -> (Vec<u8>, Vec<u8>) {
@@ -1300,6 +1348,16 @@ fn generate_hex() -> (String, String) {
     (key_to_string(sk), key_to_string(pk))
 }
 
+fn generate_sk() -> Vec<u8> {
+    let ctx = SigCtx::new();
+    let (_pk, sk) = ctx.new_keypair();
+    ctx.serialize_seckey(&sk)
+}
+
+fn generate_sk_hex() -> String {
+    key_to_string(generate_sk())
+}
+
 fn generate_pk_from_sk(sk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
     let ctx = SigCtx::new();
     match ctx.load_seckey(sk.as_slice()) {
@@ -1337,6 +1395,18 @@ fn generate_hex_in_file(
     store_key(sk_str.clone(), sk_filepath)?;
     store_key(pk_str.clone(), pk_filepath)?;
     Ok((sk_str, pk_str))
+}
+
+fn generate_sk_in_file(sk_filepath: String) -> GeorgeResult<Vec<u8>> {
+    let (sk_bytes, _pk_bytes) = generate();
+    store_key(key_to_string(sk_bytes.clone()), sk_filepath)?;
+    Ok(sk_bytes)
+}
+
+fn generate_sk_hex_in_file(sk_filepath: String) -> GeorgeResult<String> {
+    let (sk_str, _pk_str) = generate_hex();
+    store_key(sk_str.clone(), sk_filepath)?;
+    Ok(sk_str)
 }
 
 fn sign(msg: &[u8], sk: &[u8], pk: &[u8]) -> GeorgeResult<Vec<u8>> {

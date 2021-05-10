@@ -30,6 +30,22 @@ mod sm2 {
             println!("sk = {}\npk = {}", sk, pk);
         }
     }
+    #[cfg(test)]
+    mod generate_sk {
+        use crate::cryptos::sm2::{SM2SKNew, SM2};
+
+        #[test]
+        fn test() {
+            let sk = SM2::generate();
+            println!("sk = {}", hex::encode(sk));
+            let sk = SM2::generate();
+            println!("sk = {}", hex::encode(sk));
+            let sk = SM2::generate_string();
+            println!("sk = {}", sk);
+            let sk = SM2::generate_string();
+            println!("sk = {}", sk);
+        }
+    }
 
     #[cfg(test)]
     mod generate_file {
@@ -158,9 +174,7 @@ mod sm2 {
             )
             .unwrap();
             let msg1 = "hello 你好！?";
-            let sk_string = hex::encode(sk.clone());
             let pk_string = hex::encode(pk.clone());
-            let sk_str = sk_string.as_str();
             let pk_str = pk_string.as_str();
 
             /////////////// sk/pk u8s start ///////////////
@@ -511,9 +525,7 @@ mod sm2 {
             )
             .unwrap();
             let msg1 = "hello 你好！?";
-            let sk_string = hex::encode(sk.clone());
             let pk_string = hex::encode(pk.clone());
-            let sk_str = sk_string.as_str();
             let pk_str = pk_string.as_str();
 
             /////////////// sk/pk v8s start ///////////////
@@ -863,7 +875,6 @@ mod sm2 {
             let msg1 = "hello 你好！?";
             let sk_string = hex::encode(sk.clone());
             let pk_string = hex::encode(pk.clone());
-            let sk_str = sk_string.as_str();
             let pk_str = pk_string.as_str();
 
             /////////////// sk/pk string start ///////////////
@@ -1573,7 +1584,7 @@ mod sm2 {
 
     #[cfg(test)]
     mod sign_filepath {
-        use crate::cryptos::sm2::{SM2LoadKey, SM2NewStore, SM2SignPath, SM2VerifyPath, SM2};
+        use crate::cryptos::sm2::{SM2NewStore, SM2SignPath, SM2VerifyPath, SM2};
 
         #[test]
         fn test() {
@@ -1581,10 +1592,6 @@ mod sm2 {
             let pk_filepath = "src/test/crypto/sm2/sign/generate5_pk";
             let (_, _) = SM2::generate(sk_filepath, pk_filepath).unwrap();
             let msg1 = "hello 你好！?";
-            let sk_string = SM2::load_string_from_file(sk_filepath).unwrap();
-            let pk_string = SM2::load_string_from_file(pk_filepath).unwrap();
-            let sk_str = sk_string.as_str();
-            let pk_str = pk_string.as_str();
 
             let sign_res1 = SM2::sign(msg1, sk_filepath.clone(), pk_filepath.clone()).unwrap();
             let sign_res2 =
