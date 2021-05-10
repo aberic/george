@@ -14,7 +14,6 @@
 
 #[cfg(test)]
 mod sm2 {
-
     #[cfg(test)]
     mod generate {
         use crate::cryptos::sm2::{SM2New, SM2};
@@ -117,7 +116,7 @@ mod sm2 {
 
         #[test]
         fn generate_pk_test() {
-            let (sk, pk) = SM2::generate(
+            let (_, pk) = SM2::generate(
                 "src/test/crypto/sm2/generate_pk_file/generate1_sk",
                 "src/test/crypto/sm2/generate_pk_file/generate1_pk",
             )
@@ -135,7 +134,7 @@ mod sm2 {
 
         #[test]
         fn generate_pk_test() {
-            let (sk, pk) = SM2::generate_string(
+            let (_, pk) = SM2::generate_string(
                 "src/test/crypto/sm2/generate_pk_file/generate2_sk",
                 "src/test/crypto/sm2/generate_pk_file/generate2_pk",
             )
@@ -148,130 +147,1561 @@ mod sm2 {
     }
 
     #[cfg(test)]
-    mod sign_u8s {
-        use crate::cryptos::sm2::{SM2NewStore, SM2Sign, SM2};
+    mod sign {
+        use crate::cryptos::sm2::{SM2NewStore, SM2Sign, SM2Verify, SM2};
 
         #[test]
-        fn test() {
+        fn test_u8s() {
             let (sk, pk) = SM2::generate(
-                "src/test/crypto/sm2/sign/generate_sk",
-                "src/test/crypto/sm2/sign/generate_pk",
+                "src/test/crypto/sm2/sign/generate1_sk",
+                "src/test/crypto/sm2/sign/generate1_pk",
             )
             .unwrap();
             let msg1 = "hello 你好！?";
+            let sk_string = hex::encode(sk.clone());
+            let pk_string = hex::encode(pk.clone());
+            let sk_str = sk_string.as_str();
+            let pk_str = pk_string.as_str();
 
-            let sign_res1 = SM2::sign(msg1, sk.as_slice(), pk.as_slice());
-            let sign_res2 = SM2::sign_string(msg1, sk.as_slice(), pk.as_slice());
+            /////////////// sk/pk u8s start ///////////////
+            let sign_res1 = SM2::sign(msg1, sk.as_slice(), pk.as_slice()).unwrap();
+            let sign_res2 = SM2::sign_string(msg1, sk.as_slice(), pk.as_slice()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                hex::encode(sign_res1),
+                hex::encode(sign_res1.clone()),
                 sign_res2
             );
 
-            let sign_res1 = SM2::sign(msg1.to_string(), sk.as_slice(), pk.as_slice());
-            let sign_res2 = SM2::sign_string(msg1.to_string(), sk.as_slice(), pk.as_slice());
-            println!(
-                "sign_res1 = {}\nsign_res2 = {}",
-                hex::encode(sign_res1),
-                sign_res2
-            );
-
-            let sign_res1 = SM2::sign(msg1.as_bytes(), sk.as_slice(), pk.as_slice());
-            let sign_res2 = SM2::sign_string(msg1.as_bytes(), sk.as_slice(), pk.as_slice());
-            println!(
-                "sign_res1 = {}\nsign_res2 = {}",
-                hex::encode(sign_res1),
-                sign_res2
-            );
-
-            let sign_res1 = SM2::sign(msg1.as_bytes().to_vec(), sk.as_slice(), pk.as_slice());
+            let sign_res1 = SM2::sign(msg1.to_string(), sk.as_slice(), pk.as_slice()).unwrap();
             let sign_res2 =
-                SM2::sign_string(msg1.as_bytes().to_vec(), sk.as_slice(), pk.as_slice());
+                SM2::sign_string(msg1.to_string(), sk.as_slice(), pk.as_slice()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 hex::encode(sign_res1),
                 sign_res2
             );
 
-            let sign_res1 = SM2::sign(msg1, sk.clone(), pk.clone());
-            let sign_res2 = SM2::sign_string(msg1, sk.clone(), pk.clone());
+            let sign_res1 = SM2::sign(msg1.as_bytes(), sk.as_slice(), pk.as_slice()).unwrap();
+            let sign_res2 =
+                SM2::sign_string(msg1.as_bytes(), sk.as_slice(), pk.as_slice()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 hex::encode(sign_res1),
                 sign_res2
             );
 
-            let sign_res1 = SM2::sign(msg1.to_string(), sk.clone(), pk.clone());
-            let sign_res2 = SM2::sign_string(msg1.to_string(), sk.clone(), pk.clone());
+            let sign_res1 =
+                SM2::sign(msg1.as_bytes().to_vec(), sk.as_slice(), pk.as_slice()).unwrap();
+            let sign_res2 =
+                SM2::sign_string(msg1.as_bytes().to_vec(), sk.as_slice(), pk.as_slice()).unwrap();
+            println!(
+                "sign_res1 = {}\nsign_res2 = {}",
+                hex::encode(sign_res1.clone()),
+                sign_res2
+            );
+            /////////////// sk/pk u8s end ///////////////
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.as_slice(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_str.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_string.clone(), sign_res1.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.as_slice(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_str.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_string.clone(), sign_res1.as_slice()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.as_slice(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_str.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_string.clone(), sign_res2.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.as_slice(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_str.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_string.clone(), sign_res2.as_str()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.as_slice(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_str.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_string.clone(), sign_res1.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.as_slice(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_str.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_string.clone(), sign_res1.as_slice()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.as_slice(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_str.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_string.clone(), sign_res2.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.as_slice(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_str.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_string.clone(), sign_res2.as_str()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.as_slice(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_str.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_string.clone(), sign_res1.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.as_slice(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_str.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_string.clone(), sign_res1.as_slice()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.as_slice(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_str.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_string.clone(), sign_res2.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.as_slice(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_str.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_string.clone(), sign_res2.as_str()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.as_slice(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk_str.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_string.clone(),
+                    sign_res1.clone()
+                )
+                .unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk.as_slice(),
+                    sign_res1.as_slice()
+                )
+                .unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_str.clone(),
+                    sign_res1.as_slice()
+                )
+                .unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_string.clone(),
+                    sign_res1.as_slice()
+                )
+                .unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.as_slice(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk_str.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_string.clone(),
+                    sign_res2.clone()
+                )
+                .unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.as_slice(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk_str.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_string.clone(),
+                    sign_res2.as_str()
+                )
+                .unwrap()
+            );
+        }
+
+        #[test]
+        fn test_v8s() {
+            let (sk, pk) = SM2::generate(
+                "src/test/crypto/sm2/sign/generate2_sk",
+                "src/test/crypto/sm2/sign/generate2_pk",
+            )
+            .unwrap();
+            let msg1 = "hello 你好！?";
+            let sk_string = hex::encode(sk.clone());
+            let pk_string = hex::encode(pk.clone());
+            let sk_str = sk_string.as_str();
+            let pk_str = pk_string.as_str();
+
+            /////////////// sk/pk v8s start ///////////////
+            let sign_res1 = SM2::sign(msg1, sk.clone(), pk.clone()).unwrap();
+            let sign_res2 = SM2::sign_string(msg1, sk.clone(), pk.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 hex::encode(sign_res1),
                 sign_res2
             );
 
-            let sign_res1 = SM2::sign(msg1.as_bytes(), sk.clone(), pk.clone());
-            let sign_res2 = SM2::sign_string(msg1.as_bytes(), sk.clone(), pk.clone());
+            let sign_res1 = SM2::sign(msg1.to_string(), sk.clone(), pk.clone()).unwrap();
+            let sign_res2 = SM2::sign_string(msg1.to_string(), sk.clone(), pk.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 hex::encode(sign_res1),
                 sign_res2
             );
 
-            let sign_res1 = SM2::sign(msg1.as_bytes().to_vec(), sk.clone(), pk.clone());
-            let sign_res2 = SM2::sign_string(msg1.as_bytes().to_vec(), sk.clone(), pk.clone());
+            let sign_res1 = SM2::sign(msg1.as_bytes(), sk.clone(), pk.clone()).unwrap();
+            let sign_res2 = SM2::sign_string(msg1.as_bytes(), sk.clone(), pk.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 hex::encode(sign_res1),
                 sign_res2
+            );
+
+            let sign_res1 = SM2::sign(msg1.as_bytes().to_vec(), sk.clone(), pk.clone()).unwrap();
+            let sign_res2 =
+                SM2::sign_string(msg1.as_bytes().to_vec(), sk.clone(), pk.clone()).unwrap();
+            println!(
+                "sign_res1 = {}\nsign_res2 = {}",
+                hex::encode(sign_res1.clone()),
+                sign_res2
+            );
+            /////////////// sk/pk v8s end ///////////////
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.as_slice(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_str.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_string.clone(), sign_res1.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.as_slice(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_str.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_string.clone(), sign_res1.as_slice()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.as_slice(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_str.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_string.clone(), sign_res2.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.as_slice(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_str.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_string.clone(), sign_res2.as_str()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.as_slice(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_str.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_string.clone(), sign_res1.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.as_slice(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_str.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_string.clone(), sign_res1.as_slice()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.as_slice(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_str.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_string.clone(), sign_res2.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.as_slice(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_str.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_string.clone(), sign_res2.as_str()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.as_slice(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_str.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_string.clone(), sign_res1.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.as_slice(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_str.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_string.clone(), sign_res1.as_slice()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.as_slice(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_str.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_string.clone(), sign_res2.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.as_slice(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_str.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_string.clone(), sign_res2.as_str()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.as_slice(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk_str.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_string.clone(),
+                    sign_res1.clone()
+                )
+                .unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk.as_slice(),
+                    sign_res1.as_slice()
+                )
+                .unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_str.clone(),
+                    sign_res1.as_slice()
+                )
+                .unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_string.clone(),
+                    sign_res1.as_slice()
+                )
+                .unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.as_slice(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk_str.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_string.clone(),
+                    sign_res2.clone()
+                )
+                .unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.as_slice(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk_str.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_string.clone(),
+                    sign_res2.as_str()
+                )
+                .unwrap()
+            );
+        }
+
+        #[test]
+        fn test_string() {
+            let (sk, pk) = SM2::generate(
+                "src/test/crypto/sm2/sign/generate3_sk",
+                "src/test/crypto/sm2/sign/generate3_pk",
+            )
+            .unwrap();
+            let msg1 = "hello 你好！?";
+            let sk_string = hex::encode(sk.clone());
+            let pk_string = hex::encode(pk.clone());
+            let sk_str = sk_string.as_str();
+            let pk_str = pk_string.as_str();
+
+            /////////////// sk/pk string start ///////////////
+            let sign_res1 = SM2::sign(msg1.clone(), sk_string.clone(), pk_string.clone()).unwrap();
+            let sign_res2 =
+                SM2::sign_string(msg1.clone(), sk_string.clone(), pk_string.clone()).unwrap();
+            println!(
+                "sign_res1 = {}\nsign_res2 = {}",
+                hex::encode(sign_res1),
+                sign_res2
+            );
+
+            let sign_res1 =
+                SM2::sign(msg1.to_string(), sk_string.clone(), pk_string.clone()).unwrap();
+            let sign_res2 =
+                SM2::sign_string(msg1.to_string(), sk_string.clone(), pk_string.clone()).unwrap();
+            println!(
+                "sign_res1 = {}\nsign_res2 = {}",
+                hex::encode(sign_res1),
+                sign_res2
+            );
+
+            let sign_res1 =
+                SM2::sign(msg1.as_bytes(), sk_string.clone(), pk_string.clone()).unwrap();
+            let sign_res2 =
+                SM2::sign_string(msg1.as_bytes(), sk_string.clone(), pk_string.clone()).unwrap();
+            println!(
+                "sign_res1 = {}\nsign_res2 = {}",
+                hex::encode(sign_res1),
+                sign_res2
+            );
+
+            let sign_res1 = SM2::sign(
+                msg1.as_bytes().to_vec(),
+                sk_string.clone(),
+                pk_string.clone(),
+            )
+            .unwrap();
+            let sign_res2 = SM2::sign_string(
+                msg1.as_bytes().to_vec(),
+                sk_string.clone(),
+                pk_string.clone(),
+            )
+            .unwrap();
+            println!(
+                "sign_res1 = {}\nsign_res2 = {}",
+                hex::encode(sign_res1.clone()),
+                sign_res2
+            );
+            /////////////// sk/pk string end ///////////////
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.as_slice(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_str.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_string.clone(), sign_res1.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.as_slice(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_str.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_string.clone(), sign_res1.as_slice()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.as_slice(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_str.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_string.clone(), sign_res2.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.as_slice(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_str.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_string.clone(), sign_res2.as_str()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.as_slice(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_str.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_string.clone(), sign_res1.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.as_slice(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_str.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_string.clone(), sign_res1.as_slice()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.as_slice(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_str.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_string.clone(), sign_res2.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.as_slice(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_str.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_string.clone(), sign_res2.as_str()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.as_slice(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_str.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_string.clone(), sign_res1.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.as_slice(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_str.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_string.clone(), sign_res1.as_slice()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.as_slice(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_str.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_string.clone(), sign_res2.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.as_slice(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_str.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_string.clone(), sign_res2.as_str()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.as_slice(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk_str.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_string.clone(),
+                    sign_res1.clone()
+                )
+                .unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk.as_slice(),
+                    sign_res1.as_slice()
+                )
+                .unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_str.clone(),
+                    sign_res1.as_slice()
+                )
+                .unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_string.clone(),
+                    sign_res1.as_slice()
+                )
+                .unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.as_slice(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk_str.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_string.clone(),
+                    sign_res2.clone()
+                )
+                .unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.as_slice(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk_str.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_string.clone(),
+                    sign_res2.as_str()
+                )
+                .unwrap()
+            );
+        }
+
+        #[test]
+        fn test_str() {
+            let (sk, pk) = SM2::generate(
+                "src/test/crypto/sm2/sign/generate4_sk",
+                "src/test/crypto/sm2/sign/generate4_pk",
+            )
+            .unwrap();
+            let msg1 = "hello 你好！?";
+            let sk_string = hex::encode(sk.clone());
+            let pk_string = hex::encode(pk.clone());
+            let sk_str = sk_string.as_str();
+            let pk_str = pk_string.as_str();
+
+            /////////////// sk/pk str start ///////////////
+            let sign_res1 = SM2::sign(msg1, sk_str, pk_str).unwrap();
+            let sign_res2 = SM2::sign_string(msg1, sk_str.clone(), pk_str.clone()).unwrap();
+            println!(
+                "sign_res1 = {}\nsign_res2 = {}",
+                hex::encode(sign_res1.clone()),
+                sign_res2
+            );
+
+            let sign_res1 = SM2::sign(msg1.to_string(), sk_str.clone(), pk_str.clone()).unwrap();
+            let sign_res2 =
+                SM2::sign_string(msg1.to_string(), sk_str.clone(), pk_str.clone()).unwrap();
+            println!(
+                "sign_res1 = {}\nsign_res2 = {}",
+                hex::encode(sign_res1),
+                sign_res2
+            );
+
+            let sign_res1 = SM2::sign(msg1.as_bytes(), sk_str.clone(), pk_str.clone()).unwrap();
+            let sign_res2 =
+                SM2::sign_string(msg1.as_bytes(), sk_str.clone(), pk_str.clone()).unwrap();
+            println!(
+                "sign_res1 = {}\nsign_res2 = {}",
+                hex::encode(sign_res1),
+                sign_res2
+            );
+
+            let sign_res1 =
+                SM2::sign(msg1.as_bytes().to_vec(), sk_str.clone(), pk_str.clone()).unwrap();
+            let sign_res2 =
+                SM2::sign_string(msg1.as_bytes().to_vec(), sk_str.clone(), pk_str.clone()).unwrap();
+            println!(
+                "sign_res1 = {}\nsign_res2 = {}",
+                hex::encode(sign_res1.clone()),
+                sign_res2
+            );
+            /////////////// sk/pk str end ///////////////
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.as_slice(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_str.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_string.clone(), sign_res1.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.as_slice(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_str.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_string.clone(), sign_res1.as_slice()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.as_slice(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_str.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_string.clone(), sign_res2.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.as_slice(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_str.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_string.clone(), sign_res2.as_str()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.as_slice(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_str.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_string.clone(), sign_res1.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.as_slice(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_str.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_string.clone(), sign_res1.as_slice()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.as_slice(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_str.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_string.clone(), sign_res2.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.as_slice(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_str.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_string.clone(), sign_res2.as_str()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.as_slice(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_str.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_string.clone(), sign_res1.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.as_slice(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_str.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_string.clone(), sign_res1.as_slice()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.as_slice(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_str.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_string.clone(), sign_res2.clone()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.as_slice(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_str.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_string.clone(), sign_res2.as_str()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.as_slice(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk_str.clone(), sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_string.clone(),
+                    sign_res1.clone()
+                )
+                .unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk.as_slice(),
+                    sign_res1.as_slice()
+                )
+                .unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.clone(), sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_str.clone(),
+                    sign_res1.as_slice()
+                )
+                .unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_string.clone(),
+                    sign_res1.as_slice()
+                )
+                .unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.as_slice(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk_str.clone(), sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_string.clone(),
+                    sign_res2.clone()
+                )
+                .unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.as_slice(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk_str.clone(), sign_res2.as_str()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(
+                    msg1.as_bytes().to_vec(),
+                    pk_string.clone(),
+                    sign_res2.as_str()
+                )
+                .unwrap()
             );
         }
     }
 
     #[cfg(test)]
-    mod old_test {
-        use crate::cryptos::sm2::{sign, sign_string, verify, verify_string, SM2NewStore, SM2};
+    mod sign_filepath {
+        use crate::cryptos::sm2::{SM2LoadKey, SM2NewStore, SM2SignPath, SM2VerifyPath, SM2};
 
         #[test]
-        fn sign_test() {
-            match SM2::generate(
-                "src/test/crypto/sm2/sign/generate_sk",
-                "src/test/crypto/sm2/sign/generate_pk",
-            ) {
-                Ok(ks) => {
-                    let sk = ks.0.clone();
-                    let pk = ks.1.clone();
-                    let sk_str = hex::encode(sk.clone());
-                    let pk_str = hex::encode(pk.clone());
-                    let msg1 = "hello 你好！?";
-                    let msg2 = "hello 你好！？";
+        fn test() {
+            let sk_filepath = "src/test/crypto/sm2/sign/generate5_sk";
+            let pk_filepath = "src/test/crypto/sm2/sign/generate5_pk";
+            let (_, _) = SM2::generate(sk_filepath, pk_filepath).unwrap();
+            let msg1 = "hello 你好！?";
+            let sk_string = SM2::load_string_from_file(sk_filepath).unwrap();
+            let pk_string = SM2::load_string_from_file(pk_filepath).unwrap();
+            let sk_str = sk_string.as_str();
+            let pk_str = pk_string.as_str();
 
-                    let der1 = sign(msg1.as_bytes(), sk.as_slice(), pk.clone().as_slice());
-                    let der2 = sign_string(msg1.to_string(), sk_str.clone(), pk_str.clone());
-                    let b1 = verify_string(msg1.to_string(), pk_str.clone(), der1.as_slice());
-                    let b2 = verify(msg1.as_bytes(), pk.clone().as_slice(), der2.as_slice());
-                    let b1x = verify_string(msg1.to_string(), pk_str.clone(), der2.as_slice());
-                    let b2x = verify(msg1.as_bytes(), pk.clone().as_slice(), der1.as_slice());
+            let sign_res1 = SM2::sign(msg1, sk_filepath.clone(), pk_filepath.clone()).unwrap();
+            let sign_res2 =
+                SM2::sign_string(msg1, sk_filepath.clone(), pk_filepath.clone()).unwrap();
+            println!(
+                "sign_res1 = {}\nsign_res2 = {}",
+                hex::encode(sign_res1),
+                sign_res2
+            );
 
-                    let der3 = sign(msg1.as_bytes(), sk.as_slice(), pk.clone().as_slice());
-                    let der4 = sign_string(msg1.to_string(), sk_str.clone(), pk_str.clone());
-                    let b3 = verify_string(msg2.to_string(), pk_str.clone(), der3.as_slice());
-                    let b4 = verify(msg2.as_bytes(), pk.clone().as_slice(), der4.as_slice());
+            let sign_res1 =
+                SM2::sign(msg1.to_string(), sk_filepath.clone(), pk_filepath.clone()).unwrap();
+            let sign_res2 =
+                SM2::sign_string(msg1.to_string(), sk_filepath.clone(), pk_filepath.clone())
+                    .unwrap();
+            println!(
+                "sign_res1 = {}\nsign_res2 = {}",
+                hex::encode(sign_res1),
+                sign_res2
+            );
 
-                    println!(
-                        "der1 = {:#?}\nder2 = {:#?}\nder3 = {:#?}\nder4 = {:#?}\nder1_str = {:#?}",
-                        der1.clone(),
-                        der2.clone(),
-                        der3.clone(),
-                        der4.clone(),
-                        hex::encode(der1.clone())
-                    );
-                    println!(
-                        "b1 = {}\nb2 = {}\nb1x = {}\nb2x = {}\nb3 = {}\nb4 = {}",
-                        b1, b2, b1x, b2x, b3, b4
-                    );
-                }
-                Err(err) => println!("err = {}", err.to_string()),
-            }
+            let sign_res1 =
+                SM2::sign(msg1.as_bytes(), sk_filepath.clone(), pk_filepath.clone()).unwrap();
+            let sign_res2 =
+                SM2::sign_string(msg1.as_bytes(), sk_filepath.clone(), pk_filepath.clone())
+                    .unwrap();
+            println!(
+                "sign_res1 = {}\nsign_res2 = {}",
+                hex::encode(sign_res1),
+                sign_res2
+            );
+
+            let sign_res1 = SM2::sign(
+                msg1.as_bytes().to_vec(),
+                sk_filepath.clone(),
+                pk_filepath.clone(),
+            )
+            .unwrap();
+            let sign_res2 = SM2::sign_string(
+                msg1.as_bytes().to_vec(),
+                sk_filepath.clone(),
+                pk_filepath.clone(),
+            )
+            .unwrap();
+            println!(
+                "sign_res1 = {}\nsign_res2 = {}",
+                hex::encode(sign_res1.clone()),
+                sign_res2
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_filepath, sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_filepath, sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_filepath, sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1, pk_filepath, sign_res2.as_str()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_filepath, sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_filepath, sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_filepath, sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.to_string(), pk_filepath, sign_res2.as_str()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_filepath, sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_filepath, sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_filepath, sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes(), pk_filepath, sign_res2.as_str()).unwrap()
+            );
+
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk_filepath, sign_res1.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk_filepath, sign_res1.as_slice()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk_filepath, sign_res2.clone()).unwrap()
+            );
+            println!(
+                "verify = {}",
+                SM2::verify(msg1.as_bytes().to_vec(), pk_filepath, sign_res2.as_str()).unwrap()
+            );
         }
     }
 }
