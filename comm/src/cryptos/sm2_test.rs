@@ -16,8 +16,8 @@
 mod sm2 {
     #[cfg(test)]
     mod generate {
-        use crate::cryptos::sm2::SM2;
-        use crate::cryptos::traits::{AEKeyHex, AENew};
+
+        use crate::cryptos::sm2::{SM2KeyHex, SM2New, SM2};
 
         #[test]
         fn test() {
@@ -34,8 +34,8 @@ mod sm2 {
 
     #[cfg(test)]
     mod generate_sk {
-        use crate::cryptos::sm2::SM2;
-        use crate::cryptos::traits::{AEKeyHex, AESkNew};
+
+        use crate::cryptos::sm2::{SM2KeyHex, SM2SkNew, SM2};
 
         #[test]
         fn test() {
@@ -52,8 +52,8 @@ mod sm2 {
 
     #[cfg(test)]
     mod generate_sk_file {
-        use crate::cryptos::sm2::SM2;
-        use crate::cryptos::traits::{AEKeyHex, AESkNewStore};
+
+        use crate::cryptos::sm2::{SM2KeyHex, SM2SkNewStore, SM2};
 
         #[test]
         fn test() {
@@ -74,8 +74,8 @@ mod sm2 {
 
     #[cfg(test)]
     mod generate_file {
-        use crate::cryptos::sm2::SM2;
-        use crate::cryptos::traits::{AEKeyHex, AENewStore};
+
+        use crate::cryptos::sm2::{SM2KeyHex, SM2NewStore, SM2};
 
         #[test]
         fn test1() {
@@ -112,8 +112,8 @@ mod sm2 {
 
     #[cfg(test)]
     mod generate_pk_v8s {
-        use crate::cryptos::sm2::SM2;
-        use crate::cryptos::traits::{AEKeyHex, AENew, AEPkV8s};
+
+        use crate::cryptos::sm2::{SM2KeyHex, SM2New, SM2PkV8s, SM2};
 
         #[test]
         fn generate_pk_test() {
@@ -134,8 +134,8 @@ mod sm2 {
 
     #[cfg(test)]
     mod generate_pk_string {
-        use crate::cryptos::sm2::SM2;
-        use crate::cryptos::traits::{AEKeyHex, AENew, AEPkString};
+
+        use crate::cryptos::sm2::{SM2KeyHex, SM2New, SM2PkString, SM2};
 
         #[test]
         fn generate_pk_test() {
@@ -156,8 +156,8 @@ mod sm2 {
 
     #[cfg(test)]
     mod generate_pk_v8s_path {
-        use crate::cryptos::sm2::SM2;
-        use crate::cryptos::traits::{AEKeyHex, AENewStore, AEPkV8sPath};
+
+        use crate::cryptos::sm2::{SM2KeyHex, SM2NewStore, SM2PkV8sPath, SM2};
 
         #[test]
         fn generate_pk_test() {
@@ -179,8 +179,8 @@ mod sm2 {
 
     #[cfg(test)]
     mod generate_pk_string_path {
-        use crate::cryptos::sm2::SM2;
-        use crate::cryptos::traits::{AENewStore, AEPkStringPath};
+
+        use crate::cryptos::sm2::{SM2NewStore, SM2PkStringPath, SM2};
 
         #[test]
         fn generate_pk_test() {
@@ -198,8 +198,8 @@ mod sm2 {
 
     #[cfg(test)]
     mod sign {
-        use crate::cryptos::sm2::SM2;
-        use crate::cryptos::traits::{AEKeyHex, AENewStore, AESign, AEVerify};
+
+        use crate::cryptos::sm2::{SM2KeyHex, SM2NewStore, SM2Sign, SM2Verify, SM2};
 
         #[test]
         fn test_u8s() {
@@ -1619,8 +1619,8 @@ mod sm2 {
 
     #[cfg(test)]
     mod sign_filepath {
-        use crate::cryptos::sm2::SM2;
-        use crate::cryptos::traits::{AEKeyHex, AENewStore, AESignPath, AEVerifyPath};
+
+        use crate::cryptos::sm2::{SM2KeyHex, SM2NewStore, SM2SignPath, SM2VerifyPath, SM2};
 
         #[test]
         fn test() {
