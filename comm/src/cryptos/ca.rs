@@ -403,8 +403,8 @@ pub fn sign(
     not_before_day: u32,
     not_after_day: u32,
 ) -> GeorgeResult<X509> {
-    let ca_sk = rsa::load_sk_file(ca_sk_path.to_string())?;
-    let sk = rsa::load_sk_file(sk_path.to_string())?;
+    let ca_sk = rsa::load_sk_pkey_file(ca_sk_path.to_string())?;
+    let sk = rsa::load_sk_pkey_file(sk_path.to_string())?;
     let ca_cert = load_ca_file(ca_cert_path.to_string())?;
     match sign_cert(
         ca_cert,

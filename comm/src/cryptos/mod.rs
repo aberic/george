@@ -20,6 +20,8 @@ pub mod ecdsa;
 mod ecdsa_test;
 pub mod hash;
 mod hash_test;
+pub mod hex;
+mod hex_test;
 pub mod rsa;
 mod rsa_test;
 pub mod sm2;

@@ -63,7 +63,7 @@ mod ca {
                 return;
             }
         }
-        match rsa::load_sk_file(sk_filepath.to_string()) {
+        match rsa::load_sk_pkey_file(sk_filepath.to_string()) {
             Ok(key) => match create_cert_request(&key, x509_name_info()) {
                 Ok(csr) => match csr.to_pem() {
                     Ok(pem) => {
@@ -94,7 +94,7 @@ mod ca {
                 return;
             }
         }
-        match rsa::load_sk_file(sk_filepath.to_string()) {
+        match rsa::load_sk_pkey_file(sk_filepath.to_string()) {
             Ok(key) => match create(128, &key, x509_name_info(), 2, 0, 356) {
                 Ok(x509) => match x509.to_pem() {
                     Ok(pem) => {

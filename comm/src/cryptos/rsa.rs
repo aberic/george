@@ -19,13 +19,27 @@ use std::path::Path;
 use openssl::pkey::{PKey, Private, Public};
 use openssl::rsa::{Padding, Rsa};
 
-use crate::cryptos::base64::{Base64, Base64EncodeHandler};
+use crate::cryptos::base64::{Base64, Base64Encoder, Basee64Decoder};
+use crate::cryptos::hex::{Hex, HexDecoder};
 use crate::errors::entrances::GeorgeResult;
 use crate::errors::entrances::{err_str, err_strs};
 use crate::io::file::{Filer, FilerWriter};
 use openssl::symm::Cipher;
 
-pub struct RSA;
+pub struct RSA {
+    /// 私钥位数
+    bits: u32,
+    /// 指定的密码算法
+    ///
+    /// Cipher Represents a particular cipher algorithm.
+    ///
+    /// See OpenSSL doc at [`EVP_EncryptInit`] for more information on each algorithms.
+    ///
+    /// [`EVP_EncryptInit`]: https://www.openssl.org/docs/man1.1.0/crypto/EVP_EncryptInit.html
+    cipher: Cipher,
+    /// 密码，如是`0x00`则表示无秘密
+    passphrase: Vec<u8>,
+}
 
 pub trait RSANew {
     /// 生成非对称加密私钥，返回sk字节数组
@@ -383,6 +397,46 @@ pub trait RSANewPassStore<M, N> {
     ) -> GeorgeResult<String>;
 }
 
+pub trait RSAPkV8s<T> {
+    /// 根据私钥生成公钥
+    fn generate_pk(sk: T) -> GeorgeResult<Vec<u8>>;
+}
+
+pub trait RSAPkString<T> {
+    /// 根据私钥生成公钥
+    fn generate_pk(sk: T) -> GeorgeResult<String>;
+}
+
+pub trait RSAPkey<T> {
+    /// 根据私钥生成公钥
+    fn generate_pk(sk: T) -> GeorgeResult<PKey<Public>>;
+}
+
+pub trait RSAPk<T> {
+    /// 根据私钥生成公钥
+    fn generate_pk(sk: T) -> GeorgeResult<Rsa<Public>>;
+}
+
+pub trait RSAPkeyPath {
+    /// 根据私钥文件生成公钥
+    fn generate_pk<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<PKey<Public>>;
+}
+
+pub trait RSAPkPath {
+    /// 根据私钥文件生成公钥
+    fn generate_pk<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Rsa<Public>>;
+}
+
+pub trait RSAPkV8sPath {
+    /// 根据私钥文件生成公钥
+    fn generate_pk<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>>;
+}
+
+pub trait RSAPkStringPath {
+    /// 根据私钥文件生成公钥
+    fn generate_pk<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
+}
+
 pub trait RSAStoreKey<M, N> {
     /// 将公/私钥存储在指定文件中
     fn store(key: M, key_filepath: N) -> GeorgeResult<()>;
@@ -403,7 +457,7 @@ pub trait RSALoadKey {
     fn load_rsa_pk<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<Rsa<Public>>;
 }
 
-////////// generate start //////////
+////////// generate pk start //////////
 
 impl RSANew for RSA {
     fn generate_pkcs1_pem(bits: u32) -> GeorgeResult<Vec<u8>> {
@@ -1031,7 +1085,179 @@ impl RSANewPassStore<&[u8], &str> for RSA {
     }
 }
 
-////////// generate end //////////
+////////// generate sk end //////////
+
+////////// generate pk start //////////
+
+////////// generate pk end //////////
+
+impl RSAPkey<&[u8]> for RSA {
+    fn generate_pk(sk: &[u8]) -> GeorgeResult<PKey<Public>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPk<&[u8]> for RSA {
+    fn generate_pk(sk: &[u8]) -> GeorgeResult<Rsa<Public>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkey<Vec<u8>> for RSA {
+    fn generate_pk(sk: Vec<u8>) -> GeorgeResult<PKey<Public>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPk<Vec<u8>> for RSA {
+    fn generate_pk(sk: Vec<u8>) -> GeorgeResult<Rsa<Public>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkey<&str> for RSA {
+    fn generate_pk(sk: &str) -> GeorgeResult<PKey<Public>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPk<&str> for RSA {
+    fn generate_pk(sk: &str) -> GeorgeResult<Rsa<Public>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkey<String> for RSA {
+    fn generate_pk(sk: String) -> GeorgeResult<PKey<Public>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPk<String> for RSA {
+    fn generate_pk(sk: String) -> GeorgeResult<Rsa<Public>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkey<PKey<Private>> for RSA {
+    fn generate_pk(sk: PKey<Private>) -> GeorgeResult<PKey<Public>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPk<PKey<Private>> for RSA {
+    fn generate_pk(sk: PKey<Private>) -> GeorgeResult<Rsa<Public>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkey<Rsa<Private>> for RSA {
+    fn generate_pk(sk: Rsa<Private>) -> GeorgeResult<PKey<Public>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPk<Rsa<Private>> for RSA {
+    fn generate_pk(sk: Rsa<Private>) -> GeorgeResult<Rsa<Public>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkV8s<&[u8]> for RSA {
+    fn generate_pk(sk: &[u8]) -> GeorgeResult<Vec<u8>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkString<&[u8]> for RSA {
+    fn generate_pk(sk: &[u8]) -> GeorgeResult<String> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkV8s<Vec<u8>> for RSA {
+    fn generate_pk(sk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkString<Vec<u8>> for RSA {
+    fn generate_pk(sk: Vec<u8>) -> GeorgeResult<String> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkV8s<&str> for RSA {
+    fn generate_pk(sk: &str) -> GeorgeResult<Vec<u8>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkString<&str> for RSA {
+    fn generate_pk(sk: &str) -> GeorgeResult<String> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkV8s<String> for RSA {
+    fn generate_pk(sk: String) -> GeorgeResult<Vec<u8>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkString<String> for RSA {
+    fn generate_pk(sk: String) -> GeorgeResult<String> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkV8s<PKey<Private>> for RSA {
+    fn generate_pk(sk: PKey<Private>) -> GeorgeResult<Vec<u8>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkString<PKey<Private>> for RSA {
+    fn generate_pk(sk: PKey<Private>) -> GeorgeResult<String> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkV8s<Rsa<Private>> for RSA {
+    fn generate_pk(sk: Rsa<Private>) -> GeorgeResult<Vec<u8>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkString<Rsa<Private>> for RSA {
+    fn generate_pk(sk: Rsa<Private>) -> GeorgeResult<String> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkeyPath for RSA {
+    fn generate_pk<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<PKey<Public>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkPath for RSA {
+    fn generate_pk<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Rsa<Public>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkV8sPath for RSA {
+    fn generate_pk<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>> {
+        unimplemented!()
+    }
+}
+
+impl RSAPkStringPath for RSA {
+    fn generate_pk<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String> {
+        unimplemented!()
+    }
+}
 
 ////////// store end //////////
 
@@ -1092,6 +1318,36 @@ impl RSAStoreKey<&[u8], &str> for RSA {
 }
 
 ////////// store end //////////
+
+////////// load start //////////
+
+impl RSALoadKey for RSA {
+    fn load<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<Vec<u8>> {
+        load_pk_bytes_file(key_filepath)
+    }
+
+    fn load_str<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<String> {
+        load_pk_string_file(key_filepath)
+    }
+
+    fn load_sk<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<PKey<Private>> {
+        load_sk_pkey_file(key_filepath)
+    }
+
+    fn load_pk<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<PKey<Public>> {
+        unimplemented!()
+    }
+
+    fn load_rsa_sk<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<Rsa<Private>> {
+        load_sk_file(key_filepath)
+    }
+
+    fn load_rsa_pk<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<Rsa<Public>> {
+        unimplemented!()
+    }
+}
+
+////////// load end //////////
 
 fn generate_pkcs1_sk_pem(bits: u32) -> GeorgeResult<Vec<u8>> {
     match Rsa::generate(bits) {
@@ -1444,31 +1700,111 @@ pub fn generate_pk_from_sk(sk: PKey<Private>) -> GeorgeResult<Vec<u8>> {
 
 /// 生成RSA公钥
 pub fn generate_pk_from_sk_bytes(sk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
-    match load_sk(sk) {
+    match load_sk_pkey(sk) {
         Ok(key) => generate_pk_from_sk(key),
         Err(err) => Err(err_strs("load_sk", err)),
     }
 }
 
 /// 读取RSA私钥
-fn load_sk(sk: Vec<u8>) -> GeorgeResult<PKey<Private>> {
-    match PKey::private_key_from_pem(sk.as_slice()) {
+fn load_sk_pkey_u8s(sk: &[u8]) -> GeorgeResult<PKey<Private>> {
+    match PKey::private_key_from_pem(sk) {
+        Ok(key) => Ok(key),
+        Err(err) => match PKey::private_key_from_der(sk) {
+            Ok(key) => Ok(key),
+            Err(err) => Err(err_strs("private_key_from_pem", err)),
+        },
+    }
+}
+
+/// 读取RSA私钥
+fn load_sk_pkey(sk: Vec<u8>) -> GeorgeResult<PKey<Private>> {
+    load_sk_pkey_u8s(sk.as_slice())
+}
+
+/// 读取RSA私钥
+pub fn load_sk_pkey_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<PKey<Private>> {
+    match read(filepath.as_ref()) {
+        Ok(v8s) => load_sk_pkey(v8s),
+        Err(_) => match read_to_string(filepath.as_ref()) {
+            Ok(res) => load_sk_pkey(Base64::decode(res)?),
+            Err(_) => match read_to_string(filepath.as_ref()) {
+                Ok(res) => load_sk_pkey(Hex::decode(res)?),
+                Err(_) => match read_to_string(filepath) {
+                    Ok(res) => load_sk_pkey_u8s(res.as_bytes()),
+                    Err(err) => Err(err_strs("load_sk_pkey_file", err)),
+                },
+            },
+        },
+    }
+}
+
+/// 读取RSA私钥
+fn load_pk_pkey_u8s(sk: &[u8]) -> GeorgeResult<PKey<Public>> {
+    match PKey::public_key_from_pem(sk) {
+        Ok(key) => Ok(key),
+        Err(_) => match PKey::public_key_from_der(sk) {
+            Ok(key) => Ok(key),
+            Err(err) => Err(err_strs("private_key_from_pem", err)),
+        },
+    }
+}
+
+/// 读取RSA私钥
+fn load_pk_pkey(sk: Vec<u8>) -> GeorgeResult<PKey<Public>> {
+    load_pk_pkey_u8s(sk.as_slice())
+}
+
+/// 读取RSA私钥
+pub fn load_pk_pkey_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<PKey<Public>> {
+    match read(filepath.as_ref()) {
+        Ok(v8s) => load_pk_pkey(v8s),
+        Err(_) => match read_to_string(filepath.as_ref()) {
+            Ok(res) => load_pk_pkey(Base64::decode(res)?),
+            Err(_) => match read_to_string(filepath.as_ref()) {
+                Ok(res) => load_pk_pkey(Hex::decode(res)?),
+                Err(_) => match read_to_string(filepath) {
+                    Ok(res) => load_pk_pkey_u8s(res.as_bytes()),
+                    Err(err) => Err(err_strs("load_sk_pkey_file", err)),
+                },
+            },
+        },
+    }
+}
+
+/// 读取RSA私钥
+fn load_sk_u8s(sk: &[u8]) -> GeorgeResult<Rsa<Private>> {
+    match Rsa::private_key_from_pem(sk) {
         Ok(key) => Ok(key),
         Err(err) => Err(err_strs("private_key_from_pem", err)),
     }
 }
 
 /// 读取RSA私钥
-pub fn load_sk_file(filepath: String) -> GeorgeResult<PKey<Private>> {
-    match read(filepath) {
-        Ok(u8s) => load_sk(u8s),
-        Err(err) => Err(err_strs("read", err)),
+fn load_sk(sk: Vec<u8>) -> GeorgeResult<Rsa<Private>> {
+    load_sk_u8s(sk.as_slice())
+}
+
+/// 读取RSA私钥
+fn load_sk_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Rsa<Private>> {
+    match read(filepath.as_ref()) {
+        Ok(v8s) => load_sk(v8s),
+        Err(_) => match read_to_string(filepath.as_ref()) {
+            Ok(res) => load_sk(Base64::decode(res)?),
+            Err(_) => match read_to_string(filepath.as_ref()) {
+                Ok(res) => load_sk(Hex::decode(res)?),
+                Err(_) => match read_to_string(filepath) {
+                    Ok(res) => load_sk_u8s(res.as_bytes()),
+                    Err(err) => Err(err_strs("load_sk_pkey_file", err)),
+                },
+            },
+        },
     }
 }
 
 /// 生成RSA公钥
 pub fn generate_pk_from_sk_file(filepath: String) -> GeorgeResult<Vec<u8>> {
-    match load_sk_file(filepath) {
+    match load_sk_pkey_file(filepath) {
         Ok(key) => generate_pk_from_sk(key),
         Err(err) => Err(err_strs("load_sk_file", err)),
     }
@@ -1525,9 +1861,22 @@ pub fn load_pk(pk: Vec<u8>) -> GeorgeResult<PKey<Public>> {
 }
 
 /// 读取RSA公钥
-pub fn load_pk_file(filepath: String) -> GeorgeResult<PKey<Public>> {
+pub fn load_pk_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<PKey<Public>> {
+    load_pk(load_pk_bytes_file(filepath)?)
+}
+
+/// 读取RSA公钥
+fn load_pk_bytes_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
     match read(filepath) {
-        Ok(u8s) => load_pk(u8s),
+        Ok(u8s) => Ok(u8s),
+        Err(err) => Err(err_strs("read", err)),
+    }
+}
+
+/// 读取RSA公钥
+fn load_pk_string_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
+    match read_to_string(filepath) {
+        Ok(res) => Ok(res),
         Err(err) => Err(err_strs("read", err)),
     }
 }
@@ -1549,7 +1898,7 @@ pub fn decrypt_sk(sk: Rsa<Private>, data: &[u8]) -> GeorgeResult<Vec<u8>> {
 }
 
 pub fn encrypt_sk_bytes(sk_bytes: Vec<u8>, data: String) -> GeorgeResult<Vec<u8>> {
-    match load_sk(sk_bytes) {
+    match load_sk_pkey(sk_bytes) {
         Ok(sk_key) => match sk_key.rsa() {
             Ok(sk) => encrypt_sk(sk, data.as_bytes()),
             Err(err) => Err(err_strs("rsa", err)),
@@ -1559,7 +1908,7 @@ pub fn encrypt_sk_bytes(sk_bytes: Vec<u8>, data: String) -> GeorgeResult<Vec<u8>
 }
 
 pub fn encrypt_sk_file(filepath: String, data: String) -> GeorgeResult<Vec<u8>> {
-    match load_sk_file(filepath) {
+    match load_sk_pkey_file(filepath) {
         Ok(sk_key) => match sk_key.rsa() {
             Ok(sk) => encrypt_sk(sk, data.as_bytes()),
             Err(err) => Err(err_strs("rsa", err)),

@@ -13,28 +13,28 @@
  */
 
 #[cfg(test)]
-mod base64 {
-    use crate::cryptos::base64::{Base64, Base64Encoder, Basee64Decoder};
+mod hex {
+    use crate::cryptos::hex::{Hex, HexDecoder, HexEncoder};
 
     #[test]
-    fn base64_test() {
+    fn hex_test() {
         let src = "hello world!".as_bytes();
-        let ber = Base64::encode(src);
+        let ber = Hex::encode(src);
         let her = hex::encode(src);
         println!("ber = {}\nhex = {}", ber, her);
-        let bdr = Base64::decode(ber).unwrap();
+        let bdr = Hex::decode(ber).unwrap();
         assert_eq!(src, bdr.as_slice());
 
-        let ber = Base64::encode(src.to_vec());
+        let ber = Hex::encode(src.to_vec());
         let her = hex::encode(src);
         println!("ber = {}\nhex = {}", ber, her);
-        let bdr = Base64::decode(ber).unwrap();
+        let bdr = Hex::decode(ber).unwrap();
         assert_eq!(src, bdr.as_slice());
 
-        let ber = Base64::encode(src.to_vec());
+        let ber = Hex::encode(src.to_vec());
         let her = hex::encode(src);
         println!("ber = {}\nhex = {}", ber, her);
-        let bdr = Base64::decode(ber.as_str()).unwrap();
+        let bdr = Hex::decode(ber.as_str()).unwrap();
         assert_eq!(src, bdr.as_slice());
     }
 }

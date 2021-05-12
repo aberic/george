@@ -15,19 +15,68 @@
 #[cfg(test)]
 mod sm2 {
     #[cfg(test)]
+    mod sm {
+
+        use crate::cryptos::base64::{Base64, Base64Encoder};
+        use crate::cryptos::hex::{Hex, HexEncoder};
+        use crate::cryptos::sm2::{SM2LoadKey, SM2New, SM2Store, SM2};
+
+        #[test]
+        fn test() {
+            let mut sm2 = SM2::new();
+            println!("sk0 base64 = {}", Base64::encode(sm2.sk_bytes()));
+            println!("pk0 base64 = {}", Base64::encode(sm2.pk_bytes()));
+            println!("sk0 hex = {}", Hex::encode(sm2.sk_bytes()));
+            println!("pk0 hex = {}", Hex::encode(sm2.pk_bytes()));
+            let pk1 = sm2.new_pk();
+            println!("pk1 base64 = {}", Base64::encode(pk1.clone()));
+            println!("pk1 hex = {}", Hex::encode(pk1.clone()));
+
+            let res1 = "hello world!".as_bytes();
+            let sign_res = sm2.sig(res1);
+            println!(
+                "verify = {}",
+                sm2.verifies(res1, sign_res.as_slice()).unwrap()
+            );
+            let res2 = "hello world".as_bytes();
+            println!(
+                "verify = {}",
+                sm2.verifies(res2, sign_res.as_slice()).unwrap()
+            );
+
+            sm2.store(
+                "src/test/crypto/sm2/self/generate1_sk",
+                "src/test/crypto/sm2/self/generate1_pk",
+            )
+            .unwrap();
+
+            let sm2_new = SM2::load(
+                "src/test/crypto/sm2/self/generate1_sk",
+                "src/test/crypto/sm2/self/generate1_pk",
+            )
+            .unwrap();
+            println!(
+                "verify = {}",
+                sm2_new.verifies(res1, sign_res.as_slice()).unwrap()
+            );
+        }
+    }
+
+    #[cfg(test)]
     mod generate {
 
-        use crate::cryptos::sm2::{SM2KeyHex, SM2New, SM2};
+        use crate::cryptos::base64::{Base64, Base64Encoder};
+        use crate::cryptos::sm2::{SM2New, SM2};
 
         #[test]
         fn test() {
             let (sk, pk) = SM2::generate();
-            println!("sk = {}\npk = {}", SM2::key_encode(sk), SM2::key_encode(pk));
+            println!("sk = {}\npk = {}", Base64::encode(sk), Base64::encode(pk));
             let (sk, pk) = SM2::generate();
-            println!("sk = {}\npk = {}", SM2::key_encode(sk), SM2::key_encode(pk));
-            let (sk, pk) = SM2::generate_string();
+            println!("sk = {}\npk = {}", Base64::encode(sk), Base64::encode(pk));
+            let (sk, pk) = SM2::generate_base64();
             println!("sk = {}\npk = {}", sk, pk);
-            let (sk, pk) = SM2::generate_string();
+            let (sk, pk) = SM2::generate_base64();
             println!("sk = {}\npk = {}", sk, pk);
         }
     }
@@ -35,17 +84,18 @@ mod sm2 {
     #[cfg(test)]
     mod generate_sk {
 
-        use crate::cryptos::sm2::{SM2KeyHex, SM2SkNew, SM2};
+        use crate::cryptos::base64::{Base64, Base64Encoder};
+        use crate::cryptos::sm2::{SM2SkNew, SM2};
 
         #[test]
         fn test() {
             let sk = SM2::generate();
-            println!("sk = {}", SM2::key_encode(sk));
+            println!("sk = {}", Base64::encode(sk));
             let sk = SM2::generate();
-            println!("sk = {}", SM2::key_encode(sk));
-            let sk = SM2::generate_string();
+            println!("sk = {}", Base64::encode(sk));
+            let sk = SM2::generate_base64();
             println!("sk = {}", sk);
-            let sk = SM2::generate_string();
+            let sk = SM2::generate_base64();
             println!("sk = {}", sk);
         }
     }
@@ -53,7 +103,8 @@ mod sm2 {
     #[cfg(test)]
     mod generate_sk_file {
 
-        use crate::cryptos::sm2::{SM2KeyHex, SM2SkNewStore, SM2};
+        use crate::cryptos::base64::{Base64, Base64Encoder};
+        use crate::cryptos::sm2::{SM2SkNewStore, SM2};
 
         #[test]
         fn test() {
@@ -62,12 +113,12 @@ mod sm2 {
             let path3 = "src/test/crypto/sm2/generate_sk_file/generate3_sk";
             let path4 = "src/test/crypto/sm2/generate_sk_file/generate4_sk";
             let sk = SM2::generate(path1).unwrap();
-            println!("sk = {}", SM2::key_encode(sk));
+            println!("sk = {}", Base64::encode(sk));
             let sk = SM2::generate(path2).unwrap();
-            println!("sk = {}", SM2::key_encode(sk));
-            let sk = SM2::generate_string(path3).unwrap();
+            println!("sk = {}", Base64::encode(sk));
+            let sk = SM2::generate_base64(path3).unwrap();
             println!("sk = {}", sk);
-            let sk = SM2::generate_string(path4).unwrap();
+            let sk = SM2::generate_base64(path4).unwrap();
             println!("sk = {}", sk);
         }
     }
@@ -75,7 +126,8 @@ mod sm2 {
     #[cfg(test)]
     mod generate_file {
 
-        use crate::cryptos::sm2::{SM2KeyHex, SM2NewStore, SM2};
+        use crate::cryptos::base64::{Base64, Base64Encoder};
+        use crate::cryptos::sm2::{SM2NewStore, SM2};
 
         #[test]
         fn test1() {
@@ -84,8 +136,8 @@ mod sm2 {
                 "src/test/crypto/sm2/generate_file/generate1_pk",
             )
             .unwrap();
-            println!("sk = {}\npk = {}", SM2::key_encode(sk), SM2::key_encode(pk));
-            let (sk, pk) = SM2::generate_string(
+            println!("sk = {}\npk = {}", Base64::encode(sk), Base64::encode(pk));
+            let (sk, pk) = SM2::generate_base64(
                 "src/test/crypto/sm2/generate_file/generate2_sk",
                 "src/test/crypto/sm2/generate_file/generate2_pk",
             )
@@ -100,8 +152,8 @@ mod sm2 {
                 "src/test/crypto/sm2/generate_file/generate3_pk".to_string(),
             )
             .unwrap();
-            println!("sk = {}\npk = {}", SM2::key_encode(sk), SM2::key_encode(pk));
-            let (sk, pk) = SM2::generate_string(
+            println!("sk = {}\npk = {}", Base64::encode(sk), Base64::encode(pk));
+            let (sk, pk) = SM2::generate_base64(
                 "src/test/crypto/sm2/generate_file/generate4_sk".to_string(),
                 "src/test/crypto/sm2/generate_file/generate4_pk".to_string(),
             )
@@ -113,7 +165,8 @@ mod sm2 {
     #[cfg(test)]
     mod generate_pk_v8s {
 
-        use crate::cryptos::sm2::{SM2KeyHex, SM2New, SM2PkV8s, SM2};
+        use crate::cryptos::base64::{Base64, Base64Encoder};
+        use crate::cryptos::sm2::{SM2New, SM2Pk, SM2};
 
         #[test]
         fn generate_pk_test() {
@@ -121,21 +174,22 @@ mod sm2 {
             let pk_new = SM2::generate_pk(sk.clone()).unwrap();
             println!(
                 "sk = {}\npk = {}\nne = {}",
-                SM2::key_encode(sk),
-                SM2::key_encode(pk),
-                SM2::key_encode(pk_new)
+                Base64::encode(sk),
+                Base64::encode(pk),
+                Base64::encode(pk_new)
             );
 
-            let (sk, pk) = SM2::generate_string();
-            let pk_new = SM2::generate_pk(sk.clone()).unwrap();
-            println!("sk = {}\npk = {}\nne = {}", sk, pk, SM2::key_encode(pk_new));
+            let (sk, pk) = SM2::generate_base64();
+            let pk_new = SM2::generate_pk_by_base64(sk.clone()).unwrap();
+            println!("sk = {}\npk = {}\nne = {}", sk, pk, Base64::encode(pk_new));
         }
     }
 
     #[cfg(test)]
     mod generate_pk_string {
 
-        use crate::cryptos::sm2::{SM2KeyHex, SM2New, SM2PkString, SM2};
+        use crate::cryptos::base64::{Base64, Base64Encoder};
+        use crate::cryptos::sm2::{SM2New, SM2Pk, SM2};
 
         #[test]
         fn generate_pk_test() {
@@ -143,21 +197,22 @@ mod sm2 {
             let pk_new = SM2::generate_pk(sk.clone()).unwrap();
             println!(
                 "sk = {}\npk = {}\nne = {}",
-                SM2::key_encode(sk),
-                SM2::key_encode(pk),
-                pk_new
+                Base64::encode(sk),
+                Base64::encode(pk),
+                Base64::encode(pk_new)
             );
 
-            let (sk, pk) = SM2::generate_string();
-            let pk_new = SM2::generate_pk(sk.clone()).unwrap();
-            println!("sk = {}\npk = {}\nne = {}", sk, pk, pk_new);
+            let (sk, pk) = SM2::generate_base64();
+            let pk_new = SM2::generate_pk_by_base64(sk.clone()).unwrap();
+            println!("sk = {}\npk = {}\nne = {}", sk, pk, Base64::encode(pk_new));
         }
     }
 
     #[cfg(test)]
     mod generate_pk_v8s_path {
 
-        use crate::cryptos::sm2::{SM2KeyHex, SM2NewStore, SM2PkV8sPath, SM2};
+        use crate::cryptos::base64::{Base64, Base64Encoder};
+        use crate::cryptos::sm2::{SM2NewStore, SM2Pk, SM2};
 
         #[test]
         fn generate_pk_test() {
@@ -166,13 +221,14 @@ mod sm2 {
                 "src/test/crypto/sm2/generate_pk_file/generate1_pk",
             )
             .unwrap();
-            let pk_new =
-                SM2::generate_pk("src/test/crypto/sm2/generate_pk_file/generate1_sk".to_string())
-                    .unwrap();
+            let pk_new = SM2::generate_pk_by_base64_file(
+                "src/test/crypto/sm2/generate_pk_file/generate1_sk".to_string(),
+            )
+            .unwrap();
             println!(
                 "pk = {}\nne = {}",
-                SM2::key_encode(pk),
-                SM2::key_encode(pk_new)
+                Base64::encode(pk),
+                Base64::encode(pk_new)
             );
         }
     }
@@ -180,26 +236,29 @@ mod sm2 {
     #[cfg(test)]
     mod generate_pk_string_path {
 
-        use crate::cryptos::sm2::{SM2NewStore, SM2PkStringPath, SM2};
+        use crate::cryptos::base64::{Base64, Base64Encoder};
+        use crate::cryptos::sm2::{SM2NewStore, SM2Pk, SM2};
 
         #[test]
         fn generate_pk_test() {
-            let (_, pk) = SM2::generate_string(
+            let (_, pk) = SM2::generate_base64(
                 "src/test/crypto/sm2/generate_pk_file/generate2_sk",
                 "src/test/crypto/sm2/generate_pk_file/generate2_pk",
             )
             .unwrap();
-            let pk_new =
-                SM2::generate_pk("src/test/crypto/sm2/generate_pk_file/generate2_sk".to_string())
-                    .unwrap();
-            println!("pk = {}\nne = {}", pk, pk_new);
+            let pk_new = SM2::generate_pk_by_base64_file(
+                "src/test/crypto/sm2/generate_pk_file/generate2_sk".to_string(),
+            )
+            .unwrap();
+            println!("pk = {}\nne = {}", pk, Base64::encode(pk_new));
         }
     }
 
     #[cfg(test)]
     mod sign {
 
-        use crate::cryptos::sm2::{SM2KeyHex, SM2NewStore, SM2Sign, SM2Verify, SM2};
+        use crate::cryptos::base64::{Base64, Base64Encoder};
+        use crate::cryptos::sm2::{SM2NewStore, SM2Sign, SM2Verify, SM2};
 
         #[test]
         fn test_u8s() {
@@ -209,7 +268,7 @@ mod sm2 {
             )
             .unwrap();
             let msg1 = "hello 你好！?";
-            let pk_string = SM2::key_encode(pk.clone());
+            let pk_string = Base64::encode(pk.clone());
             let pk_str = pk_string.as_str();
 
             /////////////// sk/pk u8s start ///////////////
@@ -217,7 +276,7 @@ mod sm2 {
             let sign_res2 = SM2::sign_string(msg1, sk.as_slice(), pk.as_slice()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1.clone()),
+                Base64::encode(sign_res1.clone()),
                 sign_res2
             );
 
@@ -226,7 +285,7 @@ mod sm2 {
                 SM2::sign_string(msg1.to_string(), sk.as_slice(), pk.as_slice()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1),
+                Base64::encode(sign_res1),
                 sign_res2
             );
 
@@ -235,7 +294,7 @@ mod sm2 {
                 SM2::sign_string(msg1.as_bytes(), sk.as_slice(), pk.as_slice()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1),
+                Base64::encode(sign_res1),
                 sign_res2
             );
 
@@ -245,7 +304,7 @@ mod sm2 {
                 SM2::sign_string(msg1.as_bytes().to_vec(), sk.as_slice(), pk.as_slice()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1.clone()),
+                Base64::encode(sign_res1.clone()),
                 sign_res2
             );
             /////////////// sk/pk u8s end ///////////////
@@ -560,7 +619,7 @@ mod sm2 {
             )
             .unwrap();
             let msg1 = "hello 你好！?";
-            let pk_string = SM2::key_encode(pk.clone());
+            let pk_string = Base64::encode(pk.clone());
             let pk_str = pk_string.as_str();
 
             /////////////// sk/pk v8s start ///////////////
@@ -568,7 +627,7 @@ mod sm2 {
             let sign_res2 = SM2::sign_string(msg1, sk.clone(), pk.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1),
+                Base64::encode(sign_res1),
                 sign_res2
             );
 
@@ -576,7 +635,7 @@ mod sm2 {
             let sign_res2 = SM2::sign_string(msg1.to_string(), sk.clone(), pk.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1),
+                Base64::encode(sign_res1),
                 sign_res2
             );
 
@@ -584,7 +643,7 @@ mod sm2 {
             let sign_res2 = SM2::sign_string(msg1.as_bytes(), sk.clone(), pk.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1),
+                Base64::encode(sign_res1),
                 sign_res2
             );
 
@@ -593,7 +652,7 @@ mod sm2 {
                 SM2::sign_string(msg1.as_bytes().to_vec(), sk.clone(), pk.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1.clone()),
+                Base64::encode(sign_res1.clone()),
                 sign_res2
             );
             /////////////// sk/pk v8s end ///////////////
@@ -908,8 +967,8 @@ mod sm2 {
             )
             .unwrap();
             let msg1 = "hello 你好！?";
-            let sk_string = SM2::key_encode(sk.clone());
-            let pk_string = SM2::key_encode(pk.clone());
+            let sk_string = Base64::encode(sk.clone());
+            let pk_string = Base64::encode(pk.clone());
             let pk_str = pk_string.as_str();
 
             /////////////// sk/pk string start ///////////////
@@ -918,7 +977,7 @@ mod sm2 {
                 SM2::sign_string(msg1.clone(), sk_string.clone(), pk_string.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1),
+                Base64::encode(sign_res1),
                 sign_res2
             );
 
@@ -928,7 +987,7 @@ mod sm2 {
                 SM2::sign_string(msg1.to_string(), sk_string.clone(), pk_string.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1),
+                Base64::encode(sign_res1),
                 sign_res2
             );
 
@@ -938,7 +997,7 @@ mod sm2 {
                 SM2::sign_string(msg1.as_bytes(), sk_string.clone(), pk_string.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1),
+                Base64::encode(sign_res1),
                 sign_res2
             );
 
@@ -956,7 +1015,7 @@ mod sm2 {
             .unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1.clone()),
+                Base64::encode(sign_res1.clone()),
                 sign_res2
             );
             /////////////// sk/pk string end ///////////////
@@ -1271,8 +1330,8 @@ mod sm2 {
             )
             .unwrap();
             let msg1 = "hello 你好！?";
-            let sk_string = SM2::key_encode(sk.clone());
-            let pk_string = SM2::key_encode(pk.clone());
+            let sk_string = Base64::encode(sk.clone());
+            let pk_string = Base64::encode(pk.clone());
             let sk_str = sk_string.as_str();
             let pk_str = pk_string.as_str();
 
@@ -1281,7 +1340,7 @@ mod sm2 {
             let sign_res2 = SM2::sign_string(msg1, sk_str.clone(), pk_str.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1.clone()),
+                Base64::encode(sign_res1.clone()),
                 sign_res2
             );
 
@@ -1290,7 +1349,7 @@ mod sm2 {
                 SM2::sign_string(msg1.to_string(), sk_str.clone(), pk_str.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1),
+                Base64::encode(sign_res1),
                 sign_res2
             );
 
@@ -1299,7 +1358,7 @@ mod sm2 {
                 SM2::sign_string(msg1.as_bytes(), sk_str.clone(), pk_str.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1),
+                Base64::encode(sign_res1),
                 sign_res2
             );
 
@@ -1309,7 +1368,7 @@ mod sm2 {
                 SM2::sign_string(msg1.as_bytes().to_vec(), sk_str.clone(), pk_str.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1.clone()),
+                Base64::encode(sign_res1.clone()),
                 sign_res2
             );
             /////////////// sk/pk str end ///////////////
@@ -1620,7 +1679,8 @@ mod sm2 {
     #[cfg(test)]
     mod sign_filepath {
 
-        use crate::cryptos::sm2::{SM2KeyHex, SM2NewStore, SM2SignPath, SM2VerifyPath, SM2};
+        use crate::cryptos::base64::{Base64, Base64Encoder};
+        use crate::cryptos::sm2::{SM2NewStore, SM2SignPath, SM2VerifyPath, SM2};
 
         #[test]
         fn test() {
@@ -1634,7 +1694,7 @@ mod sm2 {
                 SM2::sign_string(msg1, sk_filepath.clone(), pk_filepath.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1),
+                Base64::encode(sign_res1),
                 sign_res2
             );
 
@@ -1645,7 +1705,7 @@ mod sm2 {
                     .unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1),
+                Base64::encode(sign_res1),
                 sign_res2
             );
 
@@ -1656,7 +1716,7 @@ mod sm2 {
                     .unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1),
+                Base64::encode(sign_res1),
                 sign_res2
             );
 
@@ -1674,7 +1734,7 @@ mod sm2 {
             .unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
-                SM2::key_encode(sign_res1.clone()),
+                Base64::encode(sign_res1.clone()),
                 sign_res2
             );
 

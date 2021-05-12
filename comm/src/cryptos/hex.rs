@@ -13,43 +13,42 @@
  */
 
 use crate::errors::entrances::{err_strs, GeorgeResult};
-use openssl::base64::{decode_block, encode_block};
 
 #[derive(Debug, Clone)]
-pub struct Base64;
+pub struct Hex;
 
-pub trait Base64Encoder<T> {
+pub trait HexEncoder<T> {
     fn encode(bytes: T) -> String;
 }
 
-pub trait Basee64Decoder<T> {
+pub trait HexDecoder<T> {
     fn decode(src: T) -> GeorgeResult<Vec<u8>>;
 }
 
-impl Base64Encoder<&[u8]> for Base64 {
+impl HexEncoder<&[u8]> for Hex {
     fn encode(bytes: &[u8]) -> String {
-        encode_block(bytes)
+        hex::encode(bytes)
     }
 }
 
-impl Base64Encoder<Vec<u8>> for Base64 {
+impl HexEncoder<Vec<u8>> for Hex {
     fn encode(bytes: Vec<u8>) -> String {
-        encode_block(bytes.as_slice())
+        hex::encode(bytes.as_slice())
     }
 }
 
-impl Basee64Decoder<&str> for Base64 {
+impl HexDecoder<&str> for Hex {
     fn decode(src: &str) -> GeorgeResult<Vec<u8>> {
-        match decode_block(src) {
+        match hex::decode(src) {
             Ok(res) => Ok(res),
             Err(err) => Err(err_strs("base64 decode", err)),
         }
     }
 }
 
-impl Basee64Decoder<String> for Base64 {
+impl HexDecoder<String> for Hex {
     fn decode(src: String) -> GeorgeResult<Vec<u8>> {
-        match decode_block(src.as_str()) {
+        match hex::decode(src.as_str()) {
             Ok(res) => Ok(res),
             Err(err) => Err(err_strs("base64 decode", err)),
         }

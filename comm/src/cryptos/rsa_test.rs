@@ -17,7 +17,7 @@ mod rsa {
 
     #[cfg(test)]
     mod generate_pk {
-        use crate::cryptos::base64::{Base64, Base64EncodeHandler};
+        use crate::cryptos::base64::{Base64, Base64Encoder};
         use crate::cryptos::rsa::{RSANew, RSANewPass, RSA};
         use openssl::symm::Cipher;
 
@@ -99,7 +99,7 @@ mod rsa {
 
     #[cfg(test)]
     mod generate_pk_file {
-        use crate::cryptos::base64::{Base64, Base64EncodeHandler};
+        use crate::cryptos::base64::{Base64, Base64Encoder};
         use crate::cryptos::rsa::{RSANewPassStore, RSANewStore, RSA};
         use openssl::symm::Cipher;
 
@@ -213,7 +213,7 @@ mod rsa {
 
     #[cfg(test)]
     mod store {
-        use crate::cryptos::base64::{Base64, Base64EncodeHandler};
+        use crate::cryptos::base64::{Base64, Base64Encoder};
         use crate::cryptos::rsa::{RSANew, RSANewPass, RSAStoreKey, RSA};
         use openssl::symm::Cipher;
 
