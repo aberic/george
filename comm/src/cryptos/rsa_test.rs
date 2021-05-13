@@ -213,7 +213,6 @@ mod rsa {
 
     #[cfg(test)]
     mod store {
-        use crate::cryptos::base64::{Base64, Base64Encoder};
         use crate::cryptos::rsa::{RSANew, RSANewPass, RSAStoreKey, RSA};
         use openssl::symm::Cipher;
 

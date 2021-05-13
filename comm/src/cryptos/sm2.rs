@@ -33,6 +33,13 @@ pub struct SM2 {
 }
 
 impl SM2 {
+    /// 生成非对称加密公私钥
+    pub fn new() -> SM2 {
+        let ctx = SigCtx::new();
+        let (pk, sk) = ctx.new_keypair();
+        SM2 { ctx, sk, pk }
+    }
+
     pub fn new_pk(&self) -> Vec<u8> {
         self.ctx
             .serialize_pubkey(&self.ctx.pk_from_sk(&self.sk), true)
@@ -109,8 +116,6 @@ pub trait SM2SkNewStore<T> {
 }
 
 pub trait SM2New {
-    /// 生成非对称加密公私钥，返回sk、pk字节数组
-    fn new() -> SM2;
     /// 生成非对称加密公私钥，返回sk、pk字节数组
     fn generate() -> (Vec<u8>, Vec<u8>);
     /// 生成非对称加密公私钥，返回sk、pk字符串
@@ -255,12 +260,6 @@ impl SM2SkNewStore<&str> for SM2 {
 }
 
 impl SM2New for SM2 {
-    fn new() -> SM2 {
-        let ctx = SigCtx::new();
-        let (pk, sk) = ctx.new_keypair();
-        SM2 { ctx, sk, pk }
-    }
-
     fn generate() -> (Vec<u8>, Vec<u8>) {
         generate()
     }

@@ -19,7 +19,7 @@ mod sm2 {
 
         use crate::cryptos::base64::{Base64, Base64Encoder};
         use crate::cryptos::hex::{Hex, HexEncoder};
-        use crate::cryptos::sm2::{SM2LoadKey, SM2New, SM2Store, SM2};
+        use crate::cryptos::sm2::{SM2LoadKey, SM2Store, SM2};
 
         #[test]
         fn test() {
