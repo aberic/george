@@ -18,35 +18,436 @@ use std::path::Path;
 
 use openssl::pkey::{PKey, Private, Public};
 use openssl::rsa::{Padding, Rsa};
+use openssl::symm::Cipher;
 
 use crate::cryptos::base64::{Base64, Base64Encoder, Basee64Decoder};
 use crate::cryptos::hex::{Hex, HexDecoder, HexEncoder};
-use crate::errors::entrances::err_strs;
 use crate::errors::entrances::GeorgeResult;
+use crate::errors::entrances::{err_str, err_strs};
 use crate::io::file::{Filer, FilerWriter};
 use crate::strings::{StringHandler, Strings};
-use openssl::symm::Cipher;
+use hex::FromHex;
+use openssl::error::ErrorStack;
+use openssl::hash::MessageDigest;
+use openssl::sign::{Signer, Verifier};
 
 pub struct RSA {
-    /// 私钥位数
-    bits: u32,
-    /// 指定的密码算法
-    ///
-    /// Cipher Represents a particular cipher algorithm.
-    ///
-    /// See OpenSSL doc at [`EVP_EncryptInit`] for more information on each algorithms.
-    ///
-    /// [`EVP_EncryptInit`]: https://www.openssl.org/docs/man1.1.0/crypto/EVP_EncryptInit.html
-    cipher: Cipher,
+    // /// 私钥位数
+    // bits: u32,
+    // /// 指定的密码算法
+    // ///
+    // /// Cipher Represents a particular cipher algorithm.
+    // ///
+    // /// See OpenSSL doc at [`EVP_EncryptInit`] for more information on each algorithms.
+    // ///
+    // /// [`EVP_EncryptInit`]: https://www.openssl.org/docs/man1.1.0/crypto/EVP_EncryptInit.html
+    // cipher: Cipher,
     sk: PKey<Private>,
     pk: PKey<Public>,
     rsa_sk: Rsa<Private>,
     rsa_pk: Rsa<Public>,
 }
 
+/// base method
+impl RSA {
+    /// 生成RSA对象
+    pub fn new(bits: u32) -> GeorgeResult<RSA> {
+        let rsa_sk = generate(bits)?;
+        let rsa_pk = generate_pk_rsa_pkcs1_from_rsa_sk(rsa_sk.clone())?;
+        let sk = generate_pkey(rsa_sk.clone())?;
+        let pk = generate_pkey(rsa_pk.clone())?;
+        Ok(RSA {
+            sk,
+            pk,
+            rsa_sk,
+            rsa_pk,
+        })
+    }
+
+    /// 生成RSA对象
+    pub fn from(rsa_sk: Rsa<Private>) -> GeorgeResult<RSA> {
+        let rsa_pk = generate_pk_rsa_pkcs1_from_rsa_sk(rsa_sk.clone())?;
+        let sk = generate_pkey(rsa_sk.clone())?;
+        let pk = generate_pkey(rsa_pk.clone())?;
+        Ok(RSA {
+            sk,
+            pk,
+            rsa_sk,
+            rsa_pk,
+        })
+    }
+
+    /// 生成RSA对象
+    pub fn from_pkey(sk: PKey<Private>) -> GeorgeResult<RSA> {
+        let pk = generate_pk_pkey_from_pkey_sk(sk.clone())?;
+        let rsa_sk = generate_rsa(sk.clone())?;
+        let rsa_pk = generate_pk_rsa_pkcs1_from_rsa_sk(rsa_sk.clone())?;
+        Ok(RSA {
+            sk,
+            pk,
+            rsa_sk,
+            rsa_pk,
+        })
+    }
+
+    /// 通过私钥文件生成RSA对象
+    pub fn load<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<RSA> {
+        let sk = load_sk_pkey_file(sk_filepath)?;
+        RSA::from_pkey(sk)
+    }
+
+    /// 通过公私钥文件生成RSA对象
+    pub fn load_all<P: AsRef<Path>>(sk_filepath: P, pk_filepath: P) -> GeorgeResult<RSA> {
+        let sk = load_sk_pkey_file(sk_filepath)?;
+        let pk = load_pk_pkey_file(pk_filepath)?;
+        if !sk.public_eq(&pk) {
+            Err(err_str("sk public_eq false"))
+        } else {
+            let rsa_sk = generate_rsa(sk.clone())?;
+            let rsa_pk = generate_rsa(pk.clone())?;
+            Ok(RSA {
+                sk,
+                pk,
+                rsa_sk,
+                rsa_pk,
+            })
+        }
+    }
+
+    // /// 通过公私钥文件生成RSA对象
+    // pub fn store_pkcs1_pem<P: AsRef<Path>>(
+    //     &self,
+    //     sk_filepath: P,
+    //     pk_filepath: P,
+    // ) -> GeorgeResult<RSA> {
+    //     let _ = Filer::write_force(sk_filepath, self.sk_pkcs1_pem()?)?;
+    //     RSA::store(self.sk_pkcs1_pem()?, sk_filepath)?;
+    //     RSA::store(self.pk_pkcs1_pem()?, pk_filepath)
+    // }
+
+    pub fn sk(&self) -> PKey<Private> {
+        self.sk.clone()
+    }
+
+    pub fn pk(&self) -> PKey<Public> {
+        self.pk.clone()
+    }
+
+    pub fn rsa_sk(&self) -> Rsa<Private> {
+        self.rsa_sk.clone()
+    }
+
+    pub fn rsa_pk(&self) -> Rsa<Public> {
+        self.rsa_pk.clone()
+    }
+}
+
+/// pem method
+impl RSA {
+    pub fn sk_pkcs1_pem(&self) -> GeorgeResult<Vec<u8>> {
+        match self.rsa_sk.private_key_to_pem() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("private_key_to_pem", err)),
+        }
+    }
+
+    pub fn pk_pkcs1_pem(&self) -> GeorgeResult<Vec<u8>> {
+        match self.rsa_pk.public_key_to_pem_pkcs1() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("private_key_to_pem", err)),
+        }
+    }
+
+    pub fn sk_pkcs8_pem(&self) -> GeorgeResult<Vec<u8>> {
+        match self.sk.private_key_to_pem_pkcs8() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("private_key_to_pem", err)),
+        }
+    }
+
+    pub fn pk_pkcs8_pem(&self) -> GeorgeResult<Vec<u8>> {
+        match self.pk.public_key_to_pem() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("private_key_to_pem", err)),
+        }
+    }
+
+    pub fn sk_pkcs1_pem_str(&self) -> GeorgeResult<String> {
+        Strings::from_utf8(self.sk_pkcs1_pem()?)
+    }
+
+    pub fn pk_pkcs1_pem_str(&self) -> GeorgeResult<String> {
+        Strings::from_utf8(self.pk_pkcs1_pem()?)
+    }
+
+    pub fn sk_pkcs8_pem_str(&self) -> GeorgeResult<String> {
+        Strings::from_utf8(self.sk_pkcs8_pem()?)
+    }
+
+    pub fn pk_pkcs8_pem_str(&self) -> GeorgeResult<String> {
+        Strings::from_utf8(self.pk_pkcs8_pem()?)
+    }
+
+    pub fn sk_pkcs1_pem_hex(&self) -> GeorgeResult<String> {
+        Ok(Hex::encode(self.sk_pkcs1_pem()?))
+    }
+
+    pub fn pk_pkcs1_pem_hex(&self) -> GeorgeResult<String> {
+        Ok(Hex::encode(self.pk_pkcs1_pem()?))
+    }
+
+    pub fn sk_pkcs8_pem_hex(&self) -> GeorgeResult<String> {
+        Ok(Hex::encode(self.sk_pkcs8_pem()?))
+    }
+
+    pub fn pk_pkcs8_pem_hex(&self) -> GeorgeResult<String> {
+        Ok(Hex::encode(self.pk_pkcs8_pem()?))
+    }
+
+    pub fn sk_pkcs1_pem_base64(&self) -> GeorgeResult<String> {
+        Ok(Base64::encode(self.sk_pkcs1_pem()?))
+    }
+
+    pub fn pk_pkcs1_pem_base64(&self) -> GeorgeResult<String> {
+        Ok(Base64::encode(self.pk_pkcs1_pem()?))
+    }
+
+    pub fn sk_pkcs8_pem_base64(&self) -> GeorgeResult<String> {
+        Ok(Base64::encode(self.sk_pkcs8_pem()?))
+    }
+
+    pub fn pk_pkcs8_pem_base64(&self) -> GeorgeResult<String> {
+        Ok(Base64::encode(self.pk_pkcs8_pem()?))
+    }
+}
+
+/// der method
+impl RSA {
+    pub fn sk_pkcs1_der(&self) -> GeorgeResult<Vec<u8>> {
+        match self.rsa_sk.private_key_to_der() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("private_key_to_pem", err)),
+        }
+    }
+
+    pub fn pk_pkcs1_der(&self) -> GeorgeResult<Vec<u8>> {
+        match self.rsa_pk.public_key_to_der() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("private_key_to_pem", err)),
+        }
+    }
+
+    pub fn sk_pkcs8_der(&self) -> GeorgeResult<Vec<u8>> {
+        match self.sk.private_key_to_der() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("private_key_to_pem", err)),
+        }
+    }
+
+    pub fn pk_pkcs8_der(&self) -> GeorgeResult<Vec<u8>> {
+        match self.pk.public_key_to_der() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("private_key_to_pem", err)),
+        }
+    }
+
+    pub fn sk_pkcs1_der_hex(&self) -> GeorgeResult<String> {
+        Ok(Hex::encode(self.sk_pkcs1_der()?))
+    }
+
+    pub fn pk_pkcs1_der_hex(&self) -> GeorgeResult<String> {
+        Ok(Hex::encode(self.pk_pkcs1_der()?))
+    }
+
+    pub fn sk_pkcs8_der_hex(&self) -> GeorgeResult<String> {
+        Ok(Hex::encode(self.sk_pkcs8_der()?))
+    }
+
+    pub fn pk_pkcs8_der_hex(&self) -> GeorgeResult<String> {
+        Ok(Hex::encode(self.pk_pkcs8_der()?))
+    }
+
+    pub fn sk_pkcs1_der_base64(&self) -> GeorgeResult<String> {
+        Ok(Base64::encode(self.sk_pkcs1_der()?))
+    }
+
+    pub fn pk_pkcs1_der_base64(&self) -> GeorgeResult<String> {
+        Ok(Base64::encode(self.pk_pkcs1_der()?))
+    }
+
+    pub fn sk_pkcs8_der_base64(&self) -> GeorgeResult<String> {
+        Ok(Base64::encode(self.sk_pkcs8_der()?))
+    }
+
+    pub fn pk_pkcs8_der_base64(&self) -> GeorgeResult<String> {
+        Ok(Base64::encode(self.pk_pkcs8_der()?))
+    }
+}
+
+/// sign method
+impl RSA {
+    pub fn sign(&self, msg: &[u8]) -> GeorgeResult<Vec<u8>> {
+        let mut signer: Signer;
+        match Signer::new(MessageDigest::sha256(), &self.sk) {
+            Ok(sig) => signer = sig,
+            Err(err) => return Err(err_strs("signer new", err)),
+        }
+        match signer.set_rsa_padding(Padding::PKCS1) {
+            Err(err) => return Err(err_strs("signer set_rsa_padding", err)),
+            _ => {}
+        }
+        match signer.update(msg) {
+            Err(err) => return Err(err_strs("signer update", err)),
+            _ => {}
+        }
+        match signer.sign_to_vec() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("signer sign_to_vec", err)),
+        }
+    }
+
+    pub fn sign_cus(
+        &self,
+        msg: &[u8],
+        digest: MessageDigest,
+        padding: Padding,
+    ) -> GeorgeResult<Vec<u8>> {
+        let mut signer: Signer;
+        match Signer::new(digest, &self.sk) {
+            Ok(sig) => signer = sig,
+            Err(err) => return Err(err_strs("signer new", err)),
+        }
+        match signer.set_rsa_padding(padding) {
+            Err(err) => return Err(err_strs("signer set_rsa_padding", err)),
+            _ => {}
+        }
+        match signer.update(msg) {
+            Err(err) => return Err(err_strs("signer update", err)),
+            _ => {}
+        }
+        match signer.sign_to_vec() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("signer sign_to_vec", err)),
+        }
+    }
+
+    pub fn verify(&self, msg: &[u8], der: &[u8]) -> GeorgeResult<bool> {
+        let mut verifier: Verifier;
+        match Verifier::new(MessageDigest::sha256(), &self.pk) {
+            Ok(ver) => verifier = ver,
+            Err(err) => return Err(err_strs("verifier new", err)),
+        }
+        match verifier.update(msg) {
+            Err(err) => return Err(err_strs("verifier update", err)),
+            _ => {}
+        }
+        match verifier.verify(der) {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("verifier verify", err)),
+        }
+    }
+
+    pub fn verify_cus(
+        &self,
+        msg: &[u8],
+        der: &[u8],
+        digest: MessageDigest,
+        padding: Padding,
+    ) -> GeorgeResult<bool> {
+        let mut verifier: Verifier;
+        match Verifier::new(digest, &self.pk) {
+            Ok(ver) => verifier = ver,
+            Err(err) => return Err(err_strs("verifier update", err)),
+        }
+        match verifier.set_rsa_padding(padding) {
+            Err(err) => return Err(err_strs("verifier set_rsa_padding", err)),
+            _ => {}
+        }
+        match verifier.update(msg) {
+            Err(err) => return Err(err_strs("verifier update", err)),
+            _ => {}
+        }
+        match verifier.verify(der) {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("verifier verify", err)),
+        }
+    }
+}
+
+/// crypt method
+impl RSA {
+    pub fn encrypt_sk(&self, data: &[u8]) -> GeorgeResult<Vec<u8>> {
+        let mut emesg = vec![0; self.rsa_sk.size() as usize];
+        match self
+            .rsa_sk
+            .private_encrypt(data, &mut emesg, Padding::PKCS1)
+        {
+            Ok(_) => Ok(emesg),
+            Err(err) => Err(err_strs("private_encrypt", err)),
+        }
+    }
+
+    pub fn decrypt_sk(&self, data: &[u8]) -> GeorgeResult<Vec<u8>> {
+        let mut emesg = vec![0; self.rsa_sk.size() as usize];
+        match self
+            .rsa_sk
+            .private_decrypt(data, &mut emesg, Padding::PKCS1)
+        {
+            Ok(_) => Ok(emesg),
+            Err(err) => Err(err_strs("private_decrypt", err)),
+        }
+    }
+
+    pub fn encrypt_pk(&self, data: &[u8]) -> GeorgeResult<Vec<u8>> {
+        let mut emesg = vec![0; self.rsa_pk.size() as usize];
+        match self.rsa_pk.public_encrypt(data, &mut emesg, Padding::PKCS1) {
+            Ok(_) => Ok(emesg),
+            Err(err) => Err(err_strs("public_encrypt", err)),
+        }
+    }
+
+    pub fn decrypt_pk(&self, data: &[u8]) -> GeorgeResult<Vec<u8>> {
+        let mut emesg = vec![0; self.rsa_pk.size() as usize];
+        match self.rsa_pk.public_decrypt(data, &mut emesg, Padding::PKCS1) {
+            Ok(_) => Ok(emesg),
+            Err(err) => Err(err_strs("public_decrypt", err)),
+        }
+    }
+
+    pub fn encrypt_sk_padding(&self, data: &[u8], padding: Padding) -> GeorgeResult<Vec<u8>> {
+        let mut emesg = vec![0; self.rsa_sk.size() as usize];
+        match self.rsa_sk.private_encrypt(data, &mut emesg, padding) {
+            Ok(_) => Ok(emesg),
+            Err(err) => Err(err_strs("private_encrypt", err)),
+        }
+    }
+
+    pub fn decrypt_sk_padding(&self, data: &[u8], padding: Padding) -> GeorgeResult<Vec<u8>> {
+        let mut emesg = vec![0; self.rsa_sk.size() as usize];
+        match self.rsa_sk.private_decrypt(data, &mut emesg, padding) {
+            Ok(_) => Ok(emesg),
+            Err(err) => Err(err_strs("private_decrypt", err)),
+        }
+    }
+
+    pub fn encrypt_pk_padding(&self, data: &[u8], padding: Padding) -> GeorgeResult<Vec<u8>> {
+        let mut emesg = vec![0; self.rsa_pk.size() as usize];
+        match self.rsa_pk.public_encrypt(data, &mut emesg, padding) {
+            Ok(_) => Ok(emesg),
+            Err(err) => Err(err_strs("public_encrypt", err)),
+        }
+    }
+
+    pub fn decrypt_pk_padding(&self, data: &[u8], padding: Padding) -> GeorgeResult<Vec<u8>> {
+        let mut emesg = vec![0; self.rsa_pk.size() as usize];
+        match self.rsa_pk.public_decrypt(data, &mut emesg, padding) {
+            Ok(_) => Ok(emesg),
+            Err(err) => Err(err_strs("public_decrypt", err)),
+        }
+    }
+}
+
 pub trait RSANew {
-    // /// 生成非对称加密公私钥
-    // fn new_pkcs1(bits: u32) -> GeorgeResult<RSA>;
     /// 生成非对称加密私钥，返回sk字节数组
     ///
     /// bits 私钥位数
@@ -517,9 +918,9 @@ pub trait RSAStoreKey<M, N> {
 
 pub trait RSALoadKey {
     /// 从指定文件中读取公/私钥字节数组
-    fn load<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<Vec<u8>>;
+    fn load_bytes<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<Vec<u8>>;
     /// 从指定文件中读取公/私钥字符串
-    fn load_str<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<String>;
+    fn load_string<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<String>;
     /// 从指定文件中读取Pkey私钥
     fn load_sk<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<PKey<Private>>;
     /// 从指定文件中读取Pkey公钥
@@ -1346,56 +1747,56 @@ impl RSAPkStringPath for RSA {
 
 impl RSAStoreKey<String, String> for RSA {
     fn store(key: String, key_filepath: String) -> GeorgeResult<()> {
-        let _ = Filer::write_force(key_filepath, key)?;
+        let _ = Filer::write_file_force(key_filepath, key)?;
         Ok(())
     }
 }
 
 impl RSAStoreKey<String, &str> for RSA {
     fn store(key: String, key_filepath: &str) -> GeorgeResult<()> {
-        let _ = Filer::write_force(key_filepath, key)?;
+        let _ = Filer::write_file_force(key_filepath, key)?;
         Ok(())
     }
 }
 
 impl RSAStoreKey<&str, String> for RSA {
     fn store(key: &str, key_filepath: String) -> GeorgeResult<()> {
-        let _ = Filer::write_force(key_filepath, key)?;
+        let _ = Filer::write_file_force(key_filepath, key)?;
         Ok(())
     }
 }
 
 impl RSAStoreKey<&str, &str> for RSA {
     fn store(key: &str, key_filepath: &str) -> GeorgeResult<()> {
-        let _ = Filer::write_force(key_filepath, key)?;
+        let _ = Filer::write_file_force(key_filepath, key)?;
         Ok(())
     }
 }
 
 impl RSAStoreKey<Vec<u8>, String> for RSA {
     fn store(key: Vec<u8>, key_filepath: String) -> GeorgeResult<()> {
-        let _ = Filer::write_force(key_filepath, key)?;
+        let _ = Filer::write_file_force(key_filepath, key)?;
         Ok(())
     }
 }
 
 impl RSAStoreKey<Vec<u8>, &str> for RSA {
     fn store(key: Vec<u8>, key_filepath: &str) -> GeorgeResult<()> {
-        let _ = Filer::write_force(key_filepath, key)?;
+        let _ = Filer::write_file_force(key_filepath, key)?;
         Ok(())
     }
 }
 
 impl RSAStoreKey<&[u8], String> for RSA {
     fn store(key: &[u8], key_filepath: String) -> GeorgeResult<()> {
-        let _ = Filer::write_force(key_filepath, key)?;
+        let _ = Filer::write_file_force(key_filepath, key)?;
         Ok(())
     }
 }
 
 impl RSAStoreKey<&[u8], &str> for RSA {
     fn store(key: &[u8], key_filepath: &str) -> GeorgeResult<()> {
-        let _ = Filer::write_force(key_filepath, key)?;
+        let _ = Filer::write_file_force(key_filepath, key)?;
         Ok(())
     }
 }
@@ -1405,12 +1806,12 @@ impl RSAStoreKey<&[u8], &str> for RSA {
 ////////// load start //////////
 
 impl RSALoadKey for RSA {
-    fn load<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<Vec<u8>> {
-        load_pk_bytes_file(key_filepath)
+    fn load_bytes<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<Vec<u8>> {
+        load_bytes_from_file(key_filepath)
     }
 
-    fn load_str<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<String> {
-        load_pk_string_file(key_filepath)
+    fn load_string<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<String> {
+        load_string_from_file(key_filepath)
     }
 
     fn load_sk<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<PKey<Private>> {
@@ -1431,6 +1832,27 @@ impl RSALoadKey for RSA {
 }
 
 ////////// load end //////////
+
+fn generate(bits: u32) -> GeorgeResult<Rsa<Private>> {
+    match Rsa::generate(bits) {
+        Ok(rsa) => Ok(rsa),
+        Err(err) => Err(err_strs("generate_pkcs1", err)),
+    }
+}
+
+fn generate_rsa<T>(key: PKey<T>) -> GeorgeResult<Rsa<T>> {
+    match key.rsa() {
+        Ok(rsa) => Ok(rsa),
+        Err(err) => Err(err_strs("generate_pkey", err)),
+    }
+}
+
+fn generate_pkey<T>(rsa: Rsa<T>) -> GeorgeResult<PKey<T>> {
+    match PKey::from_rsa(rsa) {
+        Ok(rsa) => Ok(rsa),
+        Err(err) => Err(err_strs("generate_pkey", err)),
+    }
+}
 
 fn generate_pkcs1_sk_pem(bits: u32) -> GeorgeResult<Vec<u8>> {
     match Rsa::generate(bits) {
@@ -1584,7 +2006,7 @@ fn generate_pkcs8_sk_der_hex_string(bits: u32) -> GeorgeResult<String> {
 fn generate_pkcs1_sk_pem_file(bits: u32, filepath: String) -> GeorgeResult<Vec<u8>> {
     match generate_pkcs1_sk_pem(bits) {
         Ok(v8s) => {
-            Filer::write_force(filepath, v8s.clone())?;
+            Filer::write_file_force(filepath, v8s.clone())?;
             Ok(v8s)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
@@ -1599,7 +2021,7 @@ fn generate_pkcs1_sk_pem_file(bits: u32, filepath: String) -> GeorgeResult<Vec<u
 fn generate_pkcs8_sk_pem_file(bits: u32, filepath: String) -> GeorgeResult<Vec<u8>> {
     match generate_pkcs8_sk_pem(bits) {
         Ok(v8s) => {
-            Filer::write_force(filepath, v8s.clone())?;
+            Filer::write_file_force(filepath, v8s.clone())?;
             Ok(v8s)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
@@ -1609,7 +2031,7 @@ fn generate_pkcs8_sk_pem_file(bits: u32, filepath: String) -> GeorgeResult<Vec<u
 fn generate_pkcs1_sk_pem_file_string(bits: u32, filepath: String) -> GeorgeResult<String> {
     match generate_pkcs1_sk_pem_string(bits) {
         Ok(res) => {
-            Filer::write_force(filepath, res.clone())?;
+            Filer::write_file_force(filepath, res.clone())?;
             Ok(res)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
@@ -1619,7 +2041,7 @@ fn generate_pkcs1_sk_pem_file_string(bits: u32, filepath: String) -> GeorgeResul
 fn generate_pkcs8_sk_pem_file_string(bits: u32, filepath: String) -> GeorgeResult<String> {
     match generate_pkcs8_sk_pem_string(bits) {
         Ok(res) => {
-            Filer::write_force(filepath, res.clone())?;
+            Filer::write_file_force(filepath, res.clone())?;
             Ok(res)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
@@ -1634,7 +2056,7 @@ fn generate_pkcs1_sk_pem_pass_file(
 ) -> GeorgeResult<Vec<u8>> {
     match generate_pkcs1_sk_pem_pass(bits, cipher, passphrase) {
         Ok(v8s) => {
-            Filer::write_force(filepath, v8s.clone())?;
+            Filer::write_file_force(filepath, v8s.clone())?;
             Ok(v8s)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
@@ -1649,7 +2071,7 @@ fn generate_pkcs8_sk_pem_pass_file(
 ) -> GeorgeResult<Vec<u8>> {
     match generate_pkcs8_sk_pem_pass(bits, cipher, passphrase) {
         Ok(v8s) => {
-            Filer::write_force(filepath, v8s.clone())?;
+            Filer::write_file_force(filepath, v8s.clone())?;
             Ok(v8s)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
@@ -1664,7 +2086,7 @@ fn generate_pkcs1_sk_pem_pass_file_string(
 ) -> GeorgeResult<String> {
     match generate_pkcs1_sk_pem_pass_string(bits, cipher, passphrase) {
         Ok(res) => {
-            Filer::write_force(filepath, res.clone())?;
+            Filer::write_file_force(filepath, res.clone())?;
             Ok(res)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
@@ -1679,7 +2101,7 @@ fn generate_pkcs8_sk_pem_pass_file_string(
 ) -> GeorgeResult<String> {
     match generate_pkcs8_sk_pem_pass_string(bits, cipher, passphrase) {
         Ok(res) => {
-            Filer::write_force(filepath, res.clone())?;
+            Filer::write_file_force(filepath, res.clone())?;
             Ok(res)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
@@ -1689,7 +2111,7 @@ fn generate_pkcs8_sk_pem_pass_file_string(
 fn generate_pkcs1_sk_der_file(bits: u32, filepath: String) -> GeorgeResult<Vec<u8>> {
     match generate_pkcs1_sk_der(bits) {
         Ok(v8s) => {
-            Filer::write_force(filepath, v8s.clone())?;
+            Filer::write_file_force(filepath, v8s.clone())?;
             Ok(v8s)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
@@ -1699,7 +2121,7 @@ fn generate_pkcs1_sk_der_file(bits: u32, filepath: String) -> GeorgeResult<Vec<u
 fn generate_pkcs8_sk_der_file(bits: u32, filepath: String) -> GeorgeResult<Vec<u8>> {
     match generate_pkcs8_sk_der(bits) {
         Ok(v8s) => {
-            Filer::write_force(filepath, v8s.clone())?;
+            Filer::write_file_force(filepath, v8s.clone())?;
             Ok(v8s)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
@@ -1709,7 +2131,7 @@ fn generate_pkcs8_sk_der_file(bits: u32, filepath: String) -> GeorgeResult<Vec<u
 fn generate_pkcs1_sk_der_base64_file(bits: u32, filepath: String) -> GeorgeResult<String> {
     match generate_pkcs1_sk_der_base64_string(bits) {
         Ok(res) => {
-            Filer::write_force(filepath, res.clone())?;
+            Filer::write_file_force(filepath, res.clone())?;
             Ok(res)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
@@ -1719,7 +2141,7 @@ fn generate_pkcs1_sk_der_base64_file(bits: u32, filepath: String) -> GeorgeResul
 fn generate_pkcs8_sk_der_base64_file(bits: u32, filepath: String) -> GeorgeResult<String> {
     match generate_pkcs8_sk_der_base64_string(bits) {
         Ok(res) => {
-            Filer::write_force(filepath, res.clone())?;
+            Filer::write_file_force(filepath, res.clone())?;
             Ok(res)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
@@ -1729,7 +2151,7 @@ fn generate_pkcs8_sk_der_base64_file(bits: u32, filepath: String) -> GeorgeResul
 fn generate_pkcs1_sk_der_hex_file(bits: u32, filepath: String) -> GeorgeResult<String> {
     match generate_pkcs1_sk_der_hex_string(bits) {
         Ok(res) => {
-            Filer::write_force(filepath, res.clone())?;
+            Filer::write_file_force(filepath, res.clone())?;
             Ok(res)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
@@ -1739,7 +2161,7 @@ fn generate_pkcs1_sk_der_hex_file(bits: u32, filepath: String) -> GeorgeResult<S
 fn generate_pkcs8_sk_der_hex_file(bits: u32, filepath: String) -> GeorgeResult<String> {
     match generate_pkcs8_sk_der_hex_string(bits) {
         Ok(res) => {
-            Filer::write_force(filepath, res.clone())?;
+            Filer::write_file_force(filepath, res.clone())?;
             Ok(res)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
@@ -2261,7 +2683,7 @@ pub fn generate_sk_in_files(bits: u32, filepath: &str) -> GeorgeResult<Vec<u8>> 
 pub fn generate_pk_in_file_from_sk(sk: PKey<Private>, filepath: String) -> GeorgeResult<Vec<u8>> {
     match generate_pk_pkey_pem_from_pkey_sk(sk) {
         Ok(u8s) => {
-            Filer::write_force(filepath, u8s.clone())?;
+            Filer::write_file_force(filepath, u8s.clone())?;
             Ok(u8s)
         }
         Err(err) => Err(err_strs("generate_pk_from_sk", err)),
@@ -2274,7 +2696,7 @@ pub fn generate_pk_in_file_from_sk(sk: PKey<Private>, filepath: String) -> Georg
 pub fn generate_pk_in_file_from_sk_bytes(sk: Vec<u8>, filepath: String) -> GeorgeResult<Vec<u8>> {
     match generate_pk_pkey_pem_from_sk_bytes(sk) {
         Ok(u8s) => {
-            Filer::write_force(filepath, u8s.clone())?;
+            Filer::write_file_force(filepath, u8s.clone())?;
             Ok(u8s)
         }
         Err(err) => Err(err_strs("generate_pk_from_sk_bytes", err)),
@@ -2290,7 +2712,7 @@ pub fn generate_pk_in_file_from_sk_file(
 ) -> GeorgeResult<Vec<u8>> {
     match generate_pk_pkey_pem_from_sk_file(sk_filepath) {
         Ok(u8s) => {
-            Filer::write_force(pk_filepath, u8s.clone())?;
+            Filer::write_file_force(pk_filepath, u8s.clone())?;
             Ok(u8s)
         }
         Err(err) => Err(err_strs("generate_pk_from_sk_file", err)),
@@ -2298,7 +2720,7 @@ pub fn generate_pk_in_file_from_sk_file(
 }
 
 /// 读取RSA公钥
-fn load_pk_bytes_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
+fn load_bytes_from_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
     match read(filepath) {
         Ok(u8s) => Ok(u8s),
         Err(err) => Err(err_strs("read", err)),
@@ -2306,7 +2728,7 @@ fn load_pk_bytes_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
 }
 
 /// 读取RSA公钥
-fn load_pk_string_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
+fn load_string_from_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
     match read_to_string(filepath) {
         Ok(res) => Ok(res),
         Err(err) => Err(err_strs("read", err)),

@@ -50,7 +50,7 @@ mod ecdsa {
                     }
                     match key.private_key_to_pem() {
                         Ok(u8s) => {
-                            Filer::write_force(pri_filepath.clone(), u8s.clone()).unwrap();
+                            Filer::write_file_force(pri_filepath.clone(), u8s.clone()).unwrap();
                             println!("pri = {}", String::from_utf8(u8s.clone()).unwrap());
                             match generate_pk_in_file_from_sk_bytes(
                                 u8s,

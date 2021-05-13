@@ -1442,49 +1442,49 @@ impl SM2VerifyPath<&str, &str> for SM2 {
 ////////// sm verify end //////////
 
 fn stores(key: &[u8], key_filepath: String) -> GeorgeResult<()> {
-    match Filer::write_force(key_filepath, key) {
+    match Filer::write_file_force(key_filepath, key) {
         Ok(_) => Ok(()),
         Err(err) => Err(err_strs("store key", err)),
     }
 }
 
 fn store_hex_key(key: &[u8], key_filepath: String) -> GeorgeResult<()> {
-    match Filer::write_force(key_filepath, Hex::encode(key)) {
+    match Filer::write_file_force(key_filepath, Hex::encode(key)) {
         Ok(_) => Ok(()),
         Err(err) => Err(err_strs("store key", err)),
     }
 }
 
 fn store_hex_bytes_key(key: Vec<u8>, key_filepath: String) -> GeorgeResult<()> {
-    match Filer::write_force(key_filepath, Hex::encode(key)) {
+    match Filer::write_file_force(key_filepath, Hex::encode(key)) {
         Ok(_) => Ok(()),
         Err(err) => Err(err_strs("store key", err)),
     }
 }
 
 fn store_base64_key(key: &[u8], key_filepath: String) -> GeorgeResult<()> {
-    match Filer::write_force(key_filepath, Base64::encode(key)) {
+    match Filer::write_file_force(key_filepath, Base64::encode(key)) {
         Ok(_) => Ok(()),
         Err(err) => Err(err_strs("store key", err)),
     }
 }
 
 fn store_base64_bytes_key(key: Vec<u8>, key_filepath: String) -> GeorgeResult<()> {
-    match Filer::write_force(key_filepath, Base64::encode(key)) {
+    match Filer::write_file_force(key_filepath, Base64::encode(key)) {
         Ok(_) => Ok(()),
         Err(err) => Err(err_strs("store key", err)),
     }
 }
 
 fn store_key(key: String, key_filepath: String) -> GeorgeResult<()> {
-    match Filer::write_force(key_filepath, key) {
+    match Filer::write_file_force(key_filepath, key) {
         Ok(_) => Ok(()),
         Err(err) => Err(err_strs("store key", err)),
     }
 }
 
 fn store_key_str(key: String, key_filepath: &str) -> GeorgeResult<()> {
-    match Filer::write_force(key_filepath, key) {
+    match Filer::write_file_force(key_filepath, key) {
         Ok(_) => Ok(()),
         Err(err) => Err(err_strs("store key", err)),
     }

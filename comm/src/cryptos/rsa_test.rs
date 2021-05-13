@@ -16,6 +16,93 @@
 mod rsa {
 
     #[cfg(test)]
+    mod self_test {
+        use crate::cryptos::hex::{Hex, HexEncoder};
+        use crate::cryptos::rsa::RSA;
+        use hex::FromHex;
+        use openssl::hash::MessageDigest;
+        use openssl::rsa::Padding;
+        use openssl::sign::{Signer, Verifier};
+
+        #[test]
+        fn demo() {
+            let res = "hello world!";
+            let data = res.as_bytes();
+
+            let rsa = RSA::new(512).unwrap();
+            let sk_pkey = rsa.sk();
+            let pk_pkey = rsa.pk();
+
+            let mut signer = Signer::new(MessageDigest::sha256(), &sk_pkey).unwrap();
+            assert_eq!(signer.rsa_padding().unwrap(), Padding::PKCS1);
+            signer.set_rsa_padding(Padding::PKCS1).unwrap();
+            signer.update(data).unwrap();
+            let result = signer.sign_to_vec().unwrap();
+
+            let mut verifier = Verifier::new(MessageDigest::sha256(), &sk_pkey).unwrap();
+            assert_eq!(verifier.rsa_padding().unwrap(), Padding::PKCS1);
+            verifier.update(data).unwrap();
+            assert!(verifier.verify(result.as_slice()).unwrap());
+
+            let mut signer = Signer::new(MessageDigest::sha256(), &sk_pkey).unwrap();
+            assert_eq!(signer.rsa_padding().unwrap(), Padding::PKCS1);
+            signer.set_rsa_padding(Padding::PKCS1).unwrap();
+            signer.update(data).unwrap();
+            let result = signer.sign_to_vec().unwrap();
+
+            let mut verifier = Verifier::new(MessageDigest::sha256(), &pk_pkey).unwrap();
+            assert_eq!(verifier.rsa_padding().unwrap(), Padding::PKCS1);
+            verifier.update(data).unwrap();
+            assert!(verifier.verify(result.as_slice()).unwrap());
+        }
+
+        #[test]
+        fn test() {
+            let rsa = RSA::new(512).unwrap();
+            let res = "hello world!";
+            let data = res.as_bytes();
+
+            let en_data = rsa.encrypt_pk(data).unwrap();
+            let de_data = rsa.decrypt_sk(en_data.as_slice()).unwrap();
+            println!("de_data = {}", String::from_utf8(de_data).unwrap());
+            let en_data = rsa.encrypt_sk(data).unwrap();
+            let de_data = rsa.decrypt_pk(en_data.as_slice()).unwrap();
+            println!("de_data = {}", String::from_utf8(de_data).unwrap());
+
+            let en_data = rsa.encrypt_pk_padding(data, Padding::PKCS1_OAEP).unwrap();
+            let de_data = rsa
+                .decrypt_sk_padding(en_data.as_slice(), Padding::PKCS1_OAEP)
+                .unwrap();
+            println!("de_data = {}", String::from_utf8(de_data).unwrap());
+
+            let sign_data = rsa.sign(data).unwrap();
+            let res = rsa.verify(data, &sign_data).unwrap();
+            println!("res = {}", res);
+
+            let sign_data = rsa
+                .sign_cus(data, MessageDigest::sha3_256(), Padding::PKCS1)
+                .unwrap();
+            let res = rsa
+                .verify_cus(data, &sign_data, MessageDigest::sha3_256(), Padding::PKCS1)
+                .unwrap();
+            println!("res = {}", res);
+
+            let sign_data = rsa
+                .sign_cus(data, MessageDigest::sha3_256(), Padding::PKCS1_PSS)
+                .unwrap();
+            let res = rsa
+                .verify_cus(
+                    data,
+                    &sign_data,
+                    MessageDigest::sha3_256(),
+                    Padding::PKCS1_PSS,
+                )
+                .unwrap();
+            println!("res = {}", res);
+        }
+    }
+
+    #[cfg(test)]
     mod generate_pk {
         use crate::cryptos::base64::{Base64, Base64Encoder};
         use crate::cryptos::rsa::{RSANew, RSANewPass, RSA};
@@ -277,7 +364,7 @@ mod rsa {
                         }
                         match key.private_key_to_pem_pkcs8() {
                             Ok(u8s) => {
-                                Filer::write_force(pri_filepath.clone(), u8s.clone()).unwrap();
+                                Filer::write_file_force(pri_filepath.clone(), u8s.clone()).unwrap();
                                 println!("pri = {}", String::from_utf8(u8s.clone()).unwrap());
                                 match generate_pk_in_file_from_sk_bytes(
                                     u8s,

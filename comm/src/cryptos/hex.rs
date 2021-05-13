@@ -37,6 +37,12 @@ impl HexEncoder<Vec<u8>> for Hex {
     }
 }
 
+impl HexEncoder<&str> for Hex {
+    fn encode(bytes: &str) -> String {
+        hex::encode(bytes)
+    }
+}
+
 impl HexDecoder<&str> for Hex {
     fn decode(src: &str) -> GeorgeResult<Vec<u8>> {
         match hex::decode(src) {

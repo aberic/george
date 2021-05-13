@@ -67,7 +67,7 @@ mod ca {
             Ok(key) => match create_cert_request(&key, x509_name_info()) {
                 Ok(csr) => match csr.to_pem() {
                     Ok(pem) => {
-                        Filer::write_force(csr_filepath, pem).unwrap();
+                        Filer::write_file_force(csr_filepath, pem).unwrap();
                     }
                     Err(err) => {
                         println!("to_pem = {}", err);
@@ -98,7 +98,7 @@ mod ca {
             Ok(key) => match create(128, &key, x509_name_info(), 2, 0, 356) {
                 Ok(x509) => match x509.to_pem() {
                     Ok(pem) => {
-                        Filer::write_force(root_filepath, pem).unwrap();
+                        Filer::write_file_force(root_filepath, pem).unwrap();
                     }
                     Err(err) => {
                         println!("to_pem = {}", err);
@@ -166,7 +166,7 @@ mod ca {
         ) {
             Ok(x509) => match x509.to_pem() {
                 Ok(pem) => {
-                    Filer::write_force(cert_filepath, pem).unwrap();
+                    Filer::write_file_force(cert_filepath, pem).unwrap();
                 }
                 Err(err) => {
                     println!("to_pem = {}", err);
