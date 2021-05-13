@@ -14,13 +14,18 @@
 
 use std::fs::read;
 
-use openssl::ec::{EcGroup, EcKey};
+use openssl::ec::{EcGroup, EcKey, EcPoint, PointConversionForm};
 use openssl::nid::Nid;
 use openssl::pkey::{Private, Public};
 
+use crate::cryptos::base64::{Base64, Base64Encoder, Basee64Decoder};
+use crate::cryptos::hex::{Hex, HexDecoder, HexEncoder};
 use crate::errors::entrances::err_strs;
 use crate::errors::entrances::GeorgeResult;
 use crate::io::file::{Filer, FilerWriter};
+use crate::strings::{StringHandler, Strings};
+use openssl::bn::{BigNum, BigNumContext};
+use openssl::ecdsa::EcdsaSig;
 
 pub struct ECDSA {
     sk: EcKey<Private>,
@@ -45,10 +50,57 @@ impl ECDSA {
         Ok(ECDSA { sk, pk })
     }
 
-    /// 生成RSA对象
+    /// 生成ECDSA对象
     pub fn from(sk: EcKey<Private>) -> GeorgeResult<ECDSA> {
         let (sk, pk) = generate_pk_from_sk(sk)?;
         Ok(ECDSA { sk, pk })
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_key(sk: EcKey<Private>, pk: EcKey<Public>) -> ECDSA {
+        ECDSA { sk, pk }
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_hex(sk: String, pk: String) -> GeorgeResult<ECDSA> {
+        from_bytes(Hex::decode(sk)?, Hex::decode(pk)?)
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_hex_nid(sk: String, pk: String, nid: Nid) -> GeorgeResult<ECDSA> {
+        from_bytes_nid(Hex::decode(sk)?, Hex::decode(pk)?, nid)
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_base64(sk: String, pk: String) -> GeorgeResult<ECDSA> {
+        from_bytes(Base64::decode(sk)?, Base64::decode(pk)?)
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_base64_nid(sk: String, pk: String, nid: Nid) -> GeorgeResult<ECDSA> {
+        from_bytes_nid(Base64::decode(sk)?, Base64::decode(pk)?, nid)
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_pem(sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<ECDSA> {
+        match EcKey::private_key_from_pem(&sk) {
+            Ok(sk) => match EcKey::public_key_from_pem(&pk) {
+                Ok(pk) => Ok(ECDSA { sk, pk }),
+                Err(err) => Err(err_strs("EcKey public_key_from_pem", err)),
+            },
+            Err(err) => Err(err_strs("EcKey private_key_from_pem", err)),
+        }
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_der(sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<ECDSA> {
+        match EcKey::private_key_from_der(&sk) {
+            Ok(sk) => match EcKey::public_key_from_der(&pk) {
+                Ok(pk) => Ok(ECDSA { sk, pk }),
+                Err(err) => Err(err_strs("EcKey public_key_from_der", err)),
+            },
+            Err(err) => Err(err_strs("EcKey private_key_from_der", err)),
+        }
     }
 
     pub fn sk(&self) -> EcKey<Private> {
@@ -60,18 +112,157 @@ impl ECDSA {
     }
 }
 
-/// pem method
+/// fmt method
 impl ECDSA {
+    pub fn sk_hex(&self) -> String {
+        Hex::encode(self.sk.private_key().to_vec())
+    }
+    pub fn sk_base64(&self) -> String {
+        Base64::encode(self.sk.private_key().to_vec())
+    }
+
     pub fn sk_pem(&self) -> GeorgeResult<Vec<u8>> {
         match self.sk.private_key_to_pem() {
             Ok(res) => Ok(res),
             Err(err) => Err(err_strs("private_key_to_pem", err)),
         }
     }
+
+    pub fn sk_pem_str(&self) -> GeorgeResult<String> {
+        match self.sk.private_key_to_pem() {
+            Ok(res) => Strings::from_utf8(res),
+            Err(err) => Err(err_strs("private_key_to_pem", err)),
+        }
+    }
+
+    pub fn sk_pem_hex(&self) -> GeorgeResult<String> {
+        match self.sk.private_key_to_pem() {
+            Ok(res) => Ok(Hex::encode(res)),
+            Err(err) => Err(err_strs("private_key_to_pem", err)),
+        }
+    }
+
+    pub fn sk_pem_base64(&self) -> GeorgeResult<String> {
+        match self.sk.private_key_to_pem() {
+            Ok(res) => Ok(Base64::encode(res)),
+            Err(err) => Err(err_strs("private_key_to_pem", err)),
+        }
+    }
+
     pub fn sk_der(&self) -> GeorgeResult<Vec<u8>> {
         match self.sk.private_key_to_der() {
             Ok(res) => Ok(res),
             Err(err) => Err(err_strs("private_key_to_pem", err)),
+        }
+    }
+
+    pub fn sk_der_hex(&self) -> GeorgeResult<String> {
+        match self.sk.private_key_to_der() {
+            Ok(res) => Ok(Hex::encode(res)),
+            Err(err) => Err(err_strs("private_key_to_pem", err)),
+        }
+    }
+
+    pub fn sk_der_base64(&self) -> GeorgeResult<String> {
+        match self.sk.private_key_to_der() {
+            Ok(res) => Ok(Base64::encode(res)),
+            Err(err) => Err(err_strs("private_key_to_pem", err)),
+        }
+    }
+
+    pub fn pk_hex(&self) -> GeorgeResult<String> {
+        let mut ctx = BigNumContext::new().unwrap();
+        match self.pk.public_key().to_bytes(
+            &self.sk.group(),
+            PointConversionForm::COMPRESSED,
+            &mut ctx,
+        ) {
+            Ok(res) => Ok(Hex::encode(res)),
+            Err(err) => Err(err_strs("public_key to_bytes", err)),
+        }
+    }
+
+    pub fn pk_base64(&self) -> GeorgeResult<String> {
+        let mut ctx = BigNumContext::new().unwrap();
+        match self.pk.public_key().to_bytes(
+            &self.sk.group(),
+            PointConversionForm::COMPRESSED,
+            &mut ctx,
+        ) {
+            Ok(res) => Ok(Base64::encode(res)),
+            Err(err) => Err(err_strs("public_key to_bytes", err)),
+        }
+    }
+
+    pub fn pk_pem(&self) -> GeorgeResult<Vec<u8>> {
+        match self.pk.public_key_to_pem() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("public_key_to_pem", err)),
+        }
+    }
+
+    pub fn pk_pem_str(&self) -> GeorgeResult<String> {
+        match self.pk.public_key_to_pem() {
+            Ok(res) => Strings::from_utf8(res),
+            Err(err) => Err(err_strs("public_key_to_pem", err)),
+        }
+    }
+
+    pub fn pk_pem_hex(&self) -> GeorgeResult<String> {
+        match self.pk.public_key_to_pem() {
+            Ok(res) => Ok(Hex::encode(res)),
+            Err(err) => Err(err_strs("public_key_to_pem", err)),
+        }
+    }
+
+    pub fn pk_pem_base64(&self) -> GeorgeResult<String> {
+        match self.pk.public_key_to_pem() {
+            Ok(res) => Ok(Base64::encode(res)),
+            Err(err) => Err(err_strs("public_key_to_pem", err)),
+        }
+    }
+
+    pub fn pk_der(&self) -> GeorgeResult<Vec<u8>> {
+        match self.pk.public_key_to_der() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("public_key_to_der", err)),
+        }
+    }
+
+    pub fn pk_der_hex(&self) -> GeorgeResult<String> {
+        match self.pk.public_key_to_der() {
+            Ok(res) => Ok(Hex::encode(res)),
+            Err(err) => Err(err_strs("public_key_to_der", err)),
+        }
+    }
+
+    pub fn pk_der_base64(&self) -> GeorgeResult<String> {
+        match self.pk.public_key_to_der() {
+            Ok(res) => Ok(Base64::encode(res)),
+            Err(err) => Err(err_strs("public_key_to_der", err)),
+        }
+    }
+}
+
+/// sign method
+impl ECDSA {
+    pub fn sign(&self, data: &[u8]) -> GeorgeResult<Vec<u8>> {
+        match EcdsaSig::sign(data, &self.sk) {
+            Ok(sig) => match sig.to_der() {
+                Ok(res) => Ok(res),
+                Err(err) => Err(err_strs("EcdsaSig to_der", err)),
+            },
+            Err(err) => Err(err_strs("EcdsaSig sign", err)),
+        }
+    }
+
+    pub fn verify(&self, data: &[u8], der: &[u8]) -> GeorgeResult<bool> {
+        match EcdsaSig::from_der(der) {
+            Ok(sig) => match sig.verify(data, &self.pk) {
+                Ok(res) => Ok(res),
+                Err(err) => Err(err_strs("EcdsaSig verify", err)),
+            },
+            Err(err) => Err(err_strs("EcdsaSig from_der", err)),
         }
     }
 }
@@ -132,6 +323,27 @@ fn generate_pk_from_sk(sk: EcKey<Private>) -> GeorgeResult<(EcKey<Private>, EcKe
     match EcKey::from_public_key(sk.group(), ec_point_ref) {
         Ok(pk) => Ok((sk, pk)),
         Err(err) => Err(err_strs("from_public_key", err)),
+    }
+}
+
+/// 生成ECDSA对象
+fn from_bytes(sk_bytes: Vec<u8>, pk_bytes: Vec<u8>) -> GeorgeResult<ECDSA> {
+    from_bytes_nid(sk_bytes, pk_bytes, Nid::X9_62_PRIME256V1)
+}
+
+/// 生成ECDSA对象
+fn from_bytes_nid(sk_bytes: Vec<u8>, pk_bytes: Vec<u8>, nid: Nid) -> GeorgeResult<ECDSA> {
+    let group = EcGroup::from_curve_name(nid).unwrap();
+    let mut ctx = BigNumContext::new().unwrap();
+    let public_key = EcPoint::from_bytes(&group, &pk_bytes, &mut ctx).unwrap();
+    let pk = EcKey::from_public_key(&group, &public_key).unwrap();
+
+    match BigNum::from_slice(&sk_bytes) {
+        Ok(bn) => match EcKey::from_private_components(&group, &bn, &public_key) {
+            Ok(sk) => Ok(ECDSA { sk, pk }),
+            Err(err) => Err(err_strs("EcKey from_private_components", err)),
+        },
+        Err(err) => Err(err_strs("BigNum from_slice", err)),
     }
 }
 
