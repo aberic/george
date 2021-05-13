@@ -165,7 +165,7 @@ mod file {
 
     #[test]
     fn writer_seek_test() {
-        Filer::touch("src/test/file/seek.txt").unwrap();
+        Filer::try_touch("src/test/file/seek.txt").unwrap();
         let u8s1 = "hello world!".as_bytes();
         match Filer::write_seek("src/test/file/seek.txt", 100000000, u8s1) {
             Err(err) => println!("err = {}", err),
@@ -217,7 +217,7 @@ mod file {
         let s1 = Filer::read("src/examples/conf.yaml").unwrap();
         println!("s = {}", s1);
         let file = Filer::reader("src/examples/conf.yaml").unwrap();
-        let s2 = Filer::read(file).unwrap();
+        let s2 = Filer::read_file(file).unwrap();
         println!("s = {}", s2);
         assert_eq!(s1, s2);
     }
@@ -241,7 +241,7 @@ mod file {
             Filer::read_sub("src/examples/conf.yaml", 448, 8).unwrap()
         );
         let file = Filer::reader("src/examples/conf.yaml").unwrap();
-        println!("res2 = {:#?}", Filer::read_sub(file, 448, 8).unwrap());
+        println!("res2 = {:#?}", Filer::read_file_sub(file, 448, 8).unwrap());
     }
 
     #[test]
@@ -251,6 +251,6 @@ mod file {
             Filer::len("src/examples/conf.yaml").unwrap()
         );
         let file = Filer::reader("src/examples/conf.yaml").unwrap();
-        println!("len2 = {:#?}", Filer::len(file).unwrap());
+        println!("len2 = {:#?}", Filer::len_file(file).unwrap());
     }
 }

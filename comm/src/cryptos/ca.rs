@@ -26,7 +26,7 @@ use openssl::x509::extension::{
 };
 use openssl::x509::{X509Name, X509NameBuilder, X509NameRef, X509Req, X509ReqBuilder, X509};
 
-use crate::cryptos::rsa;
+use crate::cryptos::rsa::{RSALoadKey, RSA};
 use crate::errors::entrances::err_strs;
 use crate::errors::entrances::GeorgeResult;
 
@@ -403,8 +403,8 @@ pub fn sign(
     not_before_day: u32,
     not_after_day: u32,
 ) -> GeorgeResult<X509> {
-    let ca_sk = rsa::load_sk_pkey_file(ca_sk_path.to_string())?;
-    let sk = rsa::load_sk_pkey_file(sk_path.to_string())?;
+    let ca_sk = RSA::load_sk(ca_sk_path)?;
+    let sk = RSA::load_sk(sk_path)?;
     let ca_cert = load_ca_file(ca_cert_path.to_string())?;
     match sign_cert(
         ca_cert,

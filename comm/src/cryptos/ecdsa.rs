@@ -22,8 +22,123 @@ use crate::errors::entrances::err_strs;
 use crate::errors::entrances::GeorgeResult;
 use crate::io::file::{Filer, FilerWriter};
 
+pub struct ECDSA {
+    sk: EcKey<Private>,
+    pk: EcKey<Public>,
+}
+
+/// base method
+impl ECDSA {
+    /// 生成ECDSA对象，默认PRIME256V1
+    pub fn new() -> GeorgeResult<ECDSA> {
+        let (sk, pk) = generate()?;
+        Ok(ECDSA { sk, pk })
+    }
+
+    /// 生成ECDSA对象
+    ///
+    /// nid OpenSSL对象的数字标识符。
+    /// OpenSSL中的对象可以有短名称、长名称和数字标识符(NID)。为方便起见，对象通常在源代码中使用这些数字标识符表示。
+    /// 用户通常不需要创建新的' Nid '。
+    pub fn new_nid(nid: Nid) -> GeorgeResult<ECDSA> {
+        let (sk, pk) = generate_nid(nid)?;
+        Ok(ECDSA { sk, pk })
+    }
+
+    /// 生成RSA对象
+    pub fn from(sk: EcKey<Private>) -> GeorgeResult<ECDSA> {
+        let (sk, pk) = generate_pk_from_sk(sk)?;
+        Ok(ECDSA { sk, pk })
+    }
+
+    pub fn sk(&self) -> EcKey<Private> {
+        self.sk.clone()
+    }
+
+    pub fn pk(&self) -> EcKey<Public> {
+        self.pk.clone()
+    }
+}
+
+/// pem method
+impl ECDSA {
+    pub fn sk_pem(&self) -> GeorgeResult<Vec<u8>> {
+        match self.sk.private_key_to_pem() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("private_key_to_pem", err)),
+        }
+    }
+    pub fn sk_der(&self) -> GeorgeResult<Vec<u8>> {
+        match self.sk.private_key_to_der() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("private_key_to_pem", err)),
+        }
+    }
+}
+
 /// 生成ECDSA私钥，默认PRIME256V1
-pub fn generate_sk() -> GeorgeResult<Vec<u8>> {
+fn generate() -> GeorgeResult<(EcKey<Private>, EcKey<Public>)> {
+    generate_nid(Nid::X9_62_PRIME256V1)
+}
+
+/// 生成ECDSA私钥
+///
+/// nid OpenSSL对象的数字标识符。
+/// OpenSSL中的对象可以有短名称、长名称和数字标识符(NID)。为方便起见，对象通常在源代码中使用这些数字标识符表示。
+/// 用户通常不需要创建新的' Nid '。
+fn generate_nid(nid: Nid) -> GeorgeResult<(EcKey<Private>, EcKey<Public>)> {
+    match EcGroup::from_curve_name(nid) {
+        Ok(group) => match EcKey::generate(&group) {
+            Ok(sk) => {
+                let ec_point_ref = sk.public_key();
+                match EcKey::from_public_key(&group, ec_point_ref) {
+                    Ok(pk) => Ok((sk, pk)),
+                    Err(err) => Err(err_strs("from_public_key", err)),
+                }
+            }
+            Err(err) => Err(err_strs("generate", err)),
+        },
+        Err(err) => Err(err_strs("from_curve_name", err)),
+    }
+}
+
+/// 生成ECDSA私钥，默认PRIME256V1
+fn generate_sk() -> GeorgeResult<EcKey<Private>> {
+    generate_sk_nid(Nid::X9_62_PRIME256V1)
+}
+
+/// 生成ECDSA私钥
+///
+/// nid OpenSSL对象的数字标识符。
+/// OpenSSL中的对象可以有短名称、长名称和数字标识符(NID)。为方便起见，对象通常在源代码中使用这些数字标识符表示。
+/// 用户通常不需要创建新的' Nid '。
+fn generate_sk_nid(nid: Nid) -> GeorgeResult<EcKey<Private>> {
+    match EcGroup::from_curve_name(nid) {
+        Ok(group) => match EcKey::generate(&group) {
+            Ok(key) => Ok(key),
+            Err(err) => Err(err_strs("generate", err)),
+        },
+        Err(err) => Err(err_strs("from_curve_name", err)),
+    }
+}
+
+/// 生成ECDSA私钥
+///
+/// nid OpenSSL对象的数字标识符。
+/// OpenSSL中的对象可以有短名称、长名称和数字标识符(NID)。为方便起见，对象通常在源代码中使用这些数字标识符表示。
+/// 用户通常不需要创建新的' Nid '。
+fn generate_pk_from_sk(sk: EcKey<Private>) -> GeorgeResult<(EcKey<Private>, EcKey<Public>)> {
+    let ec_point_ref = sk.public_key();
+    match EcKey::from_public_key(sk.group(), ec_point_ref) {
+        Ok(pk) => Ok((sk, pk)),
+        Err(err) => Err(err_strs("from_public_key", err)),
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+/// 生成ECDSA私钥，默认PRIME256V1
+fn generate_sk1() -> GeorgeResult<Vec<u8>> {
     match EcGroup::from_curve_name(Nid::X9_62_PRIME256V1) {
         Ok(group) => match EcKey::generate(&group) {
             Ok(key) => match key.private_key_to_pem() {
@@ -40,9 +155,9 @@ pub fn generate_sk() -> GeorgeResult<Vec<u8>> {
 ///
 /// 如果已存在，删除重写
 pub fn generate_sk_in_file(filepath: String) -> GeorgeResult<Vec<u8>> {
-    match generate_sk() {
+    match generate_sk1() {
         Ok(u8s) => {
-            Filer::write_file_force(filepath, u8s.clone())?;
+            Filer::write_force(filepath, u8s.clone())?;
             Ok(u8s)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
@@ -73,7 +188,7 @@ pub fn load_sk_file(filepath: String) -> GeorgeResult<EcKey<Private>> {
 }
 
 /// 生成ECDSA公钥
-pub fn generate_pk_from_sk(sk: EcKey<Private>) -> GeorgeResult<Vec<u8>> {
+pub fn generate_pk_from_sk1(sk: EcKey<Private>) -> GeorgeResult<Vec<u8>> {
     match sk.public_key_to_pem() {
         Ok(u8s) => Ok(u8s),
         Err(err) => Err(err_strs("public_key_to_pem", err)),
@@ -83,7 +198,7 @@ pub fn generate_pk_from_sk(sk: EcKey<Private>) -> GeorgeResult<Vec<u8>> {
 /// 生成ECDSA公钥
 pub fn generate_pk_from_sk_bytes(sk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
     match load_sk(sk) {
-        Ok(key) => generate_pk_from_sk(key),
+        Ok(key) => generate_pk_from_sk1(key),
         Err(err) => Err(err_strs("load_sk", err)),
     }
 }
@@ -91,7 +206,7 @@ pub fn generate_pk_from_sk_bytes(sk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
 /// 生成ECDSA公钥
 pub fn generate_pk_from_sk_file(filepath: String) -> GeorgeResult<Vec<u8>> {
     match load_sk_file(filepath) {
-        Ok(key) => generate_pk_from_sk(key),
+        Ok(key) => generate_pk_from_sk1(key),
         Err(err) => Err(err_strs("load_sk_file", err)),
     }
 }
@@ -100,9 +215,9 @@ pub fn generate_pk_from_sk_file(filepath: String) -> GeorgeResult<Vec<u8>> {
 ///
 /// 如果已存在，删除重写
 pub fn generate_pk_in_file_from_sk(sk: EcKey<Private>, filepath: String) -> GeorgeResult<Vec<u8>> {
-    match generate_pk_from_sk(sk) {
+    match generate_pk_from_sk1(sk) {
         Ok(u8s) => {
-            Filer::write_file_force(filepath, u8s.clone())?;
+            Filer::write_force(filepath, u8s.clone())?;
             Ok(u8s)
         }
         Err(err) => Err(err_strs("generate_pk_from_sk", err)),
@@ -115,7 +230,7 @@ pub fn generate_pk_in_file_from_sk(sk: EcKey<Private>, filepath: String) -> Geor
 pub fn generate_pk_in_file_from_sk_bytes(sk: Vec<u8>, filepath: String) -> GeorgeResult<Vec<u8>> {
     match generate_pk_from_sk_bytes(sk) {
         Ok(u8s) => {
-            Filer::write_file_force(filepath, u8s.clone())?;
+            Filer::write_force(filepath, u8s.clone())?;
             Ok(u8s)
         }
         Err(err) => Err(err_strs("generate_pk_from_sk_bytes", err)),
@@ -131,7 +246,7 @@ pub fn generate_pk_in_file_from_sk_file(
 ) -> GeorgeResult<Vec<u8>> {
     match generate_pk_from_sk_file(sk_filepath) {
         Ok(u8s) => {
-            Filer::write_file_force(pk_filepath, u8s.clone())?;
+            Filer::write_force(pk_filepath, u8s.clone())?;
             Ok(u8s)
         }
         Err(err) => Err(err_strs("generate_pk_from_sk_file", err)),

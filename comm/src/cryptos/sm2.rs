@@ -100,19 +100,19 @@ pub trait SM2SkNew {
     fn generate_base64() -> String;
 }
 
-pub trait SM2SkNewStore<T> {
+pub trait SM2SkNewStore {
     /// 生成非对称加密私钥，返回sk字节数组
     ///
     /// 并将生成的私钥存储在sk指定文件中
-    fn generate(sk_filepath: T) -> GeorgeResult<Vec<u8>>;
+    fn generate<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>>;
     /// 生成非对称加密私钥，返回sk字符串
     ///
     /// 并将生成的私钥存储在sk指定文件中
-    fn generate_hex(sk_filepath: T) -> GeorgeResult<String>;
+    fn generate_hex<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
     /// 生成非对称加密私钥，返回sk字符串
     ///
     /// 并将生成的私钥存储在sk指定文件中
-    fn generate_base64(sk_filepath: T) -> GeorgeResult<String>;
+    fn generate_base64<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
 }
 
 pub trait SM2New {
@@ -124,19 +124,26 @@ pub trait SM2New {
     fn generate_base64() -> (String, String);
 }
 
-pub trait SM2NewStore<T> {
+pub trait SM2NewStore {
     /// 生成非对称加密公私钥，返回sk、pk字节数组
     ///
     /// 并将生成的公私钥存储在sk、pk指定文件中
-    fn generate(sk_filepath: T, pk_filepath: T) -> GeorgeResult<(Vec<u8>, Vec<u8>)>;
+    fn generate<P: AsRef<Path>>(sk_filepath: P, pk_filepath: P)
+        -> GeorgeResult<(Vec<u8>, Vec<u8>)>;
     /// 生成非对称加密公私钥，返回sk、pk字符串
     ///
     /// 并将生成的公私钥存储在sk、pk指定文件中
-    fn generate_hex(sk_filepath: T, pk_filepath: T) -> GeorgeResult<(String, String)>;
+    fn generate_hex<P: AsRef<Path>>(
+        sk_filepath: P,
+        pk_filepath: P,
+    ) -> GeorgeResult<(String, String)>;
     /// 生成非对称加密公私钥，返回sk、pk字符串
     ///
     /// 并将生成的公私钥存储在sk、pk指定文件中
-    fn generate_base64(sk_filepath: T, pk_filepath: T) -> GeorgeResult<(String, String)>;
+    fn generate_base64<P: AsRef<Path>>(
+        sk_filepath: P,
+        pk_filepath: P,
+    ) -> GeorgeResult<(String, String)>;
 }
 
 pub trait SM2Pk {
@@ -152,18 +159,18 @@ pub trait SM2Pk {
     fn generate_pk_by_base64_file<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>>;
 }
 
-pub trait SM2StoreKey<M, N> {
+pub trait SM2StoreKey<T> {
     /// 将公/私钥存储在指定文件中
-    fn store(key: M, key_filepath: N) -> GeorgeResult<()>;
+    fn store<P: AsRef<Path>>(key: T, key_filepath: P) -> GeorgeResult<()>;
     /// 将公/私钥存储在指定文件中
-    fn store_hex(key: M, key_filepath: N) -> GeorgeResult<()>;
+    fn store_hex<P: AsRef<Path>>(key: T, key_filepath: P) -> GeorgeResult<()>;
     /// 将公/私钥存储在指定文件中
-    fn store_base64(key: M, key_filepath: N) -> GeorgeResult<()>;
+    fn store_base64<P: AsRef<Path>>(key: T, key_filepath: P) -> GeorgeResult<()>;
 }
 
-pub trait SM2Store<P> {
+pub trait SM2Store {
     /// 将公/私钥存储在指定文件中
-    fn store(&self, sk_filepath: P, pk_filepath: P) -> GeorgeResult<()>;
+    fn store<P: AsRef<Path>>(&self, sk_filepath: P, pk_filepath: P) -> GeorgeResult<()>;
 }
 
 pub trait SM2LoadKey {
@@ -231,31 +238,17 @@ impl SM2SkNew for SM2 {
     }
 }
 
-impl SM2SkNewStore<String> for SM2 {
-    fn generate(sk_filepath: String) -> GeorgeResult<Vec<u8>> {
+impl SM2SkNewStore for SM2 {
+    fn generate<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>> {
         generate_sk_in_file(sk_filepath)
     }
 
-    fn generate_hex(sk_filepath: String) -> GeorgeResult<String> {
+    fn generate_hex<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String> {
         generate_sk_hex_in_file(sk_filepath)
     }
 
-    fn generate_base64(sk_filepath: String) -> GeorgeResult<String> {
+    fn generate_base64<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String> {
         generate_sk_base64_in_file(sk_filepath)
-    }
-}
-
-impl SM2SkNewStore<&str> for SM2 {
-    fn generate(sk_filepath: &str) -> GeorgeResult<Vec<u8>> {
-        generate_sk_in_file(sk_filepath.to_string())
-    }
-
-    fn generate_hex(sk_filepath: &str) -> GeorgeResult<String> {
-        generate_sk_hex_in_file(sk_filepath.to_string())
-    }
-
-    fn generate_base64(sk_filepath: &str) -> GeorgeResult<String> {
-        generate_sk_base64_in_file(sk_filepath.to_string())
     }
 }
 
@@ -273,31 +266,26 @@ impl SM2New for SM2 {
     }
 }
 
-impl SM2NewStore<String> for SM2 {
-    fn generate(sk_filepath: String, pk_filepath: String) -> GeorgeResult<(Vec<u8>, Vec<u8>)> {
+impl SM2NewStore for SM2 {
+    fn generate<P: AsRef<Path>>(
+        sk_filepath: P,
+        pk_filepath: P,
+    ) -> GeorgeResult<(Vec<u8>, Vec<u8>)> {
         generate_in_file(sk_filepath, pk_filepath)
     }
 
-    fn generate_hex(sk_filepath: String, pk_filepath: String) -> GeorgeResult<(String, String)> {
+    fn generate_hex<P: AsRef<Path>>(
+        sk_filepath: P,
+        pk_filepath: P,
+    ) -> GeorgeResult<(String, String)> {
         generate_hex_in_file(sk_filepath, pk_filepath)
     }
 
-    fn generate_base64(sk_filepath: String, pk_filepath: String) -> GeorgeResult<(String, String)> {
+    fn generate_base64<P: AsRef<Path>>(
+        sk_filepath: P,
+        pk_filepath: P,
+    ) -> GeorgeResult<(String, String)> {
         generate_base64_in_file(sk_filepath, pk_filepath)
-    }
-}
-
-impl SM2NewStore<&str> for SM2 {
-    fn generate(sk_filepath: &str, pk_filepath: &str) -> GeorgeResult<(Vec<u8>, Vec<u8>)> {
-        generate_in_file(sk_filepath.to_string(), pk_filepath.to_string())
-    }
-
-    fn generate_hex(sk_filepath: &str, pk_filepath: &str) -> GeorgeResult<(String, String)> {
-        generate_hex_in_file(sk_filepath.to_string(), pk_filepath.to_string())
-    }
-
-    fn generate_base64(sk_filepath: &str, pk_filepath: &str) -> GeorgeResult<(String, String)> {
-        generate_base64_in_file(sk_filepath.to_string(), pk_filepath.to_string())
     }
 }
 
@@ -330,73 +318,38 @@ impl SM2Pk for SM2 {
 
 ////////// sm store/load start //////////
 
-impl SM2StoreKey<&[u8], String> for SM2 {
-    fn store(key: &[u8], key_filepath: String) -> GeorgeResult<()> {
+impl SM2StoreKey<&[u8]> for SM2 {
+    fn store<P: AsRef<Path>>(key: &[u8], key_filepath: P) -> GeorgeResult<()> {
         stores(key, key_filepath)
     }
 
-    fn store_hex(key: &[u8], key_filepath: String) -> GeorgeResult<()> {
+    fn store_hex<P: AsRef<Path>>(key: &[u8], key_filepath: P) -> GeorgeResult<()> {
         store_hex_key(key, key_filepath)
     }
 
-    fn store_base64(key: &[u8], key_filepath: String) -> GeorgeResult<()> {
+    fn store_base64<P: AsRef<Path>>(key: &[u8], key_filepath: P) -> GeorgeResult<()> {
         store_base64_key(key, key_filepath)
     }
 }
 
-impl SM2StoreKey<Vec<u8>, String> for SM2 {
-    fn store(key: Vec<u8>, key_filepath: String) -> GeorgeResult<()> {
+impl SM2StoreKey<Vec<u8>> for SM2 {
+    fn store<P: AsRef<Path>>(key: Vec<u8>, key_filepath: P) -> GeorgeResult<()> {
         stores(key.as_slice(), key_filepath)
     }
 
-    fn store_hex(key: Vec<u8>, key_filepath: String) -> GeorgeResult<()> {
+    fn store_hex<P: AsRef<Path>>(key: Vec<u8>, key_filepath: P) -> GeorgeResult<()> {
         store_hex_bytes_key(key, key_filepath)
     }
 
-    fn store_base64(key: Vec<u8>, key_filepath: String) -> GeorgeResult<()> {
+    fn store_base64<P: AsRef<Path>>(key: Vec<u8>, key_filepath: P) -> GeorgeResult<()> {
         store_base64_bytes_key(key, key_filepath)
     }
 }
 
-impl SM2StoreKey<&[u8], &str> for SM2 {
-    fn store(key: &[u8], key_filepath: &str) -> GeorgeResult<()> {
-        stores(key, key_filepath.to_string())
-    }
-
-    fn store_hex(key: &[u8], key_filepath: &str) -> GeorgeResult<()> {
-        store_hex_key(key, key_filepath.to_string())
-    }
-
-    fn store_base64(key: &[u8], key_filepath: &str) -> GeorgeResult<()> {
-        store_base64_key(key, key_filepath.to_string())
-    }
-}
-
-impl SM2StoreKey<Vec<u8>, &str> for SM2 {
-    fn store(key: Vec<u8>, key_filepath: &str) -> GeorgeResult<()> {
-        stores(key.as_slice(), key_filepath.to_string())
-    }
-
-    fn store_hex(key: Vec<u8>, key_filepath: &str) -> GeorgeResult<()> {
-        store_hex_bytes_key(key, key_filepath.to_string())
-    }
-
-    fn store_base64(key: Vec<u8>, key_filepath: &str) -> GeorgeResult<()> {
-        store_base64_bytes_key(key, key_filepath.to_string())
-    }
-}
-
-impl SM2Store<String> for SM2 {
-    fn store(&self, sk_filepath: String, pk_filepath: String) -> GeorgeResult<()> {
+impl SM2Store for SM2 {
+    fn store<P: AsRef<Path>>(&self, sk_filepath: P, pk_filepath: P) -> GeorgeResult<()> {
         store_key(Base64::encode(self.sk_bytes()), sk_filepath)?;
         store_key(Base64::encode(self.pk_bytes()), pk_filepath)
-    }
-}
-
-impl SM2Store<&str> for SM2 {
-    fn store(&self, sk_filepath: &str, pk_filepath: &str) -> GeorgeResult<()> {
-        store_key_str(Base64::encode(self.sk_bytes()), sk_filepath)?;
-        store_key_str(Base64::encode(self.pk_bytes()), pk_filepath)
     }
 }
 
@@ -1441,50 +1394,43 @@ impl SM2VerifyPath<&str, &str> for SM2 {
 
 ////////// sm verify end //////////
 
-fn stores(key: &[u8], key_filepath: String) -> GeorgeResult<()> {
-    match Filer::write_file_force(key_filepath, key) {
+fn stores<P: AsRef<Path>>(key: &[u8], key_filepath: P) -> GeorgeResult<()> {
+    match Filer::write_force(key_filepath, key) {
         Ok(_) => Ok(()),
         Err(err) => Err(err_strs("store key", err)),
     }
 }
 
-fn store_hex_key(key: &[u8], key_filepath: String) -> GeorgeResult<()> {
-    match Filer::write_file_force(key_filepath, Hex::encode(key)) {
+fn store_hex_key<P: AsRef<Path>>(key: &[u8], key_filepath: P) -> GeorgeResult<()> {
+    match Filer::write_force(key_filepath, Hex::encode(key)) {
         Ok(_) => Ok(()),
         Err(err) => Err(err_strs("store key", err)),
     }
 }
 
-fn store_hex_bytes_key(key: Vec<u8>, key_filepath: String) -> GeorgeResult<()> {
-    match Filer::write_file_force(key_filepath, Hex::encode(key)) {
+fn store_hex_bytes_key<P: AsRef<Path>>(key: Vec<u8>, key_filepath: P) -> GeorgeResult<()> {
+    match Filer::write_force(key_filepath, Hex::encode(key)) {
         Ok(_) => Ok(()),
         Err(err) => Err(err_strs("store key", err)),
     }
 }
 
-fn store_base64_key(key: &[u8], key_filepath: String) -> GeorgeResult<()> {
-    match Filer::write_file_force(key_filepath, Base64::encode(key)) {
+fn store_base64_key<P: AsRef<Path>>(key: &[u8], key_filepath: P) -> GeorgeResult<()> {
+    match Filer::write_force(key_filepath, Base64::encode(key)) {
         Ok(_) => Ok(()),
         Err(err) => Err(err_strs("store key", err)),
     }
 }
 
-fn store_base64_bytes_key(key: Vec<u8>, key_filepath: String) -> GeorgeResult<()> {
-    match Filer::write_file_force(key_filepath, Base64::encode(key)) {
+fn store_base64_bytes_key<P: AsRef<Path>>(key: Vec<u8>, key_filepath: P) -> GeorgeResult<()> {
+    match Filer::write_force(key_filepath, Base64::encode(key)) {
         Ok(_) => Ok(()),
         Err(err) => Err(err_strs("store key", err)),
     }
 }
 
-fn store_key(key: String, key_filepath: String) -> GeorgeResult<()> {
-    match Filer::write_file_force(key_filepath, key) {
-        Ok(_) => Ok(()),
-        Err(err) => Err(err_strs("store key", err)),
-    }
-}
-
-fn store_key_str(key: String, key_filepath: &str) -> GeorgeResult<()> {
-    match Filer::write_file_force(key_filepath, key) {
+fn store_key<P: AsRef<Path>>(key: String, key_filepath: P) -> GeorgeResult<()> {
+    match Filer::write_force(key_filepath, key) {
         Ok(_) => Ok(()),
         Err(err) => Err(err_strs("store key", err)),
     }
@@ -1556,16 +1502,19 @@ fn generate_pk_from_sk_base64_file<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResu
     }
 }
 
-fn generate_in_file(sk_filepath: String, pk_filepath: String) -> GeorgeResult<(Vec<u8>, Vec<u8>)> {
+fn generate_in_file<P: AsRef<Path>>(
+    sk_filepath: P,
+    pk_filepath: P,
+) -> GeorgeResult<(Vec<u8>, Vec<u8>)> {
     let (sk_bytes, pk_bytes) = generate();
     store_base64_bytes_key(sk_bytes.clone(), sk_filepath)?;
     store_base64_bytes_key(pk_bytes.clone(), pk_filepath)?;
     Ok((sk_bytes, pk_bytes))
 }
 
-fn generate_hex_in_file(
-    sk_filepath: String,
-    pk_filepath: String,
+fn generate_hex_in_file<P: AsRef<Path>>(
+    sk_filepath: P,
+    pk_filepath: P,
 ) -> GeorgeResult<(String, String)> {
     let (sk_str, pk_str) = generate_hex();
     store_key(sk_str.clone(), sk_filepath)?;
@@ -1573,9 +1522,9 @@ fn generate_hex_in_file(
     Ok((sk_str, pk_str))
 }
 
-fn generate_base64_in_file(
-    sk_filepath: String,
-    pk_filepath: String,
+fn generate_base64_in_file<P: AsRef<Path>>(
+    sk_filepath: P,
+    pk_filepath: P,
 ) -> GeorgeResult<(String, String)> {
     let (sk_str, pk_str) = generate_base64();
     store_key(sk_str.clone(), sk_filepath)?;
@@ -1583,19 +1532,19 @@ fn generate_base64_in_file(
     Ok((sk_str, pk_str))
 }
 
-fn generate_sk_in_file(sk_filepath: String) -> GeorgeResult<Vec<u8>> {
+fn generate_sk_in_file<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>> {
     let (sk_bytes, _pk_bytes) = generate();
     store_base64_bytes_key(sk_bytes.clone(), sk_filepath)?;
     Ok(sk_bytes)
 }
 
-fn generate_sk_hex_in_file(sk_filepath: String) -> GeorgeResult<String> {
+fn generate_sk_hex_in_file<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String> {
     let (sk_str, _pk_str) = generate_hex();
     store_key(sk_str.clone(), sk_filepath)?;
     Ok(sk_str)
 }
 
-fn generate_sk_base64_in_file(sk_filepath: String) -> GeorgeResult<String> {
+fn generate_sk_base64_in_file<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String> {
     let (sk_str, _pk_str) = generate_base64();
     store_key(sk_str.clone(), sk_filepath)?;
     Ok(sk_str)

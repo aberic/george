@@ -26,8 +26,6 @@ use crate::errors::entrances::GeorgeResult;
 use crate::errors::entrances::{err_str, err_strs};
 use crate::io::file::{Filer, FilerWriter};
 use crate::strings::{StringHandler, Strings};
-use hex::FromHex;
-use openssl::error::ErrorStack;
 use openssl::hash::MessageDigest;
 use openssl::sign::{Signer, Verifier};
 
@@ -709,97 +707,101 @@ pub trait RSANewPass<T> {
     ) -> GeorgeResult<String>;
 }
 
-pub trait RSANewStore<T> {
+pub trait RSANewStore {
     /// 生成非对称加密私钥，返回sk字节数组
     ///
     /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs1_pem(bits: u32, sk_filepath: T) -> GeorgeResult<Vec<u8>>;
-
-    /// 生成非对称加密私钥，返回sk字节数组
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs8_pem(bits: u32, sk_filepath: T) -> GeorgeResult<Vec<u8>>;
-
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs1_pem_string(bits: u32, sk_filepath: T) -> GeorgeResult<String>;
-
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs8_pem_string(bits: u32, sk_filepath: T) -> GeorgeResult<String>;
+    fn generate_pkcs1_pem<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<Vec<u8>>;
 
     /// 生成非对称加密私钥，返回sk字节数组
     ///
     /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs1_der(bits: u32, sk_filepath: T) -> GeorgeResult<Vec<u8>>;
+    fn generate_pkcs8_pem<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<Vec<u8>>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_pkcs1_pem_string<P: AsRef<Path>>(bits: u32, sk_filepath: P)
+        -> GeorgeResult<String>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_pkcs8_pem_string<P: AsRef<Path>>(bits: u32, sk_filepath: P)
+        -> GeorgeResult<String>;
 
     /// 生成非对称加密私钥，返回sk字节数组
     ///
     /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs8_der(bits: u32, sk_filepath: T) -> GeorgeResult<Vec<u8>>;
+    fn generate_pkcs1_der<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<Vec<u8>>;
+
+    /// 生成非对称加密私钥，返回sk字节数组
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_pkcs8_der<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<Vec<u8>>;
 
     /// 生成非对称加密私钥，返回sk字符串
     ///
     /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs1_der_base64(bits: u32, sk_filepath: T) -> GeorgeResult<String>;
+    fn generate_pkcs1_der_base64<P: AsRef<Path>>(bits: u32, sk_filepath: P)
+        -> GeorgeResult<String>;
 
     /// 生成非对称加密私钥，返回sk字符串
     ///
     /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs8_der_base64(bits: u32, sk_filepath: T) -> GeorgeResult<String>;
+    fn generate_pkcs8_der_base64<P: AsRef<Path>>(bits: u32, sk_filepath: P)
+        -> GeorgeResult<String>;
 
     /// 生成非对称加密私钥，返回sk字符串
     ///
     /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs1_der_hex(bits: u32, sk_filepath: T) -> GeorgeResult<String>;
+    fn generate_pkcs1_der_hex<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<String>;
 
     /// 生成非对称加密私钥，返回sk字符串
     ///
     /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs8_der_hex(bits: u32, sk_filepath: T) -> GeorgeResult<String>;
+    fn generate_pkcs8_der_hex<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<String>;
 }
 
-pub trait RSANewPassStore<M, N> {
+pub trait RSANewPassStore<M> {
     /// 生成非对称加密私钥，返回sk字节数组
     ///
     /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs1_pem_pass(
+    fn generate_pkcs1_pem_pass<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: M,
-        sk_filepath: N,
+        sk_filepath: P,
     ) -> GeorgeResult<Vec<u8>>;
 
     /// 生成非对称加密私钥，返回sk字节数组
     ///
     /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs8_pem_pass(
+    fn generate_pkcs8_pem_pass<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: M,
-        sk_filepath: N,
+        sk_filepath: P,
     ) -> GeorgeResult<Vec<u8>>;
 
     /// 生成非对称加密私钥，返回sk字符串
     ///
     /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs1_pem_pass_string(
+    fn generate_pkcs1_pem_pass_string<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: M,
-        sk_filepath: N,
+        sk_filepath: P,
     ) -> GeorgeResult<String>;
 
     /// 生成非对称加密私钥，返回sk字符串
     ///
     /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs8_pem_pass_string(
+    fn generate_pkcs8_pem_pass_string<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: M,
-        sk_filepath: N,
+        sk_filepath: P,
     ) -> GeorgeResult<String>;
 }
 
@@ -911,9 +913,9 @@ pub trait RSAPkStringPath {
     fn generate_pk_pkcs8_der_base64<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
 }
 
-pub trait RSAStoreKey<M, N> {
+pub trait RSAStoreKey<M> {
     /// 将公/私钥存储在指定文件中
-    fn store(key: M, key_filepath: N) -> GeorgeResult<()>;
+    fn store<P: AsRef<Path>>(key: M, key_filepath: P) -> GeorgeResult<()>;
 }
 
 pub trait RSALoadKey {
@@ -1111,451 +1113,209 @@ impl RSANewPass<String> for RSA {
     }
 }
 
-impl RSANewStore<String> for RSA {
-    fn generate_pkcs1_pem(bits: u32, sk_filepath: String) -> GeorgeResult<Vec<u8>> {
+impl RSANewStore for RSA {
+    fn generate_pkcs1_pem<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<Vec<u8>> {
         generate_pkcs1_sk_pem_file(bits, sk_filepath)
     }
 
-    fn generate_pkcs8_pem(bits: u32, sk_filepath: String) -> GeorgeResult<Vec<u8>> {
+    fn generate_pkcs8_pem<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<Vec<u8>> {
         generate_pkcs8_sk_pem_file(bits, sk_filepath)
     }
 
-    fn generate_pkcs1_pem_string(bits: u32, sk_filepath: String) -> GeorgeResult<String> {
+    fn generate_pkcs1_pem_string<P: AsRef<Path>>(
+        bits: u32,
+        sk_filepath: P,
+    ) -> GeorgeResult<String> {
         generate_pkcs1_sk_pem_file_string(bits, sk_filepath)
     }
 
-    fn generate_pkcs8_pem_string(bits: u32, sk_filepath: String) -> GeorgeResult<String> {
+    fn generate_pkcs8_pem_string<P: AsRef<Path>>(
+        bits: u32,
+        sk_filepath: P,
+    ) -> GeorgeResult<String> {
         generate_pkcs8_sk_pem_file_string(bits, sk_filepath)
     }
 
-    fn generate_pkcs1_der(bits: u32, sk_filepath: String) -> GeorgeResult<Vec<u8>> {
+    fn generate_pkcs1_der<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<Vec<u8>> {
         generate_pkcs1_sk_der_file(bits, sk_filepath)
     }
 
-    fn generate_pkcs8_der(bits: u32, sk_filepath: String) -> GeorgeResult<Vec<u8>> {
+    fn generate_pkcs8_der<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<Vec<u8>> {
         generate_pkcs8_sk_der_file(bits, sk_filepath)
     }
 
-    fn generate_pkcs1_der_base64(bits: u32, sk_filepath: String) -> GeorgeResult<String> {
+    fn generate_pkcs1_der_base64<P: AsRef<Path>>(
+        bits: u32,
+        sk_filepath: P,
+    ) -> GeorgeResult<String> {
         generate_pkcs1_sk_der_base64_file(bits, sk_filepath)
     }
 
-    fn generate_pkcs8_der_base64(bits: u32, sk_filepath: String) -> GeorgeResult<String> {
+    fn generate_pkcs8_der_base64<P: AsRef<Path>>(
+        bits: u32,
+        sk_filepath: P,
+    ) -> GeorgeResult<String> {
         generate_pkcs8_sk_der_base64_file(bits, sk_filepath)
     }
 
-    fn generate_pkcs1_der_hex(bits: u32, sk_filepath: String) -> GeorgeResult<String> {
+    fn generate_pkcs1_der_hex<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<String> {
         generate_pkcs1_sk_der_hex_file(bits, sk_filepath)
     }
 
-    fn generate_pkcs8_der_hex(bits: u32, sk_filepath: String) -> GeorgeResult<String> {
+    fn generate_pkcs8_der_hex<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<String> {
         generate_pkcs8_sk_der_hex_file(bits, sk_filepath)
     }
 }
 
-impl RSANewStore<&str> for RSA {
-    fn generate_pkcs1_pem(bits: u32, sk_filepath: &str) -> GeorgeResult<Vec<u8>> {
-        generate_pkcs1_sk_pem_file(bits, sk_filepath.to_string())
-    }
-
-    fn generate_pkcs8_pem(bits: u32, sk_filepath: &str) -> GeorgeResult<Vec<u8>> {
-        generate_pkcs8_sk_pem_file(bits, sk_filepath.to_string())
-    }
-
-    fn generate_pkcs1_pem_string(bits: u32, sk_filepath: &str) -> GeorgeResult<String> {
-        generate_pkcs1_sk_pem_file_string(bits, sk_filepath.to_string())
-    }
-
-    fn generate_pkcs8_pem_string(bits: u32, sk_filepath: &str) -> GeorgeResult<String> {
-        generate_pkcs8_sk_pem_file_string(bits, sk_filepath.to_string())
-    }
-
-    fn generate_pkcs1_der(bits: u32, sk_filepath: &str) -> GeorgeResult<Vec<u8>> {
-        generate_pkcs1_sk_der_file(bits, sk_filepath.to_string())
-    }
-
-    fn generate_pkcs8_der(bits: u32, sk_filepath: &str) -> GeorgeResult<Vec<u8>> {
-        generate_pkcs8_sk_der_file(bits, sk_filepath.to_string())
-    }
-
-    fn generate_pkcs1_der_base64(bits: u32, sk_filepath: &str) -> GeorgeResult<String> {
-        generate_pkcs1_sk_der_base64_file(bits, sk_filepath.to_string())
-    }
-
-    fn generate_pkcs8_der_base64(bits: u32, sk_filepath: &str) -> GeorgeResult<String> {
-        generate_pkcs8_sk_der_base64_file(bits, sk_filepath.to_string())
-    }
-
-    fn generate_pkcs1_der_hex(bits: u32, sk_filepath: &str) -> GeorgeResult<String> {
-        generate_pkcs1_sk_der_hex_file(bits, sk_filepath.to_string())
-    }
-
-    fn generate_pkcs8_der_hex(bits: u32, sk_filepath: &str) -> GeorgeResult<String> {
-        generate_pkcs8_sk_der_hex_file(bits, sk_filepath.to_string())
-    }
-}
-
-impl RSANewPassStore<String, String> for RSA {
-    fn generate_pkcs1_pem_pass(
+impl RSANewPassStore<String> for RSA {
+    fn generate_pkcs1_pem_pass<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: String,
-        sk_filepath: String,
+        sk_filepath: P,
     ) -> GeorgeResult<Vec<u8>> {
         generate_pkcs1_sk_pem_pass_file(bits, cipher, passphrase.as_bytes(), sk_filepath)
     }
 
-    fn generate_pkcs8_pem_pass(
+    fn generate_pkcs8_pem_pass<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: String,
-        sk_filepath: String,
+        sk_filepath: P,
     ) -> GeorgeResult<Vec<u8>> {
         generate_pkcs8_sk_pem_pass_file(bits, cipher, passphrase.as_bytes(), sk_filepath)
     }
 
-    fn generate_pkcs1_pem_pass_string(
+    fn generate_pkcs1_pem_pass_string<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: String,
-        sk_filepath: String,
+        sk_filepath: P,
     ) -> GeorgeResult<String> {
         generate_pkcs1_sk_pem_pass_file_string(bits, cipher, passphrase.as_bytes(), sk_filepath)
     }
 
-    fn generate_pkcs8_pem_pass_string(
+    fn generate_pkcs8_pem_pass_string<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: String,
-        sk_filepath: String,
+        sk_filepath: P,
     ) -> GeorgeResult<String> {
         generate_pkcs8_sk_pem_pass_file_string(bits, cipher, passphrase.as_bytes(), sk_filepath)
     }
 }
 
-impl RSANewPassStore<String, &str> for RSA {
-    fn generate_pkcs1_pem_pass(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: String,
-        sk_filepath: &str,
-    ) -> GeorgeResult<Vec<u8>> {
-        generate_pkcs1_sk_pem_pass_file(
-            bits,
-            cipher,
-            passphrase.as_bytes(),
-            sk_filepath.to_string(),
-        )
-    }
-
-    fn generate_pkcs8_pem_pass(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: String,
-        sk_filepath: &str,
-    ) -> GeorgeResult<Vec<u8>> {
-        generate_pkcs8_sk_pem_pass_file(
-            bits,
-            cipher,
-            passphrase.as_bytes(),
-            sk_filepath.to_string(),
-        )
-    }
-
-    fn generate_pkcs1_pem_pass_string(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: String,
-        sk_filepath: &str,
-    ) -> GeorgeResult<String> {
-        generate_pkcs1_sk_pem_pass_file_string(
-            bits,
-            cipher,
-            passphrase.as_bytes(),
-            sk_filepath.to_string(),
-        )
-    }
-
-    fn generate_pkcs8_pem_pass_string(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: String,
-        sk_filepath: &str,
-    ) -> GeorgeResult<String> {
-        generate_pkcs8_sk_pem_pass_file_string(
-            bits,
-            cipher,
-            passphrase.as_bytes(),
-            sk_filepath.to_string(),
-        )
-    }
-}
-
-impl RSANewPassStore<&str, String> for RSA {
-    fn generate_pkcs1_pem_pass(
+impl RSANewPassStore<&str> for RSA {
+    fn generate_pkcs1_pem_pass<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: &str,
-        sk_filepath: String,
+        sk_filepath: P,
     ) -> GeorgeResult<Vec<u8>> {
         generate_pkcs1_sk_pem_pass_file(bits, cipher, passphrase.as_bytes(), sk_filepath)
     }
 
-    fn generate_pkcs8_pem_pass(
+    fn generate_pkcs8_pem_pass<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: &str,
-        sk_filepath: String,
+        sk_filepath: P,
     ) -> GeorgeResult<Vec<u8>> {
         generate_pkcs8_sk_pem_pass_file(bits, cipher, passphrase.as_bytes(), sk_filepath)
     }
 
-    fn generate_pkcs1_pem_pass_string(
+    fn generate_pkcs1_pem_pass_string<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: &str,
-        sk_filepath: String,
+        sk_filepath: P,
     ) -> GeorgeResult<String> {
         generate_pkcs1_sk_pem_pass_file_string(bits, cipher, passphrase.as_bytes(), sk_filepath)
     }
 
-    fn generate_pkcs8_pem_pass_string(
+    fn generate_pkcs8_pem_pass_string<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: &str,
-        sk_filepath: String,
+        sk_filepath: P,
     ) -> GeorgeResult<String> {
         generate_pkcs8_sk_pem_pass_file_string(bits, cipher, passphrase.as_bytes(), sk_filepath)
     }
 }
 
-impl RSANewPassStore<&str, &str> for RSA {
-    fn generate_pkcs1_pem_pass(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: &str,
-        sk_filepath: &str,
-    ) -> GeorgeResult<Vec<u8>> {
-        generate_pkcs1_sk_pem_pass_file(
-            bits,
-            cipher,
-            passphrase.as_bytes(),
-            sk_filepath.to_string(),
-        )
-    }
-
-    fn generate_pkcs8_pem_pass(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: &str,
-        sk_filepath: &str,
-    ) -> GeorgeResult<Vec<u8>> {
-        generate_pkcs8_sk_pem_pass_file(
-            bits,
-            cipher,
-            passphrase.as_bytes(),
-            sk_filepath.to_string(),
-        )
-    }
-
-    fn generate_pkcs1_pem_pass_string(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: &str,
-        sk_filepath: &str,
-    ) -> GeorgeResult<String> {
-        generate_pkcs1_sk_pem_pass_file_string(
-            bits,
-            cipher,
-            passphrase.as_bytes(),
-            sk_filepath.to_string(),
-        )
-    }
-
-    fn generate_pkcs8_pem_pass_string(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: &str,
-        sk_filepath: &str,
-    ) -> GeorgeResult<String> {
-        generate_pkcs8_sk_pem_pass_file_string(
-            bits,
-            cipher,
-            passphrase.as_bytes(),
-            sk_filepath.to_string(),
-        )
-    }
-}
-
-impl RSANewPassStore<Vec<u8>, String> for RSA {
-    fn generate_pkcs1_pem_pass(
+impl RSANewPassStore<Vec<u8>> for RSA {
+    fn generate_pkcs1_pem_pass<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: Vec<u8>,
-        sk_filepath: String,
+        sk_filepath: P,
     ) -> GeorgeResult<Vec<u8>> {
         generate_pkcs1_sk_pem_pass_file(bits, cipher, passphrase.as_slice(), sk_filepath)
     }
 
-    fn generate_pkcs8_pem_pass(
+    fn generate_pkcs8_pem_pass<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: Vec<u8>,
-        sk_filepath: String,
+        sk_filepath: P,
     ) -> GeorgeResult<Vec<u8>> {
         generate_pkcs8_sk_pem_pass_file(bits, cipher, passphrase.as_slice(), sk_filepath)
     }
 
-    fn generate_pkcs1_pem_pass_string(
+    fn generate_pkcs1_pem_pass_string<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: Vec<u8>,
-        sk_filepath: String,
+        sk_filepath: P,
     ) -> GeorgeResult<String> {
         generate_pkcs1_sk_pem_pass_file_string(bits, cipher, passphrase.as_slice(), sk_filepath)
     }
 
-    fn generate_pkcs8_pem_pass_string(
+    fn generate_pkcs8_pem_pass_string<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: Vec<u8>,
-        sk_filepath: String,
+        sk_filepath: P,
     ) -> GeorgeResult<String> {
         generate_pkcs8_sk_pem_pass_file_string(bits, cipher, passphrase.as_slice(), sk_filepath)
     }
 }
 
-impl RSANewPassStore<Vec<u8>, &str> for RSA {
-    fn generate_pkcs1_pem_pass(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: Vec<u8>,
-        sk_filepath: &str,
-    ) -> GeorgeResult<Vec<u8>> {
-        generate_pkcs1_sk_pem_pass_file(
-            bits,
-            cipher,
-            passphrase.as_slice(),
-            sk_filepath.to_string(),
-        )
-    }
-
-    fn generate_pkcs8_pem_pass(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: Vec<u8>,
-        sk_filepath: &str,
-    ) -> GeorgeResult<Vec<u8>> {
-        generate_pkcs8_sk_pem_pass_file(
-            bits,
-            cipher,
-            passphrase.as_slice(),
-            sk_filepath.to_string(),
-        )
-    }
-
-    fn generate_pkcs1_pem_pass_string(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: Vec<u8>,
-        sk_filepath: &str,
-    ) -> GeorgeResult<String> {
-        generate_pkcs1_sk_pem_pass_file_string(
-            bits,
-            cipher,
-            passphrase.as_slice(),
-            sk_filepath.to_string(),
-        )
-    }
-
-    fn generate_pkcs8_pem_pass_string(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: Vec<u8>,
-        sk_filepath: &str,
-    ) -> GeorgeResult<String> {
-        generate_pkcs8_sk_pem_pass_file_string(
-            bits,
-            cipher,
-            passphrase.as_slice(),
-            sk_filepath.to_string(),
-        )
-    }
-}
-
-impl RSANewPassStore<&[u8], String> for RSA {
-    fn generate_pkcs1_pem_pass(
+impl RSANewPassStore<&[u8]> for RSA {
+    fn generate_pkcs1_pem_pass<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: &[u8],
-        sk_filepath: String,
+        sk_filepath: P,
     ) -> GeorgeResult<Vec<u8>> {
         generate_pkcs1_sk_pem_pass_file(bits, cipher, passphrase, sk_filepath)
     }
 
-    fn generate_pkcs8_pem_pass(
+    fn generate_pkcs8_pem_pass<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: &[u8],
-        sk_filepath: String,
+        sk_filepath: P,
     ) -> GeorgeResult<Vec<u8>> {
         generate_pkcs8_sk_pem_pass_file(bits, cipher, passphrase, sk_filepath)
     }
 
-    fn generate_pkcs1_pem_pass_string(
+    fn generate_pkcs1_pem_pass_string<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: &[u8],
-        sk_filepath: String,
+        sk_filepath: P,
     ) -> GeorgeResult<String> {
         generate_pkcs1_sk_pem_pass_file_string(bits, cipher, passphrase, sk_filepath)
     }
 
-    fn generate_pkcs8_pem_pass_string(
+    fn generate_pkcs8_pem_pass_string<P: AsRef<Path>>(
         bits: u32,
         cipher: Cipher,
         passphrase: &[u8],
-        sk_filepath: String,
+        sk_filepath: P,
     ) -> GeorgeResult<String> {
         generate_pkcs8_sk_pem_pass_file_string(bits, cipher, passphrase, sk_filepath)
-    }
-}
-
-impl RSANewPassStore<&[u8], &str> for RSA {
-    fn generate_pkcs1_pem_pass(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: &[u8],
-        sk_filepath: &str,
-    ) -> GeorgeResult<Vec<u8>> {
-        generate_pkcs1_sk_pem_pass_file(bits, cipher, passphrase, sk_filepath.to_string())
-    }
-
-    fn generate_pkcs8_pem_pass(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: &[u8],
-        sk_filepath: &str,
-    ) -> GeorgeResult<Vec<u8>> {
-        generate_pkcs8_sk_pem_pass_file(bits, cipher, passphrase, sk_filepath.to_string())
-    }
-
-    fn generate_pkcs1_pem_pass_string(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: &[u8],
-        sk_filepath: &str,
-    ) -> GeorgeResult<String> {
-        generate_pkcs1_sk_pem_pass_file_string(bits, cipher, passphrase, sk_filepath.to_string())
-    }
-
-    fn generate_pkcs8_pem_pass_string(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: &[u8],
-        sk_filepath: &str,
-    ) -> GeorgeResult<String> {
-        generate_pkcs8_sk_pem_pass_file_string(bits, cipher, passphrase, sk_filepath.to_string())
     }
 }
 
@@ -1745,58 +1505,30 @@ impl RSAPkStringPath for RSA {
 
 ////////// store end //////////
 
-impl RSAStoreKey<String, String> for RSA {
-    fn store(key: String, key_filepath: String) -> GeorgeResult<()> {
-        let _ = Filer::write_file_force(key_filepath, key)?;
+impl RSAStoreKey<String> for RSA {
+    fn store<P: AsRef<Path>>(key: String, key_filepath: P) -> GeorgeResult<()> {
+        let _ = Filer::write_force(key_filepath, key)?;
         Ok(())
     }
 }
 
-impl RSAStoreKey<String, &str> for RSA {
-    fn store(key: String, key_filepath: &str) -> GeorgeResult<()> {
-        let _ = Filer::write_file_force(key_filepath, key)?;
+impl RSAStoreKey<&str> for RSA {
+    fn store<P: AsRef<Path>>(key: &str, key_filepath: P) -> GeorgeResult<()> {
+        let _ = Filer::write_force(key_filepath, key)?;
         Ok(())
     }
 }
 
-impl RSAStoreKey<&str, String> for RSA {
-    fn store(key: &str, key_filepath: String) -> GeorgeResult<()> {
-        let _ = Filer::write_file_force(key_filepath, key)?;
+impl RSAStoreKey<Vec<u8>> for RSA {
+    fn store<P: AsRef<Path>>(key: Vec<u8>, key_filepath: P) -> GeorgeResult<()> {
+        let _ = Filer::write_force(key_filepath, key)?;
         Ok(())
     }
 }
 
-impl RSAStoreKey<&str, &str> for RSA {
-    fn store(key: &str, key_filepath: &str) -> GeorgeResult<()> {
-        let _ = Filer::write_file_force(key_filepath, key)?;
-        Ok(())
-    }
-}
-
-impl RSAStoreKey<Vec<u8>, String> for RSA {
-    fn store(key: Vec<u8>, key_filepath: String) -> GeorgeResult<()> {
-        let _ = Filer::write_file_force(key_filepath, key)?;
-        Ok(())
-    }
-}
-
-impl RSAStoreKey<Vec<u8>, &str> for RSA {
-    fn store(key: Vec<u8>, key_filepath: &str) -> GeorgeResult<()> {
-        let _ = Filer::write_file_force(key_filepath, key)?;
-        Ok(())
-    }
-}
-
-impl RSAStoreKey<&[u8], String> for RSA {
-    fn store(key: &[u8], key_filepath: String) -> GeorgeResult<()> {
-        let _ = Filer::write_file_force(key_filepath, key)?;
-        Ok(())
-    }
-}
-
-impl RSAStoreKey<&[u8], &str> for RSA {
-    fn store(key: &[u8], key_filepath: &str) -> GeorgeResult<()> {
-        let _ = Filer::write_file_force(key_filepath, key)?;
+impl RSAStoreKey<&[u8]> for RSA {
+    fn store<P: AsRef<Path>>(key: &[u8], key_filepath: P) -> GeorgeResult<()> {
+        let _ = Filer::write_force(key_filepath, key)?;
         Ok(())
     }
 }
@@ -2003,10 +1735,10 @@ fn generate_pkcs8_sk_der_hex_string(bits: u32) -> GeorgeResult<String> {
 /// bits 私钥位数
 ///
 /// 如果已存在，删除重写
-fn generate_pkcs1_sk_pem_file(bits: u32, filepath: String) -> GeorgeResult<Vec<u8>> {
+fn generate_pkcs1_sk_pem_file<P: AsRef<Path>>(bits: u32, filepath: P) -> GeorgeResult<Vec<u8>> {
     match generate_pkcs1_sk_pem(bits) {
         Ok(v8s) => {
-            Filer::write_file_force(filepath, v8s.clone())?;
+            Filer::write_force(filepath, v8s.clone())?;
             Ok(v8s)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
@@ -2018,150 +1750,162 @@ fn generate_pkcs1_sk_pem_file(bits: u32, filepath: String) -> GeorgeResult<Vec<u
 /// bits 私钥位数
 ///
 /// 如果已存在，删除重写
-fn generate_pkcs8_sk_pem_file(bits: u32, filepath: String) -> GeorgeResult<Vec<u8>> {
+fn generate_pkcs8_sk_pem_file<P: AsRef<Path>>(bits: u32, filepath: P) -> GeorgeResult<Vec<u8>> {
     match generate_pkcs8_sk_pem(bits) {
         Ok(v8s) => {
-            Filer::write_file_force(filepath, v8s.clone())?;
+            Filer::write_force(filepath, v8s.clone())?;
             Ok(v8s)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
     }
 }
 
-fn generate_pkcs1_sk_pem_file_string(bits: u32, filepath: String) -> GeorgeResult<String> {
+fn generate_pkcs1_sk_pem_file_string<P: AsRef<Path>>(
+    bits: u32,
+    filepath: P,
+) -> GeorgeResult<String> {
     match generate_pkcs1_sk_pem_string(bits) {
         Ok(res) => {
-            Filer::write_file_force(filepath, res.clone())?;
+            Filer::write_force(filepath, res.clone())?;
             Ok(res)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
     }
 }
 
-fn generate_pkcs8_sk_pem_file_string(bits: u32, filepath: String) -> GeorgeResult<String> {
+fn generate_pkcs8_sk_pem_file_string<P: AsRef<Path>>(
+    bits: u32,
+    filepath: P,
+) -> GeorgeResult<String> {
     match generate_pkcs8_sk_pem_string(bits) {
         Ok(res) => {
-            Filer::write_file_force(filepath, res.clone())?;
+            Filer::write_force(filepath, res.clone())?;
             Ok(res)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
     }
 }
 
-fn generate_pkcs1_sk_pem_pass_file(
+fn generate_pkcs1_sk_pem_pass_file<P: AsRef<Path>>(
     bits: u32,
     cipher: Cipher,
     passphrase: &[u8],
-    filepath: String,
+    filepath: P,
 ) -> GeorgeResult<Vec<u8>> {
     match generate_pkcs1_sk_pem_pass(bits, cipher, passphrase) {
         Ok(v8s) => {
-            Filer::write_file_force(filepath, v8s.clone())?;
+            Filer::write_force(filepath, v8s.clone())?;
             Ok(v8s)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
     }
 }
 
-fn generate_pkcs8_sk_pem_pass_file(
+fn generate_pkcs8_sk_pem_pass_file<P: AsRef<Path>>(
     bits: u32,
     cipher: Cipher,
     passphrase: &[u8],
-    filepath: String,
+    filepath: P,
 ) -> GeorgeResult<Vec<u8>> {
     match generate_pkcs8_sk_pem_pass(bits, cipher, passphrase) {
         Ok(v8s) => {
-            Filer::write_file_force(filepath, v8s.clone())?;
+            Filer::write_force(filepath, v8s.clone())?;
             Ok(v8s)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
     }
 }
 
-fn generate_pkcs1_sk_pem_pass_file_string(
+fn generate_pkcs1_sk_pem_pass_file_string<P: AsRef<Path>>(
     bits: u32,
     cipher: Cipher,
     passphrase: &[u8],
-    filepath: String,
+    filepath: P,
 ) -> GeorgeResult<String> {
     match generate_pkcs1_sk_pem_pass_string(bits, cipher, passphrase) {
         Ok(res) => {
-            Filer::write_file_force(filepath, res.clone())?;
+            Filer::write_force(filepath, res.clone())?;
             Ok(res)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
     }
 }
 
-fn generate_pkcs8_sk_pem_pass_file_string(
+fn generate_pkcs8_sk_pem_pass_file_string<P: AsRef<Path>>(
     bits: u32,
     cipher: Cipher,
     passphrase: &[u8],
-    filepath: String,
+    filepath: P,
 ) -> GeorgeResult<String> {
     match generate_pkcs8_sk_pem_pass_string(bits, cipher, passphrase) {
         Ok(res) => {
-            Filer::write_file_force(filepath, res.clone())?;
+            Filer::write_force(filepath, res.clone())?;
             Ok(res)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
     }
 }
 
-fn generate_pkcs1_sk_der_file(bits: u32, filepath: String) -> GeorgeResult<Vec<u8>> {
+fn generate_pkcs1_sk_der_file<P: AsRef<Path>>(bits: u32, filepath: P) -> GeorgeResult<Vec<u8>> {
     match generate_pkcs1_sk_der(bits) {
         Ok(v8s) => {
-            Filer::write_file_force(filepath, v8s.clone())?;
+            Filer::write_force(filepath, v8s.clone())?;
             Ok(v8s)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
     }
 }
 
-fn generate_pkcs8_sk_der_file(bits: u32, filepath: String) -> GeorgeResult<Vec<u8>> {
+fn generate_pkcs8_sk_der_file<P: AsRef<Path>>(bits: u32, filepath: P) -> GeorgeResult<Vec<u8>> {
     match generate_pkcs8_sk_der(bits) {
         Ok(v8s) => {
-            Filer::write_file_force(filepath, v8s.clone())?;
+            Filer::write_force(filepath, v8s.clone())?;
             Ok(v8s)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
     }
 }
 
-fn generate_pkcs1_sk_der_base64_file(bits: u32, filepath: String) -> GeorgeResult<String> {
+fn generate_pkcs1_sk_der_base64_file<P: AsRef<Path>>(
+    bits: u32,
+    filepath: P,
+) -> GeorgeResult<String> {
     match generate_pkcs1_sk_der_base64_string(bits) {
         Ok(res) => {
-            Filer::write_file_force(filepath, res.clone())?;
+            Filer::write_force(filepath, res.clone())?;
             Ok(res)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
     }
 }
 
-fn generate_pkcs8_sk_der_base64_file(bits: u32, filepath: String) -> GeorgeResult<String> {
+fn generate_pkcs8_sk_der_base64_file<P: AsRef<Path>>(
+    bits: u32,
+    filepath: P,
+) -> GeorgeResult<String> {
     match generate_pkcs8_sk_der_base64_string(bits) {
         Ok(res) => {
-            Filer::write_file_force(filepath, res.clone())?;
+            Filer::write_force(filepath, res.clone())?;
             Ok(res)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
     }
 }
 
-fn generate_pkcs1_sk_der_hex_file(bits: u32, filepath: String) -> GeorgeResult<String> {
+fn generate_pkcs1_sk_der_hex_file<P: AsRef<Path>>(bits: u32, filepath: P) -> GeorgeResult<String> {
     match generate_pkcs1_sk_der_hex_string(bits) {
         Ok(res) => {
-            Filer::write_file_force(filepath, res.clone())?;
+            Filer::write_force(filepath, res.clone())?;
             Ok(res)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
     }
 }
 
-fn generate_pkcs8_sk_der_hex_file(bits: u32, filepath: String) -> GeorgeResult<String> {
+fn generate_pkcs8_sk_der_hex_file<P: AsRef<Path>>(bits: u32, filepath: P) -> GeorgeResult<String> {
     match generate_pkcs8_sk_der_hex_string(bits) {
         Ok(res) => {
-            Filer::write_file_force(filepath, res.clone())?;
+            Filer::write_force(filepath, res.clone())?;
             Ok(res)
         }
         Err(err) => Err(err_strs("generate_sk", err)),
@@ -2666,59 +2410,6 @@ fn generate_pk_rsa_pkcs8_der_from_sk_file<P: AsRef<Path>>(filepath: P) -> George
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////
-
-/// 生成RSA私钥并将私钥存储指定文件
-///
-/// bits 私钥位数，默认提供PKCS8
-///
-/// 如果已存在，删除重写
-pub fn generate_sk_in_files(bits: u32, filepath: &str) -> GeorgeResult<Vec<u8>> {
-    generate_pkcs8_sk_pem_file(bits, filepath.to_string())
-}
-
-/// 生成RSA公钥并将私钥存储指定文件
-///
-/// 如果已存在，删除重写
-pub fn generate_pk_in_file_from_sk(sk: PKey<Private>, filepath: String) -> GeorgeResult<Vec<u8>> {
-    match generate_pk_pkey_pem_from_pkey_sk(sk) {
-        Ok(u8s) => {
-            Filer::write_file_force(filepath, u8s.clone())?;
-            Ok(u8s)
-        }
-        Err(err) => Err(err_strs("generate_pk_from_sk", err)),
-    }
-}
-
-/// 生成RSA公钥并将私钥存储指定文件
-///
-/// 如果已存在，删除重写
-pub fn generate_pk_in_file_from_sk_bytes(sk: Vec<u8>, filepath: String) -> GeorgeResult<Vec<u8>> {
-    match generate_pk_pkey_pem_from_sk_bytes(sk) {
-        Ok(u8s) => {
-            Filer::write_file_force(filepath, u8s.clone())?;
-            Ok(u8s)
-        }
-        Err(err) => Err(err_strs("generate_pk_from_sk_bytes", err)),
-    }
-}
-
-/// 生成RSA公钥并将私钥存储指定文件
-///
-/// 如果已存在，删除重写
-pub fn generate_pk_in_file_from_sk_file(
-    sk_filepath: String,
-    pk_filepath: String,
-) -> GeorgeResult<Vec<u8>> {
-    match generate_pk_pkey_pem_from_sk_file(sk_filepath) {
-        Ok(u8s) => {
-            Filer::write_file_force(pk_filepath, u8s.clone())?;
-            Ok(u8s)
-        }
-        Err(err) => Err(err_strs("generate_pk_from_sk_file", err)),
-    }
-}
-
 /// 读取RSA公钥
 fn load_bytes_from_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
     match read(filepath) {
@@ -2732,69 +2423,5 @@ fn load_string_from_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
     match read_to_string(filepath) {
         Ok(res) => Ok(res),
         Err(err) => Err(err_strs("read", err)),
-    }
-}
-
-pub fn encrypt_sk(sk: Rsa<Private>, data: &[u8]) -> GeorgeResult<Vec<u8>> {
-    let mut emesg = vec![0; sk.size() as usize];
-    match sk.private_encrypt(data, &mut emesg, Padding::PKCS1) {
-        Ok(_) => Ok(emesg),
-        Err(err) => Err(err_strs("private_encrypt", err)),
-    }
-}
-
-pub fn decrypt_sk(sk: Rsa<Private>, data: &[u8]) -> GeorgeResult<Vec<u8>> {
-    let mut emesg = vec![0; sk.size() as usize];
-    match sk.private_decrypt(data, &mut emesg, Padding::PKCS1) {
-        Ok(_) => Ok(emesg),
-        Err(err) => Err(err_strs("private_decrypt", err)),
-    }
-}
-
-pub fn encrypt_sk_bytes(sk_bytes: Vec<u8>, data: String) -> GeorgeResult<Vec<u8>> {
-    match load_sk_pkey(sk_bytes) {
-        Ok(sk_key) => match sk_key.rsa() {
-            Ok(sk) => encrypt_sk(sk, data.as_bytes()),
-            Err(err) => Err(err_strs("rsa", err)),
-        },
-        Err(err) => Err(err_strs("load_sk", err)),
-    }
-}
-
-pub fn encrypt_sk_file(filepath: String, data: String) -> GeorgeResult<Vec<u8>> {
-    match load_sk_pkey_file(filepath) {
-        Ok(sk_key) => match sk_key.rsa() {
-            Ok(sk) => encrypt_sk(sk, data.as_bytes()),
-            Err(err) => Err(err_strs("rsa", err)),
-        },
-        Err(err) => Err(err_strs("load_sk_file", err)),
-    }
-}
-
-pub fn encrypt_pk(pk: Rsa<Public>, data: &[u8]) -> GeorgeResult<Vec<u8>> {
-    let mut emesg = vec![0; pk.size() as usize];
-    match pk.public_encrypt(data, &mut emesg, Padding::PKCS1) {
-        Ok(_) => Ok(emesg),
-        Err(err) => Err(err_strs("public_encrypt", err)),
-    }
-}
-
-pub fn encrypt_pk_bytes(pk_bytes: Vec<u8>, data: String) -> GeorgeResult<Vec<u8>> {
-    match load_pk_pkey(pk_bytes) {
-        Ok(pk_key) => match pk_key.rsa() {
-            Ok(pk) => encrypt_pk(pk, data.as_bytes()),
-            Err(err) => Err(err_strs("rsa", err)),
-        },
-        Err(err) => Err(err_strs("load_pk", err)),
-    }
-}
-
-pub fn encrypt_pk_file(filepath: String, data: String) -> GeorgeResult<Vec<u8>> {
-    match load_pk_pkey_file(filepath) {
-        Ok(pk_key) => match pk_key.rsa() {
-            Ok(pk) => encrypt_pk(pk, data.as_bytes()),
-            Err(err) => Err(err_strs("rsa", err)),
-        },
-        Err(err) => Err(err_strs("load_pk_file", err)),
     }
 }

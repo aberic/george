@@ -17,8 +17,7 @@ mod ca {
     use crate::cryptos::ca::{
         create, create_cert_request, load_ca_file, sign, AltName, X509NameInfo,
     };
-    use crate::cryptos::rsa;
-    use crate::cryptos::rsa::{RSANewStore, RSA};
+    use crate::cryptos::rsa::{RSALoadKey, RSANewStore, RSA};
     use crate::io::file::{Filer, FilerWriter};
 
     fn x509_name_info() -> X509NameInfo {
@@ -63,11 +62,11 @@ mod ca {
                 return;
             }
         }
-        match rsa::load_sk_pkey_file(sk_filepath.to_string()) {
+        match RSA::load_sk(sk_filepath) {
             Ok(key) => match create_cert_request(&key, x509_name_info()) {
                 Ok(csr) => match csr.to_pem() {
                     Ok(pem) => {
-                        Filer::write_file_force(csr_filepath, pem).unwrap();
+                        Filer::write_force(csr_filepath, pem).unwrap();
                     }
                     Err(err) => {
                         println!("to_pem = {}", err);
@@ -94,11 +93,11 @@ mod ca {
                 return;
             }
         }
-        match rsa::load_sk_pkey_file(sk_filepath.to_string()) {
+        match RSA::load_sk(sk_filepath) {
             Ok(key) => match create(128, &key, x509_name_info(), 2, 0, 356) {
                 Ok(x509) => match x509.to_pem() {
                     Ok(pem) => {
-                        Filer::write_file_force(root_filepath, pem).unwrap();
+                        Filer::write_force(root_filepath, pem).unwrap();
                     }
                     Err(err) => {
                         println!("to_pem = {}", err);
@@ -166,7 +165,7 @@ mod ca {
         ) {
             Ok(x509) => match x509.to_pem() {
                 Ok(pem) => {
-                    Filer::write_file_force(cert_filepath, pem).unwrap();
+                    Filer::write_force(cert_filepath, pem).unwrap();
                 }
                 Err(err) => {
                     println!("to_pem = {}", err);
