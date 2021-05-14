@@ -26,6 +26,7 @@ use crate::io::file::{Filer, FilerWriter};
 use crate::strings::{StringHandler, Strings};
 use openssl::bn::{BigNum, BigNumContext};
 use openssl::ecdsa::EcdsaSig;
+use std::path::Path;
 
 pub struct ECDSA {
     sk: EcKey<Private>,
@@ -103,6 +104,19 @@ impl ECDSA {
         }
     }
 
+    // /// 生成ECDSA对象
+    // pub fn from_hex_file<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<ECDSA> {
+    //     let sk_bytes = load_bytes_file(sk_filepath);
+    //     ECDSA::from_hex(s)
+    //     Ok(ECDSA { sk, pk })
+    // }
+    //
+    // /// 生成ECDSA对象
+    // pub fn from_files<P: AsRef<Path>>(sk_filepath: P, pk_filepath: P) -> GeorgeResult<ECDSA> {
+    //     let (sk, pk) = generate_pk_from_sk(sk)?;
+    //     Ok(ECDSA { sk, pk })
+    // }
+
     pub fn sk(&self) -> EcKey<Private> {
         self.sk.clone()
     }
@@ -114,9 +128,11 @@ impl ECDSA {
 
 /// fmt method
 impl ECDSA {
+    /// 8ef9639640e5989c559f78dfff4aef383d1340bb71661433ae475e1f52f128e2
     pub fn sk_hex(&self) -> String {
         Hex::encode(self.sk.private_key().to_vec())
     }
+    /// jvljlkDlmJxVn3jf/0rvOD0TQLtxZhQzrkdeH1LxKOI=
     pub fn sk_base64(&self) -> String {
         Base64::encode(self.sk.private_key().to_vec())
     }
@@ -128,6 +144,11 @@ impl ECDSA {
         }
     }
 
+    /// -----BEGIN EC PRIVATE KEY-----
+    /// MHcCAQEEII75Y5ZA5ZicVZ943/9K7zg9E0C7cWYUM65HXh9S8SjioAoGCCqGSM49
+    /// AwEHoUQDQgAEg+XjX4DNDSQZhLaawNTfUXmCA2IHkEH9BebmKtcTf/RNpFfJvSqE
+    /// m5WsWIMRyz9jE1EQ7HNBySlu7Q3Qshx8lQ==
+    /// -----END EC PRIVATE KEY-----
     pub fn sk_pem_str(&self) -> GeorgeResult<String> {
         match self.sk.private_key_to_pem() {
             Ok(res) => Strings::from_utf8(res),
@@ -135,6 +156,12 @@ impl ECDSA {
         }
     }
 
+    /// 2d2d2d2d2d424547494e2045432050524956415445204b45592d2d2d2d2d0a4d4863434151454549493735593
+    /// 55a41355a6963565a3934332f394b377a673945304337635759554d3635485868395338536a696f416f474343
+    /// 7147534d34390a417745486f55514451674145672b586a5834444e4453515a684c6161774e546655586d43413
+    /// 249486b4548394265626d4b746354662f524e7046664a765371450a6d35577357494d52797a396a4531455137
+    /// 484e4279536c7537513351736878386c513d3d0a2d2d2d2d2d454e442045432050524956415445204b45592d2
+    /// d2d2d2d0a
     pub fn sk_pem_hex(&self) -> GeorgeResult<String> {
         match self.sk.private_key_to_pem() {
             Ok(res) => Ok(Hex::encode(res)),
@@ -142,6 +169,10 @@ impl ECDSA {
         }
     }
 
+    /// LS0tLS1CRUdJTiBFQyBQUklWQVRFIEtFWS0tLS0tCk1IY0NBUUVFSUk3NVk1WkE1WmljVlo5NDMvOUs3emc5RTBD
+    /// N2NXWVVNNjVIWGg5UzhTamlvQW9HQ0NxR1NNNDkKQXdFSG9VUURRZ0FFZytYalg0RE5EU1FaaExhYXdOVGZVWG1D
+    /// QTJJSGtFSDlCZWJtS3RjVGYvUk5wRmZKdlNxRQptNVdzV0lNUnl6OWpFMUVRN0hOQnlTbHU3UTNRc2h4OGxRPT0K
+    /// LS0tLS1FTkQgRUMgUFJJVkFURSBLRVktLS0tLQo=
     pub fn sk_pem_base64(&self) -> GeorgeResult<String> {
         match self.sk.private_key_to_pem() {
             Ok(res) => Ok(Base64::encode(res)),
@@ -156,6 +187,9 @@ impl ECDSA {
         }
     }
 
+    /// 307702010104208ef9639640e5989c559f78dfff4aef383d1340bb71661433ae475e1f52f128e2a00a06082a
+    /// 8648ce3d030107a1440342000483e5e35f80cd0d241984b69ac0d4df5179820362079041fd05e6e62ad7137f
+    /// f44da457c9bd2a849b95ac588311cb3f63135110ec7341c9296eed0dd0b21c7c95
     pub fn sk_der_hex(&self) -> GeorgeResult<String> {
         match self.sk.private_key_to_der() {
             Ok(res) => Ok(Hex::encode(res)),
@@ -163,6 +197,8 @@ impl ECDSA {
         }
     }
 
+    /// MHcCAQEEII75Y5ZA5ZicVZ943/9K7zg9E0C7cWYUM65HXh9S8SjioAoGCCqGSM49AwEHoUQDQgAEg+XjX4DNDSQZ
+    /// hLaawNTfUXmCA2IHkEH9BebmKtcTf/RNpFfJvSqEm5WsWIMRyz9jE1EQ7HNBySlu7Q3Qshx8lQ==
     pub fn sk_der_base64(&self) -> GeorgeResult<String> {
         match self.sk.private_key_to_der() {
             Ok(res) => Ok(Base64::encode(res)),
@@ -170,6 +206,7 @@ impl ECDSA {
         }
     }
 
+    /// 0383e5e35f80cd0d241984b69ac0d4df5179820362079041fd05e6e62ad7137ff4
     pub fn pk_hex(&self) -> GeorgeResult<String> {
         let mut ctx = BigNumContext::new().unwrap();
         match self.pk.public_key().to_bytes(
@@ -182,6 +219,7 @@ impl ECDSA {
         }
     }
 
+    /// A4Pl41+AzQ0kGYS2msDU31F5ggNiB5BB/QXm5irXE3/0
     pub fn pk_base64(&self) -> GeorgeResult<String> {
         let mut ctx = BigNumContext::new().unwrap();
         match self.pk.public_key().to_bytes(
@@ -201,6 +239,10 @@ impl ECDSA {
         }
     }
 
+    /// -----BEGIN PUBLIC KEY-----
+    /// MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEg+XjX4DNDSQZhLaawNTfUXmCA2IH
+    /// kEH9BebmKtcTf/RNpFfJvSqEm5WsWIMRyz9jE1EQ7HNBySlu7Q3Qshx8lQ==
+    /// -----END PUBLIC KEY-----
     pub fn pk_pem_str(&self) -> GeorgeResult<String> {
         match self.pk.public_key_to_pem() {
             Ok(res) => Strings::from_utf8(res),
@@ -208,6 +250,11 @@ impl ECDSA {
         }
     }
 
+    /// 2d2d2d2d2d424547494e205055424c4943204b45592d2d2d2d2d0a4d466b77457759484b6f5a497a6a3043
+    /// 415159494b6f5a497a6a30444151634451674145672b586a5834444e4453515a684c6161774e546655586d
+    /// 43413249480a6b4548394265626d4b746354662f524e7046664a765371456d35577357494d52797a396a45
+    /// 31455137484e4279536c7537513351736878386c513d3d0a2d2d2d2d2d454e44205055424c4943204b4559
+    /// 2d2d2d2d2d0a
     pub fn pk_pem_hex(&self) -> GeorgeResult<String> {
         match self.pk.public_key_to_pem() {
             Ok(res) => Ok(Hex::encode(res)),
@@ -215,6 +262,9 @@ impl ECDSA {
         }
     }
 
+    /// LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUZrd0V3WUhLb1pJemowQ0FRWUlLb1pJemowREFRY0RRZ0FFZy
+    /// tYalg0RE5EU1FaaExhYXdOVGZVWG1DQTJJSAprRUg5QmVibUt0Y1RmL1JOcEZmSnZTcUVtNVdzV0lNUnl6OWpF
+    /// MUVRN0hOQnlTbHU3UTNRc2h4OGxRPT0KLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg==
     pub fn pk_pem_base64(&self) -> GeorgeResult<String> {
         match self.pk.public_key_to_pem() {
             Ok(res) => Ok(Base64::encode(res)),
@@ -229,6 +279,9 @@ impl ECDSA {
         }
     }
 
+    /// 3059301306072a8648ce3d020106082a8648ce3d0301070342000483e5e35f80cd0d241984b69ac0d4df5
+    /// 179820362079041fd05e6e62ad7137ff44da457c9bd2a849b95ac588311cb3f63135110ec7341c9296eed
+    /// 0dd0b21c7c95
     pub fn pk_der_hex(&self) -> GeorgeResult<String> {
         match self.pk.public_key_to_der() {
             Ok(res) => Ok(Hex::encode(res)),
@@ -236,6 +289,8 @@ impl ECDSA {
         }
     }
 
+    /// MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEg+XjX4DNDSQZhLaawNTfUXmCA2IHkEH9BebmKtcTf/RNpFfJvS
+    /// qEm5WsWIMRyz9jE1EQ7HNBySlu7Q3Qshx8lQ==
     pub fn pk_der_base64(&self) -> GeorgeResult<String> {
         match self.pk.public_key_to_der() {
             Ok(res) => Ok(Base64::encode(res)),
@@ -264,6 +319,85 @@ impl ECDSA {
             },
             Err(err) => Err(err_strs("EcdsaSig from_der", err)),
         }
+    }
+}
+
+/// store method
+impl ECDSA {
+    pub fn store_hex<P: AsRef<Path>>(&self, sk_filepath: P, pk_filepath: P) -> GeorgeResult<()> {
+        let sk_content = self.sk_hex();
+        let pk_content = self.pk_hex()?;
+        let _ = Filer::write_force(sk_filepath, sk_content)?;
+        let _ = Filer::write_force(pk_filepath, pk_content)?;
+        Ok(())
+    }
+
+    pub fn store_base64<P: AsRef<Path>>(&self, sk_filepath: P, pk_filepath: P) -> GeorgeResult<()> {
+        let sk_content = self.sk_base64();
+        let pk_content = self.pk_base64()?;
+        let _ = Filer::write_force(sk_filepath, sk_content)?;
+        let _ = Filer::write_force(pk_filepath, pk_content)?;
+        Ok(())
+    }
+
+    pub fn store_pem_str<P: AsRef<Path>>(
+        &self,
+        sk_filepath: P,
+        pk_filepath: P,
+    ) -> GeorgeResult<()> {
+        let sk_content = self.sk_pem_str()?;
+        let pk_content = self.pk_pem_str()?;
+        let _ = Filer::write_force(sk_filepath, sk_content)?;
+        let _ = Filer::write_force(pk_filepath, pk_content)?;
+        Ok(())
+    }
+
+    pub fn store_pem_hex<P: AsRef<Path>>(
+        &self,
+        sk_filepath: P,
+        pk_filepath: P,
+    ) -> GeorgeResult<()> {
+        let sk_content = self.sk_pem_hex()?;
+        let pk_content = self.pk_pem_hex()?;
+        let _ = Filer::write_force(sk_filepath, sk_content)?;
+        let _ = Filer::write_force(pk_filepath, pk_content)?;
+        Ok(())
+    }
+
+    pub fn store_pem_base64<P: AsRef<Path>>(
+        &self,
+        sk_filepath: P,
+        pk_filepath: P,
+    ) -> GeorgeResult<()> {
+        let sk_content = self.sk_pem_base64()?;
+        let pk_content = self.pk_pem_base64()?;
+        let _ = Filer::write_force(sk_filepath, sk_content)?;
+        let _ = Filer::write_force(pk_filepath, pk_content)?;
+        Ok(())
+    }
+
+    pub fn store_der_hex<P: AsRef<Path>>(
+        &self,
+        sk_filepath: P,
+        pk_filepath: P,
+    ) -> GeorgeResult<()> {
+        let sk_content = self.sk_der_hex()?;
+        let pk_content = self.pk_der_hex()?;
+        let _ = Filer::write_force(sk_filepath, sk_content)?;
+        let _ = Filer::write_force(pk_filepath, pk_content)?;
+        Ok(())
+    }
+
+    pub fn store_der_base64<P: AsRef<Path>>(
+        &self,
+        sk_filepath: P,
+        pk_filepath: P,
+    ) -> GeorgeResult<()> {
+        let sk_content = self.sk_der_base64()?;
+        let pk_content = self.pk_der_base64()?;
+        let _ = Filer::write_force(sk_filepath, sk_content)?;
+        let _ = Filer::write_force(pk_filepath, pk_content)?;
+        Ok(())
     }
 }
 
@@ -344,6 +478,14 @@ fn from_bytes_nid(sk_bytes: Vec<u8>, pk_bytes: Vec<u8>, nid: Nid) -> GeorgeResul
             Err(err) => Err(err_strs("EcKey from_private_components", err)),
         },
         Err(err) => Err(err_strs("BigNum from_slice", err)),
+    }
+}
+
+/// 读取文件字节数组
+fn load_bytes_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
+    match read(filepath) {
+        Ok(v8s) => Ok(v8s),
+        Err(err) => Err(err_strs("read", err)),
     }
 }
 

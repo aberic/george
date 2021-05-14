@@ -607,6 +607,9 @@ pub fn filepath_write<P: AsRef<Path>>(filepath: P, content: &[u8]) -> GeorgeResu
 pub fn filepath_write_force<P: AsRef<Path>>(filepath: P, content: &[u8]) -> GeorgeResult<usize> {
     if !file_exist(&filepath) {
         file_touch(&filepath)?;
+    } else {
+        file_remove(&filepath)?;
+        file_touch(&filepath)?;
     }
     filepath_write(filepath, content)
 }

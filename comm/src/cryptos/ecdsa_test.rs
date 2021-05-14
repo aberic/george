@@ -61,9 +61,9 @@ mod ecdsa {
 
     #[cfg(test)]
     mod generate {
-        use crate::cryptos::base64::{Base64, Base64Encoder, Basee64Decoder};
+        use crate::cryptos::base64::{Base64, Basee64Decoder};
         use crate::cryptos::ecdsa::ECDSA;
-        use crate::cryptos::hex::{Hex, HexDecoder, HexEncoder};
+        use crate::cryptos::hex::{Hex, HexDecoder};
 
         #[test]
         fn test() {
@@ -154,6 +154,53 @@ mod ecdsa {
             println!("ecdsa5 sk b64 = {}", ecdsa5.sk_base64());
             println!("ecdsa pk b64 = {}", pk_b64.clone());
             println!("ecdsa5 pk b64 = {}", ecdsa5.pk_base64().unwrap());
+        }
+
+        #[test]
+        fn store_test() {
+            let ecdsa = ECDSA::new().unwrap();
+            ecdsa
+                .store_hex(
+                    "src/test/crypto/ecdsa/store/hex_sk",
+                    "src/test/crypto/ecdsa/store/hex_pk",
+                )
+                .unwrap();
+            ecdsa
+                .store_base64(
+                    "src/test/crypto/ecdsa/store/base64_sk",
+                    "src/test/crypto/ecdsa/store/base64_pk",
+                )
+                .unwrap();
+            ecdsa
+                .store_pem_str(
+                    "src/test/crypto/ecdsa/store/pem_str_sk",
+                    "src/test/crypto/ecdsa/store/pem_str_pk",
+                )
+                .unwrap();
+            ecdsa
+                .store_pem_hex(
+                    "src/test/crypto/ecdsa/store/pem_hex_sk",
+                    "src/test/crypto/ecdsa/store/pem_hex_pk",
+                )
+                .unwrap();
+            ecdsa
+                .store_pem_base64(
+                    "src/test/crypto/ecdsa/store/pem_base64_sk",
+                    "src/test/crypto/ecdsa/store/pem_base64_pk",
+                )
+                .unwrap();
+            ecdsa
+                .store_der_hex(
+                    "src/test/crypto/ecdsa/store/der_hex_sk",
+                    "src/test/crypto/ecdsa/store/der_hex_pk",
+                )
+                .unwrap();
+            ecdsa
+                .store_der_base64(
+                    "src/test/crypto/ecdsa/store/der_base64_sk",
+                    "src/test/crypto/ecdsa/store/der_base64_pk",
+                )
+                .unwrap();
         }
     }
 

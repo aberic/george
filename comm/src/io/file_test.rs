@@ -122,7 +122,7 @@ mod file {
             Ok(s) => println!("write success with s = {}", s),
             Err(err) => println!("file write err = {}", err),
         }
-        match Filer::write("src/test/file/y.txt", vec![0x01, 0x02, 0x03]) {
+        match Filer::write_force("src/test/file/y.txt", vec![0x01, 0x02, 0x03]) {
             Ok(s) => println!("write success with s = {}", s),
             Err(err) => println!("file write err = {}", err),
         }
