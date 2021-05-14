@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-use std::fs::read;
+use std::fs::{read, read_to_string};
 
 use openssl::ec::{EcGroup, EcKey, EcPoint, PointConversionForm};
 use openssl::nid::Nid;
@@ -52,14 +52,30 @@ impl ECDSA {
     }
 
     /// 生成ECDSA对象
-    pub fn from(sk: EcKey<Private>) -> GeorgeResult<ECDSA> {
+    pub fn from(sk: EcKey<Private>, pk: EcKey<Public>) -> ECDSA {
+        ECDSA { sk, pk }
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_sk(sk: EcKey<Private>) -> GeorgeResult<ECDSA> {
         let (sk, pk) = generate_pk_from_sk(sk)?;
         Ok(ECDSA { sk, pk })
     }
 
     /// 生成ECDSA对象
-    pub fn from_key(sk: EcKey<Private>, pk: EcKey<Public>) -> ECDSA {
-        ECDSA { sk, pk }
+    pub fn from_sk_pem(sk: Vec<u8>) -> GeorgeResult<ECDSA> {
+        match EcKey::private_key_from_pem(&sk) {
+            Ok(sk) => ECDSA::from_sk(sk),
+            Err(err) => Err(err_strs("EcKey private_key_from_pem", err)),
+        }
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_sk_der(sk: Vec<u8>) -> GeorgeResult<ECDSA> {
+        match EcKey::private_key_from_der(&sk) {
+            Ok(sk) => ECDSA::from_sk(sk),
+            Err(err) => Err(err_strs("EcKey private_key_from_pem", err)),
+        }
     }
 
     /// 生成ECDSA对象
@@ -104,18 +120,107 @@ impl ECDSA {
         }
     }
 
-    // /// 生成ECDSA对象
-    // pub fn from_hex_file<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<ECDSA> {
-    //     let sk_bytes = load_bytes_file(sk_filepath);
-    //     ECDSA::from_hex(s)
-    //     Ok(ECDSA { sk, pk })
-    // }
-    //
-    // /// 生成ECDSA对象
-    // pub fn from_files<P: AsRef<Path>>(sk_filepath: P, pk_filepath: P) -> GeorgeResult<ECDSA> {
-    //     let (sk, pk) = generate_pk_from_sk(sk)?;
-    //     Ok(ECDSA { sk, pk })
-    // }
+    /// 生成ECDSA对象
+    pub fn from_sk_pem_file<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<ECDSA> {
+        let sk_bytes = load_bytes_file(sk_filepath)?;
+        ECDSA::from_sk_pem(sk_bytes)
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_sk_der_file<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<ECDSA> {
+        let sk_bytes = load_bytes_file(sk_filepath)?;
+        ECDSA::from_sk_der(sk_bytes)
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_pem_file<P: AsRef<Path>>(sk_filepath: P, pk_filepath: P) -> GeorgeResult<ECDSA> {
+        let sk = load_bytes_file(sk_filepath)?;
+        let pk = load_bytes_file(pk_filepath)?;
+        ECDSA::from_pem(sk, pk)
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_pem_hex_file<P: AsRef<Path>>(
+        sk_filepath: P,
+        pk_filepath: P,
+    ) -> GeorgeResult<ECDSA> {
+        let sk = Hex::decode(load_file(sk_filepath)?)?;
+        let pk = Hex::decode(load_file(pk_filepath)?)?;
+        ECDSA::from_pem(sk, pk)
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_pem_base64_file<P: AsRef<Path>>(
+        sk_filepath: P,
+        pk_filepath: P,
+    ) -> GeorgeResult<ECDSA> {
+        let sk = Base64::decode(load_file(sk_filepath)?)?;
+        let pk = Base64::decode(load_file(pk_filepath)?)?;
+        ECDSA::from_pem(sk, pk)
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_der_file<P: AsRef<Path>>(sk_filepath: P, pk_filepath: P) -> GeorgeResult<ECDSA> {
+        let sk = load_bytes_file(sk_filepath)?;
+        let pk = load_bytes_file(pk_filepath)?;
+        ECDSA::from_der(sk, pk)
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_der_hex_file<P: AsRef<Path>>(
+        sk_filepath: P,
+        pk_filepath: P,
+    ) -> GeorgeResult<ECDSA> {
+        let sk = Hex::decode(load_file(sk_filepath)?)?;
+        let pk = Hex::decode(load_file(pk_filepath)?)?;
+        ECDSA::from_der(sk, pk)
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_der_base64_file<P: AsRef<Path>>(
+        sk_filepath: P,
+        pk_filepath: P,
+    ) -> GeorgeResult<ECDSA> {
+        let sk = Base64::decode(load_file(sk_filepath)?)?;
+        let pk = Base64::decode(load_file(pk_filepath)?)?;
+        ECDSA::from_der(sk, pk)
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_hex_file<P: AsRef<Path>>(sk_filepath: P, pk_filepath: P) -> GeorgeResult<ECDSA> {
+        let sk = load_file(sk_filepath)?;
+        let pk = load_file(pk_filepath)?;
+        from_bytes(Hex::decode(sk)?, Hex::decode(pk)?)
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_hex_nid_file<P: AsRef<Path>>(
+        sk_filepath: P,
+        pk_filepath: P,
+        nid: Nid,
+    ) -> GeorgeResult<ECDSA> {
+        let sk = load_file(sk_filepath)?;
+        let pk = load_file(pk_filepath)?;
+        from_bytes_nid(Hex::decode(sk)?, Hex::decode(pk)?, nid)
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_base64_file<P: AsRef<Path>>(sk_filepath: P, pk_filepath: P) -> GeorgeResult<ECDSA> {
+        let sk = load_file(sk_filepath)?;
+        let pk = load_file(pk_filepath)?;
+        from_bytes(Base64::decode(sk)?, Base64::decode(pk)?)
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_base64_nid_file<P: AsRef<Path>>(
+        sk_filepath: P,
+        pk_filepath: P,
+        nid: Nid,
+    ) -> GeorgeResult<ECDSA> {
+        let sk = load_file(sk_filepath)?;
+        let pk = load_file(pk_filepath)?;
+        from_bytes_nid(Base64::decode(sk)?, Base64::decode(pk)?, nid)
+    }
 
     pub fn sk(&self) -> EcKey<Private> {
         self.sk.clone()
@@ -324,6 +429,7 @@ impl ECDSA {
 
 /// store method
 impl ECDSA {
+    /// 0383e5e35f80cd0d241984b69ac0d4df5179820362079041fd05e6e62ad7137ff4
     pub fn store_hex<P: AsRef<Path>>(&self, sk_filepath: P, pk_filepath: P) -> GeorgeResult<()> {
         let sk_content = self.sk_hex();
         let pk_content = self.pk_hex()?;
@@ -332,6 +438,7 @@ impl ECDSA {
         Ok(())
     }
 
+    /// 23B8WKzfguf7k6N3M/pmzfVYwKYpcUM1FuxfAb3gq3k=
     pub fn store_base64<P: AsRef<Path>>(&self, sk_filepath: P, pk_filepath: P) -> GeorgeResult<()> {
         let sk_content = self.sk_base64();
         let pk_content = self.pk_base64()?;
@@ -340,18 +447,29 @@ impl ECDSA {
         Ok(())
     }
 
-    pub fn store_pem_str<P: AsRef<Path>>(
-        &self,
-        sk_filepath: P,
-        pk_filepath: P,
-    ) -> GeorgeResult<()> {
-        let sk_content = self.sk_pem_str()?;
-        let pk_content = self.pk_pem_str()?;
+    /// -----BEGIN EC PRIVATE KEY-----
+    /// MHcCAQEEII75Y5ZA5ZicVZ943/9K7zg9E0C7cWYUM65HXh9S8SjioAoGCCqGSM49
+    /// AwEHoUQDQgAEg+XjX4DNDSQZhLaawNTfUXmCA2IHkEH9BebmKtcTf/RNpFfJvSqE
+    /// m5WsWIMRyz9jE1EQ7HNBySlu7Q3Qshx8lQ==
+    /// -----END EC PRIVATE KEY-----
+    ///
+    /// -----BEGIN PUBLIC KEY-----
+    /// MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEg+XjX4DNDSQZhLaawNTfUXmCA2IH
+    /// kEH9BebmKtcTf/RNpFfJvSqEm5WsWIMRyz9jE1EQ7HNBySlu7Q3Qshx8lQ==
+    /// -----END PUBLIC KEY-----
+    pub fn store_pem<P: AsRef<Path>>(&self, sk_filepath: P, pk_filepath: P) -> GeorgeResult<()> {
+        let sk_content = self.sk_pem()?;
+        let pk_content = self.pk_pem()?;
         let _ = Filer::write_force(sk_filepath, sk_content)?;
         let _ = Filer::write_force(pk_filepath, pk_content)?;
         Ok(())
     }
 
+    /// 2d2d2d2d2d424547494e205055424c4943204b45592d2d2d2d2d0a4d466b77457759484b6f5a497a6a3043
+    /// 415159494b6f5a497a6a30444151634451674145672b586a5834444e4453515a684c6161774e546655586d
+    /// 43413249480a6b4548394265626d4b746354662f524e7046664a765371456d35577357494d52797a396a45
+    /// 31455137484e4279536c7537513351736878386c513d3d0a2d2d2d2d2d454e44205055424c4943204b4559
+    /// 2d2d2d2d2d0a
     pub fn store_pem_hex<P: AsRef<Path>>(
         &self,
         sk_filepath: P,
@@ -364,6 +482,9 @@ impl ECDSA {
         Ok(())
     }
 
+    /// LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUZrd0V3WUhLb1pJemowQ0FRWUlLb1pJemowREFRY0RRZ0FFZy
+    /// tYalg0RE5EU1FaaExhYXdOVGZVWG1DQTJJSAprRUg5QmVibUt0Y1RmL1JOcEZmSnZTcUVtNVdzV0lNUnl6OWpF
+    /// MUVRN0hOQnlTbHU3UTNRc2h4OGxRPT0KLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg==
     pub fn store_pem_base64<P: AsRef<Path>>(
         &self,
         sk_filepath: P,
@@ -375,7 +496,17 @@ impl ECDSA {
         let _ = Filer::write_force(pk_filepath, pk_content)?;
         Ok(())
     }
+    pub fn store_der<P: AsRef<Path>>(&self, sk_filepath: P, pk_filepath: P) -> GeorgeResult<()> {
+        let sk_content = self.sk_der()?;
+        let pk_content = self.pk_der()?;
+        let _ = Filer::write_force(sk_filepath, sk_content)?;
+        let _ = Filer::write_force(pk_filepath, pk_content)?;
+        Ok(())
+    }
 
+    /// 3059301306072a8648ce3d020106082a8648ce3d0301070342000483e5e35f80cd0d241984b69ac0d4df5
+    /// 179820362079041fd05e6e62ad7137ff44da457c9bd2a849b95ac588311cb3f63135110ec7341c9296eed
+    /// 0dd0b21c7c95
     pub fn store_der_hex<P: AsRef<Path>>(
         &self,
         sk_filepath: P,
@@ -388,6 +519,8 @@ impl ECDSA {
         Ok(())
     }
 
+    /// MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEg+XjX4DNDSQZhLaawNTfUXmCA2IHkEH9BebmKtcTf/RNpFfJvS
+    /// qEm5WsWIMRyz9jE1EQ7HNBySlu7Q3Qshx8lQ==
     pub fn store_der_base64<P: AsRef<Path>>(
         &self,
         sk_filepath: P,
@@ -482,143 +615,17 @@ fn from_bytes_nid(sk_bytes: Vec<u8>, pk_bytes: Vec<u8>, nid: Nid) -> GeorgeResul
 }
 
 /// 读取文件字节数组
+fn load_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
+    match read_to_string(filepath) {
+        Ok(res) => Ok(res),
+        Err(err) => Err(err_strs("read", err)),
+    }
+}
+
+/// 读取文件字节数组
 fn load_bytes_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
     match read(filepath) {
         Ok(v8s) => Ok(v8s),
-        Err(err) => Err(err_strs("read", err)),
-    }
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-/// 生成ECDSA私钥，默认PRIME256V1
-fn generate_sk1() -> GeorgeResult<Vec<u8>> {
-    match EcGroup::from_curve_name(Nid::X9_62_PRIME256V1) {
-        Ok(group) => match EcKey::generate(&group) {
-            Ok(key) => match key.private_key_to_pem() {
-                Ok(v8s) => Ok(v8s),
-                Err(err) => Err(err_strs("private_key_to_pem", err)),
-            },
-            Err(err) => Err(err_strs("generate", err)),
-        },
-        Err(err) => Err(err_strs("from_curve_name", err)),
-    }
-}
-
-/// 生成ECDSA私钥并将私钥存储指定文件
-///
-/// 如果已存在，删除重写
-pub fn generate_sk_in_file(filepath: String) -> GeorgeResult<Vec<u8>> {
-    match generate_sk1() {
-        Ok(u8s) => {
-            Filer::write_force(filepath, u8s.clone())?;
-            Ok(u8s)
-        }
-        Err(err) => Err(err_strs("generate_sk", err)),
-    }
-}
-
-/// 生成ECDSA私钥并将私钥存储指定文件
-///
-/// 如果已存在，删除重写
-pub fn generate_sk_in_files(filepath: &str) -> GeorgeResult<Vec<u8>> {
-    generate_sk_in_file(filepath.to_string())
-}
-
-/// 读取ECDSA私钥
-pub fn load_sk(sk: Vec<u8>) -> GeorgeResult<EcKey<Private>> {
-    match EcKey::private_key_from_pem(sk.as_slice()) {
-        Ok(key) => Ok(key),
-        Err(err) => Err(err_strs("private_key_from_pem", err)),
-    }
-}
-
-/// 读取ECDSA私钥
-pub fn load_sk_file(filepath: String) -> GeorgeResult<EcKey<Private>> {
-    match read(filepath) {
-        Ok(u8s) => load_sk(u8s),
-        Err(err) => Err(err_strs("read", err)),
-    }
-}
-
-/// 生成ECDSA公钥
-pub fn generate_pk_from_sk1(sk: EcKey<Private>) -> GeorgeResult<Vec<u8>> {
-    match sk.public_key_to_pem() {
-        Ok(u8s) => Ok(u8s),
-        Err(err) => Err(err_strs("public_key_to_pem", err)),
-    }
-}
-
-/// 生成ECDSA公钥
-pub fn generate_pk_from_sk_bytes(sk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
-    match load_sk(sk) {
-        Ok(key) => generate_pk_from_sk1(key),
-        Err(err) => Err(err_strs("load_sk", err)),
-    }
-}
-
-/// 生成ECDSA公钥
-pub fn generate_pk_from_sk_file(filepath: String) -> GeorgeResult<Vec<u8>> {
-    match load_sk_file(filepath) {
-        Ok(key) => generate_pk_from_sk1(key),
-        Err(err) => Err(err_strs("load_sk_file", err)),
-    }
-}
-
-/// 生成ECDSA公钥并将私钥存储指定文件
-///
-/// 如果已存在，删除重写
-pub fn generate_pk_in_file_from_sk(sk: EcKey<Private>, filepath: String) -> GeorgeResult<Vec<u8>> {
-    match generate_pk_from_sk1(sk) {
-        Ok(u8s) => {
-            Filer::write_force(filepath, u8s.clone())?;
-            Ok(u8s)
-        }
-        Err(err) => Err(err_strs("generate_pk_from_sk", err)),
-    }
-}
-
-/// 生成ECDSA公钥并将私钥存储指定文件
-///
-/// 如果已存在，删除重写
-pub fn generate_pk_in_file_from_sk_bytes(sk: Vec<u8>, filepath: String) -> GeorgeResult<Vec<u8>> {
-    match generate_pk_from_sk_bytes(sk) {
-        Ok(u8s) => {
-            Filer::write_force(filepath, u8s.clone())?;
-            Ok(u8s)
-        }
-        Err(err) => Err(err_strs("generate_pk_from_sk_bytes", err)),
-    }
-}
-
-/// 生成ECDSA公钥并将私钥存储指定文件
-///
-/// 如果已存在，删除重写
-pub fn generate_pk_in_file_from_sk_file(
-    sk_filepath: String,
-    pk_filepath: String,
-) -> GeorgeResult<Vec<u8>> {
-    match generate_pk_from_sk_file(sk_filepath) {
-        Ok(u8s) => {
-            Filer::write_force(pk_filepath, u8s.clone())?;
-            Ok(u8s)
-        }
-        Err(err) => Err(err_strs("generate_pk_from_sk_file", err)),
-    }
-}
-
-/// 读取ECDSA公钥
-pub fn load_pk(pk: Vec<u8>) -> GeorgeResult<EcKey<Public>> {
-    match EcKey::public_key_from_pem(pk.as_slice()) {
-        Ok(key) => Ok(key),
-        Err(err) => Err(err_strs("private_key_from_pem", err)),
-    }
-}
-
-/// 读取ECDSA公钥
-pub fn load_pk_file(filepath: String) -> GeorgeResult<EcKey<Public>> {
-    match read(filepath) {
-        Ok(u8s) => load_pk(u8s),
         Err(err) => Err(err_strs("read", err)),
     }
 }

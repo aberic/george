@@ -70,7 +70,7 @@ mod ecdsa {
             let ecdsa_pre = ECDSA::new().unwrap();
             let sk = ecdsa_pre.sk();
             let pk = ecdsa_pre.pk();
-            let ecdsa = ECDSA::from(sk.clone()).unwrap();
+            let ecdsa1 = ECDSA::from_sk(sk.clone()).unwrap();
 
             let res = "hello world!";
             let data = res.as_bytes();
@@ -79,36 +79,30 @@ mod ecdsa {
                 "verify = {}",
                 ecdsa_pre.verify(data, sig_res.as_slice()).unwrap()
             );
-            println!(
-                "verify = {}",
-                ecdsa.verify(data, sig_res.as_slice()).unwrap()
-            );
+            assert!(ecdsa1.verify(data, sig_res.as_slice()).unwrap());
 
-            let sk_hex = ecdsa.sk_hex();
-            let pk_hex = ecdsa.pk_hex().unwrap();
-            let sk_b64 = ecdsa.sk_base64();
-            let pk_b64 = ecdsa.pk_base64().unwrap();
+            let sk_hex = ecdsa1.sk_hex();
+            let pk_hex = ecdsa1.pk_hex().unwrap();
+            let sk_b64 = ecdsa1.sk_base64();
+            let pk_b64 = ecdsa1.pk_base64().unwrap();
             println!("sk str hex = {}", sk_hex.clone());
             println!("sk str b64 = {}", sk_b64.clone());
-            println!("sk pem str = {}", ecdsa.sk_pem_str().unwrap());
-            println!("sk pem hex = {}", ecdsa.sk_pem_hex().unwrap());
-            println!("sk pem b64 = {}", ecdsa.sk_pem_base64().unwrap());
-            println!("sk der hex = {}", ecdsa.sk_der_hex().unwrap());
-            println!("sk der b64 = {}", ecdsa.sk_der_base64().unwrap());
+            println!("sk pem str = {}", ecdsa1.sk_pem_str().unwrap());
+            println!("sk pem hex = {}", ecdsa1.sk_pem_hex().unwrap());
+            println!("sk pem b64 = {}", ecdsa1.sk_pem_base64().unwrap());
+            println!("sk der hex = {}", ecdsa1.sk_der_hex().unwrap());
+            println!("sk der b64 = {}", ecdsa1.sk_der_base64().unwrap());
             println!();
             println!("pk str hex = {}", pk_hex.clone());
             println!("pk str b64 = {}", pk_b64.clone());
-            println!("pk pem str = {}", ecdsa.pk_pem_str().unwrap());
-            println!("pk pem hex = {}", ecdsa.pk_pem_hex().unwrap());
-            println!("pk pem b64 = {}", ecdsa.pk_pem_base64().unwrap());
-            println!("pk der hex = {}", ecdsa.pk_der_hex().unwrap());
-            println!("pk der b64 = {}", ecdsa.pk_der_base64().unwrap());
+            println!("pk pem str = {}", ecdsa1.pk_pem_str().unwrap());
+            println!("pk pem hex = {}", ecdsa1.pk_pem_hex().unwrap());
+            println!("pk pem b64 = {}", ecdsa1.pk_pem_base64().unwrap());
+            println!("pk der hex = {}", ecdsa1.pk_der_hex().unwrap());
+            println!("pk der b64 = {}", ecdsa1.pk_der_base64().unwrap());
 
             let ecdsa2 = ECDSA::from_hex(sk_hex.clone(), pk_hex.clone()).unwrap();
-            println!(
-                "verify = {}",
-                ecdsa2.verify(data, sig_res.as_slice()).unwrap()
-            );
+            assert!(ecdsa2.verify(data, sig_res.as_slice()).unwrap());
             println!("ecdsa sk hex = {}", sk_hex.clone());
             println!("ecdsa2 sk hex = {}", ecdsa2.sk_hex());
             println!("ecdsa pk hex = {}", pk_hex.clone());
@@ -116,10 +110,7 @@ mod ecdsa {
             println!();
 
             let ecdsa3 = ECDSA::from_base64(sk_b64.clone(), pk_b64.clone()).unwrap();
-            println!(
-                "verify = {}",
-                ecdsa3.verify(data, sig_res.as_slice()).unwrap()
-            );
+            assert!(ecdsa3.verify(data, sig_res.as_slice()).unwrap());
             println!("ecdsa sk b64 = {}", sk_b64.clone());
             println!("ecdsa3 sk b64 = {}", ecdsa3.sk_base64());
             println!("ecdsa pk b64 = {}", pk_b64.clone());
@@ -127,14 +118,11 @@ mod ecdsa {
             println!();
 
             let ecdsa4 = ECDSA::from_pem(
-                ecdsa.sk_pem_str().unwrap().into_bytes(),
-                ecdsa.pk_pem_str().unwrap().into_bytes(),
+                ecdsa1.sk_pem_str().unwrap().into_bytes(),
+                ecdsa1.pk_pem_str().unwrap().into_bytes(),
             )
             .unwrap();
-            println!(
-                "verify = {}",
-                ecdsa4.verify(data, sig_res.as_slice()).unwrap()
-            );
+            assert!(ecdsa4.verify(data, sig_res.as_slice()).unwrap());
             println!("ecdsa sk b64 = {}", sk_b64.clone());
             println!("ecdsa4 sk b64 = {}", ecdsa4.sk_base64());
             println!("ecdsa pk b64 = {}", pk_b64.clone());
@@ -142,14 +130,11 @@ mod ecdsa {
             println!();
 
             let ecdsa5 = ECDSA::from_der(
-                Hex::decode(ecdsa.sk_der_hex().unwrap()).unwrap(),
-                Base64::decode(ecdsa.pk_der_base64().unwrap()).unwrap(),
+                Hex::decode(ecdsa1.sk_der_hex().unwrap()).unwrap(),
+                Base64::decode(ecdsa1.pk_der_base64().unwrap()).unwrap(),
             )
             .unwrap();
-            println!(
-                "verify = {}",
-                ecdsa5.verify(data, sig_res.as_slice()).unwrap()
-            );
+            assert!(ecdsa5.verify(data, sig_res.as_slice()).unwrap());
             println!("ecdsa sk b64 = {}", sk_b64.clone());
             println!("ecdsa5 sk b64 = {}", ecdsa5.sk_base64());
             println!("ecdsa pk b64 = {}", pk_b64.clone());
@@ -172,7 +157,7 @@ mod ecdsa {
                 )
                 .unwrap();
             ecdsa
-                .store_pem_str(
+                .store_pem(
                     "src/test/crypto/ecdsa/store/pem_str_sk",
                     "src/test/crypto/ecdsa/store/pem_str_pk",
                 )
@@ -190,6 +175,12 @@ mod ecdsa {
                 )
                 .unwrap();
             ecdsa
+                .store_der(
+                    "src/test/crypto/ecdsa/store/der_sk",
+                    "src/test/crypto/ecdsa/store/der_pk",
+                )
+                .unwrap();
+            ecdsa
                 .store_der_hex(
                     "src/test/crypto/ecdsa/store/der_hex_sk",
                     "src/test/crypto/ecdsa/store/der_hex_pk",
@@ -202,75 +193,111 @@ mod ecdsa {
                 )
                 .unwrap();
         }
-    }
-
-    #[cfg(test)]
-    mod old {
-        use openssl::ec::{EcGroup, EcKey};
-        use openssl::nid::Nid;
-
-        use crate::cryptos::ecdsa::{
-            generate_pk_in_file_from_sk, generate_pk_in_file_from_sk_bytes,
-            generate_pk_in_file_from_sk_file, generate_sk_in_files,
-        };
-        use crate::io::file::{Filer, FilerWriter};
 
         #[test]
-        fn generate_pri_test() {
-            match generate_sk_in_files("src/test/crypto/ecdsa/generate_pri.key.pem") {
-                Ok(u8s) => println!("pri = {}", String::from_utf8(u8s).unwrap()),
-                Err(err) => println!("err = {}", err),
-            }
-            match generate_sk_in_files("src/test/crypto/ecdsa/generate_pri.key.pem") {
-                Ok(u8s) => println!("pri = {}", String::from_utf8(u8s).unwrap()),
-                Err(err) => println!("err = {}", err),
-            }
-        }
-
-        #[test]
-        fn generate_pub_test() {
-            let pri_filepath = "src/test/crypto/ecdsa/generate_pri1.key.pem".to_string();
-            match EcGroup::from_curve_name(Nid::X9_62_PRIME256V1) {
-                Ok(group) => match EcKey::generate(&group) {
-                    Ok(key) => {
-                        match generate_pk_in_file_from_sk(
-                            key.clone(),
-                            "src/test/crypto/ecdsa/generate_pub1.pem".to_string(),
-                        ) {
-                            Err(err) => {
-                                println!("generate_pub_in_file_from_pri, {}", err.to_string())
-                            }
-                            _ => {}
-                        }
-                        match key.private_key_to_pem() {
-                            Ok(u8s) => {
-                                Filer::write_force(pri_filepath.clone(), u8s.clone()).unwrap();
-                                println!("pri = {}", String::from_utf8(u8s.clone()).unwrap());
-                                match generate_pk_in_file_from_sk_bytes(
-                                    u8s,
-                                    "src/test/crypto/ecdsa/generate_pub2.pem".to_string(),
-                                ) {
-                                    Err(err) => println!(
-                                        "generate_pub_in_file_from_pri, {}",
-                                        err.to_string()
-                                    ),
-                                    _ => {}
-                                }
-                            }
-                            Err(err) => println!("private_key_to_pem_pkcs8, {}", err.to_string()),
-                        }
-                    }
-                    Err(err) => println!("generate, {}", err.to_string()),
-                },
-                Err(err) => println!("from_curve_name, {}", err.to_string()),
-            }
-            match generate_pk_in_file_from_sk_file(
-                pri_filepath,
-                "src/test/crypto/ecdsa/generate_pub3.pem".to_string(),
-            ) {
-                Err(err) => println!("generate_pub_in_file_from_pri_file, {}", err.to_string()),
-                _ => {}
-            }
+        fn load_test() {
+            let ecdsa = ECDSA::new().unwrap();
+            let res = "hello world!";
+            let data = res.as_bytes();
+            let sig_res = ecdsa.sign(data).unwrap();
+            ecdsa
+                .store_hex(
+                    "src/test/crypto/ecdsa/load/hex_sk",
+                    "src/test/crypto/ecdsa/load/hex_pk",
+                )
+                .unwrap();
+            let ecdsa_load = ECDSA::from_hex_file(
+                "src/test/crypto/ecdsa/load/hex_sk",
+                "src/test/crypto/ecdsa/load/hex_pk",
+            )
+            .unwrap();
+            assert!(ecdsa_load.verify(data, sig_res.as_slice()).unwrap());
+            ecdsa
+                .store_base64(
+                    "src/test/crypto/ecdsa/load/base64_sk",
+                    "src/test/crypto/ecdsa/load/base64_pk",
+                )
+                .unwrap();
+            let ecdsa_load = ECDSA::from_base64_file(
+                "src/test/crypto/ecdsa/load/base64_sk",
+                "src/test/crypto/ecdsa/load/base64_pk",
+            )
+            .unwrap();
+            assert!(ecdsa_load.verify(data, sig_res.as_slice()).unwrap());
+            ecdsa
+                .store_pem(
+                    "src/test/crypto/ecdsa/load/pem_sk",
+                    "src/test/crypto/ecdsa/load/pem_pk",
+                )
+                .unwrap();
+            let ecdsa_load = ECDSA::from_pem_file(
+                "src/test/crypto/ecdsa/load/pem_sk",
+                "src/test/crypto/ecdsa/load/pem_pk",
+            )
+            .unwrap();
+            assert!(ecdsa_load.verify(data, sig_res.as_slice()).unwrap());
+            let ecdsa_load = ECDSA::from_sk_pem_file("src/test/crypto/ecdsa/load/pem_sk").unwrap();
+            assert!(ecdsa_load.verify(data, sig_res.as_slice()).unwrap());
+            ecdsa
+                .store_pem_hex(
+                    "src/test/crypto/ecdsa/load/pem_hex_sk",
+                    "src/test/crypto/ecdsa/load/pem_hex_pk",
+                )
+                .unwrap();
+            let ecdsa_load = ECDSA::from_pem_hex_file(
+                "src/test/crypto/ecdsa/load/pem_hex_sk",
+                "src/test/crypto/ecdsa/load/pem_hex_pk",
+            )
+            .unwrap();
+            assert!(ecdsa_load.verify(data, sig_res.as_slice()).unwrap());
+            ecdsa
+                .store_pem_base64(
+                    "src/test/crypto/ecdsa/load/pem_base64_sk",
+                    "src/test/crypto/ecdsa/load/pem_base64_pk",
+                )
+                .unwrap();
+            let ecdsa_load = ECDSA::from_pem_base64_file(
+                "src/test/crypto/ecdsa/load/pem_base64_sk",
+                "src/test/crypto/ecdsa/load/pem_base64_pk",
+            )
+            .unwrap();
+            assert!(ecdsa_load.verify(data, sig_res.as_slice()).unwrap());
+            ecdsa
+                .store_der(
+                    "src/test/crypto/ecdsa/store/der_sk",
+                    "src/test/crypto/ecdsa/store/der_pk",
+                )
+                .unwrap();
+            let ecdsa_load = ECDSA::from_der_file(
+                "src/test/crypto/ecdsa/store/der_sk",
+                "src/test/crypto/ecdsa/store/der_pk",
+            )
+            .unwrap();
+            assert!(ecdsa_load.verify(data, sig_res.as_slice()).unwrap());
+            ecdsa
+                .store_der_hex(
+                    "src/test/crypto/ecdsa/load/der_hex_sk",
+                    "src/test/crypto/ecdsa/load/der_hex_pk",
+                )
+                .unwrap();
+            let ecdsa_load = ECDSA::from_der_hex_file(
+                "src/test/crypto/ecdsa/load/der_hex_sk",
+                "src/test/crypto/ecdsa/load/der_hex_pk",
+            )
+            .unwrap();
+            assert!(ecdsa_load.verify(data, sig_res.as_slice()).unwrap());
+            ecdsa
+                .store_der_base64(
+                    "src/test/crypto/ecdsa/load/der_base64_sk",
+                    "src/test/crypto/ecdsa/load/der_base64_pk",
+                )
+                .unwrap();
+            let ecdsa_load = ECDSA::from_der_base64_file(
+                "src/test/crypto/ecdsa/load/der_base64_sk",
+                "src/test/crypto/ecdsa/load/der_base64_pk",
+            )
+            .unwrap();
+            assert!(ecdsa_load.verify(data, sig_res.as_slice()).unwrap());
         }
     }
 }
