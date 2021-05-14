@@ -21,180 +21,206 @@ use crate::utils::enums::{IndexType, KeyType};
 use comm::strings::{StringHandler, Strings};
 use std::error::Error;
 
-#[test]
-fn base_test() {
-    // database_create_test
-    let database_name = "database_create_base_test";
-    create_database(database_name);
-    // database_modify_test
-    let database_name = "database_modify_base_test1";
-    let database_new_name = "database_modify_base_test2";
-    create_database(database_name);
-    modify_database(database_name, database_new_name);
-    modify_database(database_name, database_new_name);
-    // view_create_test
-    let database_name = "database_view_create_base_test";
-    let view_name = "view_create_base_test";
-    create_view(database_name, view_name);
-    // view_modify_test
-    let database_name = "database_view_modify_base_test";
-    let view_name = "view_modify_base_test1";
-    let view_new_name = "view_modify_base_test2";
-    create_view(database_name, view_name);
-    modify_view(database_name, view_name, view_new_name);
-    modify_view(database_name, view_name, view_new_name);
-    // index_create_test
-    let database_name = "database_index_create_test";
-    let view_name = "view_index_create_test";
-    let index_name = "index_create_library_test";
-    create_index(
-        database_name,
-        view_name,
-        index_name,
-        IndexType::Library,
-        KeyType::String,
-        false,
-        true,
-        false,
-    );
-    let index_name = "index_create_dossier_test";
-    create_index(
-        database_name,
-        view_name,
-        index_name,
-        IndexType::Dossier,
-        KeyType::String,
-        false,
-        true,
-        false,
-    );
-    database_map();
-}
+#[cfg(test)]
+mod master {
 
-#[test]
-fn database_map_test() {
-    database_map();
-}
+    #[cfg(test)]
+    mod base {
+        use crate::task::master_test::{
+            archive_view, create_database, create_index, create_view, database_map,
+            modify_database, modify_view,
+        };
+        use crate::utils::enums::{IndexType, KeyType};
 
-#[test]
-fn database_create_test() {
-    create_database("database_create_test");
-    database_map();
-}
+        #[test]
+        fn test() {
+            // database_create_test
+            let database_name = "database_create_base_test";
+            create_database(database_name);
+            // database_modify_test
+            let database_name = "database_modify_base_test1";
+            let database_new_name = "database_modify_base_test2";
+            create_database(database_name);
+            modify_database(database_name, database_new_name);
+            modify_database(database_name, database_new_name);
+            // view_create_test
+            let database_name = "database_view_create_base_test";
+            let view_name = "view_create_base_test";
+            create_view(database_name, view_name);
+            // view_modify_test
+            let database_name = "database_view_modify_base_test";
+            let view_name = "view_modify_base_test1";
+            let view_new_name = "view_modify_base_test2";
+            create_view(database_name, view_name);
+            modify_view(database_name, view_name, view_new_name);
+            modify_view(database_name, view_name, view_new_name);
+            // index_create_test
+            let database_name = "database_index_create_test";
+            let view_name = "view_index_create_test";
+            let index_name = "index_create_library_test";
+            create_index(
+                database_name,
+                view_name,
+                index_name,
+                IndexType::Library,
+                KeyType::String,
+                false,
+                true,
+                false,
+            );
+            let index_name = "index_create_dossier_test";
+            create_index(
+                database_name,
+                view_name,
+                index_name,
+                IndexType::Dossier,
+                KeyType::String,
+                false,
+                true,
+                false,
+            );
+            database_map();
+        }
 
-#[test]
-fn database_modify_test() {
-    create_database("database_modify_test1");
-    modify_database("database_modify_test1", "database_modify_test2");
-    database_map();
-}
+        #[test]
+        fn database_map_test() {
+            database_map();
+        }
 
-#[test]
-fn view_create_test() {
-    create_view("database_view_create_test", "view_create_test");
-    database_map();
-}
+        #[test]
+        fn database_create_test() {
+            create_database("database_create_test");
+            database_map();
+        }
 
-#[test]
-fn view_modify_test() {
-    create_view("database_view_modify_test", "view_modify_test1");
-    modify_view(
-        "database_view_modify_test",
-        "view_modify_test1",
-        "view_modify_test2",
-    );
-    database_map();
-}
+        #[test]
+        fn database_modify_test() {
+            create_database("database_modify_test1");
+            modify_database("database_modify_test1", "database_modify_test2");
+            database_map();
+        }
 
-#[test]
-fn view_archive_test() {
-    create_view("database_view_archive_test", "view_archive_test1");
-    archive_view(
-        "database_view_archive_test",
-        "view_archive_test1",
-        "src/test/dir/x.ge",
-    );
-    database_map();
-}
+        #[test]
+        fn view_create_test() {
+            create_view("database_view_create_test", "view_create_test");
+            database_map();
+        }
 
-#[test]
-fn index_create_test() {
-    create_index(
-        "database_index_create_test",
-        "view_index_create_test",
-        "index_create_test",
-        IndexType::Library,
-        KeyType::String,
-        false,
-        true,
-        false,
-    );
-    database_map();
-}
+        #[test]
+        fn view_modify_test() {
+            create_view("database_view_modify_test", "view_modify_test1");
+            modify_view(
+                "database_view_modify_test",
+                "view_modify_test1",
+                "view_modify_test2",
+            );
+            database_map();
+        }
 
-#[test]
-fn memory_test1() {
-    let key1 = "a";
-    let key2 = "b";
-    let key3 = "c";
-    put_memory_default(key1, "test1", 1);
-    put_memory_default(key2, "test2", 2);
-    get_memory_default(key1, 1);
-    get_memory_default(key2, 2);
-    remove_memory_default(key2, 3);
-    get_memory_default(key2, 3);
-    put_memory_default(key3, "test4", 4);
-    get_memory_default(key3, 4);
-    put_memory_default(key3, "test5", 5);
-    get_memory_default(key3, 5);
-    set_memory_default(key3, "test6", 6);
-    get_memory_default(key3, 6);
-}
+        #[test]
+        fn view_archive_test() {
+            create_view("database_view_archive_test", "view_archive_test1");
+            archive_view(
+                "database_view_archive_test",
+                "view_archive_test1",
+                "src/test/dir/x.ge",
+            );
+            database_map();
+        }
 
-#[test]
-fn memory_test2() {
-    let page_name = "page_test2";
-    create_page(page_name);
-    let key1 = "a";
-    let key2 = "b";
-    let key3 = "c";
-    put_memory(page_name, key1, "test1", 1);
-    put_memory(page_name, key2, "test2", 2);
-    get_memory(page_name, key1, 1);
-    get_memory(page_name, key2, 2);
-    remove_memory(page_name, key2, 3);
-    get_memory(page_name, key2, 3);
-    put_memory(page_name, key3, "test4", 4);
-    get_memory(page_name, key3, 4);
-    put_memory(page_name, key3, "test5", 5);
-    get_memory(page_name, key3, 5);
-    set_memory(page_name, key3, "test6", 6);
-    get_memory(page_name, key3, 6);
-}
-
-#[test]
-fn index_test_prepare() {
-    let database_name = "database_index_test";
-    let view_name = "view_index_test";
-    create_view(database_name, view_name);
-    let mut i = 1;
-    while i < 5 {
-        // 循环体
-        put(database_name, view_name, i.to_string().as_str(), "world", i);
-        get(database_name, view_name, i.to_string().as_str(), i);
-        i += 1;
+        #[test]
+        fn index_create_test() {
+            create_index(
+                "database_index_create_test",
+                "view_index_create_test",
+                "index_create_test",
+                IndexType::Library,
+                KeyType::String,
+                false,
+                true,
+                false,
+            );
+            database_map();
+        }
     }
-}
 
-#[test]
-fn index_test() {
-    let database_name = "database_index_test";
-    let view_name = "view_index_test";
-    let mut i = 1;
-    while i < 5 {
-        // 循环体
-        get(database_name, view_name, i.to_string().as_str(), i);
-        i += 1;
+    #[cfg(test)]
+    mod index {
+        use crate::task::master_test::{create_view, get, put};
+
+        #[test]
+        fn index_test_prepare() {
+            let database_name = "database_index_test";
+            let view_name = "view_index_test";
+            create_view(database_name, view_name);
+            let mut i = 1;
+            while i < 5 {
+                // 循环体
+                put(database_name, view_name, i.to_string().as_str(), "world", i);
+                get(database_name, view_name, i.to_string().as_str(), i);
+                i += 1;
+            }
+        }
+
+        #[test]
+        fn index_test() {
+            let database_name = "database_index_test";
+            let view_name = "view_index_test";
+            let mut i = 1;
+            while i < 5 {
+                // 循环体
+                get(database_name, view_name, i.to_string().as_str(), i);
+                i += 1;
+            }
+        }
+    }
+
+    #[cfg(test)]
+    mod memory {
+        use crate::task::master_test::{
+            create_page, get_memory, get_memory_default, put_memory, put_memory_default,
+            remove_memory, remove_memory_default, set_memory, set_memory_default,
+        };
+
+        #[test]
+        fn memory_test1() {
+            let key1 = "a";
+            let key2 = "b";
+            let key3 = "c";
+            put_memory_default(key1, "test1", 1);
+            put_memory_default(key2, "test2", 2);
+            get_memory_default(key1, 1);
+            get_memory_default(key2, 2);
+            remove_memory_default(key2, 3);
+            get_memory_default(key2, 3);
+            put_memory_default(key3, "test4", 4);
+            get_memory_default(key3, 4);
+            put_memory_default(key3, "test5", 5);
+            get_memory_default(key3, 5);
+            set_memory_default(key3, "test6", 6);
+            get_memory_default(key3, 6);
+        }
+
+        #[test]
+        fn memory_test2() {
+            let page_name = "page_test2";
+            create_page(page_name);
+            let key1 = "a";
+            let key2 = "b";
+            let key3 = "c";
+            put_memory(page_name, key1, "test1", 1);
+            put_memory(page_name, key2, "test2", 2);
+            get_memory(page_name, key1, 1);
+            get_memory(page_name, key2, 2);
+            remove_memory(page_name, key2, 3);
+            get_memory(page_name, key2, 3);
+            put_memory(page_name, key3, "test4", 4);
+            get_memory(page_name, key3, 4);
+            put_memory(page_name, key3, "test5", 5);
+            get_memory(page_name, key3, 5);
+            set_memory(page_name, key3, "test6", 6);
+            get_memory(page_name, key3, 6);
+        }
     }
 }
 
