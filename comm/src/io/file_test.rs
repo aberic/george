@@ -188,11 +188,17 @@ mod file {
 
     #[test]
     fn reader_test1() {
-        let x1 = Filer::read_sub("src/test/file/seek.txt", 150000000, 7).unwrap();
+        Filer::try_touch("src/test/file/reader.txt").unwrap();
+        let u8s1 = "hello world!".as_bytes();
+        match Filer::write_seek("src/test/file/reader.txt", 100000000, u8s1) {
+            Err(err) => println!("err = {}", err),
+            _ => {}
+        }
+        let x1 = Filer::read_sub_allow_none("src/test/file/reader.txt", 150000000, 7).unwrap();
         println!("x1 is empty = {}", Vector::is_fill(x1.clone()));
         println!("x1 = {}", String::from_utf8(x1).unwrap());
 
-        let x2 = Filer::read_sub("src/test/file/seek.txt", 160000000, 8).unwrap();
+        let x2 = Filer::read_sub_allow_none("src/test/file/reader.txt", 160000000, 8).unwrap();
         println!("x2 is empty = {}", Vector::is_fill(x2.clone()));
         println!("x2 = {}", String::from_utf8(x2).unwrap());
 
