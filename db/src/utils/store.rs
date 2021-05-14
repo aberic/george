@@ -300,7 +300,7 @@ pub fn recovery_before_content(filepath: String) -> GeorgeResult<HD> {
                 Ok(file_clone) => {
                     // before_content包括head以及正文描述信息
                     // head长度已知32，正文描述长度已知12，总长度44
-                    let content = Filer::read_sub(file_clone, 0, 44)?;
+                    let content = Filer::read_file_sub(file_clone, 0, 44)?;
                     let mut metadata_bytes: Vec<u8> = vec![];
                     let mut start_bytes: Vec<u8> = vec![];
                     let mut last_bytes: Vec<u8> = vec![];
@@ -319,7 +319,7 @@ pub fn recovery_before_content(filepath: String) -> GeorgeResult<HD> {
                     let last = trans_bytes_2_u32(last_bytes.clone())? as usize;
                     let metadata = Metadata::from_bytes(metadata_bytes)?;
                     // 读取正文描述
-                    let description = Filer::read_sub(file, start, last)?;
+                    let description = Filer::read_file_sub(file, start, last)?;
                     log::debug!(
                         "{:#?} recovery before content from file {}",
                         metadata.tag,

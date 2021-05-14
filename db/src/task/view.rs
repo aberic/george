@@ -456,12 +456,12 @@ impl View {
         let last: u32;
         match file.try_clone() {
             Ok(f) => {
-                let bs = Filer::read_sub(f, seek, 4)?;
+                let bs = Filer::read_file_sub(f, seek, 4)?;
                 last = trans_bytes_2_u32(bs)?
             }
             Err(err) => return Err(err_strs("get while file try clone", err)),
         }
-        Filer::read_sub(file, seek + 4, last as usize)
+        Filer::read_file_sub(file, seek + 4, last as usize)
     }
 
     /// 读取已组装写入视图的内容，即持续长度+该长度的原文内容
