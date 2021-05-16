@@ -31,9 +31,11 @@ use openssl::x509::{
 use crate::cryptos::rsa::{RSALoadKey, RSA};
 use crate::errors::entrances::GeorgeResult;
 use crate::errors::entrances::{err_str, err_strs};
+use crate::io::file::{Filer, FilerWriter};
+use std::path::Path;
 
 pub struct Cert {
-    x509: X509,
+    pub x509: X509,
 }
 
 impl Cert {
@@ -56,7 +58,7 @@ impl Cert {
         odd: bool,
         sk: PKey<Private>,
         pk: PKey<Public>,
-        subject_info: X509NameInfo,
+        subject_info: X509Name,
         version: i32,
         not_before_day: u32,
         not_after_day: u32,
@@ -100,23 +102,20 @@ impl Cert {
     /// * not_after_day 证书上的有效期在指定天之前
     /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
     pub fn sign_intermediate(
-        op_x509: Option<X509>,
+        x509: X509,
         bits: i32,
         msb_ca: MsbOptionCA,
         odd: bool,
         sk: PKey<Private>,
         pk: PKey<Public>,
-        subject_info: X509NameInfo,
+        subject_info: X509Name,
         version: i32,
         not_before_day: u32,
         not_after_day: u32,
         message_digest: MessageDigest,
     ) -> GeorgeResult<Cert> {
-        if op_x509.is_none() {
-            return Err(err_str("root cert can't be none while sign intermediate!"));
-        }
         match generate_x509(
-            op_x509,
+            Some(x509),
             sk,
             pk,
             SerialNumber::new(bits, msb_ca, odd),
@@ -153,21 +152,18 @@ impl Cert {
     /// * not_after_day 证书上的有效期在指定天之前
     /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
     pub fn sign_user(
-        op_x509: Option<X509>,
+        x509: X509,
         bits: i32,
         msb_ca: MsbOptionCA,
         odd: bool,
         sk: PKey<Private>,
         pk: PKey<Public>,
-        subject_info: X509NameInfo,
+        subject_info: X509Name,
         version: i32,
         not_before_day: u32,
         not_after_day: u32,
         message_digest: MessageDigest,
     ) -> GeorgeResult<Cert> {
-        if op_x509.is_none() {
-            return Err(err_str("root cert can't be none while sign intermediate!"));
-        }
         let basic_constraints: X509Extension;
         match BasicConstraints::new() // 基本约束
             .critical() // 关键
@@ -196,7 +192,7 @@ impl Cert {
             Err(err) => return Err(err_strs("BasicConstraints build", err)),
         }
         match generate_x509(
-            op_x509,
+            Some(x509),
             sk,
             pk,
             SerialNumber::new(bits, msb_ca, odd),
@@ -214,6 +210,153 @@ impl Cert {
         ) {
             Ok(x509) => Ok(Cert { x509 }),
             Err(err) => Err(err_strs("create_cert", err)),
+        }
+    }
+
+    pub fn save_pem<P: AsRef<Path>>(&self, filepath: P) -> GeorgeResult<()> {
+        match self.x509.to_pem() {
+            Ok(v8s) => {
+                Filer::write_force(filepath, v8s)?;
+                Ok(())
+            }
+            Err(err) => Err(err_strs("x509 to_pem", err)),
+        }
+    }
+
+    pub fn save_der<P: AsRef<Path>>(&self, filepath: P) -> GeorgeResult<()> {
+        match self.x509.to_der() {
+            Ok(v8s) => {
+                Filer::write_force(filepath, v8s)?;
+                Ok(())
+            }
+            Err(err) => Err(err_strs("x509 to_der", err)),
+        }
+    }
+
+    pub fn load_pem(bytes: Vec<u8>) -> GeorgeResult<Cert> {
+        match X509::from_pem(bytes.as_slice()) {
+            Ok(x509) => Ok(Cert { x509 }),
+            Err(err) => Err(err_strs("X509 from_pem", err)),
+        }
+    }
+
+    pub fn load_der(bytes: Vec<u8>) -> GeorgeResult<Cert> {
+        match X509::from_der(bytes.as_slice()) {
+            Ok(x509) => Ok(Cert { x509 }),
+            Err(err) => Err(err_strs("X509 from_der", err)),
+        }
+    }
+
+    pub fn load_pem_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Cert> {
+        match read(filepath) {
+            Ok(bytes) => Cert::load_pem(bytes),
+            Err(err) => Err(err_strs("read", err)),
+        }
+    }
+
+    pub fn load_der_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Cert> {
+        match read(filepath) {
+            Ok(bytes) => Cert::load_der(bytes),
+            Err(err) => Err(err_strs("read", err)),
+        }
+    }
+}
+
+/// Certificate Signing Request的缩写，即证书签名申请。
+///
+/// 这是要求CA给证书签名的一种正式申请，该申请包含申请证书的实体的公钥及该实体某些信息。
+///
+/// 该数据将成为证书的一部分。CSR始终使用它携带的公钥所对应的私钥进行签名。
+pub struct CSR {
+    pub x509_req: X509Req,
+}
+
+impl CSR {
+    /// 创建证书签名申请
+    ///
+    /// * sk 申请证书签发请求主体的私钥
+    /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
+    pub fn create_csr(
+        sk: &PKey<Private>,
+        subject_info: X509Name,
+        message_digest: MessageDigest,
+    ) -> GeorgeResult<X509Req> {
+        match X509ReqBuilder::new() {
+            Ok(mut req_builder) => match req_builder.set_pubkey(&sk) {
+                Ok(()) => match req_builder.set_subject_name(&subject_info) {
+                    Ok(()) => match req_builder.sign(&sk, message_digest) {
+                        Ok(()) => Ok(req_builder.build()),
+                        Err(err) => Err(err_strs("sign", err)),
+                    },
+                    Err(err) => Err(err_strs("set_subject_name", err)),
+                },
+                Err(err) => Err(err_strs("set_pubkey", err)),
+            },
+            Err(err) => Err(err_strs("X509ReqBuilder_new", err)),
+        }
+    }
+
+    /// 创建证书签名申请
+    ///
+    /// * sk 申请证书签发请求主体的私钥
+    /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
+    pub fn new(
+        sk: &PKey<Private>,
+        info: X509Name,
+        message_digest: MessageDigest,
+    ) -> GeorgeResult<CSR> {
+        Ok(CSR {
+            x509_req: CSR::create_csr(sk, info, message_digest)?,
+        })
+    }
+
+    pub fn save_pem<P: AsRef<Path>>(&self, filepath: P) -> GeorgeResult<()> {
+        match self.x509_req.to_pem() {
+            Ok(v8s) => {
+                Filer::write_force(filepath, v8s)?;
+                Ok(())
+            }
+            Err(err) => Err(err_strs("x509 to_pem", err)),
+        }
+    }
+
+    pub fn save_der<P: AsRef<Path>>(&self, filepath: P) -> GeorgeResult<()> {
+        match self.x509_req.to_der() {
+            Ok(v8s) => {
+                Filer::write_force(filepath, v8s)?;
+                Ok(())
+            }
+            Err(err) => Err(err_strs("x509 to_der", err)),
+        }
+    }
+
+    pub fn load_pem(bytes: Vec<u8>) -> GeorgeResult<CSR> {
+        match X509Req::from_pem(bytes.as_slice()) {
+            Ok(x509_req) => Ok(CSR { x509_req }),
+            Err(err) => Err(err_strs("X509Req from_pem", err)),
+        }
+    }
+
+    pub fn load_der(bytes: Vec<u8>) -> GeorgeResult<CSR> {
+        match X509Req::from_der(bytes.as_slice()) {
+            Ok(x509_req) => Ok(CSR { x509_req }),
+            Err(err) => Err(err_strs("X509Req from_der", err)),
+        }
+    }
+
+    pub fn load_pem_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<CSR> {
+        match read(filepath) {
+            Ok(bytes) => CSR::load_pem(bytes),
+            Err(err) => Err(err_strs("read", err)),
+        }
+    }
+
+    pub fn load_der_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<CSR> {
+        match read(filepath) {
+            Ok(bytes) => CSR::load_der(bytes),
+            Err(err) => Err(err_strs("read", err)),
         }
     }
 }
@@ -236,7 +379,7 @@ fn generate_x509(
     sk: PKey<Private>,
     pk: PKey<Public>,
     serial_number: SerialNumber,
-    subject_info: X509NameInfo,
+    subject_info: X509Name,
     version: i32,
     not_before_day: u32,
     not_after_day: u32,
@@ -251,7 +394,7 @@ fn generate_x509(
     // 设置证书的序列号
     cert_builder.set_serial_number(&serial_number)?;
     // 设置待签发证书的主题信息
-    cert_builder.set_subject_name(&subject_info.build())?;
+    cert_builder.set_subject_name(&subject_info)?;
     // 设置与证书关联的公钥
     cert_builder.set_pubkey(&pk)?;
     // 从现在开始按指定的天数间隔创建一个新的时间
@@ -286,7 +429,7 @@ fn generate_x509(
         }
         None => {
             // 设置签发证书的颁发者信息
-            cert_builder.set_issuer_name(&subject_info.build())?;
+            cert_builder.set_issuer_name(&subject_info)?;
             cert_builder.append_extension(
                 SubjectKeyIdentifier::new() // 主题密钥标识符
                     // 如果证书是自签名的，则将“发布者”设置为“None”。
@@ -331,6 +474,37 @@ fn ca_key_usage_ext() -> GeorgeResult<X509Extension> {
     {
         Ok(ext) => Ok(ext),
         Err(err) => Err(err_strs("KeyUsage build", err)),
+    }
+}
+
+/// 证书主题备用名称：SubjectAlternativeName
+pub struct SAN {
+    /// DNSNames DNS限制
+    pub dns_names: Vec<String>,
+    /// EmailAddresses 邮箱地址限制
+    pub email_addresses: Vec<String>,
+    /// IPAddresses IP地址限制
+    pub ip_addresses: Vec<String>,
+    /// URIs URL地址限制
+    pub uris: Vec<String>,
+}
+
+impl SAN {
+    pub fn build(&self) -> SubjectAlternativeName {
+        let mut subject_alt_name = SubjectAlternativeName::new();
+        for dns_name in &self.dns_names {
+            subject_alt_name.dns(dns_name.as_str());
+        }
+        for email_address in &self.email_addresses {
+            subject_alt_name.email(email_address.as_str());
+        }
+        for ip_address in &self.ip_addresses {
+            subject_alt_name.ip(ip_address.as_str());
+        }
+        for uri in &self.uris {
+            subject_alt_name.uri(uri.as_str());
+        }
+        subject_alt_name
     }
 }
 
@@ -530,409 +704,119 @@ impl SerialNumber {
 #[derive(Debug, Clone)]
 pub struct X509NameInfo {
     /// ISO国家代码（两位字符），如CN
-    pub country: String,
+    country: String,
     /// 公司名称，如George Technology Inc
-    pub organization: String,
+    organization: Option<String>,
     /// 部门名称	sales Dep
-    pub organizational_unit: String,
+    organizational_unit: Option<String>,
     /// 所在城市，如Tianjin
-    pub locality: String,
+    locality: Option<String>,
     /// 所在省份，如Tianjin
-    pub province: String,
+    province: Option<String>,
+    /// 街道地址
+    street_address: Option<String>,
+    /// 邮件
+    mail: Option<String>,
+    /// DNS域
+    dns_domain: Option<String>,
+    /// 域
+    domain: Option<String>,
     /// 公用名(Common Name)是主机名+域名，比如：www.domain.net<p>
     ///
     /// 数字证书的服务器证书是颁发给某一台主机的，而不是一个域
     ///
     /// 公用名（Common Name）必须与要使用服务器证书的主机的域名完全相同，因为www.domain.com与domain.com是不同的
-    pub common_name: String,
+    common_name: String,
 }
 
 // todo 追加用于主题备用名称
 impl X509NameInfo {
-    fn build(&self) -> X509Name {
-        let mut x509_name = X509NameBuilder::new().unwrap();
-        if !String::is_empty(&self.country) {
-            x509_name
-                .append_entry_by_nid(Nid::COUNTRYNAME, self.country.as_str())
-                .unwrap()
+    pub fn new(common_name: String, country: String) -> GeorgeResult<X509Name> {
+        let xni = X509NameInfo {
+            country,
+            organization: None,
+            organizational_unit: None,
+            locality: None,
+            province: None,
+            street_address: None,
+            mail: None,
+            dns_domain: None,
+            domain: None,
+            common_name,
+        };
+        match xni.build() {
+            Ok(x509_name) => Ok(x509_name),
+            Err(err) => Err(err_strs("X509Name build", err)),
         }
-        if !String::is_empty(&self.organization) {
-            x509_name
-                .append_entry_by_nid(Nid::ORGANIZATIONNAME, self.organization.as_str())
-                .unwrap()
-        }
-        if !String::is_empty(&self.organizational_unit) {
-            x509_name
-                .append_entry_by_nid(
-                    Nid::ORGANIZATIONALUNITNAME,
-                    self.organizational_unit.as_str(),
-                )
-                .unwrap()
-        }
-        if !String::is_empty(&self.locality) {
-            x509_name
-                .append_entry_by_nid(Nid::LOCALITYNAME, self.locality.as_str())
-                .unwrap()
-        }
-        if !String::is_empty(&self.province) {
-            x509_name
-                .append_entry_by_nid(Nid::STATEORPROVINCENAME, self.province.as_str())
-                .unwrap()
-        }
-        if !String::is_empty(&self.common_name) {
-            x509_name
-                .append_entry_by_nid(Nid::COMMONNAME, self.common_name.as_str())
-                .unwrap()
-        }
-        x509_name.build()
     }
-}
 
-////////////////////////////////////////////////////////////////////////////////
-
-pub fn create_cert_request(sk: &PKey<Private>, info: X509NameInfo) -> GeorgeResult<X509Req> {
-    match X509ReqBuilder::new() {
-        Ok(mut req_builder) => match req_builder.set_pubkey(&sk) {
-            Ok(()) => match req_builder.set_subject_name(&info.build()) {
-                Ok(()) => match req_builder.sign(&sk, MessageDigest::sha256()) {
-                    Ok(()) => Ok(req_builder.build()),
-                    Err(err) => Err(err_strs("sign", err)),
-                },
-                Err(err) => Err(err_strs("set_subject_name", err)),
-            },
-            Err(err) => Err(err_strs("set_pubkey", err)),
-        },
-        Err(err) => Err(err_strs("X509ReqBuilder_new", err)),
-    }
-}
-
-/// 创建证书
-///
-/// bits 生成一个bits位奇数随机数
-///
-/// sk 与证书关联的公钥
-///
-/// subject_info 证书的主题名称。在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-///
-/// issuer_info 证书的发布者名称
-///
-/// version 设置证书的版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
-fn create_cert(
-    bits: i32,
-    sk: &PKey<Private>,
-    issuer_info: X509NameInfo,
-    version: i32,
-    not_before_day: u32,
-    not_after_day: u32,
-) -> Result<X509, ErrorStack> {
-    let mut cert_builder = X509::builder()?;
-    cert_builder.set_version(version)?;
-    let serial_number = {
-        let mut serial = BigNum::new().unwrap();
-        serial.rand(bits, MsbOption::MAYBE_ZERO, false).unwrap();
-        serial.to_asn1_integer().unwrap()
-    };
-    // 序列号
-    cert_builder.set_serial_number(&serial_number)?;
-    cert_builder.set_subject_name(&issuer_info.build())?;
-    cert_builder.set_issuer_name(&issuer_info.build())?;
-    cert_builder.set_pubkey(&sk)?;
-    let not_before = Asn1Time::days_from_now(not_before_day)?;
-    cert_builder.set_not_before(&not_before).unwrap();
-    let not_after = Asn1Time::days_from_now(not_after_day)?;
-    cert_builder.set_not_after(&not_after)?;
-
-    cert_builder.append_extension(BasicConstraints::new().critical().ca().build().unwrap())?;
-    cert_builder.append_extension(
-        KeyUsage::new()
-            .critical()
-            .key_cert_sign()
-            .crl_sign()
-            .build()
-            .unwrap(),
-    )?;
-    // 主题唯一标识符（可选）。如果证书是自签名的，则将“发布者”设置为“None”。
-    let subject_key_identifier =
-        SubjectKeyIdentifier::new().build(&cert_builder.x509v3_context(None, None))?;
-    cert_builder.append_extension(subject_key_identifier)?;
-    cert_builder.sign(&sk, MessageDigest::sha256())?;
-    Ok(cert_builder.build())
-}
-
-/// 创建根证书
-///
-/// bits 生成一个bits位奇数随机数
-///
-/// sk 与证书关联的私钥
-///
-/// subject_info 证书的主题名称。在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-///
-/// issuer_info 证书的发布者名称
-///
-/// version 设置证书的版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
-pub fn create(
-    bits: i32,
-    sk: &PKey<Private>,
-    issuer_info: X509NameInfo,
-    version: i32,
-    not_before_day: u32,
-    not_after_day: u32,
-) -> GeorgeResult<X509> {
-    match create_cert(
-        bits,
-        sk,
-        issuer_info,
-        version,
-        not_before_day,
-        not_after_day,
-    ) {
-        Ok(x509) => Ok(x509),
-        Err(err) => Err(err_strs("create_cert", err)),
-    }
-}
-
-pub struct AltName {
-    /// DNSNames DNS限制
-    pub dns_names: Vec<String>,
-    /// EmailAddresses 邮箱地址限制
-    pub email_addresses: Vec<String>,
-    /// IPAddresses IP地址限制
-    pub ip_addresses: Vec<String>,
-    /// URIs URL地址限制
-    pub uris: Vec<String>,
-}
-
-impl AltName {
-    pub fn build(&self) -> SubjectAlternativeName {
-        let mut subject_alt_name = SubjectAlternativeName::new();
-        for dns_name in &self.dns_names {
-            subject_alt_name.dns(dns_name.as_str());
+    // todo 测试Vec<String>
+    pub fn new_cus(
+        common_name: String,
+        country: String,
+        organization: Option<String>,
+        organizational_unit: Option<String>,
+        locality: Option<String>,
+        province: Option<String>,
+        street_address: Option<String>,
+        mail: Option<String>,
+        dns_domain: Option<String>,
+        domain: Option<String>,
+    ) -> GeorgeResult<X509Name> {
+        let xni = X509NameInfo {
+            country,
+            organization,
+            organizational_unit,
+            locality,
+            province,
+            street_address,
+            mail,
+            dns_domain,
+            domain,
+            common_name,
+        };
+        match xni.build() {
+            Ok(x509_name) => Ok(x509_name),
+            Err(err) => Err(err_strs("X509Name build", err)),
         }
-        for email_address in &self.email_addresses {
-            subject_alt_name.email(email_address.as_str());
+    }
+
+    fn build(&self) -> Result<X509Name, ErrorStack> {
+        let mut x509_name_builder = X509NameBuilder::new().unwrap();
+        x509_name_builder.append_entry_by_nid(Nid::COUNTRYNAME, self.country.as_str())?;
+        x509_name_builder.append_entry_by_nid(Nid::COMMONNAME, self.common_name.as_str())?;
+        match self.organization.as_ref() {
+            Some(res) => x509_name_builder.append_entry_by_nid(Nid::ORGANIZATIONNAME, res)?,
+            _ => {}
         }
-        for ip_address in &self.ip_addresses {
-            subject_alt_name.ip(ip_address.as_str());
+        match self.organizational_unit.as_ref() {
+            Some(res) => x509_name_builder.append_entry_by_nid(Nid::ORGANIZATIONALUNITNAME, res)?,
+            _ => {}
         }
-        for uri in &self.uris {
-            subject_alt_name.uri(uri.as_str());
+        match self.locality.as_ref() {
+            Some(res) => x509_name_builder.append_entry_by_nid(Nid::LOCALITYNAME, res)?,
+            _ => {}
         }
-        subject_alt_name
-    }
-}
-
-/// 签发子证书
-///
-/// ca_cert 根证书
-///
-/// ca_sk 自签根证书的私钥
-///
-/// bits 生成一个bits位奇数随机数
-///
-/// sk 与证书关联的私钥
-///
-/// subject_info 证书的主题名称。在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-///
-/// issuer_info 证书的发布者名称
-///
-/// version 设置证书的版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
-fn sign_cert(
-    ca_cert: X509,
-    ca_sk: &PKey<Private>,
-    bits: i32,
-    sk: &PKey<Private>,
-    subject_name: &X509NameRef,
-    alt_name: AltName,
-    version: i32,
-    not_before_day: u32,
-    not_after_day: u32,
-) -> Result<X509, ErrorStack> {
-    let mut cert_builder = X509::builder()?;
-    cert_builder.set_version(version)?;
-    // 序列号
-    let serial_number = {
-        let mut serial = BigNum::new().unwrap();
-        serial.rand(bits, MsbOption::MAYBE_ZERO, false).unwrap();
-        serial.to_asn1_integer().unwrap()
-    };
-    cert_builder.set_serial_number(&serial_number)?;
-    cert_builder.set_subject_name(subject_name)?;
-    cert_builder.set_issuer_name(ca_cert.subject_name())?;
-    cert_builder.set_pubkey(&sk)?;
-    let not_before = Asn1Time::days_from_now(not_before_day)?;
-    cert_builder.set_not_before(&not_before).unwrap();
-    let not_after = Asn1Time::days_from_now(not_after_day)?;
-    cert_builder.set_not_after(&not_after)?;
-
-    cert_builder.append_extension(BasicConstraints::new().critical().ca().build().unwrap())?;
-    cert_builder.append_extension(
-        KeyUsage::new()
-            .critical()
-            .key_cert_sign()
-            .crl_sign()
-            .build()
-            .unwrap(),
-    )?;
-    // 主题唯一标识符（可选）。如果证书是自签名的，则将“发布者”设置为“None”。
-    let subject_key_identifier = SubjectKeyIdentifier::new()
-        .build(&cert_builder.x509v3_context(Some(ca_cert.as_ref()), None))?;
-    cert_builder.append_extension(subject_key_identifier)?;
-
-    // 颁发者唯一标识符（可选）
-    let auth_key_identifier = AuthorityKeyIdentifier::new()
-        .keyid(false)
-        .issuer(false)
-        .build(&cert_builder.x509v3_context(Some(ca_cert.as_ref()), None))?;
-    cert_builder.append_extension(auth_key_identifier)?;
-
-    let subject_alt_name = alt_name
-        .build()
-        .build(&cert_builder.x509v3_context(Some(ca_cert.as_ref()), None))?;
-    cert_builder.append_extension(subject_alt_name)?;
-
-    cert_builder.sign(&ca_sk, MessageDigest::sha256())?;
-    Ok(cert_builder.build())
-}
-
-/// 签发子证书
-///
-/// ca_cert 根证书
-///
-/// ca_sk 自签根证书的私钥
-///
-/// bits 生成一个bits位奇数随机数
-///
-/// sk 与证书关联的私钥
-///
-/// subject_info 证书的主题名称。在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-///
-/// issuer_info 证书的发布者名称
-///
-/// version 设置证书的版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
-pub fn sign_csr(
-    ca_cert: X509,
-    ca_sk: &PKey<Private>,
-    bits: i32,
-    sk: &PKey<Private>,
-    csr: X509Req,
-    alt_name: AltName,
-    version: i32,
-    not_before_day: u32,
-    not_after_day: u32,
-) -> GeorgeResult<X509> {
-    match sign_cert(
-        ca_cert,
-        ca_sk,
-        bits,
-        sk,
-        csr.subject_name(),
-        alt_name,
-        version,
-        not_before_day,
-        not_after_day,
-    ) {
-        Ok(x509) => Ok(x509),
-        Err(err) => Err(err_strs("sign_cert", err)),
-    }
-}
-
-/// 签发子证书
-///
-/// ca_cert 根证书
-///
-/// ca_sk 自签根证书的私钥
-///
-/// bits 生成一个bits位奇数随机数
-///
-/// sk 与证书关联的私钥
-///
-/// subject_info 证书的主题名称。在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-///
-/// issuer_info 证书的发布者名称
-///
-/// version 设置证书的版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
-pub fn sign_obj(
-    ca_cert: X509,
-    ca_sk: &PKey<Private>,
-    bits: i32,
-    sk: &PKey<Private>,
-    subject_info: X509NameInfo,
-    alt_name: AltName,
-    version: i32,
-    not_before_day: u32,
-    not_after_day: u32,
-) -> GeorgeResult<X509> {
-    match sign_cert(
-        ca_cert,
-        ca_sk,
-        bits,
-        sk,
-        subject_info.build().as_ref(),
-        alt_name,
-        version,
-        not_before_day,
-        not_after_day,
-    ) {
-        Ok(x509) => Ok(x509),
-        Err(err) => Err(err_strs("sign_cert", err)),
-    }
-}
-
-/// 签发子证书
-///
-/// ca_cert 根证书
-///
-/// ca_sk 自签根证书的私钥
-///
-/// bits 生成一个bits位奇数随机数
-///
-/// sk 与证书关联的私钥
-///
-/// subject_info 证书的主题名称。在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-///
-/// issuer_info 证书的发布者名称
-///
-/// version 设置证书的版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
-pub fn sign(
-    ca_cert_path: String,
-    ca_sk_path: String,
-    bits: i32,
-    sk_path: String,
-    subject_info: X509NameInfo,
-    alt_name: AltName,
-    version: i32,
-    not_before_day: u32,
-    not_after_day: u32,
-) -> GeorgeResult<X509> {
-    let ca_sk = RSA::load_sk(ca_sk_path)?;
-    let sk = RSA::load_sk(sk_path)?;
-    let ca_cert = load_ca_file(ca_cert_path.to_string())?;
-    match sign_cert(
-        ca_cert,
-        &ca_sk,
-        bits,
-        &sk,
-        subject_info.build().as_ref(),
-        alt_name,
-        version,
-        not_before_day,
-        not_after_day,
-    ) {
-        Ok(x509) => Ok(x509),
-        Err(err) => Err(err_strs("sign", err)),
-    }
-}
-
-pub fn load_ca(sk: Vec<u8>) -> GeorgeResult<X509> {
-    match X509::from_pem(sk.as_slice()) {
-        Ok(key) => Ok(key),
-        Err(err) => Err(err_strs("x509_from_pem", err)),
-    }
-}
-
-pub fn load_ca_file(filepath: String) -> GeorgeResult<X509> {
-    match read(filepath) {
-        Ok(u8s) => load_ca(u8s),
-        Err(err) => Err(err_strs("read", err)),
+        match self.province.as_ref() {
+            Some(res) => x509_name_builder.append_entry_by_nid(Nid::STATEORPROVINCENAME, res)?,
+            _ => {}
+        }
+        match self.street_address.as_ref() {
+            Some(res) => x509_name_builder.append_entry_by_nid(Nid::STREETADDRESS, res)?,
+            _ => {}
+        }
+        match self.mail.as_ref() {
+            Some(res) => x509_name_builder.append_entry_by_nid(Nid::MAIL, res)?,
+            _ => {}
+        }
+        match self.dns_domain.as_ref() {
+            Some(res) => x509_name_builder.append_entry_by_nid(Nid::DNSDOMAIN, res)?,
+            _ => {}
+        }
+        match self.domain.as_ref() {
+            Some(res) => x509_name_builder.append_entry_by_nid(Nid::DOMAIN, res)?,
+            _ => {}
+        }
+        Ok(x509_name_builder.build())
     }
 }

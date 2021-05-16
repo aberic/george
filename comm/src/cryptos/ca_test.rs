@@ -14,168 +14,113 @@
 
 #[cfg(test)]
 mod ca {
-    use crate::cryptos::ca::{
-        create, create_cert_request, load_ca_file, sign, AltName, X509NameInfo,
-    };
-    use crate::cryptos::rsa::{RSALoadKey, RSANewStore, RSA};
-    use crate::io::file::{Filer, FilerWriter};
-
-    fn x509_name_info() -> X509NameInfo {
-        X509NameInfo {
-            country: "CN".to_string(),
-            organization: "Sky".to_string(),
-            organizational_unit: "Rocket".to_string(),
-            locality: "ChangPing".to_string(),
-            province: "Beijing".to_string(),
-            common_name: "skyfile.info".to_string(),
-        }
-    }
-
-    fn x509_name_info1() -> X509NameInfo {
-        X509NameInfo {
-            country: "CN".to_string(),
-            organization: "Hub".to_string(),
-            organizational_unit: "Fire".to_string(),
-            locality: "XiCheng".to_string(),
-            province: "Beijing".to_string(),
-            common_name: "aberic.cn".to_string(),
-        }
-    }
-
-    fn alt_name() -> AltName {
-        AltName {
-            dns_names: vec!["ha.com".to_string(), "x.he.org".to_string()],
-            email_addresses: vec!["yes@when.com".to_string()],
-            ip_addresses: vec!["192.168.0.1".to_string(), "127.0.0.1".to_string()],
-            uris: vec![],
-        }
-    }
+    use crate::cryptos::ca::{Cert, MsbOptionCA, X509NameInfo};
+    use crate::cryptos::rsa::RSA;
+    use crate::cryptos::sm2::SM2;
+    use openssl::hash::MessageDigest;
 
     #[test]
-    fn create_cert_request_test() {
-        let sk_filepath = "src/test/crypto/ca/create_cert_request/rsa_sk.pem";
-        let csr_filepath = "src/test/crypto/ca/create_cert_request/rsa_csr.pem";
-        match RSA::generate_pkcs8_pem(2048, sk_filepath) {
-            Ok(u8s) => println!("pri = {}", String::from_utf8(u8s).unwrap()),
-            Err(err) => {
-                println!("generate_sk_in_files = {}", err);
-                return;
-            }
-        }
-        match RSA::load_sk(sk_filepath) {
-            Ok(key) => match create_cert_request(&key, x509_name_info()) {
-                Ok(csr) => match csr.to_pem() {
-                    Ok(pem) => {
-                        Filer::write_force(csr_filepath, pem).unwrap();
-                    }
-                    Err(err) => {
-                        println!("to_pem = {}", err);
-                        return;
-                    }
-                },
-                Err(err) => {
-                    println!("create_cert_request = {}", err);
-                    return;
-                }
-            },
-            Err(err) => {
-                println!("load_sk_file = {}", err);
-                return;
-            }
-        }
-    }
-
-    fn create_demo(sk_filepath: &str, root_filepath: &str) {
-        match RSA::generate_pkcs8_pem(2048, sk_filepath) {
-            Ok(u8s) => println!("pri = {}", String::from_utf8(u8s).unwrap()),
-            Err(err) => {
-                println!("generate_sk_in_files = {}", err);
-                return;
-            }
-        }
-        match RSA::load_sk(sk_filepath) {
-            Ok(key) => match create(128, &key, x509_name_info(), 2, 0, 356) {
-                Ok(x509) => match x509.to_pem() {
-                    Ok(pem) => {
-                        Filer::write_force(root_filepath, pem).unwrap();
-                    }
-                    Err(err) => {
-                        println!("to_pem = {}", err);
-                        return;
-                    }
-                },
-                Err(err) => {
-                    println!("create = {}", err);
-                    return;
-                }
-            },
-            Err(err) => {
-                println!("load_sk_file = {}", err);
-                return;
-            }
-        }
-    }
-
-    #[test]
-    fn create_test() {
-        let sk_filepath = "src/test/crypto/ca/create/rsa_sk.pem";
-        let root_filepath = "src/test/crypto/ca/create/root.pem";
-        create_demo(sk_filepath, root_filepath);
-    }
-
-    #[test]
-    fn load_test() {
-        let sk_filepath = "src/test/crypto/ca/load/rsa_sk.pem";
-        let root_filepath = "src/test/crypto/ca/load/root.pem";
-        create_demo(sk_filepath, root_filepath);
-        match load_ca_file(root_filepath.to_string()) {
-            Ok(x509) => println!(
-                "root = {}",
-                String::from_utf8(x509.to_pem().unwrap()).unwrap()
-            ),
-            Err(err) => println!("err = {}", err),
-        }
-    }
-
-    #[test]
-    fn sign_test() {
-        let ca_sk_filepath = "src/test/crypto/ca/sign/ca_sk.pem";
-        let ca_root_filepath = "src/test/crypto/ca/sign/ca_root.pem";
-        let sk_filepath = "src/test/crypto/ca/sign/sk.pem";
-        let cert_filepath = "src/test/crypto/ca/sign/cert.pem";
-        create_demo(ca_sk_filepath, ca_root_filepath);
-        match RSA::generate_pkcs8_pem(2048, ca_sk_filepath) {
-            Ok(u8s) => println!("pri = {}", String::from_utf8(u8s).unwrap()),
-            Err(err) => println!("err = {}", err),
-        }
-        match RSA::generate_pkcs8_pem(2048, sk_filepath) {
-            Ok(u8s) => println!("pri = {}", String::from_utf8(u8s).unwrap()),
-            Err(err) => println!("err = {}", err),
-        }
-        match sign(
-            ca_root_filepath.to_string(),
-            ca_sk_filepath.to_string(),
-            128,
-            sk_filepath.to_string(),
-            x509_name_info1(),
-            alt_name(),
+    fn test() {
+        let rsa_root = RSA::new(1024).unwrap();
+        let subject_info = X509NameInfo::new_cus(
+            "CNRoot".to_string(),
+            "CN".to_string(),
+            Some("org".to_string()),
+            Some("org unit".to_string()),
+            Some("loc".to_string()),
+            Some("pro".to_string()),
+            Some("sa".to_string()),
+            Some("email@tt.cn".to_string()),
+            Some("128.0.9.1".to_string()),
+            Some("tt.cn".to_string()),
+        )
+        .unwrap();
+        let root = Cert::sign_root(
+            512,
+            MsbOptionCA::MaybeZero,
+            true,
+            rsa_root.sk(),
+            rsa_root.pk(),
+            subject_info,
             2,
             0,
-            356,
-        ) {
-            Ok(x509) => match x509.to_pem() {
-                Ok(pem) => {
-                    Filer::write_force(cert_filepath, pem).unwrap();
-                }
-                Err(err) => {
-                    println!("to_pem = {}", err);
-                    return;
-                }
-            },
-            Err(err) => {
-                println!("create = {}", err);
-                return;
-            }
-        }
+            365,
+            MessageDigest::sha384(),
+        )
+        .unwrap();
+        root.save_pem("src/test/crypto/ca/sign/root.pem.crt")
+            .unwrap();
+        root.save_der("src/test/crypto/ca/sign/root.der.crt")
+            .unwrap();
+
+        let rsa_intermediate = RSA::new(512).unwrap();
+        let subject_info = X509NameInfo::new_cus(
+            "CNIntermediate".to_string(),
+            "CN".to_string(),
+            Some("org inter".to_string()),
+            Some("org unit inter".to_string()),
+            Some("loc inter".to_string()),
+            Some("pro inter".to_string()),
+            Some("sa inter".to_string()),
+            Some("email@inter.cn".to_string()),
+            Some("128.0.9.2".to_string()),
+            Some("inter.cn".to_string()),
+        )
+        .unwrap();
+        let intermediate_cert = Cert::sign_intermediate(
+            root.x509,
+            512,
+            MsbOptionCA::MaybeZero,
+            true,
+            rsa_root.sk(),
+            rsa_intermediate.pk(),
+            subject_info,
+            2,
+            0,
+            365,
+            MessageDigest::sha384(),
+        )
+        .unwrap();
+        intermediate_cert
+            .save_pem("src/test/crypto/ca/sign/intermediate.pem.crt")
+            .unwrap();
+        intermediate_cert
+            .save_der("src/test/crypto/ca/sign/intermediate.der.crt")
+            .unwrap();
+
+        let rsa_user = RSA::new(512).unwrap();
+        let subject_info = X509NameInfo::new_cus(
+            "CNUser".to_string(),
+            "CN".to_string(),
+            Some("org user".to_string()),
+            Some("org unit user".to_string()),
+            Some("loc user".to_string()),
+            Some("pro user".to_string()),
+            Some("sa user".to_string()),
+            Some("email@user.cn".to_string()),
+            Some("128.0.9.3".to_string()),
+            Some("user.cn".to_string()),
+        )
+        .unwrap();
+        let user_cert = Cert::sign_user(
+            intermediate_cert.x509,
+            256,
+            MsbOptionCA::MaybeZero,
+            true,
+            rsa_intermediate.sk(),
+            rsa_user.pk(),
+            subject_info,
+            2,
+            0,
+            365,
+            MessageDigest::sha3_256(),
+        )
+        .unwrap();
+        user_cert
+            .save_pem("src/test/crypto/ca/sign/user.pem.crt")
+            .unwrap();
+        user_cert
+            .save_der("src/test/crypto/ca/sign/user.der.crt")
+            .unwrap();
     }
 }
