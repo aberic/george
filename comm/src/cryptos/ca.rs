@@ -26,7 +26,7 @@ use openssl::x509::extension::{
 };
 use openssl::x509::{
     X509Extension, X509Name, X509NameBuilder, X509NameRef, X509Req, X509ReqBuilder,
-    X509StoreContext, X509,
+    X509StoreContext, X509VerifyResult, X509,
 };
 
 use crate::errors::entrances::err_strs;
@@ -812,16 +812,29 @@ impl Cert {
             Err(err) => Err(err_strs("x509 verify", err)),
         }
     }
-    /// 证书链有效性，验证证书签发有效性
+
+    /// 验证证书`x509`由`pre_x509`签发，证书签发者信息有效性验证
     ///
-    /// 如果验证成功返回' true '
+    /// * pre_x509 签发者证书
+    /// * x509 待验证证书
+    pub fn verify_cert(pre_x509: X509, x509: X509) -> GeorgeResult<()> {
+        match pre_x509.issued(&x509) {
+            X509VerifyResult::OK => Ok(()),
+            ver_err => Err(err_strs("x509 issued", ver_err)),
+        }
+    }
+
+    /// 证书链有效性，验证证书签发有效性。
+    /// 如果验证成功返回' true '。
+    /// 如果证书无效，' error '方法将返回特定的验证错误。
     ///
-    /// 如果证书无效，' error '方法将返回特定的验证错误
+    /// * pre_x509s 证书链
+    /// * x509 待验证证书
     ///
     /// This corresponds to [`X509_verify_cert`].
     ///
     /// [`X509_verify_cert`]:  https://www.openssl.org/docs/man1.0.2/crypto/X509_verify_cert.html
-    pub fn verify_cert(pre_x509s: Vec<X509>, x509: X509) -> GeorgeResult<bool> {
+    pub fn verify_cert_chain(pre_x509s: Vec<X509>, x509: X509) -> GeorgeResult<bool> {
         let chain: Stack<X509>;
         match Stack::new() {
             Ok(res) => chain = res,
@@ -852,7 +865,7 @@ impl Cert {
         }
     }
 
-    pub fn save_stack_pem<P: AsRef<Path>>(filepath: P, x509s: Vec<X509>) -> GeorgeResult<()> {
+    pub fn save_chain_pem<P: AsRef<Path>>(filepath: P, x509s: Vec<X509>) -> GeorgeResult<()> {
         let mut stacks: Vec<u8> = vec![];
         for x509 in x509s {
             match x509.to_pem() {
@@ -866,7 +879,7 @@ impl Cert {
         Ok(())
     }
 
-    pub fn load_stack_pem<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<X509>> {
+    pub fn load_chain_pem<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<X509>> {
         let bytes = Filer::read_bytes(filepath)?;
         match X509::stack_from_pem(bytes.as_slice()) {
             Ok(v8s) => Ok(v8s),

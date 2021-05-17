@@ -175,6 +175,39 @@ mod ca {
 
         assert!(Cert::verify(rsa_root.pk(), root1.x509).unwrap());
         assert!(Cert::verify(rsa_root.pk(), root2.x509).unwrap());
+
+        let ecdsa_intermediate = ECDSA::new().unwrap();
+        let subject_info = X509NameInfo::new_cus(
+            "CNIntermediate".to_string(),
+            "CN".to_string(),
+            Some("org inter".to_string()),
+            Some("org unit inter".to_string()),
+            Some("loc inter".to_string()),
+            Some("pro inter".to_string()),
+            Some("sa inter".to_string()),
+        )
+        .unwrap();
+        let san = Some(SAN {
+            dns_names: vec!["inter.cn".to_string()],
+            email_addresses: vec!["email@inter.cn".to_string()],
+            ip_addresses: vec!["128.0.9.2".to_string()],
+            uris: vec!["uri_inter.cn".to_string()],
+        });
+        let intermediate_cert = Cert::sign_intermediate_128(
+            root.x509.clone(),
+            MsbOptionCA::MaybeZero,
+            true,
+            rsa_root.sk(),
+            ecdsa_intermediate.pk(),
+            subject_info.as_ref(),
+            2,
+            0,
+            364,
+            san,
+            MessageDigest::sha384(),
+        )
+        .unwrap();
+        Cert::verify_cert(root.x509.clone(), intermediate_cert.x509.clone()).unwrap();
     }
 
     #[test]
@@ -330,9 +363,9 @@ mod ca {
             MessageDigest::sha384(),
         )
         .unwrap();
-        root.save_pem("src/test/crypto/ca/stack/root.pem.crt")
+        root.save_pem("src/test/crypto/ca/chain/root.pem.crt")
             .unwrap();
-        root.save_der("src/test/crypto/ca/stack/root.der.crt")
+        root.save_der("src/test/crypto/ca/chain/root.der.crt")
             .unwrap();
 
         let ecdsa_intermediate1 = ECDSA::new().unwrap();
@@ -367,10 +400,10 @@ mod ca {
         )
         .unwrap();
         intermediate1_cert
-            .save_pem("src/test/crypto/ca/stack/intermediate1.pem.crt")
+            .save_pem("src/test/crypto/ca/chain/intermediate1.pem.crt")
             .unwrap();
         intermediate1_cert
-            .save_der("src/test/crypto/ca/stack/intermediate1.der.crt")
+            .save_der("src/test/crypto/ca/chain/intermediate1.der.crt")
             .unwrap();
 
         let rsa_intermediate2 = RSA::new(512).unwrap();
@@ -405,10 +438,10 @@ mod ca {
         )
         .unwrap();
         intermediate2_cert
-            .save_pem("src/test/crypto/ca/stack/intermediate2.pem.crt")
+            .save_pem("src/test/crypto/ca/chain/intermediate2.pem.crt")
             .unwrap();
         intermediate2_cert
-            .save_der("src/test/crypto/ca/stack/intermediate2.der.crt")
+            .save_der("src/test/crypto/ca/chain/intermediate2.der.crt")
             .unwrap();
 
         let rsa_intermediate3 = RSA::new(1024).unwrap();
@@ -443,14 +476,14 @@ mod ca {
         )
         .unwrap();
         intermediate3_cert
-            .save_pem("src/test/crypto/ca/stack/intermediate3.pem.crt")
+            .save_pem("src/test/crypto/ca/chain/intermediate3.pem.crt")
             .unwrap();
         intermediate3_cert
-            .save_der("src/test/crypto/ca/stack/intermediate3.der.crt")
+            .save_der("src/test/crypto/ca/chain/intermediate3.der.crt")
             .unwrap();
 
-        Cert::save_stack_pem(
-            "src/test/crypto/ca/stack/stack.pem.crt",
+        Cert::save_chain_pem(
+            "src/test/crypto/ca/chain/chain.pem.crt",
             vec![
                 Cert::load_der_file("src/test/crypto/ca/stack/root.der.crt")
                     .unwrap()
@@ -468,25 +501,30 @@ mod ca {
         )
         .unwrap();
 
-        let certs = Cert::load_stack_pem("src/test/crypto/ca/stack/stack.pem.crt").unwrap();
+        let certs = Cert::load_chain_pem("src/test/crypto/ca/stack/stack.pem.crt").unwrap();
         println!("certs len = {}", certs.len());
 
         let cert_root = certs.get(0).unwrap();
         let inter_root1 = certs.get(1).unwrap();
         let inter_root2 = certs.get(2).unwrap();
         let inter_root3 = certs.get(3).unwrap();
-        assert!(Cert::verify_cert(vec![cert_root.clone()], inter_root1.clone()).unwrap());
-        assert!(Cert::verify_cert(
+        assert!(Cert::verify_cert_chain(vec![cert_root.clone()], inter_root1.clone()).unwrap());
+        assert!(Cert::verify_cert_chain(
             vec![cert_root.clone(), inter_root3.clone()],
             inter_root1.clone()
         )
         .unwrap());
-        assert!(Cert::verify_cert(
+        assert!(Cert::verify_cert_chain(
             vec![cert_root.clone(), inter_root1.clone()],
             inter_root2.clone()
         )
         .unwrap());
-        assert!(Cert::verify_cert(
+        assert!(Cert::verify_cert_chain(
+            vec![inter_root1.clone(), cert_root.clone()],
+            inter_root2.clone()
+        )
+        .unwrap());
+        assert!(Cert::verify_cert_chain(
             vec![
                 cert_root.clone(),
                 inter_root1.clone(),
@@ -496,6 +534,6 @@ mod ca {
             inter_root3.clone()
         )
         .unwrap());
-        assert!(!Cert::verify_cert(vec![cert_root.clone()], inter_root2.clone()).unwrap());
+        assert!(!Cert::verify_cert_chain(vec![cert_root.clone()], inter_root2.clone()).unwrap());
     }
 }
