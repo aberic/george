@@ -16,7 +16,7 @@ use std::fs::{read, read_to_string};
 
 use openssl::ec::{EcGroup, EcKey, EcPoint, PointConversionForm};
 use openssl::nid::Nid;
-use openssl::pkey::{Private, Public};
+use openssl::pkey::{PKey, Private, Public};
 
 use crate::cryptos::base64::{Base64, Base64Encoder, Basee64Decoder};
 use crate::cryptos::hex::{Hex, HexDecoder, HexEncoder};
@@ -29,16 +29,18 @@ use openssl::ecdsa::EcdsaSig;
 use std::path::Path;
 
 pub struct ECDSA {
-    sk: EcKey<Private>,
-    pk: EcKey<Public>,
+    sk: PKey<Private>,
+    pk: PKey<Public>,
+    sk_ec: EcKey<Private>,
+    pk_ec: EcKey<Public>,
 }
 
 /// base method
 impl ECDSA {
     /// 生成ECDSA对象，默认PRIME256V1
     pub fn new() -> GeorgeResult<ECDSA> {
-        let (sk, pk) = generate()?;
-        Ok(ECDSA { sk, pk })
+        let (sk_ec, pk_ec) = generate()?;
+        ECDSA::from(sk_ec, pk_ec)
     }
 
     /// 生成ECDSA对象
@@ -47,19 +49,30 @@ impl ECDSA {
     /// OpenSSL中的对象可以有短名称、长名称和数字标识符(NID)。为方便起见，对象通常在源代码中使用这些数字标识符表示。
     /// 用户通常不需要创建新的' Nid '。
     pub fn new_nid(nid: Nid) -> GeorgeResult<ECDSA> {
-        let (sk, pk) = generate_nid(nid)?;
-        Ok(ECDSA { sk, pk })
+        let (sk_ec, pk_ec) = generate_nid(nid)?;
+        ECDSA::from(sk_ec, pk_ec)
     }
 
     /// 生成ECDSA对象
-    pub fn from(sk: EcKey<Private>, pk: EcKey<Public>) -> ECDSA {
-        ECDSA { sk, pk }
+    pub fn from(sk_ec: EcKey<Private>, pk_ec: EcKey<Public>) -> GeorgeResult<ECDSA> {
+        match PKey::from_ec_key(sk_ec.clone()) {
+            Ok(sk) => match PKey::from_ec_key(pk_ec.clone()) {
+                Ok(pk) => Ok(ECDSA {
+                    sk,
+                    pk,
+                    sk_ec,
+                    pk_ec,
+                }),
+                Err(err) => return Err(err_strs("PKey from_ec_key", err)),
+            },
+            Err(err) => return Err(err_strs("PKey from_ec_key", err)),
+        }
     }
 
     /// 生成ECDSA对象
     pub fn from_sk(sk: EcKey<Private>) -> GeorgeResult<ECDSA> {
-        let (sk, pk) = generate_pk_from_sk(sk)?;
-        Ok(ECDSA { sk, pk })
+        let (sk_ec, pk_ec) = generate_pk_from_sk(sk)?;
+        ECDSA::from(sk_ec, pk_ec)
     }
 
     /// 生成ECDSA对象
@@ -101,8 +114,8 @@ impl ECDSA {
     /// 生成ECDSA对象
     pub fn from_pem(sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<ECDSA> {
         match EcKey::private_key_from_pem(&sk) {
-            Ok(sk) => match EcKey::public_key_from_pem(&pk) {
-                Ok(pk) => Ok(ECDSA { sk, pk }),
+            Ok(sk_ec) => match EcKey::public_key_from_pem(&pk) {
+                Ok(pk_ec) => ECDSA::from(sk_ec, pk_ec),
                 Err(err) => Err(err_strs("EcKey public_key_from_pem", err)),
             },
             Err(err) => Err(err_strs("EcKey private_key_from_pem", err)),
@@ -112,8 +125,8 @@ impl ECDSA {
     /// 生成ECDSA对象
     pub fn from_der(sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<ECDSA> {
         match EcKey::private_key_from_der(&sk) {
-            Ok(sk) => match EcKey::public_key_from_der(&pk) {
-                Ok(pk) => Ok(ECDSA { sk, pk }),
+            Ok(sk_ec) => match EcKey::public_key_from_der(&pk) {
+                Ok(pk_ec) => ECDSA::from(sk_ec, pk_ec),
                 Err(err) => Err(err_strs("EcKey public_key_from_der", err)),
             },
             Err(err) => Err(err_strs("EcKey private_key_from_der", err)),
@@ -222,12 +235,20 @@ impl ECDSA {
         from_bytes_nid(Base64::decode(sk)?, Base64::decode(pk)?, nid)
     }
 
-    pub fn sk(&self) -> EcKey<Private> {
+    pub fn sk(&self) -> PKey<Private> {
         self.sk.clone()
     }
 
-    pub fn pk(&self) -> EcKey<Public> {
+    pub fn pk(&self) -> PKey<Public> {
         self.pk.clone()
+    }
+
+    pub fn sk_ec(&self) -> EcKey<Private> {
+        self.sk_ec.clone()
+    }
+
+    pub fn pk_ec(&self) -> EcKey<Public> {
+        self.pk_ec.clone()
     }
 }
 
@@ -235,15 +256,15 @@ impl ECDSA {
 impl ECDSA {
     /// 8ef9639640e5989c559f78dfff4aef383d1340bb71661433ae475e1f52f128e2
     pub fn sk_hex(&self) -> String {
-        Hex::encode(self.sk.private_key().to_vec())
+        Hex::encode(self.sk_ec.private_key().to_vec())
     }
     /// jvljlkDlmJxVn3jf/0rvOD0TQLtxZhQzrkdeH1LxKOI=
     pub fn sk_base64(&self) -> String {
-        Base64::encode(self.sk.private_key().to_vec())
+        Base64::encode(self.sk_ec.private_key().to_vec())
     }
 
     pub fn sk_pem(&self) -> GeorgeResult<Vec<u8>> {
-        match self.sk.private_key_to_pem() {
+        match self.sk_ec.private_key_to_pem() {
             Ok(res) => Ok(res),
             Err(err) => Err(err_strs("private_key_to_pem", err)),
         }
@@ -255,7 +276,7 @@ impl ECDSA {
     /// m5WsWIMRyz9jE1EQ7HNBySlu7Q3Qshx8lQ==
     /// -----END EC PRIVATE KEY-----
     pub fn sk_pem_str(&self) -> GeorgeResult<String> {
-        match self.sk.private_key_to_pem() {
+        match self.sk_ec.private_key_to_pem() {
             Ok(res) => Strings::from_utf8(res),
             Err(err) => Err(err_strs("private_key_to_pem", err)),
         }
@@ -268,7 +289,7 @@ impl ECDSA {
     /// 484e4279536c7537513351736878386c513d3d0a2d2d2d2d2d454e442045432050524956415445204b45592d2
     /// d2d2d2d0a
     pub fn sk_pem_hex(&self) -> GeorgeResult<String> {
-        match self.sk.private_key_to_pem() {
+        match self.sk_ec.private_key_to_pem() {
             Ok(res) => Ok(Hex::encode(res)),
             Err(err) => Err(err_strs("private_key_to_pem", err)),
         }
@@ -279,14 +300,14 @@ impl ECDSA {
     /// QTJJSGtFSDlCZWJtS3RjVGYvUk5wRmZKdlNxRQptNVdzV0lNUnl6OWpFMUVRN0hOQnlTbHU3UTNRc2h4OGxRPT0K
     /// LS0tLS1FTkQgRUMgUFJJVkFURSBLRVktLS0tLQo=
     pub fn sk_pem_base64(&self) -> GeorgeResult<String> {
-        match self.sk.private_key_to_pem() {
+        match self.sk_ec.private_key_to_pem() {
             Ok(res) => Ok(Base64::encode(res)),
             Err(err) => Err(err_strs("private_key_to_pem", err)),
         }
     }
 
     pub fn sk_der(&self) -> GeorgeResult<Vec<u8>> {
-        match self.sk.private_key_to_der() {
+        match self.sk_ec.private_key_to_der() {
             Ok(res) => Ok(res),
             Err(err) => Err(err_strs("private_key_to_pem", err)),
         }
@@ -296,7 +317,7 @@ impl ECDSA {
     /// 8648ce3d030107a1440342000483e5e35f80cd0d241984b69ac0d4df5179820362079041fd05e6e62ad7137f
     /// f44da457c9bd2a849b95ac588311cb3f63135110ec7341c9296eed0dd0b21c7c95
     pub fn sk_der_hex(&self) -> GeorgeResult<String> {
-        match self.sk.private_key_to_der() {
+        match self.sk_ec.private_key_to_der() {
             Ok(res) => Ok(Hex::encode(res)),
             Err(err) => Err(err_strs("private_key_to_pem", err)),
         }
@@ -305,7 +326,7 @@ impl ECDSA {
     /// MHcCAQEEII75Y5ZA5ZicVZ943/9K7zg9E0C7cWYUM65HXh9S8SjioAoGCCqGSM49AwEHoUQDQgAEg+XjX4DNDSQZ
     /// hLaawNTfUXmCA2IHkEH9BebmKtcTf/RNpFfJvSqEm5WsWIMRyz9jE1EQ7HNBySlu7Q3Qshx8lQ==
     pub fn sk_der_base64(&self) -> GeorgeResult<String> {
-        match self.sk.private_key_to_der() {
+        match self.sk_ec.private_key_to_der() {
             Ok(res) => Ok(Base64::encode(res)),
             Err(err) => Err(err_strs("private_key_to_pem", err)),
         }
@@ -314,8 +335,8 @@ impl ECDSA {
     /// 0383e5e35f80cd0d241984b69ac0d4df5179820362079041fd05e6e62ad7137ff4
     pub fn pk_hex(&self) -> GeorgeResult<String> {
         let mut ctx = BigNumContext::new().unwrap();
-        match self.pk.public_key().to_bytes(
-            &self.sk.group(),
+        match self.pk_ec.public_key().to_bytes(
+            &self.sk_ec.group(),
             PointConversionForm::COMPRESSED,
             &mut ctx,
         ) {
@@ -327,8 +348,8 @@ impl ECDSA {
     /// A4Pl41+AzQ0kGYS2msDU31F5ggNiB5BB/QXm5irXE3/0
     pub fn pk_base64(&self) -> GeorgeResult<String> {
         let mut ctx = BigNumContext::new().unwrap();
-        match self.pk.public_key().to_bytes(
-            &self.sk.group(),
+        match self.pk_ec.public_key().to_bytes(
+            &self.sk_ec.group(),
             PointConversionForm::COMPRESSED,
             &mut ctx,
         ) {
@@ -338,7 +359,7 @@ impl ECDSA {
     }
 
     pub fn pk_pem(&self) -> GeorgeResult<Vec<u8>> {
-        match self.pk.public_key_to_pem() {
+        match self.pk_ec.public_key_to_pem() {
             Ok(res) => Ok(res),
             Err(err) => Err(err_strs("public_key_to_pem", err)),
         }
@@ -349,7 +370,7 @@ impl ECDSA {
     /// kEH9BebmKtcTf/RNpFfJvSqEm5WsWIMRyz9jE1EQ7HNBySlu7Q3Qshx8lQ==
     /// -----END PUBLIC KEY-----
     pub fn pk_pem_str(&self) -> GeorgeResult<String> {
-        match self.pk.public_key_to_pem() {
+        match self.pk_ec.public_key_to_pem() {
             Ok(res) => Strings::from_utf8(res),
             Err(err) => Err(err_strs("public_key_to_pem", err)),
         }
@@ -361,7 +382,7 @@ impl ECDSA {
     /// 31455137484e4279536c7537513351736878386c513d3d0a2d2d2d2d2d454e44205055424c4943204b4559
     /// 2d2d2d2d2d0a
     pub fn pk_pem_hex(&self) -> GeorgeResult<String> {
-        match self.pk.public_key_to_pem() {
+        match self.pk_ec.public_key_to_pem() {
             Ok(res) => Ok(Hex::encode(res)),
             Err(err) => Err(err_strs("public_key_to_pem", err)),
         }
@@ -371,14 +392,14 @@ impl ECDSA {
     /// tYalg0RE5EU1FaaExhYXdOVGZVWG1DQTJJSAprRUg5QmVibUt0Y1RmL1JOcEZmSnZTcUVtNVdzV0lNUnl6OWpF
     /// MUVRN0hOQnlTbHU3UTNRc2h4OGxRPT0KLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg==
     pub fn pk_pem_base64(&self) -> GeorgeResult<String> {
-        match self.pk.public_key_to_pem() {
+        match self.pk_ec.public_key_to_pem() {
             Ok(res) => Ok(Base64::encode(res)),
             Err(err) => Err(err_strs("public_key_to_pem", err)),
         }
     }
 
     pub fn pk_der(&self) -> GeorgeResult<Vec<u8>> {
-        match self.pk.public_key_to_der() {
+        match self.pk_ec.public_key_to_der() {
             Ok(res) => Ok(res),
             Err(err) => Err(err_strs("public_key_to_der", err)),
         }
@@ -388,7 +409,7 @@ impl ECDSA {
     /// 179820362079041fd05e6e62ad7137ff44da457c9bd2a849b95ac588311cb3f63135110ec7341c9296eed
     /// 0dd0b21c7c95
     pub fn pk_der_hex(&self) -> GeorgeResult<String> {
-        match self.pk.public_key_to_der() {
+        match self.pk_ec.public_key_to_der() {
             Ok(res) => Ok(Hex::encode(res)),
             Err(err) => Err(err_strs("public_key_to_der", err)),
         }
@@ -397,7 +418,7 @@ impl ECDSA {
     /// MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEg+XjX4DNDSQZhLaawNTfUXmCA2IHkEH9BebmKtcTf/RNpFfJvS
     /// qEm5WsWIMRyz9jE1EQ7HNBySlu7Q3Qshx8lQ==
     pub fn pk_der_base64(&self) -> GeorgeResult<String> {
-        match self.pk.public_key_to_der() {
+        match self.pk_ec.public_key_to_der() {
             Ok(res) => Ok(Base64::encode(res)),
             Err(err) => Err(err_strs("public_key_to_der", err)),
         }
@@ -407,7 +428,7 @@ impl ECDSA {
 /// sign method
 impl ECDSA {
     pub fn sign(&self, data: &[u8]) -> GeorgeResult<Vec<u8>> {
-        match EcdsaSig::sign(data, &self.sk) {
+        match EcdsaSig::sign(data, &self.sk_ec) {
             Ok(sig) => match sig.to_der() {
                 Ok(res) => Ok(res),
                 Err(err) => Err(err_strs("EcdsaSig to_der", err)),
@@ -418,7 +439,7 @@ impl ECDSA {
 
     pub fn verify(&self, data: &[u8], der: &[u8]) -> GeorgeResult<bool> {
         match EcdsaSig::from_der(der) {
-            Ok(sig) => match sig.verify(data, &self.pk) {
+            Ok(sig) => match sig.verify(data, &self.pk_ec) {
                 Ok(res) => Ok(res),
                 Err(err) => Err(err_strs("EcdsaSig verify", err)),
             },
@@ -560,26 +581,6 @@ fn generate_nid(nid: Nid) -> GeorgeResult<(EcKey<Private>, EcKey<Public>)> {
     }
 }
 
-/// 生成ECDSA私钥，默认PRIME256V1
-fn generate_sk() -> GeorgeResult<EcKey<Private>> {
-    generate_sk_nid(Nid::X9_62_PRIME256V1)
-}
-
-/// 生成ECDSA私钥
-///
-/// nid OpenSSL对象的数字标识符。
-/// OpenSSL中的对象可以有短名称、长名称和数字标识符(NID)。为方便起见，对象通常在源代码中使用这些数字标识符表示。
-/// 用户通常不需要创建新的' Nid '。
-fn generate_sk_nid(nid: Nid) -> GeorgeResult<EcKey<Private>> {
-    match EcGroup::from_curve_name(nid) {
-        Ok(group) => match EcKey::generate(&group) {
-            Ok(key) => Ok(key),
-            Err(err) => Err(err_strs("generate", err)),
-        },
-        Err(err) => Err(err_strs("from_curve_name", err)),
-    }
-}
-
 /// 生成ECDSA私钥
 ///
 /// nid OpenSSL对象的数字标识符。
@@ -603,11 +604,11 @@ fn from_bytes_nid(sk_bytes: Vec<u8>, pk_bytes: Vec<u8>, nid: Nid) -> GeorgeResul
     let group = EcGroup::from_curve_name(nid).unwrap();
     let mut ctx = BigNumContext::new().unwrap();
     let public_key = EcPoint::from_bytes(&group, &pk_bytes, &mut ctx).unwrap();
-    let pk = EcKey::from_public_key(&group, &public_key).unwrap();
+    let pk_ec = EcKey::from_public_key(&group, &public_key).unwrap();
 
     match BigNum::from_slice(&sk_bytes) {
         Ok(bn) => match EcKey::from_private_components(&group, &bn, &public_key) {
-            Ok(sk) => Ok(ECDSA { sk, pk }),
+            Ok(sk_ec) => ECDSA::from(sk_ec, pk_ec),
             Err(err) => Err(err_strs("EcKey from_private_components", err)),
         },
         Err(err) => Err(err_strs("BigNum from_slice", err)),

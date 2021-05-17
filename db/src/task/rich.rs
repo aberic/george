@@ -288,7 +288,7 @@ impl Constraint {
             for v in value.as_array().unwrap().iter() {
                 let vp: &str;
                 let compare: Compare;
-                let mut key_type: KeyType;
+                let mut key_type: KeyType = KeyType::None;
                 match v["Param"].as_str() {
                     Some(ref val_param) => {
                         vp = val_param;
@@ -317,28 +317,6 @@ impl Constraint {
                         }
                     }
                     _ => return Err(err_str("fit conditions no match param")),
-                }
-                if v["Type"].is_null() {
-                    key_type = KeyType::None
-                } else {
-                    match v["Type"].as_str() {
-                        Some(ref val_type) => {
-                            match val_type.to_lowercase().as_str() {
-                                "bool" => key_type = KeyType::Bool,
-                                "string" => key_type = KeyType::String,
-                                "i32" => key_type = KeyType::I64,
-                                "i64" => key_type = KeyType::I64,
-                                "u32" => key_type = KeyType::U64,
-                                "u64" => key_type = KeyType::U64,
-                                "f32" => key_type = KeyType::F64,
-                                "f64" => key_type = KeyType::F64,
-                                _ => return Err(err_str(
-                                    "fit conditions type only support bool,string,i32,i64,u32,u64,f32 and f64!",
-                                )),
-                            }
-                        }
-                        _ => return Err(err_str("fit conditions no match type")),
-                    }
                 }
                 let indexes_clone = indexes.clone();
                 let index_r = indexes_clone.read().unwrap();
