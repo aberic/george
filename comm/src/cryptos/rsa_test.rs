@@ -192,26 +192,14 @@ mod rsa {
         fn test() {
             let res1 =
                 RSA::generate_pkcs8_pem(512, "src/test/crypto/rsa/generate/generate1_sk").unwrap();
-            let res11 =
-                RSA::generate_pkcs1_pem(512, "src/test/crypto/rsa/generate/generate11_sk").unwrap();
             let res2 =
                 RSA::generate_pkcs8_pem_string(512, "src/test/crypto/rsa/generate/generate2_sk")
-                    .unwrap();
-            let res22 =
-                RSA::generate_pkcs1_pem_string(512, "src/test/crypto/rsa/generate/generate22_sk")
                     .unwrap();
             let res3 = RSA::generate_pkcs8_pem_pass(
                 512,
                 Cipher::des_ede3_cfb64(),
                 "123321",
                 "src/test/crypto/rsa/generate/generate3_sk",
-            )
-            .unwrap();
-            let res33 = RSA::generate_pkcs1_pem_pass(
-                512,
-                Cipher::des_ede3_cfb64(),
-                "123321",
-                "src/test/crypto/rsa/generate/generate33_sk",
             )
             .unwrap();
             let res4 = RSA::generate_pkcs8_pem_pass(
@@ -221,25 +209,11 @@ mod rsa {
                 "src/test/crypto/rsa/generate/generate4_sk",
             )
             .unwrap();
-            let res44 = RSA::generate_pkcs1_pem_pass(
-                512,
-                Cipher::des_ede3_cfb64(),
-                "123321".to_string(),
-                "src/test/crypto/rsa/generate/generate44_sk",
-            )
-            .unwrap();
             let res5 = RSA::generate_pkcs8_pem_pass_string(
                 512,
                 Cipher::des_ede3_cfb64(),
                 "123321".as_bytes().to_vec(),
                 "src/test/crypto/rsa/generate/generate5_sk",
-            )
-            .unwrap();
-            let res55 = RSA::generate_pkcs1_pem_pass_string(
-                512,
-                Cipher::des_ede3_cfb64(),
-                "123321".as_bytes().to_vec(),
-                "src/test/crypto/rsa/generate/generate55_sk",
             )
             .unwrap();
             let res6 = RSA::generate_pkcs8_pem_pass_string(
@@ -249,17 +223,8 @@ mod rsa {
                 "src/test/crypto/rsa/generate/generate6_sk",
             )
             .unwrap();
-            let res66 = RSA::generate_pkcs1_pem_pass_string(
-                512,
-                Cipher::des_ede3_cfb64(),
-                "123321".as_bytes(),
-                "src/test/crypto/rsa/generate/generate66_sk",
-            )
-            .unwrap();
             let res7 =
                 RSA::generate_pkcs8_der(512, "src/test/crypto/rsa/generate/generate7_sk").unwrap();
-            let res77 =
-                RSA::generate_pkcs8_der(512, "src/test/crypto/rsa/generate/generate77_sk").unwrap();
             println!("pem1 v8s 512 = \n{}", String::from_utf8(res1).unwrap());
             println!("pem2 v8s 512 = \n{}", res2);
             println!(
@@ -312,13 +277,13 @@ mod rsa {
             let res6 = RSA::generate_pkcs8_der(512).unwrap();
             let res7 = RSA::generate_pkcs8_der_base64(512).unwrap();
             let res8 = RSA::generate_pkcs8_der_hex(512).unwrap();
-            RSA::store(res1, "src/test/crypto/rsa/store/generate1_sk");
-            RSA::store(res2, "src/test/crypto/rsa/store/generate2_sk");
-            RSA::store(res3, "src/test/crypto/rsa/store/generate3_sk");
-            RSA::store(res5, "src/test/crypto/rsa/store/generate5_sk");
-            RSA::store(res6, "src/test/crypto/rsa/store/generate6_sk");
-            RSA::store(res7, "src/test/crypto/rsa/store/generate7_sk");
-            RSA::store(res8, "src/test/crypto/rsa/store/generate8_sk");
+            RSA::store(res1, "src/test/crypto/rsa/store/generate1_sk").unwrap();
+            RSA::store(res2, "src/test/crypto/rsa/store/generate2_sk").unwrap();
+            RSA::store(res3, "src/test/crypto/rsa/store/generate3_sk").unwrap();
+            RSA::store(res5, "src/test/crypto/rsa/store/generate5_sk").unwrap();
+            RSA::store(res6, "src/test/crypto/rsa/store/generate6_sk").unwrap();
+            RSA::store(res7, "src/test/crypto/rsa/store/generate7_sk").unwrap();
+            RSA::store(res8, "src/test/crypto/rsa/store/generate8_sk").unwrap();
         }
     }
 }

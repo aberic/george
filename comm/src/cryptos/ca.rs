@@ -19,25 +19,28 @@ use openssl::bn::{BigNum, MsbOption};
 use openssl::error::ErrorStack;
 use openssl::hash::MessageDigest;
 use openssl::nid::Nid;
-use openssl::pkey::{PKey, PKeyRef, Private, Public};
+use openssl::pkey::{PKey, Private, Public};
 use openssl::x509::extension::{
     AuthorityKeyIdentifier, BasicConstraints, ExtendedKeyUsage, KeyUsage, SubjectAlternativeName,
     SubjectKeyIdentifier,
 };
 use openssl::x509::{
-    X509Extension, X509Name, X509NameBuilder, X509NameRef, X509Req, X509ReqBuilder, X509,
+    X509Extension, X509Name, X509NameBuilder, X509NameRef, X509Req, X509ReqBuilder,
+    X509StoreContext, X509,
 };
 
-use crate::cryptos::rsa::{RSALoadKey, RSA};
+use crate::errors::entrances::err_strs;
 use crate::errors::entrances::GeorgeResult;
-use crate::errors::entrances::{err_str, err_strs};
-use crate::io::file::{Filer, FilerWriter};
+use crate::io::file::{Filer, FilerReader, FilerWriter};
+use openssl::stack::Stack;
+use openssl::x509::store::X509StoreBuilder;
 use std::path::Path;
 
 pub struct Cert {
     pub x509: X509,
 }
 
+/// sign
 impl Cert {
     /// 签发根证书
     ///
@@ -51,6 +54,7 @@ impl Cert {
     /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
     /// * not_before_day 证书上的有效期在指定天之后
     /// * not_after_day 证书上的有效期在指定天之前
+    /// * san 主题备用名称扩展对象
     /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
     pub fn sign_root(
         bits: i32,
@@ -58,10 +62,11 @@ impl Cert {
         odd: bool,
         sk: PKey<Private>,
         pk: PKey<Public>,
-        subject_info: X509Name,
+        subject_info: &X509NameRef,
         version: i32,
         not_before_day: u32,
         not_after_day: u32,
+        san: Option<SAN>,
         message_digest: MessageDigest,
     ) -> GeorgeResult<Cert> {
         match generate_x509(
@@ -77,13 +82,93 @@ impl Cert {
                 basic_constraints: ca_basic_constraints_ext()?,
                 key_usage: ca_key_usage_ext()?,
                 ext_key_usage: None,
-                subject_alternative_name: None,
             },
+            san,
             message_digest,
         ) {
             Ok(x509) => Ok(Cert { x509 }),
             Err(err) => Err(err_strs("create_cert", err)),
         }
+    }
+
+    /// 签发128位签名根证书
+    ///
+    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * odd 如果' true '，则生成的数字为奇数
+    /// * sk 签发证书用的私钥
+    /// * pk 待签发证书的公钥
+    /// * subject_info 待签发证书信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    ///   CN字段用于普通名称，例如DNS名称
+    /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
+    /// * not_before_day 证书上的有效期在指定天之后
+    /// * not_after_day 证书上的有效期在指定天之前
+    /// * san 主题备用名称扩展对象
+    /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
+    pub fn sign_root_128(
+        msb_ca: MsbOptionCA,
+        odd: bool,
+        sk: PKey<Private>,
+        pk: PKey<Public>,
+        subject_info: &X509NameRef,
+        version: i32,
+        not_before_day: u32,
+        not_after_day: u32,
+        san: Option<SAN>,
+        message_digest: MessageDigest,
+    ) -> GeorgeResult<Cert> {
+        Cert::sign_root(
+            128,
+            msb_ca,
+            odd,
+            sk,
+            pk,
+            subject_info,
+            version,
+            not_before_day,
+            not_after_day,
+            san,
+            message_digest,
+        )
+    }
+
+    /// 签发256位签名根证书
+    ///
+    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * odd 如果' true '，则生成的数字为奇数
+    /// * sk 签发证书用的私钥
+    /// * pk 待签发证书的公钥
+    /// * subject_info 待签发证书信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    ///   CN字段用于普通名称，例如DNS名称
+    /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
+    /// * not_before_day 证书上的有效期在指定天之后
+    /// * not_after_day 证书上的有效期在指定天之前
+    /// * san 主题备用名称扩展对象
+    /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
+    pub fn sign_root_256(
+        msb_ca: MsbOptionCA,
+        odd: bool,
+        sk: PKey<Private>,
+        pk: PKey<Public>,
+        subject_info: &X509NameRef,
+        version: i32,
+        not_before_day: u32,
+        not_after_day: u32,
+        san: Option<SAN>,
+        message_digest: MessageDigest,
+    ) -> GeorgeResult<Cert> {
+        Cert::sign_root(
+            256,
+            msb_ca,
+            odd,
+            sk,
+            pk,
+            subject_info,
+            version,
+            not_before_day,
+            not_after_day,
+            san,
+            message_digest,
+        )
     }
 
     /// 签发中间证书
@@ -100,6 +185,7 @@ impl Cert {
     /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
     /// * not_before_day 证书上的有效期在指定天之后
     /// * not_after_day 证书上的有效期在指定天之前
+    /// * san 主题备用名称扩展对象
     /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
     pub fn sign_intermediate(
         x509: X509,
@@ -108,10 +194,11 @@ impl Cert {
         odd: bool,
         sk: PKey<Private>,
         pk: PKey<Public>,
-        subject_info: X509Name,
+        subject_info: &X509NameRef,
         version: i32,
         not_before_day: u32,
         not_after_day: u32,
+        san: Option<SAN>,
         message_digest: MessageDigest,
     ) -> GeorgeResult<Cert> {
         match generate_x509(
@@ -127,13 +214,234 @@ impl Cert {
                 basic_constraints: ca_basic_constraints_ext()?,
                 key_usage: ca_key_usage_ext()?,
                 ext_key_usage: None,
-                subject_alternative_name: None,
             },
+            san,
             message_digest,
         ) {
             Ok(x509) => Ok(Cert { x509 }),
             Err(err) => Err(err_strs("create_cert", err)),
         }
+    }
+
+    /// 签发128位签名中间证书
+    ///
+    /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
+    /// * bits 以比特为单位的数字长度
+    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * odd 如果' true '，则生成的数字为奇数
+    /// * sk 签发证书用的私钥
+    /// * pk 待签发证书的公钥
+    /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    ///   CN字段用于普通名称，例如DNS名称
+    /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
+    /// * not_before_day 证书上的有效期在指定天之后
+    /// * not_after_day 证书上的有效期在指定天之前
+    /// * san 主题备用名称扩展对象
+    /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
+    pub fn sign_intermediate_128(
+        x509: X509,
+        msb_ca: MsbOptionCA,
+        odd: bool,
+        sk: PKey<Private>,
+        pk: PKey<Public>,
+        subject_info: &X509NameRef,
+        version: i32,
+        not_before_day: u32,
+        not_after_day: u32,
+        san: Option<SAN>,
+        message_digest: MessageDigest,
+    ) -> GeorgeResult<Cert> {
+        Cert::sign_intermediate(
+            x509,
+            128,
+            msb_ca,
+            odd,
+            sk,
+            pk,
+            subject_info,
+            version,
+            not_before_day,
+            not_after_day,
+            san,
+            message_digest,
+        )
+    }
+
+    /// 签发256位签名中间证书
+    ///
+    /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
+    /// * bits 以比特为单位的数字长度
+    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * odd 如果' true '，则生成的数字为奇数
+    /// * sk 签发证书用的私钥
+    /// * pk 待签发证书的公钥
+    /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    ///   CN字段用于普通名称，例如DNS名称
+    /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
+    /// * not_before_day 证书上的有效期在指定天之后
+    /// * not_after_day 证书上的有效期在指定天之前
+    /// * san 主题备用名称扩展对象
+    /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
+    pub fn sign_intermediate_256(
+        x509: X509,
+        msb_ca: MsbOptionCA,
+        odd: bool,
+        sk: PKey<Private>,
+        pk: PKey<Public>,
+        subject_info: &X509NameRef,
+        version: i32,
+        not_before_day: u32,
+        not_after_day: u32,
+        san: Option<SAN>,
+        message_digest: MessageDigest,
+    ) -> GeorgeResult<Cert> {
+        Cert::sign_intermediate(
+            x509,
+            256,
+            msb_ca,
+            odd,
+            sk,
+            pk,
+            subject_info,
+            version,
+            not_before_day,
+            not_after_day,
+            san,
+            message_digest,
+        )
+    }
+
+    /// 签发中间证书
+    ///
+    /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
+    /// * bits 以比特为单位的数字长度
+    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * odd 如果' true '，则生成的数字为奇数
+    /// * sk 签发证书用的私钥
+    /// * pk 待签发证书的公钥
+    /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    ///   CN字段用于普通名称，例如DNS名称
+    /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
+    /// * not_before_day 证书上的有效期在指定天之后
+    /// * not_after_day 证书上的有效期在指定天之前
+    /// * san 主题备用名称扩展对象
+    /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
+    pub fn sign_intermediate_by_csr(
+        csr: CSR,
+        x509: X509,
+        bits: i32,
+        msb_ca: MsbOptionCA,
+        odd: bool,
+        sk: PKey<Private>,
+        version: i32,
+        not_before_day: u32,
+        not_after_day: u32,
+        san: Option<SAN>,
+        message_digest: MessageDigest,
+    ) -> GeorgeResult<Cert> {
+        Cert::sign_intermediate(
+            x509,
+            bits,
+            msb_ca,
+            odd,
+            sk,
+            csr.pk()?,
+            csr.x509_req.subject_name(),
+            version,
+            not_before_day,
+            not_after_day,
+            san,
+            message_digest,
+        )
+    }
+
+    /// 签发128位签名中间证书
+    ///
+    /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
+    /// * bits 以比特为单位的数字长度
+    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * odd 如果' true '，则生成的数字为奇数
+    /// * sk 签发证书用的私钥
+    /// * pk 待签发证书的公钥
+    /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    ///   CN字段用于普通名称，例如DNS名称
+    /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
+    /// * not_before_day 证书上的有效期在指定天之后
+    /// * not_after_day 证书上的有效期在指定天之前
+    /// * san 主题备用名称扩展对象
+    /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
+    pub fn sign_intermediate_128_by_csr(
+        csr: CSR,
+        x509: X509,
+        msb_ca: MsbOptionCA,
+        odd: bool,
+        sk: PKey<Private>,
+        version: i32,
+        not_before_day: u32,
+        not_after_day: u32,
+        san: Option<SAN>,
+        message_digest: MessageDigest,
+    ) -> GeorgeResult<Cert> {
+        Cert::sign_intermediate_by_csr(
+            csr,
+            x509,
+            128,
+            msb_ca,
+            odd,
+            sk,
+            version,
+            not_before_day,
+            not_after_day,
+            san,
+            message_digest,
+        )
+    }
+
+    /// 签发256位签名中间证书
+    ///
+    /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
+    /// * bits 以比特为单位的数字长度
+    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * odd 如果' true '，则生成的数字为奇数
+    /// * sk 签发证书用的私钥
+    /// * pk 待签发证书的公钥
+    /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    ///   CN字段用于普通名称，例如DNS名称
+    /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
+    /// * not_before_day 证书上的有效期在指定天之后
+    /// * not_after_day 证书上的有效期在指定天之前
+    /// * san 主题备用名称扩展对象
+    /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
+    pub fn sign_intermediate_256_by_csr(
+        csr: CSR,
+        x509: X509,
+        msb_ca: MsbOptionCA,
+        odd: bool,
+        sk: PKey<Private>,
+        version: i32,
+        not_before_day: u32,
+        not_after_day: u32,
+        san: Option<SAN>,
+        message_digest: MessageDigest,
+    ) -> GeorgeResult<Cert> {
+        Cert::sign_intermediate_by_csr(
+            csr,
+            x509,
+            256,
+            msb_ca,
+            odd,
+            sk,
+            version,
+            not_before_day,
+            not_after_day,
+            san,
+            message_digest,
+        )
     }
 
     /// 签发用户证书
@@ -150,6 +458,7 @@ impl Cert {
     /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
     /// * not_before_day 证书上的有效期在指定天之后
     /// * not_after_day 证书上的有效期在指定天之前
+    /// * san 主题备用名称扩展对象
     /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
     pub fn sign_user(
         x509: X509,
@@ -158,10 +467,11 @@ impl Cert {
         odd: bool,
         sk: PKey<Private>,
         pk: PKey<Public>,
-        subject_info: X509Name,
+        subject_info: &X509NameRef,
         version: i32,
         not_before_day: u32,
         not_after_day: u32,
+        san: Option<SAN>,
         message_digest: MessageDigest,
     ) -> GeorgeResult<Cert> {
         let basic_constraints: X509Extension;
@@ -204,8 +514,8 @@ impl Cert {
                 basic_constraints,
                 key_usage,
                 ext_key_usage,
-                subject_alternative_name: None,
             },
+            san,
             message_digest,
         ) {
             Ok(x509) => Ok(Cert { x509 }),
@@ -213,6 +523,230 @@ impl Cert {
         }
     }
 
+    /// 签发128位签名用户证书
+    ///
+    /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
+    /// * bits 以比特为单位的数字长度
+    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * odd 如果' true '，则生成的数字为奇数
+    /// * sk 签发证书用的私钥
+    /// * pk 待签发证书的公钥
+    /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    ///   CN字段用于普通名称，例如DNS名称
+    /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
+    /// * not_before_day 证书上的有效期在指定天之后
+    /// * not_after_day 证书上的有效期在指定天之前
+    /// * san 主题备用名称扩展对象
+    /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
+    pub fn sign_user_128(
+        x509: X509,
+        msb_ca: MsbOptionCA,
+        odd: bool,
+        sk: PKey<Private>,
+        pk: PKey<Public>,
+        subject_info: &X509NameRef,
+        version: i32,
+        not_before_day: u32,
+        not_after_day: u32,
+        san: Option<SAN>,
+        message_digest: MessageDigest,
+    ) -> GeorgeResult<Cert> {
+        Cert::sign_user(
+            x509,
+            128,
+            msb_ca,
+            odd,
+            sk,
+            pk,
+            subject_info,
+            version,
+            not_before_day,
+            not_after_day,
+            san,
+            message_digest,
+        )
+    }
+
+    /// 签发256位签名用户证书
+    ///
+    /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
+    /// * bits 以比特为单位的数字长度
+    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * odd 如果' true '，则生成的数字为奇数
+    /// * sk 签发证书用的私钥
+    /// * pk 待签发证书的公钥
+    /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    ///   CN字段用于普通名称，例如DNS名称
+    /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
+    /// * not_before_day 证书上的有效期在指定天之后
+    /// * not_after_day 证书上的有效期在指定天之前
+    /// * san 主题备用名称扩展对象
+    /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
+    pub fn sign_user_256(
+        x509: X509,
+        msb_ca: MsbOptionCA,
+        odd: bool,
+        sk: PKey<Private>,
+        pk: PKey<Public>,
+        subject_info: &X509NameRef,
+        version: i32,
+        not_before_day: u32,
+        not_after_day: u32,
+        san: Option<SAN>,
+        message_digest: MessageDigest,
+    ) -> GeorgeResult<Cert> {
+        Cert::sign_user(
+            x509,
+            256,
+            msb_ca,
+            odd,
+            sk,
+            pk,
+            subject_info,
+            version,
+            not_before_day,
+            not_after_day,
+            san,
+            message_digest,
+        )
+    }
+
+    /// 签发用户证书
+    ///
+    /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
+    /// * bits 以比特为单位的数字长度
+    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * odd 如果' true '，则生成的数字为奇数
+    /// * sk 签发证书用的私钥
+    /// * pk 待签发证书的公钥
+    /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    ///   CN字段用于普通名称，例如DNS名称
+    /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
+    /// * not_before_day 证书上的有效期在指定天之后
+    /// * not_after_day 证书上的有效期在指定天之前
+    /// * san 主题备用名称扩展对象
+    /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
+    pub fn sign_user_by_csr(
+        csr: CSR,
+        x509: X509,
+        bits: i32,
+        msb_ca: MsbOptionCA,
+        odd: bool,
+        sk: PKey<Private>,
+        version: i32,
+        not_before_day: u32,
+        not_after_day: u32,
+        san: Option<SAN>,
+        message_digest: MessageDigest,
+    ) -> GeorgeResult<Cert> {
+        Cert::sign_user(
+            x509,
+            bits,
+            msb_ca,
+            odd,
+            sk,
+            csr.pk()?,
+            csr.x509_req.subject_name(),
+            version,
+            not_before_day,
+            not_after_day,
+            san,
+            message_digest,
+        )
+    }
+
+    /// 签发128位签名用户证书
+    ///
+    /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
+    /// * bits 以比特为单位的数字长度
+    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * odd 如果' true '，则生成的数字为奇数
+    /// * sk 签发证书用的私钥
+    /// * pk 待签发证书的公钥
+    /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    ///   CN字段用于普通名称，例如DNS名称
+    /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
+    /// * not_before_day 证书上的有效期在指定天之后
+    /// * not_after_day 证书上的有效期在指定天之前
+    /// * san 主题备用名称扩展对象
+    /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
+    pub fn sign_user_128_by_csr(
+        csr: CSR,
+        x509: X509,
+        msb_ca: MsbOptionCA,
+        odd: bool,
+        sk: PKey<Private>,
+        version: i32,
+        not_before_day: u32,
+        not_after_day: u32,
+        san: Option<SAN>,
+        message_digest: MessageDigest,
+    ) -> GeorgeResult<Cert> {
+        Cert::sign_user_by_csr(
+            csr,
+            x509,
+            128,
+            msb_ca,
+            odd,
+            sk,
+            version,
+            not_before_day,
+            not_after_day,
+            san,
+            message_digest,
+        )
+    }
+
+    /// 签发256位签名用户证书
+    ///
+    /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
+    /// * bits 以比特为单位的数字长度
+    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * odd 如果' true '，则生成的数字为奇数
+    /// * sk 签发证书用的私钥
+    /// * pk 待签发证书的公钥
+    /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
+    ///   CN字段用于普通名称，例如DNS名称
+    /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
+    /// * not_before_day 证书上的有效期在指定天之后
+    /// * not_after_day 证书上的有效期在指定天之前
+    /// * san 主题备用名称扩展对象
+    /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
+    pub fn sign_user_256_by_csr(
+        csr: CSR,
+        x509: X509,
+        msb_ca: MsbOptionCA,
+        odd: bool,
+        sk: PKey<Private>,
+        version: i32,
+        not_before_day: u32,
+        not_after_day: u32,
+        san: Option<SAN>,
+        message_digest: MessageDigest,
+    ) -> GeorgeResult<Cert> {
+        Cert::sign_user_by_csr(
+            csr,
+            x509,
+            256,
+            msb_ca,
+            odd,
+            sk,
+            version,
+            not_before_day,
+            not_after_day,
+            san,
+            message_digest,
+        )
+    }
+}
+
+/// save
+impl Cert {
     pub fn save_pem<P: AsRef<Path>>(&self, filepath: P) -> GeorgeResult<()> {
         match self.x509.to_pem() {
             Ok(v8s) => {
@@ -232,7 +766,10 @@ impl Cert {
             Err(err) => Err(err_strs("x509 to_der", err)),
         }
     }
+}
 
+/// load
+impl Cert {
     pub fn load_pem(bytes: Vec<u8>) -> GeorgeResult<Cert> {
         match X509::from_pem(bytes.as_slice()) {
             Ok(x509) => Ok(Cert { x509 }),
@@ -262,6 +799,82 @@ impl Cert {
     }
 }
 
+/// stack & verify
+impl Cert {
+    /// 检查证书是否使用给定的密钥签名
+    ///
+    /// 一般用于验证指定证书是否由自己签发的
+    ///
+    /// 只检查签名:不进行其他检查(如证书链有效性)
+    pub fn verify(sk: PKey<Public>, x509: X509) -> GeorgeResult<bool> {
+        match x509.verify(&sk) {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("x509 verify", err)),
+        }
+    }
+    /// 证书链有效性，验证证书签发有效性
+    ///
+    /// 如果验证成功返回' true '
+    ///
+    /// 如果证书无效，' error '方法将返回特定的验证错误
+    ///
+    /// This corresponds to [`X509_verify_cert`].
+    ///
+    /// [`X509_verify_cert`]:  https://www.openssl.org/docs/man1.0.2/crypto/X509_verify_cert.html
+    pub fn verify_cert(pre_x509s: Vec<X509>, x509: X509) -> GeorgeResult<bool> {
+        let chain: Stack<X509>;
+        match Stack::new() {
+            Ok(res) => chain = res,
+            Err(err) => return Err(err_strs("Stack new", err)),
+        }
+
+        let mut store_builder: X509StoreBuilder;
+        match X509StoreBuilder::new() {
+            Ok(res) => store_builder = res,
+            Err(err) => return Err(err_strs("store_builder add_cert", err)),
+        }
+        for x509 in pre_x509s {
+            match store_builder.add_cert(x509) {
+                Err(err) => return Err(err_strs("store_builder add_cert", err)),
+                _ => {}
+            }
+        }
+        let store = store_builder.build();
+
+        let mut context: X509StoreContext;
+        match X509StoreContext::new() {
+            Ok(res) => context = res,
+            Err(err) => return Err(err_strs("X509StoreContext new", err)),
+        }
+        match context.init(&store, &x509, &chain, |c| c.verify_cert()) {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("X509StoreContext verify_cert", err)),
+        }
+    }
+
+    pub fn save_stack_pem<P: AsRef<Path>>(filepath: P, x509s: Vec<X509>) -> GeorgeResult<()> {
+        let mut stacks: Vec<u8> = vec![];
+        for x509 in x509s {
+            match x509.to_pem() {
+                Ok(mut v8s) => {
+                    stacks.append(&mut v8s);
+                }
+                Err(err) => return Err(err_strs("x509 to_pem", err)),
+            }
+        }
+        Filer::write_force(filepath, stacks)?;
+        Ok(())
+    }
+
+    pub fn load_stack_pem<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<X509>> {
+        let bytes = Filer::read_bytes(filepath)?;
+        match X509::stack_from_pem(bytes.as_slice()) {
+            Ok(v8s) => Ok(v8s),
+            Err(err) => return Err(err_strs("x509 stack_from_pem", err)),
+        }
+    }
+}
+
 /// Certificate Signing Request的缩写，即证书签名申请。
 ///
 /// 这是要求CA给证书签名的一种正式申请，该申请包含申请证书的实体的公钥及该实体某些信息。
@@ -274,16 +887,17 @@ pub struct CSR {
 impl CSR {
     /// 创建证书签名申请
     ///
-    /// * sk 申请证书签发请求主体的私钥
+    /// * pk 申请证书签发请求主体的公钥
     /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
     /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
     pub fn create_csr(
-        sk: &PKey<Private>,
+        sk: PKey<Private>,
+        pk: PKey<Public>,
         subject_info: X509Name,
         message_digest: MessageDigest,
     ) -> GeorgeResult<X509Req> {
         match X509ReqBuilder::new() {
-            Ok(mut req_builder) => match req_builder.set_pubkey(&sk) {
+            Ok(mut req_builder) => match req_builder.set_pubkey(&pk) {
                 Ok(()) => match req_builder.set_subject_name(&subject_info) {
                     Ok(()) => match req_builder.sign(&sk, message_digest) {
                         Ok(()) => Ok(req_builder.build()),
@@ -303,15 +917,40 @@ impl CSR {
     /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
     /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
     pub fn new(
-        sk: &PKey<Private>,
+        sk: PKey<Private>,
+        pk: PKey<Public>,
         info: X509Name,
         message_digest: MessageDigest,
     ) -> GeorgeResult<CSR> {
         Ok(CSR {
-            x509_req: CSR::create_csr(sk, info, message_digest)?,
+            x509_req: CSR::create_csr(sk, pk, info, message_digest)?,
         })
     }
 
+    pub fn pk(&self) -> GeorgeResult<PKey<Public>> {
+        match self.x509_req.public_key() {
+            Ok(pk) => Ok(pk),
+            Err(err) => Err(err_strs("x509_req public_key", err)),
+        }
+    }
+
+    /// 检查证书签名申请是否使用给定的密钥签名
+    ///
+    /// 一般用于验证指定证书签名申请是否由自己签发的
+    pub fn verify(pk: PKey<Public>, x509_req: X509Req) -> GeorgeResult<bool> {
+        match x509_req.verify(&pk) {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err_strs("x509_req verify", err)),
+        }
+    }
+
+    /// Serializes the certificate request to a PEM-encoded PKCS#10 structure.
+    ///
+    /// The output will have a header of `-----BEGIN CERTIFICATE REQUEST-----`.
+    ///
+    /// This corresponds to [`PEM_write_bio_X509_REQ`].
+    ///
+    /// [`PEM_write_bio_X509_REQ`]: https://www.openssl.org/docs/man1.0.2/crypto/PEM_write_bio_X509_REQ.html
     pub fn save_pem<P: AsRef<Path>>(&self, filepath: P) -> GeorgeResult<()> {
         match self.x509_req.to_pem() {
             Ok(v8s) => {
@@ -322,6 +961,11 @@ impl CSR {
         }
     }
 
+    /// Serializes the certificate request to a DER-encoded PKCS#10 structure.
+    ///
+    /// This corresponds to [`i2d_X509_REQ`].
+    ///
+    /// [`i2d_X509_REQ`]: https://www.openssl.org/docs/man1.0.2/crypto/i2d_X509_REQ.html
     pub fn save_der<P: AsRef<Path>>(&self, filepath: P) -> GeorgeResult<()> {
         match self.x509_req.to_der() {
             Ok(v8s) => {
@@ -373,17 +1017,19 @@ impl CSR {
 /// * not_after_day 证书上的有效期在指定天之前
 /// * is_ca 是否证书颁发机构
 /// * extensions 证书扩展对象
+/// * san 主题备用名称扩展对象
 /// * message_digest 生成签名时摘要算法，如：MessageDigest::sha256()
 fn generate_x509(
     op_x509: Option<X509>,
     sk: PKey<Private>,
     pk: PKey<Public>,
     serial_number: SerialNumber,
-    subject_info: X509Name,
+    subject_info: &X509NameRef,
     version: i32,
     not_before_day: u32,
     not_after_day: u32,
     extensions: Extensions,
+    san: Option<SAN>,
     message_digest: MessageDigest,
 ) -> Result<X509, ErrorStack> {
     // 新建用于构造X509的构造器
@@ -394,7 +1040,7 @@ fn generate_x509(
     // 设置证书的序列号
     cert_builder.set_serial_number(&serial_number)?;
     // 设置待签发证书的主题信息
-    cert_builder.set_subject_name(&subject_info)?;
+    cert_builder.set_subject_name(subject_info)?;
     // 设置与证书关联的公钥
     cert_builder.set_pubkey(&pk)?;
     // 从现在开始按指定的天数间隔创建一个新的时间
@@ -426,10 +1072,20 @@ fn generate_x509(
                     .keyid(true)
                     .build(&cert_builder.x509v3_context(Some(x509.as_ref()), None))?,
             )?;
+            match san {
+                Some(s) => {
+                    let subject_alternative_name = s.build();
+                    cert_builder.append_extension(
+                        subject_alternative_name
+                            .build(&cert_builder.x509v3_context(Some(x509.as_ref()), None))?,
+                    )?
+                }
+                _ => {}
+            }
         }
         None => {
             // 设置签发证书的颁发者信息
-            cert_builder.set_issuer_name(&subject_info)?;
+            cert_builder.set_issuer_name(subject_info)?;
             cert_builder.append_extension(
                 SubjectKeyIdentifier::new() // 主题密钥标识符
                     // 如果证书是自签名的，则将“发布者”设置为“None”。
@@ -440,11 +1096,16 @@ fn generate_x509(
                     .keyid(true)
                     .build(&cert_builder.x509v3_context(None, None))?,
             )?;
+            match san {
+                Some(s) => {
+                    let subject_alternative_name = s.build();
+                    cert_builder.append_extension(
+                        subject_alternative_name.build(&cert_builder.x509v3_context(None, None))?,
+                    )?
+                }
+                _ => {}
+            }
         }
-    }
-    match extensions.subject_alternative_name {
-        Some(ext) => cert_builder.append_extension(ext)?,
-        _ => {}
     }
     // 使用私钥签名证书
     cert_builder.sign(&sk, message_digest)?;
@@ -490,6 +1151,21 @@ pub struct SAN {
 }
 
 impl SAN {
+    /// 主题备用名称
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use openssl::x509::extension::SubjectAlternativeName;
+    /// use openssl::x509::X509Extension;
+    ///
+    /// fn subject_alternative_name() -> X509Extension {
+    ///     SubjectAlternativeName::new() // 主题备用名称
+    ///         .dns("example.com")
+    ///         .email("info@example.com")
+    ///         .build(&cert_builder.x509v3_context(None, None)).unwrap()
+    /// }
+    /// ```
     pub fn build(&self) -> SubjectAlternativeName {
         let mut subject_alt_name = SubjectAlternativeName::new();
         for dns_name in &self.dns_names {
@@ -561,22 +1237,6 @@ pub struct Extensions {
     /// }
     /// ```
     ext_key_usage: Option<X509Extension>,
-    /// 主题备用名称
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use openssl::x509::extension::SubjectAlternativeName;
-    /// use openssl::x509::X509Extension;
-    ///
-    /// fn subject_alternative_name() -> X509Extension {
-    ///     SubjectAlternativeName::new() // 主题备用名称
-    ///         .dns("example.com")
-    ///         .email("info@example.com")
-    ///         .build(&cert_builder.x509v3_context(None, None)).unwrap()
-    /// }
-    /// ```
-    subject_alternative_name: Option<X509Extension>,
 }
 
 impl Extensions {
@@ -611,25 +1271,16 @@ impl Extensions {
     ///         .other("2.999.1")
     ///         .build().unwrap()
     /// }
-    ///
-    /// fn subject_alternative_name() -> X509Extension {
-    ///     SubjectAlternativeName::new() // 主题备用名称
-    ///         .dns("example.com")
-    ///         .email("info@example.com")
-    ///         .build(&cert_builder.x509v3_context(None, None)).unwrap()
-    /// }
     /// ```
     pub fn new(
         basic_constraints: X509Extension,
         key_usage: X509Extension,
         ext_key_usage: Option<X509Extension>,
-        subject_alternative_name: Option<X509Extension>,
     ) -> Extensions {
         Extensions {
             basic_constraints,
             key_usage,
             ext_key_usage,
-            subject_alternative_name,
         }
     }
 }
@@ -715,12 +1366,6 @@ pub struct X509NameInfo {
     province: Option<String>,
     /// 街道地址
     street_address: Option<String>,
-    /// 邮件
-    mail: Option<String>,
-    /// DNS域
-    dns_domain: Option<String>,
-    /// 域
-    domain: Option<String>,
     /// 公用名(Common Name)是主机名+域名，比如：www.domain.net<p>
     ///
     /// 数字证书的服务器证书是颁发给某一台主机的，而不是一个域
@@ -729,7 +1374,6 @@ pub struct X509NameInfo {
     common_name: String,
 }
 
-// todo 追加用于主题备用名称
 impl X509NameInfo {
     pub fn new(common_name: String, country: String) -> GeorgeResult<X509Name> {
         let xni = X509NameInfo {
@@ -739,9 +1383,6 @@ impl X509NameInfo {
             locality: None,
             province: None,
             street_address: None,
-            mail: None,
-            dns_domain: None,
-            domain: None,
             common_name,
         };
         match xni.build() {
@@ -750,7 +1391,6 @@ impl X509NameInfo {
         }
     }
 
-    // todo 测试Vec<String>
     pub fn new_cus(
         common_name: String,
         country: String,
@@ -759,9 +1399,6 @@ impl X509NameInfo {
         locality: Option<String>,
         province: Option<String>,
         street_address: Option<String>,
-        mail: Option<String>,
-        dns_domain: Option<String>,
-        domain: Option<String>,
     ) -> GeorgeResult<X509Name> {
         let xni = X509NameInfo {
             country,
@@ -770,9 +1407,6 @@ impl X509NameInfo {
             locality,
             province,
             street_address,
-            mail,
-            dns_domain,
-            domain,
             common_name,
         };
         match xni.build() {
@@ -803,18 +1437,6 @@ impl X509NameInfo {
         }
         match self.street_address.as_ref() {
             Some(res) => x509_name_builder.append_entry_by_nid(Nid::STREETADDRESS, res)?,
-            _ => {}
-        }
-        match self.mail.as_ref() {
-            Some(res) => x509_name_builder.append_entry_by_nid(Nid::MAIL, res)?,
-            _ => {}
-        }
-        match self.dns_domain.as_ref() {
-            Some(res) => x509_name_builder.append_entry_by_nid(Nid::DNSDOMAIN, res)?,
-            _ => {}
-        }
-        match self.domain.as_ref() {
-            Some(res) => x509_name_builder.append_entry_by_nid(Nid::DOMAIN, res)?,
             _ => {}
         }
         Ok(x509_name_builder.build())

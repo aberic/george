@@ -23,7 +23,7 @@ mod sm2 {
 
         #[test]
         fn test() {
-            let mut sm2 = SM2::new();
+            let sm2 = SM2::new();
             println!("sk0 base64 = {}", Base64::encode(sm2.sk_bytes()));
             println!("pk0 base64 = {}", Base64::encode(sm2.pk_bytes()));
             println!("sk0 hex = {}", Hex::encode(sm2.sk_bytes()));

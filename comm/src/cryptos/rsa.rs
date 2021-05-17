@@ -2065,32 +2065,6 @@ fn generate_pk_pkey_from_pkey_sk(sk: PKey<Private>) -> GeorgeResult<PKey<Public>
 }
 
 /// 生成RSA公钥
-fn generate_pk_pkey_pem_from_pkey_sk(sk: PKey<Private>) -> GeorgeResult<Vec<u8>> {
-    match sk.public_key_to_pem() {
-        Ok(u8s) => Ok(u8s),
-        Err(err) => Err(err_strs("public_key_to_pem", err)),
-    }
-}
-
-/// 生成RSA公钥
-fn generate_pk_pkey_pem_string_from_pkey_sk(sk: PKey<Private>) -> GeorgeResult<String> {
-    Strings::from_utf8(generate_pk_pkey_pem_from_pkey_sk(sk)?)
-}
-
-/// 生成RSA公钥
-fn generate_pk_pkey_der_from_pkey_sk(sk: PKey<Private>) -> GeorgeResult<Vec<u8>> {
-    match sk.public_key_to_der() {
-        Ok(u8s) => Ok(u8s),
-        Err(err) => Err(err_strs("public_key_to_pem", err)),
-    }
-}
-
-/// 生成RSA公钥
-fn generate_pk_pkey_der_base64_from_pkey_sk(sk: PKey<Private>) -> GeorgeResult<String> {
-    Ok(Base64::encode(generate_pk_pkey_der_from_pkey_sk(sk)?))
-}
-
-/// 生成RSA公钥
 fn generate_pk_pkey_from_pkey_sk_bytes(sk: Vec<u8>) -> GeorgeResult<PKey<Public>> {
     match load_sk_pkey(sk) {
         Ok(sk) => match sk.public_key_to_pem() {
@@ -2105,32 +2079,6 @@ fn generate_pk_pkey_from_pkey_sk_bytes(sk: Vec<u8>) -> GeorgeResult<PKey<Public>
 }
 
 /// 生成RSA公钥
-fn generate_pk_pkey_pem_from_sk_bytes(sk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
-    match load_sk_pkey(sk) {
-        Ok(key) => generate_pk_pkey_pem_from_pkey_sk(key),
-        Err(err) => Err(err_strs("load_sk", err)),
-    }
-}
-
-/// 生成RSA公钥
-fn generate_pk_pkey_pem_string_from_sk_bytes(sk: Vec<u8>) -> GeorgeResult<String> {
-    Strings::from_utf8(generate_pk_pkey_pem_from_sk_bytes(sk)?)
-}
-
-/// 生成RSA公钥
-fn generate_pk_pkey_der_from_sk_bytes(sk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
-    match load_sk_pkey(sk) {
-        Ok(key) => generate_pk_pkey_der_from_pkey_sk(key),
-        Err(err) => Err(err_strs("load_sk", err)),
-    }
-}
-
-/// 生成RSA公钥
-fn generate_pk_pkey_der_base64_from_sk_bytes(sk: Vec<u8>) -> GeorgeResult<String> {
-    Ok(Base64::encode(generate_pk_pkey_der_from_sk_bytes(sk)?))
-}
-
-/// 生成RSA公钥
 fn generate_pk_pkey_from_pkey_sk_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<PKey<Public>> {
     match load_sk_pkey_file(filepath) {
         Ok(sk) => match sk.public_key_to_pem() {
@@ -2142,32 +2090,6 @@ fn generate_pk_pkey_from_pkey_sk_file<P: AsRef<Path>>(filepath: P) -> GeorgeResu
         },
         Err(err) => Err(err_strs("load_sk_pkey", err)),
     }
-}
-
-/// 生成RSA公钥
-fn generate_pk_pkey_pem_from_sk_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
-    match load_sk_pkey_file(filepath) {
-        Ok(key) => generate_pk_pkey_pem_from_pkey_sk(key),
-        Err(err) => Err(err_strs("load_sk_file", err)),
-    }
-}
-
-/// 生成RSA公钥
-fn generate_pk_pkey_pem_string_from_sk_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
-    Strings::from_utf8(generate_pk_pkey_pem_from_sk_file(filepath)?)
-}
-
-/// 生成RSA公钥
-fn generate_pk_pkey_der_from_sk_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
-    match load_sk_pkey_file(filepath) {
-        Ok(key) => generate_pk_pkey_der_from_pkey_sk(key),
-        Err(err) => Err(err_strs("load_sk_file", err)),
-    }
-}
-
-/// 生成RSA公钥
-fn generate_pk_pkey_der_base64_from_sk_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
-    Ok(Base64::encode(generate_pk_pkey_der_from_sk_file(filepath)?))
 }
 
 /// 生成RSA公钥
@@ -2209,16 +2131,6 @@ fn generate_pk_rsa_pkcs8_pem_from_rsa_sk(sk: Rsa<Private>) -> GeorgeResult<Vec<u
 }
 
 /// 生成RSA公钥
-fn generate_pk_rsa_pkcs1_pem_string_from_rsa_sk(sk: Rsa<Private>) -> GeorgeResult<String> {
-    Strings::from_utf8(generate_pk_rsa_pkcs1_pem_from_rsa_sk(sk)?)
-}
-
-/// 生成RSA公钥
-fn generate_pk_rsa_pkcs8_pem_string_from_rsa_sk(sk: Rsa<Private>) -> GeorgeResult<String> {
-    Strings::from_utf8(generate_pk_rsa_pkcs8_pem_from_rsa_sk(sk)?)
-}
-
-/// 生成RSA公钥
 fn generate_pk_rsa_pkcs1_der_from_rsa_sk(sk: Rsa<Private>) -> GeorgeResult<Vec<u8>> {
     match sk.public_key_to_der_pkcs1() {
         Ok(u8s) => Ok(u8s),
@@ -2235,16 +2147,6 @@ fn generate_pk_rsa_pkcs8_der_from_rsa_sk(sk: Rsa<Private>) -> GeorgeResult<Vec<u
 }
 
 /// 生成RSA公钥
-fn generate_pk_rsa_pkcs1_der_base64_from_rsa_sk(sk: Rsa<Private>) -> GeorgeResult<String> {
-    Ok(Base64::encode(generate_pk_rsa_pkcs1_der_from_rsa_sk(sk)?))
-}
-
-/// 生成RSA公钥
-fn generate_pk_rsa_pkcs8_der_base64_from_rsa_sk(sk: Rsa<Private>) -> GeorgeResult<String> {
-    Ok(Base64::encode(generate_pk_rsa_pkcs8_der_from_rsa_sk(sk)?))
-}
-
-/// 生成RSA公钥
 fn generate_pk_rsa_pkcs1_from_rsa_sk_bytes(sk: Vec<u8>) -> GeorgeResult<Rsa<Public>> {
     match load_sk(sk) {
         Ok(sk) => generate_pk_rsa_pkcs1_from_rsa_sk(sk),
@@ -2258,58 +2160,6 @@ fn generate_pk_rsa_pkcs8_from_rsa_sk_bytes(sk: Vec<u8>) -> GeorgeResult<Rsa<Publ
         Ok(sk) => generate_pk_rsa_pkcs8_from_rsa_sk(sk),
         Err(err) => Err(err_strs("load_sk_pkey", err)),
     }
-}
-
-/// 生成RSA公钥
-fn generate_pk_rsa_pkcs1_pem_from_sk_bytes(sk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
-    match load_sk(sk) {
-        Ok(key) => generate_pk_rsa_pkcs1_pem_from_rsa_sk(key),
-        Err(err) => Err(err_strs("load_sk", err)),
-    }
-}
-
-/// 生成RSA公钥
-fn generate_pk_rsa_pkcs8_pem_from_sk_bytes(sk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
-    match load_sk(sk) {
-        Ok(key) => generate_pk_rsa_pkcs8_pem_from_rsa_sk(key),
-        Err(err) => Err(err_strs("load_sk", err)),
-    }
-}
-
-/// 生成RSA公钥
-fn generate_pk_rsa_pkcs1_pem_string_from_sk_bytes(sk: Vec<u8>) -> GeorgeResult<String> {
-    Strings::from_utf8(generate_pk_rsa_pkcs1_pem_from_sk_bytes(sk)?)
-}
-
-/// 生成RSA公钥
-fn generate_pk_rsa_pkcs8_pem_string_from_sk_bytes(sk: Vec<u8>) -> GeorgeResult<String> {
-    Strings::from_utf8(generate_pk_rsa_pkcs8_pem_from_sk_bytes(sk)?)
-}
-
-/// 生成RSA公钥
-fn generate_pk_rsa_pkcs1_der_from_sk_bytes(sk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
-    match load_sk(sk) {
-        Ok(key) => generate_pk_rsa_pkcs1_der_from_rsa_sk(key),
-        Err(err) => Err(err_strs("load_sk", err)),
-    }
-}
-
-/// 生成RSA公钥
-fn generate_pk_rsa_pkcs8_der_from_sk_bytes(sk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
-    match load_sk(sk) {
-        Ok(key) => generate_pk_rsa_pkcs8_der_from_rsa_sk(key),
-        Err(err) => Err(err_strs("load_sk", err)),
-    }
-}
-
-/// 生成RSA公钥
-fn generate_pk_rsa_pkcs1_der_base64_from_sk_bytes(sk: Vec<u8>) -> GeorgeResult<String> {
-    Ok(Base64::encode(generate_pk_rsa_pkcs1_der_from_sk_bytes(sk)?))
-}
-
-/// 生成RSA公钥
-fn generate_pk_rsa_pkcs8_der_base64_from_sk_bytes(sk: Vec<u8>) -> GeorgeResult<String> {
-    Ok(Base64::encode(generate_pk_rsa_pkcs8_der_from_sk_bytes(sk)?))
 }
 
 /// 生成RSA公钥
@@ -2365,13 +2215,6 @@ fn generate_pk_rsa_pkcs8_pem_string_from_sk_file<P: AsRef<Path>>(
 /// 生成RSA公钥
 fn generate_pk_rsa_pkcs1_der_hex_from_sk_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
     Ok(Hex::encode(generate_pk_rsa_pkcs1_der_from_sk_file(
-        filepath,
-    )?))
-}
-
-/// 生成RSA公钥
-fn generate_pk_rsa_pkcs8_der_hex_from_sk_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
-    Ok(Hex::encode(generate_pk_rsa_pkcs8_der_from_sk_file(
         filepath,
     )?))
 }

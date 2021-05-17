@@ -68,8 +68,7 @@ mod ecdsa {
         #[test]
         fn test() {
             let ecdsa_pre = ECDSA::new().unwrap();
-            let sk = ecdsa_pre.sk();
-            let pk = ecdsa_pre.pk();
+            let sk = ecdsa_pre.sk_ec();
             let ecdsa1 = ECDSA::from_sk(sk.clone()).unwrap();
 
             let res = "hello world!";
