@@ -21,8 +21,8 @@ use num_bigint::BigUint;
 
 use crate::cryptos::base64::{Base64, Base64Encoder, Basee64Decoder};
 use crate::cryptos::hex::{Hex, HexDecoder, HexEncoder};
-use crate::errors::entrances::GeorgeResult;
 use crate::errors::entrances::{err_str, err_strs};
+use crate::errors::entrances::{err_string, GeorgeResult};
 use crate::io::file::{Filer, FilerWriter};
 
 /// 字节数组与字符串通过Base64转换
@@ -57,11 +57,21 @@ impl SM2 {
         sig.der_encode()
     }
 
+    pub fn sig_hex(&self, msg: &[u8]) -> String {
+        let sig = self.ctx.sign(msg, &self.sk, &self.pk);
+        Hex::encode(sig.der_encode())
+    }
+
+    pub fn sig_base64(&self, msg: &[u8]) -> String {
+        let sig = self.ctx.sign(msg, &self.sk, &self.pk);
+        Base64::encode(sig.der_encode())
+    }
+
     pub fn sig_pk(&self, msg: &[u8], pk: &[u8]) -> GeorgeResult<Vec<u8>> {
         let pk_point: Point;
         match self.ctx.load_pubkey(pk) {
             Ok(pp) => pk_point = pp,
-            Err(()) => return Err(err_str("load pub key error!")),
+            Err(err) => return Err(err_string(format!("load pub key error! {:#?}", err))),
         }
         let sig = self.ctx.sign(msg, &self.sk, &pk_point);
         Ok(sig.der_encode())
@@ -81,7 +91,7 @@ impl SM2 {
         let sig: Signature;
         match self.ctx.load_pubkey(pk) {
             Ok(pp) => pk_point = pp,
-            Err(()) => return Err(err_str("load pub key error!")),
+            Err(err) => return Err(err_string(format!("load pub key error! {:#?}", err))),
         }
         match Signature::der_decode(der) {
             Ok(s) => sig = s,
@@ -194,7 +204,13 @@ pub trait SM2Sign<M, N> {
     /// msg 待签名数据
     ///
     /// sk、pk 签名使用公私钥
-    fn sign_string(msg: M, sk: N, pk: N) -> GeorgeResult<String>;
+    fn sign_hex(msg: M, sk: N, pk: N) -> GeorgeResult<String>;
+    /// 签名msg，返回签名结果字符串
+    ///
+    /// msg 待签名数据
+    ///
+    /// sk、pk 签名使用公私钥
+    fn sign_base64(msg: M, sk: N, pk: N) -> GeorgeResult<String>;
 }
 
 pub trait SM2SignPath<T> {
@@ -209,7 +225,7 @@ pub trait SM2SignPath<T> {
     /// msg 待签名数据
     ///
     /// sk、pk 签名使用公私钥文件
-    fn sign_string<P: AsRef<Path>>(msg: T, sk_filepath: P, pk_filepath: P) -> GeorgeResult<String>;
+    fn sign_base64<P: AsRef<Path>>(msg: T, sk_filepath: P, pk_filepath: P) -> GeorgeResult<String>;
 }
 
 pub trait SM2Verify<M, N, O> {
@@ -361,9 +377,9 @@ impl SM2LoadKey for SM2 {
         match ctx.load_pubkey(pk_bytes.as_slice()) {
             Ok(pk) => match ctx.load_seckey(sk_bytes.as_slice()) {
                 Ok(sk) => Ok(SM2 { ctx, sk, pk }),
-                Err(()) => return Err(err_str("load pub key error!")),
+                Err(err) => return Err(err_string(format!("load pub key error! {:#?}", err))),
             },
-            Err(()) => return Err(err_str("load pub key error!")),
+            Err(err) => return Err(err_string(format!("load pub key error! {:#?}", err))),
         }
     }
 
@@ -385,7 +401,11 @@ impl SM2Sign<&[u8], &[u8]> for SM2 {
         sign(msg, sk, pk)
     }
 
-    fn sign_string(msg: &[u8], sk: &[u8], pk: &[u8]) -> GeorgeResult<String> {
+    fn sign_hex(msg: &[u8], sk: &[u8], pk: &[u8]) -> GeorgeResult<String> {
+        Ok(Hex::encode(sign(msg, sk, pk)?))
+    }
+
+    fn sign_base64(msg: &[u8], sk: &[u8], pk: &[u8]) -> GeorgeResult<String> {
         Ok(Base64::encode(sign(msg, sk, pk)?))
     }
 }
@@ -395,7 +415,11 @@ impl SM2Sign<&[u8], Vec<u8>> for SM2 {
         sign(msg, sk.as_slice(), pk.as_slice())
     }
 
-    fn sign_string(msg: &[u8], sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<String> {
+    fn sign_hex(msg: &[u8], sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<String> {
+        Ok(Hex::encode(sign(msg, sk.as_slice(), pk.as_slice())?))
+    }
+
+    fn sign_base64(msg: &[u8], sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<String> {
         Ok(Base64::encode(sign(msg, sk.as_slice(), pk.as_slice())?))
     }
 }
@@ -405,7 +429,15 @@ impl SM2Sign<Vec<u8>, Vec<u8>> for SM2 {
         sign(msg.as_slice(), sk.as_slice(), pk.as_slice())
     }
 
-    fn sign_string(msg: Vec<u8>, sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<String> {
+    fn sign_hex(msg: Vec<u8>, sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<String> {
+        Ok(Hex::encode(sign(
+            msg.as_slice(),
+            sk.as_slice(),
+            pk.as_slice(),
+        )?))
+    }
+
+    fn sign_base64(msg: Vec<u8>, sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<String> {
         Ok(Base64::encode(sign(
             msg.as_slice(),
             sk.as_slice(),
@@ -419,7 +451,15 @@ impl SM2Sign<String, Vec<u8>> for SM2 {
         sign(msg.as_bytes(), sk.as_slice(), pk.as_slice())
     }
 
-    fn sign_string(msg: String, sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<String> {
+    fn sign_hex(msg: String, sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<String> {
+        Ok(Hex::encode(sign(
+            msg.as_bytes(),
+            sk.as_slice(),
+            pk.as_slice(),
+        )?))
+    }
+
+    fn sign_base64(msg: String, sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<String> {
         Ok(Base64::encode(sign(
             msg.as_bytes(),
             sk.as_slice(),
@@ -433,7 +473,15 @@ impl SM2Sign<&str, Vec<u8>> for SM2 {
         sign(msg.as_bytes(), sk.as_slice(), pk.as_slice())
     }
 
-    fn sign_string(msg: &str, sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<String> {
+    fn sign_hex(msg: &str, sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<String> {
+        Ok(Hex::encode(sign(
+            msg.as_bytes(),
+            sk.as_slice(),
+            pk.as_slice(),
+        )?))
+    }
+
+    fn sign_base64(msg: &str, sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<String> {
         Ok(Base64::encode(sign(
             msg.as_bytes(),
             sk.as_slice(),
@@ -447,7 +495,11 @@ impl SM2Sign<Vec<u8>, &[u8]> for SM2 {
         sign(msg.as_slice(), sk, pk)
     }
 
-    fn sign_string(msg: Vec<u8>, sk: &[u8], pk: &[u8]) -> GeorgeResult<String> {
+    fn sign_hex(msg: Vec<u8>, sk: &[u8], pk: &[u8]) -> GeorgeResult<String> {
+        Ok(Hex::encode(sign(msg.as_slice(), sk, pk)?))
+    }
+
+    fn sign_base64(msg: Vec<u8>, sk: &[u8], pk: &[u8]) -> GeorgeResult<String> {
         Ok(Base64::encode(sign(msg.as_slice(), sk, pk)?))
     }
 }
@@ -457,7 +509,11 @@ impl SM2Sign<String, &[u8]> for SM2 {
         sign(msg.as_bytes(), sk, pk)
     }
 
-    fn sign_string(msg: String, sk: &[u8], pk: &[u8]) -> GeorgeResult<String> {
+    fn sign_hex(msg: String, sk: &[u8], pk: &[u8]) -> GeorgeResult<String> {
+        Ok(Hex::encode(sign(msg.as_bytes(), sk, pk)?))
+    }
+
+    fn sign_base64(msg: String, sk: &[u8], pk: &[u8]) -> GeorgeResult<String> {
         Ok(Base64::encode(sign(msg.as_bytes(), sk, pk)?))
     }
 }
@@ -467,7 +523,11 @@ impl SM2Sign<&str, &[u8]> for SM2 {
         sign(msg.as_bytes(), sk, pk)
     }
 
-    fn sign_string(msg: &str, sk: &[u8], pk: &[u8]) -> GeorgeResult<String> {
+    fn sign_hex(msg: &str, sk: &[u8], pk: &[u8]) -> GeorgeResult<String> {
+        Ok(Hex::encode(sign(msg.as_bytes(), sk, pk)?))
+    }
+
+    fn sign_base64(msg: &str, sk: &[u8], pk: &[u8]) -> GeorgeResult<String> {
         Ok(Base64::encode(sign(msg.as_bytes(), sk, pk)?))
     }
 }
@@ -481,7 +541,15 @@ impl SM2Sign<&[u8], String> for SM2 {
         )
     }
 
-    fn sign_string(msg: &[u8], sk: String, pk: String) -> GeorgeResult<String> {
+    fn sign_hex(msg: &[u8], sk: String, pk: String) -> GeorgeResult<String> {
+        Ok(Hex::encode(sign(
+            msg,
+            Base64::decode(sk)?.as_slice(),
+            Base64::decode(pk)?.as_slice(),
+        )?))
+    }
+
+    fn sign_base64(msg: &[u8], sk: String, pk: String) -> GeorgeResult<String> {
         Ok(Base64::encode(sign(
             msg,
             Base64::decode(sk)?.as_slice(),
@@ -499,7 +567,15 @@ impl SM2Sign<Vec<u8>, String> for SM2 {
         )
     }
 
-    fn sign_string(msg: Vec<u8>, sk: String, pk: String) -> GeorgeResult<String> {
+    fn sign_hex(msg: Vec<u8>, sk: String, pk: String) -> GeorgeResult<String> {
+        Ok(Hex::encode(sign(
+            msg.as_slice(),
+            Base64::decode(sk)?.as_slice(),
+            Base64::decode(pk)?.as_slice(),
+        )?))
+    }
+
+    fn sign_base64(msg: Vec<u8>, sk: String, pk: String) -> GeorgeResult<String> {
         Ok(Base64::encode(sign(
             msg.as_slice(),
             Base64::decode(sk)?.as_slice(),
@@ -517,7 +593,15 @@ impl SM2Sign<String, String> for SM2 {
         )
     }
 
-    fn sign_string(msg: String, sk: String, pk: String) -> GeorgeResult<String> {
+    fn sign_hex(msg: String, sk: String, pk: String) -> GeorgeResult<String> {
+        Ok(Hex::encode(sign(
+            msg.as_bytes(),
+            Base64::decode(sk)?.as_slice(),
+            Base64::decode(pk)?.as_slice(),
+        )?))
+    }
+
+    fn sign_base64(msg: String, sk: String, pk: String) -> GeorgeResult<String> {
         Ok(Base64::encode(sign(
             msg.as_bytes(),
             Base64::decode(sk)?.as_slice(),
@@ -535,7 +619,15 @@ impl SM2Sign<&str, String> for SM2 {
         )
     }
 
-    fn sign_string(msg: &str, sk: String, pk: String) -> GeorgeResult<String> {
+    fn sign_hex(msg: &str, sk: String, pk: String) -> GeorgeResult<String> {
+        Ok(Hex::encode(sign(
+            msg.as_bytes(),
+            Base64::decode(sk)?.as_slice(),
+            Base64::decode(pk)?.as_slice(),
+        )?))
+    }
+
+    fn sign_base64(msg: &str, sk: String, pk: String) -> GeorgeResult<String> {
         Ok(Base64::encode(sign(
             msg.as_bytes(),
             Base64::decode(sk)?.as_slice(),
@@ -548,16 +640,24 @@ impl SM2Sign<&[u8], &str> for SM2 {
     fn sign(msg: &[u8], sk: &str, pk: &str) -> GeorgeResult<Vec<u8>> {
         sign(
             msg,
-            Base64::decode(sk.to_string())?.as_slice(),
-            Base64::decode(pk.to_string())?.as_slice(),
+            Base64::decode(sk)?.as_slice(),
+            Base64::decode(pk)?.as_slice(),
         )
     }
 
-    fn sign_string(msg: &[u8], sk: &str, pk: &str) -> GeorgeResult<String> {
+    fn sign_hex(msg: &[u8], sk: &str, pk: &str) -> GeorgeResult<String> {
+        Ok(Hex::encode(sign(
+            msg,
+            Base64::decode(sk)?.as_slice(),
+            Base64::decode(pk)?.as_slice(),
+        )?))
+    }
+
+    fn sign_base64(msg: &[u8], sk: &str, pk: &str) -> GeorgeResult<String> {
         Ok(Base64::encode(sign(
             msg,
-            Base64::decode(sk.to_string())?.as_slice(),
-            Base64::decode(pk.to_string())?.as_slice(),
+            Base64::decode(sk)?.as_slice(),
+            Base64::decode(pk)?.as_slice(),
         )?))
     }
 }
@@ -566,16 +666,24 @@ impl SM2Sign<Vec<u8>, &str> for SM2 {
     fn sign(msg: Vec<u8>, sk: &str, pk: &str) -> GeorgeResult<Vec<u8>> {
         sign(
             msg.as_slice(),
-            Base64::decode(sk.to_string())?.as_slice(),
-            Base64::decode(pk.to_string())?.as_slice(),
+            Base64::decode(sk)?.as_slice(),
+            Base64::decode(pk)?.as_slice(),
         )
     }
 
-    fn sign_string(msg: Vec<u8>, sk: &str, pk: &str) -> GeorgeResult<String> {
+    fn sign_hex(msg: Vec<u8>, sk: &str, pk: &str) -> GeorgeResult<String> {
+        Ok(Hex::encode(sign(
+            msg.as_slice(),
+            Base64::decode(sk)?.as_slice(),
+            Base64::decode(pk)?.as_slice(),
+        )?))
+    }
+
+    fn sign_base64(msg: Vec<u8>, sk: &str, pk: &str) -> GeorgeResult<String> {
         Ok(Base64::encode(sign(
             msg.as_slice(),
-            Base64::decode(sk.to_string())?.as_slice(),
-            Base64::decode(pk.to_string())?.as_slice(),
+            Base64::decode(sk)?.as_slice(),
+            Base64::decode(pk)?.as_slice(),
         )?))
     }
 }
@@ -584,16 +692,24 @@ impl SM2Sign<String, &str> for SM2 {
     fn sign(msg: String, sk: &str, pk: &str) -> GeorgeResult<Vec<u8>> {
         sign(
             msg.as_bytes(),
-            Base64::decode(sk.to_string())?.as_slice(),
-            Base64::decode(pk.to_string())?.as_slice(),
+            Base64::decode(sk)?.as_slice(),
+            Base64::decode(pk)?.as_slice(),
         )
     }
 
-    fn sign_string(msg: String, sk: &str, pk: &str) -> GeorgeResult<String> {
+    fn sign_hex(msg: String, sk: &str, pk: &str) -> GeorgeResult<String> {
+        Ok(Hex::encode(sign(
+            msg.as_bytes(),
+            Base64::decode(sk)?.as_slice(),
+            Base64::decode(pk)?.as_slice(),
+        )?))
+    }
+
+    fn sign_base64(msg: String, sk: &str, pk: &str) -> GeorgeResult<String> {
         Ok(Base64::encode(sign(
             msg.as_bytes(),
-            Base64::decode(sk.to_string())?.as_slice(),
-            Base64::decode(pk.to_string())?.as_slice(),
+            Base64::decode(sk)?.as_slice(),
+            Base64::decode(pk)?.as_slice(),
         )?))
     }
 }
@@ -602,16 +718,24 @@ impl SM2Sign<&str, &str> for SM2 {
     fn sign(msg: &str, sk: &str, pk: &str) -> GeorgeResult<Vec<u8>> {
         sign(
             msg.as_bytes(),
-            Base64::decode(sk.to_string())?.as_slice(),
-            Base64::decode(pk.to_string())?.as_slice(),
+            Base64::decode(sk)?.as_slice(),
+            Base64::decode(pk)?.as_slice(),
         )
     }
 
-    fn sign_string(msg: &str, sk: &str, pk: &str) -> GeorgeResult<String> {
+    fn sign_hex(msg: &str, sk: &str, pk: &str) -> GeorgeResult<String> {
+        Ok(Hex::encode(sign(
+            msg.as_bytes(),
+            Base64::decode(sk)?.as_slice(),
+            Base64::decode(pk)?.as_slice(),
+        )?))
+    }
+
+    fn sign_base64(msg: &str, sk: &str, pk: &str) -> GeorgeResult<String> {
         Ok(Base64::encode(sign(
             msg.as_bytes(),
-            Base64::decode(sk.to_string())?.as_slice(),
-            Base64::decode(pk.to_string())?.as_slice(),
+            Base64::decode(sk)?.as_slice(),
+            Base64::decode(pk)?.as_slice(),
         )?))
     }
 }
@@ -625,7 +749,7 @@ impl SM2SignPath<&[u8]> for SM2 {
         )
     }
 
-    fn sign_string<P: AsRef<Path>>(
+    fn sign_base64<P: AsRef<Path>>(
         msg: &[u8],
         sk_filepath: P,
         pk_filepath: P,
@@ -647,7 +771,7 @@ impl SM2SignPath<Vec<u8>> for SM2 {
         )
     }
 
-    fn sign_string<P: AsRef<Path>>(
+    fn sign_base64<P: AsRef<Path>>(
         msg: Vec<u8>,
         sk_filepath: P,
         pk_filepath: P,
@@ -669,7 +793,7 @@ impl SM2SignPath<String> for SM2 {
         )
     }
 
-    fn sign_string<P: AsRef<Path>>(
+    fn sign_base64<P: AsRef<Path>>(
         msg: String,
         sk_filepath: P,
         pk_filepath: P,
@@ -691,7 +815,7 @@ impl SM2SignPath<&str> for SM2 {
         )
     }
 
-    fn sign_string<P: AsRef<Path>>(
+    fn sign_base64<P: AsRef<Path>>(
         msg: &str,
         sk_filepath: P,
         pk_filepath: P,
@@ -1476,7 +1600,7 @@ fn generate_pk_from_sk(sk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
     let ctx = SigCtx::new();
     match ctx.load_seckey(sk.as_slice()) {
         Ok(p) => Ok(ctx.serialize_pubkey(&ctx.pk_from_sk(&p), true)),
-        Err(()) => Err(err_str("unknown")),
+        Err(err) => Err(err_string(format!("unknown {:#?}", err))),
     }
 }
 
@@ -1556,11 +1680,11 @@ fn sign(msg: &[u8], sk: &[u8], pk: &[u8]) -> GeorgeResult<Vec<u8>> {
     let sig: Signature;
     match ctx.load_pubkey(pk) {
         Ok(pp) => pk_point = pp,
-        Err(()) => return Err(err_str("load pub key error!")),
+        Err(err) => return Err(err_string(format!("load pub key error! {:#?}", err))),
     }
     match ctx.load_seckey(sk) {
         Ok(sk_bu) => sig = ctx.sign(msg, &sk_bu, &pk_point),
-        Err(()) => return Err(err_str("load pub key error!")),
+        Err(err) => return Err(err_string(format!("load pub key error! {:#?}", err))),
     }
     Ok(sig.der_encode())
 }
@@ -1571,7 +1695,7 @@ fn verify(msg: &[u8], pk: &[u8], der: &[u8]) -> GeorgeResult<bool> {
     let sig: Signature;
     match ctx.load_pubkey(pk) {
         Ok(pp) => pk_point = pp,
-        Err(()) => return Err(err_str("load pub key error!")),
+        Err(err) => return Err(err_string(format!("load pub key error! {:#?}", err))),
     }
     match Signature::der_decode(der) {
         Ok(s) => sig = s,

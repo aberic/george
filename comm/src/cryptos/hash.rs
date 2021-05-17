@@ -12,52 +12,68 @@
  * limitations under the License.
  */
 
-use crypto::digest::Digest;
-use crypto::md5::Md5;
-
-use crate::cryptos::sm3::{SM3Handler, SM3};
-use crate::errors::entrances::{err_strings, GeorgeResult};
+use crate::cryptos::hex::{Hex, HexEncoder};
+use crate::errors::entrances::{err_strings, err_strs, GeorgeResult};
 use crate::strings::{StringHandler, Strings};
+use openssl::hash::{Hasher, MessageDigest};
 use std::ops::Add;
 
 #[derive(Debug, Clone)]
 pub struct Hash;
 
 pub trait HashMD5Handler<T> {
+    fn digest(md: MessageDigest, comment: T) -> GeorgeResult<String>;
+
     fn md5(comment: T) -> String;
+
     fn md516(comment: T) -> String;
+
     fn sm3(comment: T) -> String;
+
+    fn sha1(comment: T) -> String;
+
+    fn sha256(comment: T) -> String;
 }
 
 pub trait HashCRCHandler<T> {
     fn crc32(comment: T) -> u32;
-    fn crc64(comment: T) -> u64;
-}
 
-pub trait HashHandler<T> {
-    fn md5(comment: T) -> String;
-    fn md516(comment: T) -> String;
-    fn crc32(comment: T) -> u32;
     fn crc64(comment: T) -> u64;
 }
 
 pub trait HashCRCTypeHandler {
     fn crc32_string(comment: String) -> GeorgeResult<u32>;
+
     fn crc32_bool(comment: String) -> GeorgeResult<u32>;
+
     fn crc32_u32(comment: String) -> GeorgeResult<u32>;
+
     fn crc32_f32(comment: String) -> GeorgeResult<u32>;
+
     fn crc32_i32(comment: String) -> GeorgeResult<u32>;
+
     fn crc64_string(comment: String) -> GeorgeResult<u64>;
+
     fn crc64_bool(comment: String) -> GeorgeResult<u64>;
+
     fn crc64_u32(comment: String) -> GeorgeResult<u64>;
+
     fn crc64_u64(comment: String) -> GeorgeResult<u64>;
+
     fn crc64_f32(comment: String) -> GeorgeResult<u64>;
+
     fn crc64_f64(comment: String) -> GeorgeResult<u64>;
+
     fn crc64_i32(comment: String) -> GeorgeResult<u64>;
+
     fn crc64_i64(comment: String) -> GeorgeResult<u64>;
 }
 
 impl HashMD5Handler<&[u8]> for Hash {
+    fn digest(md: MessageDigest, comment: &[u8]) -> GeorgeResult<String> {
+        digest(md, comment)
+    }
+
     fn md5(comment: &[u8]) -> String {
         md5_u8s(comment)
     }
@@ -67,11 +83,23 @@ impl HashMD5Handler<&[u8]> for Hash {
     }
 
     fn sm3(comment: &[u8]) -> String {
-        SM3::hash(comment)
+        digest(MessageDigest::sm3(), comment).unwrap()
+    }
+
+    fn sha1(comment: &[u8]) -> String {
+        digest(MessageDigest::sha1(), comment).unwrap()
+    }
+
+    fn sha256(comment: &[u8]) -> String {
+        digest(MessageDigest::sha256(), comment).unwrap()
     }
 }
 
 impl HashMD5Handler<Vec<u8>> for Hash {
+    fn digest(md: MessageDigest, comment: Vec<u8>) -> GeorgeResult<String> {
+        digest(md, comment.as_slice())
+    }
+
     fn md5(comment: Vec<u8>) -> String {
         md5_u8s(comment.as_slice())
     }
@@ -81,11 +109,23 @@ impl HashMD5Handler<Vec<u8>> for Hash {
     }
 
     fn sm3(comment: Vec<u8>) -> String {
-        SM3::hash(comment)
+        digest(MessageDigest::sm3(), comment.as_slice()).unwrap()
+    }
+
+    fn sha1(comment: Vec<u8>) -> String {
+        digest(MessageDigest::sha1(), comment.as_slice()).unwrap()
+    }
+
+    fn sha256(comment: Vec<u8>) -> String {
+        digest(MessageDigest::sha256(), comment.as_slice()).unwrap()
     }
 }
 
 impl HashMD5Handler<String> for Hash {
+    fn digest(md: MessageDigest, comment: String) -> GeorgeResult<String> {
+        digest(md, comment.as_bytes())
+    }
+
     fn md5(comment: String) -> String {
         md5(comment)
     }
@@ -95,7 +135,15 @@ impl HashMD5Handler<String> for Hash {
     }
 
     fn sm3(comment: String) -> String {
-        SM3::hash(comment)
+        digest(MessageDigest::sm3(), comment.as_bytes()).unwrap()
+    }
+
+    fn sha1(comment: String) -> String {
+        digest(MessageDigest::sha1(), comment.as_bytes()).unwrap()
+    }
+
+    fn sha256(comment: String) -> String {
+        digest(MessageDigest::sha256(), comment.as_bytes()).unwrap()
     }
 }
 
@@ -233,16 +281,28 @@ impl HashCRCTypeHandler for Hash {
     }
 }
 
+fn digest(md: MessageDigest, comment: &[u8]) -> GeorgeResult<String> {
+    match Hasher::new(md) {
+        Ok(mut hasher) => match hasher.update(comment) {
+            Ok(()) => match hasher.finish() {
+                Ok(d_bytes) => Ok(Hex::encode(d_bytes.to_vec())),
+                Err(err) => Err(err_strs("hasher finish", err)),
+            },
+            Err(err) => Err(err_strs("hasher update", err)),
+        },
+        Err(err) => Err(err_strs("hasher new", err)),
+    }
+}
+
 fn md5(comment: String) -> String {
-    let mut md5_handler = Md5::new();
-    md5_handler.input_str(comment.as_str());
-    md5_handler.result_str()
+    md5_u8s(comment.as_bytes())
 }
 
 fn md5_u8s(comment: &[u8]) -> String {
-    let mut md5_handler = Md5::new();
-    md5_handler.input(comment);
-    md5_handler.result_str()
+    let mut hash = Hasher::new(MessageDigest::md5()).unwrap();
+    hash.update(comment).unwrap();
+    let res = hash.finish().unwrap();
+    Hex::encode(res.to_vec())
 }
 
 fn md516(comment: String) -> String {

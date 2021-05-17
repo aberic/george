@@ -34,14 +34,50 @@ mod md5 {
         let str = "test".to_string();
         let str_u8s = "test".as_bytes();
         let str_v8s = "test".as_bytes().to_vec();
+
         let sm3_1 = Hash::sm3(str.clone());
         let sm3_2 = Hash::sm3(str.clone());
         let sm3_3 = Hash::sm3(str_u8s);
-        let sm3_4 = Hash::sm3(str_v8s);
+        let sm3_4 = Hash::sm3(str_v8s.clone());
         println!("test sm3 1 = {}", sm3_1);
         println!("test sm3 2 = {}", sm3_2);
         println!("test sm3 3 = {}", sm3_3);
         println!("test sm3 4 = {}", sm3_4);
+        println!("test sm3 5 = {}", sm3_4);
+    }
+
+    #[test]
+    fn sha1_test() {
+        let str = "test".to_string();
+        let str_u8s = "test".as_bytes();
+        let str_v8s = "test".as_bytes().to_vec();
+
+        let sm3_1 = Hash::sha1(str.clone());
+        let sm3_2 = Hash::sha1(str.clone());
+        let sm3_3 = Hash::sha1(str_u8s);
+        let sm3_4 = Hash::sha1(str_v8s.clone());
+        println!("test sm3 1 = {}", sm3_1);
+        println!("test sm3 2 = {}", sm3_2);
+        println!("test sm3 3 = {}", sm3_3);
+        println!("test sm3 4 = {}", sm3_4);
+        println!("test sm3 5 = {}", sm3_4);
+    }
+
+    #[test]
+    fn sha256_test() {
+        let str = "test".to_string();
+        let str_u8s = "test".as_bytes();
+        let str_v8s = "test".as_bytes().to_vec();
+
+        let sm3_1 = Hash::sha256(str.clone());
+        let sm3_2 = Hash::sha256(str.clone());
+        let sm3_3 = Hash::sha256(str_u8s);
+        let sm3_4 = Hash::sha256(str_v8s.clone());
+        println!("test sm3 1 = {}", sm3_1);
+        println!("test sm3 2 = {}", sm3_2);
+        println!("test sm3 3 = {}", sm3_3);
+        println!("test sm3 4 = {}", sm3_4);
+        println!("test sm3 5 = {}", sm3_4);
     }
 
     #[test]

@@ -273,7 +273,7 @@ mod sm2 {
 
             /////////////// sk/pk u8s start ///////////////
             let sign_res1 = SM2::sign(msg1, sk.as_slice(), pk.as_slice()).unwrap();
-            let sign_res2 = SM2::sign_string(msg1, sk.as_slice(), pk.as_slice()).unwrap();
+            let sign_res2 = SM2::sign_base64(msg1, sk.as_slice(), pk.as_slice()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 Base64::encode(sign_res1.clone()),
@@ -282,7 +282,7 @@ mod sm2 {
 
             let sign_res1 = SM2::sign(msg1.to_string(), sk.as_slice(), pk.as_slice()).unwrap();
             let sign_res2 =
-                SM2::sign_string(msg1.to_string(), sk.as_slice(), pk.as_slice()).unwrap();
+                SM2::sign_base64(msg1.to_string(), sk.as_slice(), pk.as_slice()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 Base64::encode(sign_res1),
@@ -291,7 +291,7 @@ mod sm2 {
 
             let sign_res1 = SM2::sign(msg1.as_bytes(), sk.as_slice(), pk.as_slice()).unwrap();
             let sign_res2 =
-                SM2::sign_string(msg1.as_bytes(), sk.as_slice(), pk.as_slice()).unwrap();
+                SM2::sign_base64(msg1.as_bytes(), sk.as_slice(), pk.as_slice()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 Base64::encode(sign_res1),
@@ -301,7 +301,7 @@ mod sm2 {
             let sign_res1 =
                 SM2::sign(msg1.as_bytes().to_vec(), sk.as_slice(), pk.as_slice()).unwrap();
             let sign_res2 =
-                SM2::sign_string(msg1.as_bytes().to_vec(), sk.as_slice(), pk.as_slice()).unwrap();
+                SM2::sign_base64(msg1.as_bytes().to_vec(), sk.as_slice(), pk.as_slice()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 Base64::encode(sign_res1.clone()),
@@ -624,7 +624,7 @@ mod sm2 {
 
             /////////////// sk/pk v8s start ///////////////
             let sign_res1 = SM2::sign(msg1, sk.clone(), pk.clone()).unwrap();
-            let sign_res2 = SM2::sign_string(msg1, sk.clone(), pk.clone()).unwrap();
+            let sign_res2 = SM2::sign_base64(msg1, sk.clone(), pk.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 Base64::encode(sign_res1),
@@ -632,7 +632,7 @@ mod sm2 {
             );
 
             let sign_res1 = SM2::sign(msg1.to_string(), sk.clone(), pk.clone()).unwrap();
-            let sign_res2 = SM2::sign_string(msg1.to_string(), sk.clone(), pk.clone()).unwrap();
+            let sign_res2 = SM2::sign_base64(msg1.to_string(), sk.clone(), pk.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 Base64::encode(sign_res1),
@@ -640,7 +640,7 @@ mod sm2 {
             );
 
             let sign_res1 = SM2::sign(msg1.as_bytes(), sk.clone(), pk.clone()).unwrap();
-            let sign_res2 = SM2::sign_string(msg1.as_bytes(), sk.clone(), pk.clone()).unwrap();
+            let sign_res2 = SM2::sign_base64(msg1.as_bytes(), sk.clone(), pk.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 Base64::encode(sign_res1),
@@ -649,7 +649,7 @@ mod sm2 {
 
             let sign_res1 = SM2::sign(msg1.as_bytes().to_vec(), sk.clone(), pk.clone()).unwrap();
             let sign_res2 =
-                SM2::sign_string(msg1.as_bytes().to_vec(), sk.clone(), pk.clone()).unwrap();
+                SM2::sign_base64(msg1.as_bytes().to_vec(), sk.clone(), pk.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 Base64::encode(sign_res1.clone()),
@@ -974,7 +974,7 @@ mod sm2 {
             /////////////// sk/pk string start ///////////////
             let sign_res1 = SM2::sign(msg1.clone(), sk_string.clone(), pk_string.clone()).unwrap();
             let sign_res2 =
-                SM2::sign_string(msg1.clone(), sk_string.clone(), pk_string.clone()).unwrap();
+                SM2::sign_base64(msg1.clone(), sk_string.clone(), pk_string.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 Base64::encode(sign_res1),
@@ -984,7 +984,7 @@ mod sm2 {
             let sign_res1 =
                 SM2::sign(msg1.to_string(), sk_string.clone(), pk_string.clone()).unwrap();
             let sign_res2 =
-                SM2::sign_string(msg1.to_string(), sk_string.clone(), pk_string.clone()).unwrap();
+                SM2::sign_base64(msg1.to_string(), sk_string.clone(), pk_string.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 Base64::encode(sign_res1),
@@ -994,7 +994,7 @@ mod sm2 {
             let sign_res1 =
                 SM2::sign(msg1.as_bytes(), sk_string.clone(), pk_string.clone()).unwrap();
             let sign_res2 =
-                SM2::sign_string(msg1.as_bytes(), sk_string.clone(), pk_string.clone()).unwrap();
+                SM2::sign_base64(msg1.as_bytes(), sk_string.clone(), pk_string.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 Base64::encode(sign_res1),
@@ -1007,7 +1007,7 @@ mod sm2 {
                 pk_string.clone(),
             )
             .unwrap();
-            let sign_res2 = SM2::sign_string(
+            let sign_res2 = SM2::sign_base64(
                 msg1.as_bytes().to_vec(),
                 sk_string.clone(),
                 pk_string.clone(),
@@ -1337,7 +1337,7 @@ mod sm2 {
 
             /////////////// sk/pk str start ///////////////
             let sign_res1 = SM2::sign(msg1, sk_str, pk_str).unwrap();
-            let sign_res2 = SM2::sign_string(msg1, sk_str.clone(), pk_str.clone()).unwrap();
+            let sign_res2 = SM2::sign_base64(msg1, sk_str.clone(), pk_str.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 Base64::encode(sign_res1.clone()),
@@ -1346,7 +1346,7 @@ mod sm2 {
 
             let sign_res1 = SM2::sign(msg1.to_string(), sk_str.clone(), pk_str.clone()).unwrap();
             let sign_res2 =
-                SM2::sign_string(msg1.to_string(), sk_str.clone(), pk_str.clone()).unwrap();
+                SM2::sign_base64(msg1.to_string(), sk_str.clone(), pk_str.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 Base64::encode(sign_res1),
@@ -1355,7 +1355,7 @@ mod sm2 {
 
             let sign_res1 = SM2::sign(msg1.as_bytes(), sk_str.clone(), pk_str.clone()).unwrap();
             let sign_res2 =
-                SM2::sign_string(msg1.as_bytes(), sk_str.clone(), pk_str.clone()).unwrap();
+                SM2::sign_base64(msg1.as_bytes(), sk_str.clone(), pk_str.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 Base64::encode(sign_res1),
@@ -1365,7 +1365,7 @@ mod sm2 {
             let sign_res1 =
                 SM2::sign(msg1.as_bytes().to_vec(), sk_str.clone(), pk_str.clone()).unwrap();
             let sign_res2 =
-                SM2::sign_string(msg1.as_bytes().to_vec(), sk_str.clone(), pk_str.clone()).unwrap();
+                SM2::sign_base64(msg1.as_bytes().to_vec(), sk_str.clone(), pk_str.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 Base64::encode(sign_res1.clone()),
@@ -1691,7 +1691,7 @@ mod sm2 {
 
             let sign_res1 = SM2::sign(msg1, sk_filepath.clone(), pk_filepath.clone()).unwrap();
             let sign_res2 =
-                SM2::sign_string(msg1, sk_filepath.clone(), pk_filepath.clone()).unwrap();
+                SM2::sign_base64(msg1, sk_filepath.clone(), pk_filepath.clone()).unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
                 Base64::encode(sign_res1),
@@ -1701,7 +1701,7 @@ mod sm2 {
             let sign_res1 =
                 SM2::sign(msg1.to_string(), sk_filepath.clone(), pk_filepath.clone()).unwrap();
             let sign_res2 =
-                SM2::sign_string(msg1.to_string(), sk_filepath.clone(), pk_filepath.clone())
+                SM2::sign_base64(msg1.to_string(), sk_filepath.clone(), pk_filepath.clone())
                     .unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
@@ -1712,7 +1712,7 @@ mod sm2 {
             let sign_res1 =
                 SM2::sign(msg1.as_bytes(), sk_filepath.clone(), pk_filepath.clone()).unwrap();
             let sign_res2 =
-                SM2::sign_string(msg1.as_bytes(), sk_filepath.clone(), pk_filepath.clone())
+                SM2::sign_base64(msg1.as_bytes(), sk_filepath.clone(), pk_filepath.clone())
                     .unwrap();
             println!(
                 "sign_res1 = {}\nsign_res2 = {}",
@@ -1726,7 +1726,7 @@ mod sm2 {
                 pk_filepath.clone(),
             )
             .unwrap();
-            let sign_res2 = SM2::sign_string(
+            let sign_res2 = SM2::sign_base64(
                 msg1.as_bytes().to_vec(),
                 sk_filepath.clone(),
                 pk_filepath.clone(),

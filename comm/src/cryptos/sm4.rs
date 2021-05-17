@@ -12,14 +12,15 @@
  * limitations under the License.
  */
 
-use libsm::sm4::cipher_mode::{CipherMode, SM4CipherMode};
+use libsm::sm4::cipher_mode::CipherMode;
+use libsm::sm4::Cipher;
 use rand::rngs::OsRng;
 use rand::RngCore;
 
 pub struct SM4 {
     key: [u8; 16],
     iv: [u8; 16],
-    sm4_cipher_mode: SM4CipherMode,
+    sm4_cipher_mode: Cipher,
 }
 
 pub trait SM4Handler {
@@ -155,7 +156,7 @@ fn create_sm4(key: [u8; 16], iv: [u8; 16], mode: CipherMode) -> SM4 {
     SM4 {
         key,
         iv,
-        sm4_cipher_mode: SM4CipherMode::new(&key, mode),
+        sm4_cipher_mode: Cipher::new(&key, mode),
     }
 }
 
