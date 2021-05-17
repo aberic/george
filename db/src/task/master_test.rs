@@ -336,8 +336,7 @@ fn select_select_sequence1() {
         {
             "Param":"age",
             "Cond":"ge",
-            "Value":49900,
-            "Type": "i64"
+            "Value":49900
         },
         {
             "Param":"age",
@@ -365,8 +364,7 @@ fn select_select_sequence2() {
         {
             "Param":"age",
             "Cond":"ge",
-            "Value":49900,
-            "Type": "i64"
+            "Value":49900
         },
         {
             "Param":"age",
@@ -399,8 +397,7 @@ fn select_delete_sequence1() {
         {
             "Param":"age",
             "Cond":"ge",
-            "Value":49900,
-            "Type": "i64"
+            "Value":49900
         },
         {
             "Param":"age",

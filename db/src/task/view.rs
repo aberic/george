@@ -397,14 +397,14 @@ impl View {
     /// 条件检索
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
-    pub fn select(&self, constraint_json_bytes: Vec<u8>) -> GeorgeResult<Expectation> {
+    pub(crate) fn select(&self, constraint_json_bytes: Vec<u8>) -> GeorgeResult<Expectation> {
         Selector::run(constraint_json_bytes, self.indexes.clone(), false)
     }
 
     /// 条件删除
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
-    pub fn delete(&self, constraint_json_bytes: Vec<u8>) -> GeorgeResult<Expectation> {
+    pub(crate) fn delete(&self, constraint_json_bytes: Vec<u8>) -> GeorgeResult<Expectation> {
         Selector::run(constraint_json_bytes, self.indexes.clone(), true)
     }
 }
