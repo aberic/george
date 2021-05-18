@@ -78,6 +78,7 @@ impl Node {
             filer,
         }))
     }
+
     /// 恢复根结点
     pub fn recovery(
         view: Arc<RwLock<View>>,
@@ -102,21 +103,27 @@ impl Node {
             filer,
         }))
     }
+
     fn index_name(&self) -> String {
         self.index_name.clone()
     }
+
     fn key_type(&self) -> KeyType {
         self.key_type.clone()
     }
+
     fn database_name(&self) -> String {
         self.view.clone().read().unwrap().database_name()
     }
+
     fn view_name(&self) -> String {
         self.view.clone().read().unwrap().name()
     }
+
     fn node_filepath(&self) -> String {
         self.node_filepath.clone()
     }
+
     /// 根据文件路径获取该文件追加写入的写对象
     ///
     /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
@@ -127,9 +134,11 @@ impl Node {
     fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
         self.filer.clone().append(content)
     }
+
     fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         self.filer.clone().read_allow_none(start, last)
     }
+
     fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
         self.filer.clone().write(seek, content)
     }
@@ -150,14 +159,17 @@ impl TNode for Node {
         let hash_key = self.atomic_key.fetch_add(1, Ordering::Relaxed);
         self.put_in_node(key, hash_key, seed, force)
     }
+
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
         let hash_key = hash_key_64(self.key_type(), key)?;
         self.get_in_node(hash_key)
     }
+
     fn del(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
         let hash_key = hash_key_64(self.key_type(), key.clone())?;
         self.del_in_node(key, hash_key, seed)
     }
+
     fn select(
         &self,
         left: bool,
@@ -209,6 +221,7 @@ impl Node {
         ));
         Ok(())
     }
+
     fn get_in_node(&self, hash_key: u64) -> GeorgeResult<Vec<u8>> {
         let seek = hash_key * 12;
         let res = self.read(seek, 12)?;
@@ -227,6 +240,7 @@ impl Node {
             Err(GeorgeError::from(DataNoExistError))
         };
     }
+
     fn del_in_node(
         &self,
         key: String,
@@ -245,6 +259,7 @@ impl Node {
         }
         Ok(())
     }
+
     /// 通过左查询约束获取数据集
     ///
     /// ###Params
@@ -306,6 +321,7 @@ impl Node {
         }
         Ok((total, count, values))
     }
+
     /// 通过右查询约束获取数据集
     ///
     /// ###Params
