@@ -31,6 +31,8 @@ use comm::errors::children::{
 use comm::errors::entrances::{err_strs, GeorgeError, GeorgeResult};
 use comm::io::dir::{Dir, DirHandler};
 use comm::io::file::{Filer, FilerHandler, FilerWriter};
+use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u48};
+use comm::vectors::{Vector, VectorHandler};
 use log::LevelFilter;
 use logs::{log_level, set_log, LogModule};
 use once_cell::sync::Lazy;
@@ -235,6 +237,25 @@ impl Master {
             .archive_view(view_name, archive_file_path)
     }
 
+    /// 指定归档版本信息
+    ///
+    /// version 版本号
+    ///
+    /// #return
+    /// * filepath 当前归档版本文件所处路径
+    /// * create_time 归档时间
+    pub(crate) fn view_record(
+        &self,
+        database_name: String,
+        view_name: String,
+        version: u16,
+    ) -> GeorgeResult<(String, Duration)> {
+        self.database(database_name)?
+            .read()
+            .unwrap()
+            .view_record(view_name, version)
+    }
+
     /// 当前视图文件地址
     pub(super) fn read_content_by(
         &self,
@@ -242,13 +263,19 @@ impl Master {
         view_name: String,
         view_info_index: Vec<u8>,
     ) -> GeorgeResult<Vec<u8>> {
+        // 读取view版本号(2字节)
+        let view_version = trans_bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
+        // 读取view长度(4字节)
+        let view_data_len = trans_bytes_2_u32(Vector::sub(view_info_index.clone(), 2, 6)?)?;
+        // 读取view偏移量(6字节)
+        let view_data_seek = trans_bytes_2_u48(Vector::sub(view_info_index.clone(), 6, 12)?)?;
         self.database(database_name)?
             .read()
             .unwrap()
             .view(view_name)?
             .read()
             .unwrap()
-            .read_content_by(view_info_index)
+            .read_content_by(view_version, view_data_len, view_data_seek)
     }
 
     /// 在指定库及视图中创建索引

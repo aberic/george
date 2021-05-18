@@ -225,6 +225,22 @@ impl Database {
             .unwrap()
             .archive(archive_file_path)
     }
+
+    /// 指定归档版本信息
+    ///
+    /// version 版本号
+    ///
+    /// #return
+    /// * filepath 当前归档版本文件所处路径
+    /// * create_time 归档时间
+    pub(crate) fn view_record(
+        &self,
+        view_name: String,
+        version: u16,
+    ) -> GeorgeResult<(String, Duration)> {
+        let record = self.view(view_name)?.read().unwrap().record(version)?;
+        Ok((record.filepath(), record.create_time()))
+    }
 }
 
 /// db for disk
@@ -306,7 +322,7 @@ impl Database {
     /// 条件检索
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
-    pub fn select(
+    pub(crate) fn select(
         &self,
         view_name: String,
         constraint_json_bytes: Vec<u8>,
@@ -320,7 +336,7 @@ impl Database {
     /// 条件删除
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
-    pub fn delete(
+    pub(crate) fn delete(
         &self,
         view_name: String,
         constraint_json_bytes: Vec<u8>,

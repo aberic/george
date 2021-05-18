@@ -220,7 +220,9 @@ impl View {
         }
     }
 
-    /// 当前归档版本信息
+    /// 指定归档版本信息
+    ///
+    /// version 版本号
     pub(crate) fn record(&self, version: u16) -> GeorgeResult<Record> {
         if self.pigeonhole().now().version.eq(&version) {
             Ok(self.pigeonhole().now())
@@ -365,11 +367,7 @@ impl View {
     /// Seed value信息
     pub(crate) fn get(&self, index_name: &str, key: String) -> GeorgeResult<Vec<u8>> {
         let index = self.index(index_name)?;
-        let view_info_index = index.get(key.clone())?;
-        match index_name {
-            INDEX_CATALOG => Ok(view_info_index),
-            _ => DataReal::value_bytes(self.read_content_by(view_info_index)?),
-        }
+        index.get(key.clone())
     }
 
     /// 删除数据<p><p>
@@ -437,13 +435,9 @@ impl View {
     /// 组装写入视图的内容，即持续长度+该长度的原文内容
     ///
     /// 将数据存入view，返回数据在view中的起始偏移量坐标
-    pub(crate) fn write_content(&self, mut value: Vec<u8>) -> GeorgeResult<u64> {
-        // 内容持续长度(4字节)
-        let mut seed_bytes_len_bytes = trans_u32_2_bytes(value.len() as u32);
-        // 真实存储内容，内容持续长度(4字节)+内容字节数组
-        seed_bytes_len_bytes.append(&mut value);
+    pub(crate) fn write_content(&self, value: Vec<u8>) -> GeorgeResult<u64> {
         // 将数据存入view，返回数据在view中的起始坐标
-        self.append(seed_bytes_len_bytes)
+        self.append(value)
     }
 
     /// 读取已组装写入视图的内容，即持续长度+该长度的原文内容
@@ -451,7 +445,12 @@ impl View {
     /// 在view中的起始偏移量坐标读取数据
     ///
     /// seek 读取偏移量
-    pub(crate) fn read_content(&self, filepath: String, seek: u64) -> GeorgeResult<Vec<u8>> {
+    pub(crate) fn read_content(
+        &self,
+        filepath: String,
+        seek: u64,
+        data_len: u32,
+    ) -> GeorgeResult<Vec<u8>> {
         let file = Filer::reader(filepath)?;
         let last: u32;
         match file.try_clone() {
@@ -464,16 +463,19 @@ impl View {
         Filer::read_file_sub(file, seek + 4, last as usize)
     }
 
-    /// 读取已组装写入视图的内容，即持续长度+该长度的原文内容
+    /// 读取已组装写入视图的内容，根据view版本号(2字节) + view长度(4字节) + view偏移量(6字节)
     ///
-    /// 在view中的起始偏移量坐标读取数据
-    ///
-    /// seek 读取偏移量
-    pub(crate) fn read_content_by(&self, res: Vec<u8>) -> GeorgeResult<Vec<u8>> {
-        let version = trans_bytes_2_u16(Vector::sub(res.clone(), 0, 2)?)?;
-        let seek = trans_bytes_2_u48(Vector::sub(res, 2, 8)?)?;
+    /// * version view版本号
+    /// * data_len view数据持续长度
+    /// * seek view数据偏移量
+    pub(crate) fn read_content_by(
+        &self,
+        version: u16,
+        data_len: u32,
+        seek: u64,
+    ) -> GeorgeResult<Vec<u8>> {
         let filepath = self.filepath_by_version(version)?;
-        self.read_content(filepath, seek)
+        Filer::read_sub(filepath, seek, data_len as usize)
     }
 
     /// 插入数据业务方法<p><p>

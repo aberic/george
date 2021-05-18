@@ -222,6 +222,31 @@ mod master {
             get_memory(page_name, key3, 6);
         }
     }
+
+    #[cfg(test)]
+    mod disk {
+        use crate::task::master_test::{create_view, get, put, set};
+
+        #[test]
+        fn put_set_test() {
+            let database_name = "database_disk_base_test";
+            let view_name = "view_disk_base_test";
+            create_view(database_name, view_name);
+            put(database_name, view_name, "hello1", "world1", 1);
+            put(database_name, view_name, "hello2", "world2", 1);
+            put(database_name, view_name, "hello3", "world3", 1);
+        }
+
+        #[test]
+        fn get_test() {
+            let database_name = "database_disk_base_test";
+            let view_name = "view_disk_base_test";
+            create_view(database_name, view_name);
+            get(database_name, view_name, "hello1", 1);
+            get(database_name, view_name, "hello2", 2);
+            get(database_name, view_name, "hello3", 3);
+        }
+    }
 }
 
 #[test]
@@ -484,6 +509,8 @@ fn library_index_test() {
     );
     database_map();
 }
+
+///////////////////////////////////////////////////////////////////////////////////////
 
 fn database_map() {
     for (database_name, db) in GLOBAL_MASTER

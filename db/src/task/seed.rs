@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 
 use comm::errors::entrances::GeorgeResult;
 use comm::io::file::{Filer, FilerWriter};
-use comm::trans::{trans_u16_2_bytes, trans_u48_2_bytes};
+use comm::trans::{trans_u16_2_bytes, trans_u32_2_bytes, trans_u48_2_bytes};
 
 use crate::task::engine::traits::TSeed;
 use crate::task::engine::DataReal;
@@ -143,8 +143,11 @@ impl TSeed for Seed {
             // )));
             return Ok(());
         }
+        let value = self.values()?;
+        // 内容持续长度(4字节)
+        let mut seed_bytes_len_bytes = trans_u32_2_bytes(value.len() as u32);
         // 执行真实存储操作，即索引将seed存入后，允许检索到该结果，但该结果值不存在，仅当所有索引存入都成功，才会执行本方法完成真实存储操作
-        let view_seek_start = self.view.write_content(self.values()?)?;
+        let view_seek_start = self.view.write_content(value)?;
         // 记录视图文件属性(版本号/数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
         // 数据在视图文件中起始偏移量p(6字节)
         let mut view_seek_start_bytes = trans_u48_2_bytes(view_seek_start);
@@ -152,7 +155,9 @@ impl TSeed for Seed {
         let view_version_bytes = trans_u16_2_bytes(self.view.version());
         // 循环定位记录使用文件属性
         let mut view_info_index = view_version_bytes.clone();
-        // 记录表文件属性(版本/数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
+        // 记录表文件属性(版本/数据归档/定位文件用2字节)+数据持续长度+数据在表文件中起始偏移量p(6字节)
+        // view_info_index = view版本号(2字节) + view长度(4字节) + view偏移量(6字节)
+        view_info_index.append(&mut seed_bytes_len_bytes);
         view_info_index.append(&mut view_seek_start_bytes);
 
         // 将在数据在view中的坐标存入各个index

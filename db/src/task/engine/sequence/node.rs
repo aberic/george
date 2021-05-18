@@ -28,6 +28,7 @@ use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::{index_path, node_filepath};
 use crate::utils::writer::Filed;
 use comm::errors::children::DataNoExistError;
+use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u48};
 use comm::vectors::{Vector, VectorHandler};
 
 /// 索引B+Tree结点结构
@@ -41,6 +42,10 @@ pub(crate) struct Node {
     atomic_key: Arc<AtomicU64>,
     index_name: String,
     key_type: KeyType,
+    /// 索引文件路径
+    ///
+    /// * 当有新的数据加入时，新数据存储地址在`node_file`中记录12字节。
+    /// 由`view版本号(2字节) + view长度(4字节) + view偏移量(6字节)`组成
     node_filepath: String,
     /// 根据文件路径获取该文件追加写入的写对象
     ///
@@ -63,7 +68,7 @@ impl Node {
         let index_path = index_path(v_r.database_name(), v_r.name(), index_name.clone());
         let node_filepath = node_filepath(index_path, String::from("increment"));
         let filer = Filed::create(node_filepath.clone())?;
-        filer.append(Vector::create_empty_bytes(8))?;
+        filer.append(Vector::create_empty_bytes(12))?;
         Ok(Arc::new(Node {
             view,
             atomic_key,
@@ -84,7 +89,7 @@ impl Node {
         let index_path = index_path(v_r.database_name(), v_r.name(), index_name.clone());
         let node_filepath = node_filepath(index_path, String::from("increment"));
         let file_len = Filer::len(node_filepath.clone())?;
-        let last_key = file_len / 8;
+        let last_key = file_len / 12;
         // log::debug!("atomic_key_u32 = {}", atomic_key_u32);
         let atomic_key = Arc::new(AtomicU64::new(last_key));
         let filer = Filed::recovery(node_filepath.clone())?;
@@ -189,9 +194,9 @@ impl Node {
     where
         Self: Sized,
     {
-        let seek = hash_key * 8;
+        let seek = hash_key * 12;
         if !force {
-            let res = self.read(seek, 8)?;
+            let res = self.read(seek, 12)?;
             if Vector::is_fill(res) {
                 return Err(err_str("auto increment key has been used"));
             }
@@ -205,10 +210,19 @@ impl Node {
         Ok(())
     }
     fn get_in_node(&self, hash_key: u64) -> GeorgeResult<Vec<u8>> {
-        let seek = hash_key * 8;
-        let res = self.read(seek, 8)?;
+        let seek = hash_key * 12;
+        let res = self.read(seek, 12)?;
         return if Vector::is_fill(res.clone()) {
-            Ok(res)
+            // 读取view版本号(2字节)
+            let view_version = trans_bytes_2_u16(Vector::sub(res.clone(), 0, 2)?)?;
+            // 读取view长度(4字节)
+            let view_data_len = trans_bytes_2_u32(Vector::sub(res.clone(), 2, 6)?)?;
+            // 读取view偏移量(6字节)
+            let view_data_seek = trans_bytes_2_u48(Vector::sub(res.clone(), 6, 12)?)?;
+            self.view
+                .read()
+                .unwrap()
+                .read_content_by(view_version, view_data_len, view_data_seek)
         } else {
             Err(GeorgeError::from(DataNoExistError))
         };
@@ -219,8 +233,8 @@ impl Node {
         hash_key: u64,
         seed: Arc<RwLock<dyn TSeed>>,
     ) -> GeorgeResult<()> {
-        let seek = hash_key * 8;
-        let res = self.read(seek, 8)?;
+        let seek = hash_key * 12;
+        let res = self.read(seek, 12)?;
         if Vector::is_fill(res) {
             seed.write().unwrap().modify(IndexPolicy::create(
                 key,
@@ -265,10 +279,10 @@ impl Node {
         let mut count: u64 = 0;
         let mut values: Vec<Vec<u8>> = vec![];
 
-        let mut key_start = start * 8;
+        let mut key_start = start * 12;
         let key_end: u64;
         if end == 0 {
-            key_end = (self.atomic_key.load(Ordering::Relaxed) - 1) * 8;
+            key_end = (self.atomic_key.load(Ordering::Relaxed) - 1) * 12;
         } else {
             key_end = end * 8;
         }
@@ -276,7 +290,7 @@ impl Node {
             if limit <= 0 || key_start > key_end {
                 break;
             }
-            let res = self.read(key_start, 8)?;
+            let res = self.read(key_start, 12)?;
             let (valid, value_bytes) = check(
                 self.index_name(),
                 self.view.clone(),
@@ -296,7 +310,7 @@ impl Node {
                 }
             }
             total += 1;
-            key_start += 8;
+            key_start += 12;
         }
         Ok((total, count, values))
     }
@@ -334,10 +348,10 @@ impl Node {
         let mut count: u64 = 0;
         let mut values: Vec<Vec<u8>> = vec![];
 
-        let key_start = start * 8;
+        let key_start = start * 12;
         let mut key_end: u64;
         if end == 0 {
-            key_end = (self.atomic_key.load(Ordering::Relaxed) - 1) * 8;
+            key_end = (self.atomic_key.load(Ordering::Relaxed) - 1) * 12;
         } else {
             key_end = end * 8;
         }
@@ -345,7 +359,7 @@ impl Node {
             if limit <= 0 || key_start > key_end {
                 break;
             }
-            let res = self.read(key_end, 8)?;
+            let res = self.read(key_end, 12)?;
             let (valid, value_bytes) = check(
                 self.index_name(),
                 self.view.clone(),
@@ -365,7 +379,7 @@ impl Node {
                 }
             }
             total += 1;
-            key_end -= 8;
+            key_end -= 12;
         }
         Ok((total, count, values))
     }

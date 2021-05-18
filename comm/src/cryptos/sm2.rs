@@ -21,7 +21,7 @@ use num_bigint::BigUint;
 
 use crate::cryptos::base64::{Base64, Base64Encoder, Basee64Decoder};
 use crate::cryptos::hex::{Hex, HexDecoder, HexEncoder};
-use crate::errors::entrances::{err_str, err_strs};
+use crate::errors::entrances::err_strs;
 use crate::errors::entrances::{err_string, GeorgeResult};
 use crate::io::file::{Filer, FilerWriter};
 
