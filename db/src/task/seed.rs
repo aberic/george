@@ -135,12 +135,7 @@ impl TSeed for Seed {
         self.policies.push(index_policy)
     }
     fn save(&self) -> GeorgeResult<()> {
-        // todo 失败回滚
         if self.policies.len() == 0 {
-            // return Err(err_string(format!(
-            //     "no index found in this view {}",
-            //     view.name()
-            // )));
             return Ok(());
         }
         let value = self.values()?;
@@ -156,7 +151,7 @@ impl TSeed for Seed {
         // 循环定位记录使用文件属性
         let mut view_info_index = view_version_bytes.clone();
         // 记录表文件属性(版本/数据归档/定位文件用2字节)+数据持续长度+数据在表文件中起始偏移量p(6字节)
-        // view_info_index = view版本号(2字节) + view长度(4字节) + view偏移量(6字节)
+        // view_info_index = view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
         view_info_index.append(&mut seed_bytes_len_bytes);
         view_info_index.append(&mut view_seek_start_bytes);
 
@@ -177,6 +172,7 @@ impl TSeed for Seed {
     }
     fn remove(&self) -> GeorgeResult<()> {
         // 将在数据在view中的空坐标存入各个index
+        // 坐标内容由view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)组成，因此是12个字节
         for policy in self.policies.to_vec() {
             match policy.index_type {
                 IndexType::None => {
@@ -185,7 +181,7 @@ impl TSeed for Seed {
                 _ => Filer::write_seek(
                     policy.node_file_path(),
                     policy.seek,
-                    Vector::create_empty_bytes(8),
+                    Vector::create_empty_bytes(12),
                 )?,
             }
         }

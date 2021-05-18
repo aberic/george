@@ -31,10 +31,7 @@ pub(super) mod traits;
 
 /// 检查值有效性
 fn check(
-    index_name: String,
     view: Arc<RwLock<View>>,
-    node_filepath: String,
-    seek: u64,
     conditions: Vec<Condition>,
     delete: bool,
     view_info_index: Vec<u8>,
@@ -45,17 +42,16 @@ fn check(
         let v_r = view.read().unwrap();
         // 读取view版本号(2字节)
         let view_version = trans_bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
-        // 读取view长度(4字节)
+        // 读取view持续长度(4字节)
         let view_data_len = trans_bytes_2_u32(Vector::sub(view_info_index.clone(), 2, 6)?)?;
         // 读取view偏移量(6字节)
         let view_data_seek = trans_bytes_2_u48(Vector::sub(view_info_index.clone(), 6, 12)?)?;
         let real =
-            DataReal::from(v_r.read_content_by(view_version, view_data_len, view_data_seek)?)?;
+            DataReal::from(v_r.read_content(view_version, view_data_len, view_data_seek)?)?;
         let value_bytes = real.value();
         if Condition::validate(conditions.clone(), value_bytes.clone()) {
             if delete {
-                v_r.remove(index_name, real.key(), real.value())?;
-                Filer::write_seek(node_filepath, seek, Vector::create_empty_bytes(8))?
+                v_r.remove(real.key(), real.value())?;
             }
             Ok((true, value_bytes))
         } else {

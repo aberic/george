@@ -86,4 +86,28 @@ mod node_test {
             Err(err) => println!("get error! error is {}", err),
         }
     }
+
+    #[test]
+    fn del_test() {
+        let view = View::mock_create_single("db".to_string(), "view".to_string()).unwrap();
+        let node = create_node(
+            "db".to_string(),
+            "view".to_string(),
+            "index".to_string(),
+            KeyType::String,
+            true,
+        )
+        .unwrap();
+        let seed = Seed::create(view, "yes".to_string(), "no".to_string().into_bytes());
+        match node.del("yes".to_string(), seed.clone()) {
+            Ok(v8s) => {
+                let seed_w = seed.write().unwrap();
+                match seed_w.remove() {
+                    Ok(()) => println!("del success!"),
+                    Err(err) => println!("seed save error! error is {}", err),
+                }
+            }
+            Err(err) => println!("del error! error is {}", err),
+        }
+    }
 }

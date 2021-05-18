@@ -379,17 +379,8 @@ impl View {
     /// ###Return
     ///
     /// IndexResult<()>
-    pub(crate) fn remove(
-        &self,
-        escape_index_name: String,
-        key: String,
-        mut value: Vec<u8>,
-    ) -> GeorgeResult<()> {
-        // todo need 2 check
-        if escape_index_name.is_empty() {
-            value = self.get(INDEX_CATALOG, key.clone())?;
-        }
-        self.del(escape_index_name, key, value)
+    pub(crate) fn remove(&self, key: String, mut value: Vec<u8>) -> GeorgeResult<()> {
+        self.del(key, value)
     }
 
     /// 条件检索
@@ -440,35 +431,12 @@ impl View {
         self.append(value)
     }
 
-    /// 读取已组装写入视图的内容，即持续长度+该长度的原文内容
-    ///
-    /// 在view中的起始偏移量坐标读取数据
-    ///
-    /// seek 读取偏移量
-    pub(crate) fn read_content(
-        &self,
-        filepath: String,
-        seek: u64,
-        data_len: u32,
-    ) -> GeorgeResult<Vec<u8>> {
-        let file = Filer::reader(filepath)?;
-        let last: u32;
-        match file.try_clone() {
-            Ok(f) => {
-                let bs = Filer::read_file_sub(f, seek, 4)?;
-                last = trans_bytes_2_u32(bs)?
-            }
-            Err(err) => return Err(err_strs("get while file try clone", err)),
-        }
-        Filer::read_file_sub(file, seek + 4, last as usize)
-    }
-
-    /// 读取已组装写入视图的内容，根据view版本号(2字节) + view长度(4字节) + view偏移量(6字节)
+    /// 读取已组装写入视图的内容，根据view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
     ///
     /// * version view版本号
     /// * data_len view数据持续长度
     /// * seek view数据偏移量
-    pub(crate) fn read_content_by(
+    pub(crate) fn read_content(
         &self,
         version: u16,
         data_len: u32,
@@ -541,13 +509,10 @@ impl View {
     /// ###Return
     ///
     /// IndexResult<()>
-    fn del(&self, escape_index_name: String, key: String, value: Vec<u8>) -> GeorgeResult<()> {
+    fn del(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
         let seed = Seed::create(self.clone(), key.clone(), value.clone());
         let mut receives = Vec::new();
         for (index_name, index) in self.index_map().read().unwrap().iter() {
-            if escape_index_name.eq(index_name) {
-                continue;
-            }
             let (sender, receive) = mpsc::channel();
             receives.push(receive);
             let index_name_clone = index_name.clone();

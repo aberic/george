@@ -64,7 +64,7 @@ pub(crate) struct Node {
     /// * 用于记录重复索引链式结构信息
     /// * 当有新的数据加入时，新数据存储地址在`node_file`中记录8字节，为`数据地址`
     /// * `数据地址`指向`record_file`中起始偏移量，持续20字节。
-    /// 由`view版本号(2字节) + view长度(4字节) + view偏移量(6字节) + 下一数据地址(8字节)`组成
+    /// 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 下一数据地址(8字节)`组成
     /// * 当下一数据地址为空时，则表示当前链式结构已到尾部
     /// * 当`unique`为true时，该项不启用
     record_filepath: String,
@@ -241,8 +241,9 @@ impl TNode for Node {
         self.get_in_node(self.node_bytes(), key, 1, hash_key)
     }
 
-    fn del(&self, _key: String, _seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
-        unimplemented!()
+    fn del(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
+        let hash_key = HashKey::obtain(IndexType::Dossier, self.key_type(), key.clone())?;
+        self.del_in_node(self.node_bytes(), key, 1, hash_key, seed)
     }
 
     fn select(
@@ -380,10 +381,10 @@ impl Node {
     ) -> GeorgeResult<u64> {
         // 读取record中该坐标值
         let res = self.record_read(record_seek, 20)?;
-        // record存储固定长度的数据，长度为20，即view版本号(2字节) + view长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
+        // record存储固定长度的数据，长度为20，即view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
         // 读取view版本号(2字节)
         let view_version = trans_bytes_2_u16(Vector::sub(res.clone(), 0, 2)?)?;
-        // 读取view长度(4字节)
+        // 读取view持续长度(4字节)
         let view_data_len = trans_bytes_2_u32(Vector::sub(res.clone(), 2, 6)?)?;
         // 读取view偏移量(6字节)
         let view_data_seek = trans_bytes_2_u48(Vector::sub(res.clone(), 6, 12)?)?;
@@ -391,7 +392,7 @@ impl Node {
         // 处理因断点、宕机等意外导致后续索引数据写入成功而视图数据写入失败的问题
         if view_data_seek > 0 {
             // 从view视图中读取真实数据内容
-            let info = self.view.read().unwrap().read_content_by(
+            let info = self.view.read().unwrap().read_content(
                 view_version,
                 view_data_len,
                 view_data_seek,
@@ -410,7 +411,7 @@ impl Node {
                 }
             // 如果key不同，则发生hash碰撞，开启索引链式结构循环坐标定位
             } else {
-                // record存储固定长度的数据，长度为20，即view版本号(2字节) + view长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
+                // record存储固定长度的数据，长度为20，即view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
                 // 读取链式后续数据坐标
                 let record_next_seek_bytes = Vector::sub_last(res, 12, 8)?;
                 // 如果链式后续数据有值，则进入下一轮判定
@@ -493,11 +494,11 @@ impl Node {
     /// 获取由view视图执行save操作时反写进record文件中value起始seek
     fn record_view_info_seek_get(&self, key: String, record_seek: u64) -> GeorgeResult<Vec<u8>> {
         // 读取record中该坐标值
-        // record存储固定长度的数据，长度为20，即view版本号(2字节) + view长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
+        // record存储固定长度的数据，长度为20，即view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
         let res = self.record_read(record_seek, 20)?;
         // 读取view版本号(2字节)
         let view_version = trans_bytes_2_u16(Vector::sub(res.clone(), 0, 2)?)?;
-        // 读取view长度(4字节)
+        // 读取view持续长度(4字节)
         let view_data_len = trans_bytes_2_u32(Vector::sub(res.clone(), 2, 6)?)?;
         // 读取view偏移量(6字节)
         let view_data_seek = trans_bytes_2_u48(Vector::sub(res.clone(), 6, 12)?)?;
@@ -505,7 +506,7 @@ impl Node {
         // 处理因断点、宕机等意外导致后续索引数据写入成功而视图数据写入失败的问题
         if view_data_seek > 0 {
             // 从view视图中读取真实数据内容
-            let info = self.view.read().unwrap().read_content_by(
+            let info = self.view.read().unwrap().read_content(
                 view_version,
                 view_data_len,
                 view_data_seek,
@@ -515,18 +516,165 @@ impl Node {
             // 因为hash key指向同一碰撞，对比key是否相同
             if date.key == key {
                 Ok(date.value)
-            // 如果key不同，则发生hash碰撞，开启索引链式结构循环坐标定位
             } else {
-                // record存储固定长度的数据，长度为20，即view版本号(2字节) + view长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
-                // 读取链式后续数据坐标
-                let record_next_seek_bytes = Vector::sub_last(res, 12, 8)?;
-                self.judge_seek_bytes(key, record_next_seek_bytes)
+                // 如果key不同，则需要进一步判断是否唯一
+                // 如果唯一，则不存在hash碰撞
+                if self.unique {
+                    Err(GeorgeError::from(DataNoExistError))
+                } else {
+                    // 不唯一则可能发生hash碰撞，开启索引链式结构循环坐标定位
+                    // record存储固定长度的数据，长度为20，即view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
+                    // 读取链式后续数据坐标
+                    let record_next_seek_bytes = Vector::sub_last(res, 12, 8)?;
+                    self.judge_seek_bytes(key, record_next_seek_bytes)
+                }
             }
         } else {
-            // record存储固定长度的数据，长度为20，即view版本号(2字节) + view长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
+            // record存储固定长度的数据，长度为20，即view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
             // 读取链式后续数据坐标
             let record_next_seek_bytes = Vector::sub_last(res, 12, 8)?;
             self.judge_seek_bytes(key, record_next_seek_bytes)
+        }
+    }
+
+    fn del_in_node(
+        &self,
+        node_bytes: Vec<u8>,
+        key: String,
+        level: u8,
+        flexible_key: u32,
+        seed: Arc<RwLock<dyn TSeed>>,
+    ) -> GeorgeResult<()> {
+        // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
+        let distance = level_distance_32(level);
+        // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数
+        let next_degree = flexible_key / distance;
+        // 相对当前结点字节数组，下一结点在字节数组中的偏移量
+        let next_node_start = (next_degree * 8) as usize;
+        // 下一结点字节数组起始坐标
+        let next_node_seek_bytes = Vector::sub_last(node_bytes, next_node_start, 8)?;
+        // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
+        if level == 4 {
+            self.judge_seek_bytes_for_del(key, next_node_seek_bytes, seed)
+        } else {
+            // 如果存在坐标值，则继续，否则新建
+            if Vector::is_fill(next_node_seek_bytes.clone()) {
+                // 下一结点的真实坐标
+                let next_node_seek = trans_bytes_2_u64(next_node_seek_bytes)?;
+                // 下一结点字节数组
+                let next_node_bytes = self.node_read(next_node_seek, BYTES_LEN_FOR_DOSSIER)?;
+                // 通过当前层真实key减去下一层的度数与间隔数的乘积获取结点所在下一层的真实key
+                let next_flexible_key = flexible_key - next_degree * distance;
+                self.del_in_node(next_node_bytes, key, level + 1, next_flexible_key, seed)
+            } else {
+                // 如果为空，则返回无此数据
+                Err(GeorgeError::from(DataNoExistError))
+            }
+        }
+    }
+
+    /// 期望根据`下一结点偏移量字节数组`获取由view视图执行save操作时反写进record文件中value起始seek，用于删除
+    ///
+    /// 如果存在坐标值，则继续，否则返回无此数据
+    fn judge_seek_bytes_for_del(
+        &self,
+        key: String,
+        next_node_seek_bytes: Vec<u8>,
+        seed: Arc<RwLock<dyn TSeed>>,
+    ) -> GeorgeResult<()> {
+        // 如果存在坐标值，则继续，否则返回无此数据
+        if Vector::is_fill(next_node_seek_bytes.clone()) {
+            // 索引执行插入真实坐标
+            let next_node_seek = trans_bytes_2_u64(next_node_seek_bytes)?;
+            self.record_view_info_seek_del(key, next_node_seek, seed)
+        } else {
+            // 如果为空，则什么也不做
+            Ok(())
+        }
+    }
+
+    /// 获取由view视图执行save操作时反写进record文件中value起始seek，用于删除
+    fn record_view_info_seek_del(
+        &self,
+        key: String,
+        record_seek: u64,
+        seed: Arc<RwLock<dyn TSeed>>,
+    ) -> GeorgeResult<()> {
+        // 读取record中该坐标值
+        // record存储固定长度的数据，长度为20，即view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
+        let res = self.record_read(record_seek, 20)?;
+        // 读取view版本号(2字节)
+        let view_version = trans_bytes_2_u16(Vector::sub(res.clone(), 0, 2)?)?;
+        // 读取view持续长度(4字节)
+        let view_data_len = trans_bytes_2_u32(Vector::sub(res.clone(), 2, 6)?)?;
+        // 读取view偏移量(6字节)
+        let view_data_seek = trans_bytes_2_u48(Vector::sub(res.clone(), 6, 12)?)?;
+        // 如果view视图真实数据坐标为空
+        // 处理因断点、宕机等意外导致后续索引数据写入成功而视图数据写入失败的问题
+        if view_data_seek > 0 {
+            // 从view视图中读取真实数据内容
+            let info = self.view.read().unwrap().read_content(
+                view_version,
+                view_data_len,
+                view_data_seek,
+            )?;
+            // 将字节数组内容转换为可读kv
+            let date = DataReal::from(info)?;
+            // 因为hash key指向同一碰撞，对比key是否相同
+            if date.key == key {
+                // 如果唯一，则不存在hash碰撞，直接将待删除内容替换为空字节数组即可
+                if self.unique {
+                    seed.write().unwrap().modify(IndexPolicy::create(
+                        key,
+                        IndexType::Dossier,
+                        self.record_filepath(),
+                        record_seek,
+                    ));
+                } else {
+                    // 如果不唯一，则可能存在hash碰撞，将后续索引链式结构循环坐标读取出来
+                    let record_next_seek_bytes = Vector::sub_last(res, 12, 8)?;
+                    // 如果后续坐标内容为空，则不存在后续数据，直接将待删除内容替换为空字节数组即可
+                    if Vector::is_empty(record_next_seek_bytes.clone()) {
+                        seed.write().unwrap().modify(IndexPolicy::create(
+                            key,
+                            IndexType::Dossier,
+                            self.record_filepath(),
+                            record_seek,
+                        ));
+                    } else {
+                        // 如果存在后续坐标内容
+                        // 获取下一个索引执行插入真实坐标
+                        let next_node_seek = trans_bytes_2_u64(record_next_seek_bytes)?;
+                        // 获取下一个record存储固定长度的数据，长度为20，即view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
+                        let next_node_bytes = self.record_read(next_node_seek, 20)?;
+                        // 将下一个record记录写入当前记录，以此实现删除
+                        seed.write().unwrap().modify(IndexPolicy::create_custom(
+                            key,
+                            self.record_filepath(),
+                            record_seek,
+                            next_node_bytes,
+                        ));
+                    }
+                }
+                Ok(())
+            } else {
+                // 如果key不同，则需要进一步判断是否唯一
+                // 如果唯一，则不存在hash碰撞
+                if self.unique {
+                    Ok(())
+                } else {
+                    // 不唯一则可能发生hash碰撞，开启索引链式结构循环坐标定位
+                    // record存储固定长度的数据，长度为20，即view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
+                    // 读取链式后续数据坐标
+                    let record_next_seek_bytes = Vector::sub_last(res, 12, 8)?;
+                    self.judge_seek_bytes_for_del(key, record_next_seek_bytes, seed)
+                }
+            }
+        } else {
+            // record存储固定长度的数据，长度为20，即view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
+            // 读取链式后续数据坐标
+            let record_next_seek_bytes = Vector::sub_last(res, 12, 8)?;
+            self.judge_seek_bytes_for_del(key, record_next_seek_bytes, seed)
         }
     }
 }

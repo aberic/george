@@ -45,7 +45,7 @@ pub(crate) struct Node {
     /// 索引文件路径
     ///
     /// * 当有新的数据加入时，新数据存储地址在`node_file`中记录12字节。
-    /// 由`view版本号(2字节) + view长度(4字节) + view偏移量(6字节)`组成
+    /// 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
     node_filepath: String,
     /// 根据文件路径获取该文件追加写入的写对象
     ///
@@ -215,14 +215,14 @@ impl Node {
         return if Vector::is_fill(res.clone()) {
             // 读取view版本号(2字节)
             let view_version = trans_bytes_2_u16(Vector::sub(res.clone(), 0, 2)?)?;
-            // 读取view长度(4字节)
+            // 读取view持续长度(4字节)
             let view_data_len = trans_bytes_2_u32(Vector::sub(res.clone(), 2, 6)?)?;
             // 读取view偏移量(6字节)
             let view_data_seek = trans_bytes_2_u48(Vector::sub(res.clone(), 6, 12)?)?;
             self.view
                 .read()
                 .unwrap()
-                .read_content_by(view_version, view_data_len, view_data_seek)
+                .read_content(view_version, view_data_len, view_data_seek)
         } else {
             Err(GeorgeError::from(DataNoExistError))
         };
@@ -291,15 +291,7 @@ impl Node {
                 break;
             }
             let res = self.read(key_start, 12)?;
-            let (valid, value_bytes) = check(
-                self.index_name(),
-                self.view.clone(),
-                self.node_filepath(),
-                key_end,
-                conditions.clone(),
-                delete,
-                res,
-            )?;
+            let (valid, value_bytes) = check(self.view.clone(), conditions.clone(), delete, res)?;
             if valid {
                 if skip <= 0 {
                     limit -= 1;
@@ -360,15 +352,7 @@ impl Node {
                 break;
             }
             let res = self.read(key_end, 12)?;
-            let (valid, value_bytes) = check(
-                self.index_name(),
-                self.view.clone(),
-                self.node_filepath(),
-                key_end,
-                conditions.clone(),
-                delete,
-                res,
-            )?;
+            let (valid, value_bytes) = check(self.view.clone(), conditions.clone(), delete, res)?;
             if valid {
                 if skip <= 0 {
                     limit -= 1;

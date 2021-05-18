@@ -275,7 +275,7 @@ impl Master {
             .view(view_name)?
             .read()
             .unwrap()
-            .read_content_by(view_version, view_data_len, view_data_seek)
+            .read_content(view_version, view_data_len, view_data_seek)
     }
 
     /// 在指定库及视图中创建索引
