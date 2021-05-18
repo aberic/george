@@ -677,6 +677,91 @@ impl Node {
             self.judge_seek_bytes_for_del(key, record_next_seek_bytes, seed)
         }
     }
+
+    /// 通过左查询约束获取数据集
+    ///
+    /// ###Params
+    ///
+    /// * level 当前查询树层数
+    /// * node_bytes 当前操作结点的字节数组
+    /// * start 查询起始坐标
+    /// * end 查询终止坐标
+    /// * conditions 条件集合
+    /// * skip 结果集跳过数量
+    /// * limit 结果集限制数量
+    /// * delete 是否删除检索结果
+    ///
+    /// ###Return
+    ///
+    /// * total 检索过程中遍历的总条数（也表示文件读取次数，文件描述符次数远小于该数，一般文件描述符数为1，即共用同一文件描述符）
+    /// * count 检索结果过程中遍历的总条数
+    /// * values 检索结果集合
+    fn left_query(
+        &self,
+        level: u8,
+        node_bytes: Vec<u8>,
+        start: u32,
+        end: u32,
+        conditions: Vec<Condition>,
+        mut skip: u64,
+        mut limit: u64,
+        delete: bool,
+    ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)> {
+        unimplemented!()
+        // let mut total: u64 = 0;
+        // let mut count: u64 = 0;
+        // let mut values: Vec<Vec<u8>> = vec![];
+        //
+        // // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
+        // let distance = level_distance_32(level);
+        // // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数
+        // let next_degree = flexible_key / distance;
+        // // 相对当前结点字节数组，下一结点在字节数组中的偏移量
+        // let next_node_start = (next_degree * 8) as usize;
+        // // 下一结点字节数组起始坐标
+        // let next_node_seek_bytes = Vector::sub_last(node_bytes, next_node_start, 8)?;
+        //
+        // // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
+        // if level == 4 {
+        //
+        // } else {
+        //
+        // }
+        //
+        // Ok((total, count, values))
+    }
+
+    /// 通过右查询约束获取数据集
+    ///
+    /// ###Params
+    ///
+    /// * level 当前查询树层数
+    /// * node_bytes 当前操作结点的字节数组
+    /// * start 查询起始坐标
+    /// * end 查询终止坐标
+    /// * conditions 条件集合
+    /// * skip 结果集跳过数量
+    /// * limit 结果集限制数量
+    /// * delete 是否删除检索结果
+    ///
+    /// ###Return
+    ///
+    /// * total 检索过程中遍历的总条数（也表示文件读取次数，文件描述符次数远小于该数，一般文件描述符数为1，即共用同一文件描述符）
+    /// * count 检索结果过程中遍历的总条数
+    /// * values 检索结果集合
+    fn right_query(
+        &self,
+        level: u8,
+        node_bytes: Vec<u8>,
+        start: u32,
+        end: u32,
+        conditions: Vec<Condition>,
+        mut skip: u64,
+        mut limit: u64,
+        delete: bool,
+    ) -> GeorgeResult<(u64, u64, Vec<Vec<u8>>)> {
+        unimplemented!()
+    }
 }
 
 impl Node {
