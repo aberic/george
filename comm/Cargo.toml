@@ -26,6 +26,8 @@ hex = "0.4.3"
 libsm = { git = "https://github.com/citahub/libsm", version = "0.4.0" }
 rand = "0.8.3"
 num-bigint = "0.2"
+Cupcake = "0.1.1"
+
 # paillier = "0.2.0"
 # paillier = { git = "https://github.com/KZen-networks/rust-paillier", version = "0.3.10" }
 # zk-paillier = { git = "https://github.com/ZenGo-X/zk-paillier", version = "0.3.12" }

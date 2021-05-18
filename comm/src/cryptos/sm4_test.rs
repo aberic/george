@@ -13,7 +13,8 @@
  */
 
 #[cfg(test)]
-mod sm4_test_all {
+mod sm4 {
+
     #[cfg(test)]
     mod sm4_1 {
         use crate::cryptos::sm4::{SM4Crypt, SM4Handler, SM4};
