@@ -373,8 +373,8 @@ fn select_select_sequence1() {
         "Param":"height",
         "Asc":true
     },
-    "Skip":100,
-    "Limit":1000
+    "Skip":0,
+    "Limit":20
   }"#;
     select(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
 }

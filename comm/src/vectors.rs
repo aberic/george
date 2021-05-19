@@ -123,7 +123,7 @@ fn vector_modify<T: Clone>(mut source: Vec<T>, target: Vec<T>, mut start: usize)
 ///
 /// start 截取起始下标
 ///
-/// end 截取终止下标
+/// end 截取终止下标，如果为0，则取start之后所有数据
 fn vector_sub<T: Clone>(source: Vec<T>, start: usize, end: usize) -> GeorgeResult<Vec<T>> {
     let source_len = source.len();
     if source_len < end {
@@ -131,7 +131,9 @@ fn vector_sub<T: Clone>(source: Vec<T>, start: usize, end: usize) -> GeorgeResul
     } else {
         let mut s1 = source.to_vec();
         let mut s2 = s1.split_off(start);
-        let _x = s2.split_off(end - start);
+        if end > 0 {
+            let _x = s2.split_off(end - start);
+        }
         Ok(s2)
     }
 }

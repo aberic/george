@@ -29,6 +29,7 @@ mod vectors {
     fn sub_test() {
         let vec = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
         println!("sub = {:#?}", Vector::sub(vec.clone(), 2, 5).unwrap());
+        println!("sub = {:#?}", Vector::sub(vec.clone(), 2, 0).unwrap());
         println!("sub = {:#?}", Vector::sub_last(vec, 2, 5).unwrap());
 
         let x: Vec<u8> = vec![0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x10];

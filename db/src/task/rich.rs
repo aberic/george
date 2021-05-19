@@ -65,10 +65,15 @@ impl Condition {
         compare: Compare,
         key_type: KeyType,
         value: String,
-        value_bool: bool,
         index: Option<Arc<dyn TIndex>>,
     ) -> GeorgeResult<Condition> {
         let value_hash = hash_key_64(key_type, value.clone())?;
+        let value_bool: bool;
+        if value.eq("true") {
+            value_bool = true
+        } else {
+            value_bool = false
+        }
         Ok(Condition {
             param,
             compare,
@@ -79,30 +84,37 @@ impl Condition {
             index,
         })
     }
+
     /// 参数名，新插入的数据将会尝试将数据对象转成json，并将json中的`param`作为参数使用
     fn param(&self) -> String {
         self.param.clone()
     }
+
     /// 条件 gt/ge/lt/le/eq/ne 大于/大于等于/小于/小于等于/等于/不等
     fn compare(&self) -> Compare {
         self.compare
     }
+
     /// 支持比较对象，支持int64、uint64、string、float和bool
     fn key_type(&self) -> KeyType {
         self.key_type
     }
+
     /// 比较对象值
     fn value(&self) -> String {
         self.value.clone()
     }
+
     /// 比较对象值
     fn value_hash(&self) -> u64 {
         self.value_hash
     }
+
     /// 比较对象值
     fn value_bool(&self) -> bool {
         self.value_bool
     }
+
     /// 约束是否有效
     ///
     /// mold 索引值类型
@@ -129,6 +141,7 @@ impl Condition {
             _ => false,
         }
     }
+
     /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
     fn valid(&self, value: Value) -> bool {
         return match value[self.param()] {
@@ -161,6 +174,7 @@ impl Condition {
             _ => false,
         };
     }
+
     /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
     fn compare_value(&self, value_hash: u64) -> bool {
         match self.compare() {
@@ -181,6 +195,8 @@ pub struct Sort {
     param: String,
     /// 是否升序
     asc: bool,
+    /// 索引
+    index: Option<Arc<dyn TIndex>>,
 }
 
 impl Sort {
@@ -209,10 +225,15 @@ pub struct Constraint {
 
 impl Constraint {
     /// 新建查询约束
+    /// * 如果条件语句`Limit`条件为`u64`，则填充赋值
+    /// * 如果条件语句`Skip`条件为`u64`，则填充赋值
+    /// * 解析json value中Sort条件并尝试获取排序限定
+    /// * 解析json value中`Conditions`条件并尝试获取条件限定
     ///
-    /// selector_json_bytes 选择器字节数组，自定义转换策略
-    ///
-    /// delete 是否删除检索结果
+    /// # param
+    /// * constraint_json_bytes 选择器字节数组，自定义转换策略
+    /// * indexes 索引集合
+    /// * delete 是否删除检索结果
     fn new(
         constraint_json_bytes: Vec<u8>,
         indexes: Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>,
@@ -228,116 +249,175 @@ impl Constraint {
         let result: Result<Value, Error> = serde_json::from_slice(constraint_json_bytes.as_slice());
         match result {
             Ok(value) => {
+                // 如果条件语句`Limit`条件为`u64`，则填充赋值
                 if value["Limit"].is_u64() {
-                    let l = value["Limit"].as_u64().unwrap();
-                    if l > 0 {
-                        constraint.limit = l;
-                    }
+                    constraint.limit = value["Limit"].as_u64().unwrap();
                 }
+                // 如果条件语句`Skip`条件为`u64`，则填充赋值
                 if value["Skip"].is_u64() {
                     constraint.skip = value["Skip"].as_u64().unwrap();
                 }
-                constraint.fit_sort(value["Sort"].clone());
+                // 解析json value中Sort条件并尝试获取排序限定
+                constraint.fit_sort(indexes.clone(), value["Sort"].clone());
+                // 解析json value中`Conditions`条件并尝试获取条件限定
                 constraint.fit_conditions(indexes, value["Conditions"].clone())?;
                 Ok(constraint)
             }
             Err(err) => Err(err_strs("new constraint", err)),
         }
     }
+
     pub fn conditions(&self) -> Vec<Condition> {
         self.conditions.clone()
     }
+
     pub fn skip(&self) -> u64 {
         self.skip
     }
+
     pub fn sort(&self) -> Option<Sort> {
         self.sort.clone()
     }
+
     pub fn limit(&self) -> u64 {
         self.limit
     }
+
     pub fn delete(&self) -> bool {
         self.delete
     }
+
     pub fn sort_clean(&mut self) {
         self.sort = None
     }
-    /// 解析`json value`并获取排序索引
-    fn fit_sort(&mut self, value: Value) {
+
+    /// 解析`json value`中`Sort`条件并尝试获取排序限定
+    ///
+    /// * 如果条件语句`Sort`条件非对象格式，则不处理，否则继续尝试填充赋值
+    /// * 如果条件语句`Param`不是字符串类型，则不处理，否则继续尝试填充赋值
+    /// * 如果条件语句`Asc`为bool类型，则继续尝试填充赋值
+    /// * 如果条件语句`Asc`非空，则填充Asc，否则默认为true
+    /// * 初始化可匹配索引，该索引最终可为`None`，后续被赋值也用于索引选择优化
+    ///
+    /// # param
+    /// * indexes 索引集合
+    /// * value 条件语句`Sort`条件反射对象
+    fn fit_sort(&mut self, indexes: Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>, value: Value) {
+        // 如果条件语句`Sort`条件非对象格式，则不处理，否则继续尝试填充赋值
         if value.is_object() {
+            // 如果条件语句`Param`不是字符串类型，则不处理，否则继续尝试填充赋值
             if value["Param"].is_string() {
-                let mut sort = Sort {
-                    param: value["Param"].as_str().unwrap().to_string(),
-                    asc: false,
-                };
-                if !value["Asc"].is_null() {
-                    sort.asc = value["Asc"].as_bool().unwrap();
+                let param = value["Param"].as_str().unwrap();
+                // 如果条件语句`Asc`为bool类型，则继续尝试填充赋值
+                if value["Asc"].is_boolean() {
+                    let indexes_clone = indexes.clone();
+                    let index_r = indexes_clone.read().unwrap();
+                    // 初始化当前单一对象可匹配索引为`None`，该索引最终可为`None`，后续被赋值也用于索引选择优化
+                    let mut index: Option<Arc<dyn TIndex>> = None;
+                    // 尝试在索引集合中通过`Param`获取可匹配索引，如有，则进行对应赋值
+                    match index_r.get(param) {
+                        Some(idx) => {
+                            // 赋值当前可匹配索引
+                            index = Some(idx.clone());
+                        }
+                        None => {}
+                    }
+                    // 排序条件
+                    let asc: bool;
+                    // 如果条件语句`Asc`非空，则填充Asc，否则默认为true
+                    if !value["Asc"].is_null() {
+                        asc = value["Asc"].as_bool().unwrap();
+                    } else {
+                        asc = true;
+                    }
+                    self.sort = Some(Sort {
+                        param: param.to_string(),
+                        asc,
+                        index,
+                    })
                 }
-                self.sort = Some(sort);
             }
         }
     }
 
-    /// 解析`json value`并获取条件索引
+    /// 解析json value中`Conditions`条件并尝试获取条件限定
+    /// * 如果条件语句`Conditions`条件非数组格式，则不处理，否则继续尝试填充赋值
+    /// * 条件数组单一对象中`Param`条件字符串，一般内容如`age`、`level`等
+    /// * 解析`Param`，任一单一对象中都不能缺省`Param`，否则返回对应错误
+    /// * 解析`Cond`，任一单一对象中都不能缺省`Cond`，否则返回对应错误
+    /// * 解析`Value`，任一单一对象中都不能缺省`Value`，否则返回对应错误
+    /// * 为所有单一对象初始化可匹配索引，该索引最终可为`None`，后续被赋值也用于索引选择优化
+    /// * 将单一对象解析出来的新条件追加到条件查询集合
+    ///
+    /// # param
+    /// * indexes 索引集合
+    /// * value 条件语句`Conditions`条件反射对象
     fn fit_conditions(
         &mut self,
         indexes: Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>,
         value: Value,
     ) -> GeorgeResult<()> {
+        // 如果条件语句`Conditions`条件非数组格式，则不处理，否则继续尝试填充赋值
         if value.is_array() {
+            // 遍历筛选条件数组
             for v in value.as_array().unwrap().iter() {
-                let vp: &str;
+                // 条件数组单一对象中`Param`条件字符串，一般内容如`age`、`level`等
+                let param: &str;
+                // 比较条件 gt/ge/lt/le/eq/ne 大于/大于等于/小于/小于等于/等于/不等
                 let compare: Compare;
+                // 条件值类型，初始化默认为None
                 let mut key_type: KeyType = KeyType::None;
+                // 开始解析单一对象
+                // 解析`Param`，任一单一对象中都不能缺省`Param`，否则返回对应错误
                 match v["Param"].as_str() {
-                    Some(ref val_param) => {
-                        vp = val_param;
-                        match v["Cond"].as_str() {
-                            Some(ref val_cond) => {
-                                if val_cond.eq(&"gt") {
-                                    compare = Compare::GT
-                                } else if val_cond.eq(&"ge") {
-                                    compare = Compare::GE
-                                } else if val_cond.eq(&"lt") {
-                                    compare = Compare::LT
-                                } else if val_cond.eq(&"le") {
-                                    compare = Compare::LE
-                                } else if val_cond.eq(&"eq") {
-                                    compare = Compare::EQ
-                                } else if val_cond.eq(&"ne") {
-                                    compare = Compare::NE
-                                } else {
-                                    return Err(err_string(format!(
-                                        "fit conditions cond {} only support gt,ge,lt,le,eq and ne",
-                                        val_cond
-                                    )));
-                                }
-                            }
-                            _ => return Err(err_str("fit conditions no match cond")),
+                    Some(ref val_param) => param = val_param,
+                    _ => return Err(err_str("fit conditions no match param")),
+                }
+                // 解析`Cond`，任一单一对象中都不能缺省`Cond`，否则返回对应错误
+                match v["Cond"].as_str() {
+                    Some(ref val_cond) => {
+                        if val_cond.eq(&"gt") {
+                            compare = Compare::GT
+                        } else if val_cond.eq(&"ge") {
+                            compare = Compare::GE
+                        } else if val_cond.eq(&"lt") {
+                            compare = Compare::LT
+                        } else if val_cond.eq(&"le") {
+                            compare = Compare::LE
+                        } else if val_cond.eq(&"eq") {
+                            compare = Compare::EQ
+                        } else if val_cond.eq(&"ne") {
+                            compare = Compare::NE
+                        } else {
+                            return Err(err_string(format!(
+                                "fit conditions cond {} only support gt,ge,lt,le,eq and ne",
+                                val_cond
+                            )));
                         }
                     }
-                    _ => return Err(err_str("fit conditions no match param")),
+                    _ => return Err(err_str("fit conditions no match cond")),
                 }
                 let indexes_clone = indexes.clone();
                 let index_r = indexes_clone.read().unwrap();
+                // 初始化当前单一对象可匹配索引为`None`，该索引最终可为`None`，后续被赋值也用于索引选择优化
                 let mut index: Option<Arc<dyn TIndex>> = None;
-                match index_r.get(vp) {
+                // 尝试在索引集合中通过`Param`获取可匹配索引，如有，则进行对应赋值
+                match index_r.get(param) {
                     Some(idx) => {
+                        // 赋值当前单一对象可匹配索引
                         index = Some(idx.clone());
-                        let idx_key_type = idx.key_type();
-                        match key_type {
-                            KeyType::None => key_type = idx_key_type,
-                            _ => {
-                                if key_type != idx_key_type {
-                                    return Err(err_str("fit conditions type is not expect"));
-                                }
-                            }
-                        }
+                        // 赋值条件值类型
+                        key_type = idx.key_type();
                     }
                     None => {}
                 }
+                // `Value`值字符串形式
+                let val_str: String;
+                // 解析`Value`，任一单一对象中都不能缺省`Value`，否则返回对应错误
+                // `Value`值类型需要与key_type匹配，否则返回对应错误
                 match v["Value"] {
-                    Value::Number(ref val_num) => {
+                    // 如果`Value`为数字类型(包括整数和浮点数)
+                    Value::Number(ref res) => {
                         log::debug!("value number, key_type = {:#?}", key_type);
                         match key_type {
                             KeyType::None => key_type = KeyType::F64,
@@ -349,44 +429,25 @@ impl Constraint {
                             }
                             _ => {}
                         }
-                        self.conditions.push(Condition::new(
-                            vp.to_string(),
-                            compare,
-                            key_type,
-                            val_num.to_string(),
-                            false,
-                            index,
-                        )?)
+                        val_str = res.to_string();
                     }
-                    Value::Bool(ref val_bool) => {
+                    // 如果`Value`为布尔类型
+                    Value::Bool(ref res) => {
                         match key_type {
                             KeyType::None => key_type = KeyType::None,
                             KeyType::Bool => {}
                             _ => return Err(err_str("fit conditions no match key type")),
                         }
-                        self.conditions.push(Condition::new(
-                            vp.to_string(),
-                            compare,
-                            key_type,
-                            val_bool.to_string(),
-                            val_bool.clone(),
-                            index,
-                        )?)
+                        val_str = res.to_string();
                     }
-                    Value::String(ref val_str) => {
+                    // 如果`Value`为字符串类型
+                    Value::String(ref res) => {
                         match key_type {
                             KeyType::None => key_type = KeyType::String,
                             KeyType::String => {}
                             _ => return Err(err_str("fit conditions no match key type")),
                         }
-                        self.conditions.push(Condition::new(
-                            vp.to_string(),
-                            compare,
-                            key_type,
-                            val_str.to_string(),
-                            false,
-                            index,
-                        )?)
+                        val_str = res.to_string();
                     }
                     _ => {
                         return Err(err_str(
@@ -394,6 +455,14 @@ impl Constraint {
                         ))
                     }
                 }
+                // 追加新的条件到条件查询集合
+                self.conditions.push(Condition::new(
+                    param.to_string(),
+                    compare,
+                    key_type,
+                    val_str,
+                    index,
+                )?)
             }
             Ok(())
         } else {
@@ -409,74 +478,65 @@ pub struct IndexStatus {
     index: Arc<dyn TIndex>,
     /// 是否顺序
     asc: bool,
+    /// 是否更新过顺序
+    asc_update: bool,
     /// 查询起始值
     start: u64,
     /// 查询终止值
     end: u64,
-    /// 查询起始值更新
-    start_update: bool,
-    /// 查询终止值更新
-    end_update: bool,
     /// 条件查询集合
     conditions: Vec<Condition>,
-    /// 索引评级。asc=1；start=2；end=2。
+    /// 索引评级。asc=1；start=2；end=2
     level: u8,
 }
 
 impl IndexStatus {
-    fn new(
-        index: Arc<dyn TIndex>,
-        asc: bool,
-        start: u64,
-        end: u64,
-        conditions: Vec<Condition>,
-        level: u8,
-    ) -> IndexStatus {
+    fn new(index: Arc<dyn TIndex>, conditions: Vec<Condition>) -> IndexStatus {
         IndexStatus {
             index,
-            asc,
-            start,
-            end,
-            start_update: false,
-            end_update: false,
+            asc: true,
+            asc_update: false,
+            start: 0,
+            end: 0,
             conditions,
-            level,
+            level: 0,
         }
     }
-    fn index(&mut self) -> Arc<dyn TIndex> {
-        self.index.clone()
+
+    fn fit_sort(&mut self, sort: bool) {
+        self.asc = sort;
+        // 如果当前排序更新过至少一次，评分不再追加
+        if !self.asc_update {
+            self.level = self.level.add(1);
+        }
     }
-    fn fit_index(&mut self, index: Arc<dyn TIndex>) {
-        self.index = index
-    }
+
     fn fit_start(&mut self, start: u64) {
+        // 如果待填充起始值大于当前，则继续更新值
         if start > self.start {
+            // 如果当前起始值大于0，则表示已经更新过至少一次，评分不再追加
+            if self.start == 0 {
+                self.level = self.level.add(2);
+            }
+            // 更新当前值
             self.start = start;
-            self.level = self.level.add(2);
-            self.start_update = true
         }
     }
+
     fn fit_end(&mut self, end: u64) {
-        if 0 == self.end || end < self.end {
+        // 如果待填充终止值小于当前，则继续更新值
+        if end < self.end {
+            // 如果当前终止值大于0，则表示已经更新过至少一次，评分不再追加
+            if self.end == 0 {
+                self.level = self.level.add(2);
+            }
+            // 更新当前值
             self.end = end;
-            self.level = self.level.add(2);
-            self.end_update = true
         }
     }
+
     fn append_condition(&mut self, condition: Condition) {
         self.conditions.push(condition)
-    }
-    fn check(&self) -> GeorgeResult<()> {
-        if self.start_update && self.end_update && self.start > self.end {
-            Err(err_string(format!(
-                "condition {} end {} can't start from {}",
-                self.index.name(),
-                self.end,
-                self.start
-            )))
-        } else {
-            Ok(())
-        }
     }
 }
 
@@ -497,7 +557,7 @@ pub struct Expectation {
 
 /// 检索选择器
 ///
-/// 检索顺序 sort -> conditions -> skip -> limit
+/// 最佳检索选择策略 sort -> conditions -> skip -> limit
 #[derive(Debug, Clone)]
 pub struct Selector {
     /// 索引集合
@@ -507,41 +567,40 @@ pub struct Selector {
 }
 
 impl Selector {
-    /// 新建检索选择器
+    /// 新建检索选择器<p>
     ///
-    /// selector_json_bytes 选择器字节数组，自定义转换策略
+    /// # param
+    /// * constraint_json_bytes 选择器字节数组，自定义转换策略
+    /// * indexes 索引集合
+    /// * delete 是否删除检索结果
     ///
-    /// indexes 索引集合
-    ///
-    /// delete 是否删除检索结果
+    /// # return
+    /// * Expectation 经由Selector后的期望结果
     pub(crate) fn run(
         constraint_json_bytes: Vec<u8>,
         indexes: Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>,
         delete: bool,
     ) -> GeorgeResult<Expectation> {
+        // 新建查询约束
         let constraint = Constraint::new(constraint_json_bytes, indexes.clone(), delete)?;
-        let mut select = Selector {
+        // 新建检索选择器并执行富查询
+        Selector {
             indexes,
             constraint,
-        };
-        select.exec()
+        }
+        .exec()
     }
     fn constraint(&self) -> Constraint {
         self.constraint.clone()
     }
-    /// 执行富查询
+
+    /// 执行富查询<p>
     ///
     /// # return
-    ///
-    /// count 检索结果总条数
-    ///
-    /// index_name 使用到的索引名称，如果没用上则为空
-    ///
-    /// values 检索结果集合
+    /// * Expectation 经由Selector后的期望结果
     fn exec(&mut self) -> GeorgeResult<Expectation> {
+        // 获取最佳索引
         let status = self.index()?;
-        // status自测
-        status.check()?;
         self.constraint.conditions = status.conditions;
         status.index.clone().select(
             status.asc,
@@ -551,19 +610,19 @@ impl Selector {
         )
     }
 
-    /// 获取最佳索引
+    /// 获取最佳索引，以减少磁盘读取次数为目的，遵守区间大于一切的准则<p>
+    /// # Policy
+    /// * 如果有多个闭合区间约束的索引，优先选择区间差最小的，如存在`height`[1..10]和`age`[1..5]时，选择`age`
+    /// * 如果有一个闭合区间约束的索引，如`height`[1..10]，选择`height`
+    /// * 如果存在开闭区间与排序的索引，当索引相同时，如存在`height`[1..]和`height`[asc:false]，选择`height`
+    /// * 如果存在开闭区间与排序的索引，当索引不同时，如存在`height`[1..]和`age`[asc:false]，选择`height`
+    /// * 索引选择存在相同策略结果时，一般情况下先到先得，但不保证一定，具备随机性
     ///
-    /// 检索顺序 sort -> conditions -> skip -> limit
+    /// # return
+    /// * Expectation 经由Selector后的期望结果
     fn index(&mut self) -> GeorgeResult<IndexStatus> {
-        match self.index_sort() {
-            Some(is) => {
-                self.constraint.sort_clean();
-                return Ok(is);
-            }
-            None => {}
-        }
-
-        match self.index_condition() {
+        // 优先进行区间判断，如果不存在区间策略，再进行后续策略
+        match self.index_policy() {
             Some(is) => return Ok(is),
             None => {}
         }
@@ -571,84 +630,75 @@ impl Selector {
         match self.indexes.read().unwrap().iter().next() {
             Some(idx) => Ok(IndexStatus::new(
                 idx.1.clone(),
-                true,
-                0,
-                0,
                 self.constraint.conditions(),
-                0,
             )),
             None => Err(err_str("no index found!")),
         }
     }
 
-    /// 通过sort所包含参数匹配索引
-    fn index_sort(&self) -> Option<IndexStatus> {
-        match self.constraint().sort() {
-            Some(sort) => {
-                // 通过参数匹配到排序索引
-                match self.indexes.clone().read().unwrap().get(&sort.param()) {
-                    Some(idx) => {
-                        let is = self.index_condition_param(1, sort.asc, sort.param(), idx);
-                        Some(is)
-                    }
-                    None => None,
-                }
-            }
-            None => None,
-        }
-    }
-
     /// 通过condition所包含参数匹配索引
-    fn index_condition(&self) -> Option<IndexStatus> {
+    fn index_policy(&self) -> Option<IndexStatus> {
+        // 新建索引可用状态集合
         let mut cs: Vec<IndexStatus> = vec![];
-        for condition in self.constraint().conditions().iter() {
-            match condition.clone().index {
-                Some(index) => {
-                    cs.push(self.index_condition_param(0, true, condition.param(), &index))
+        // 遍历已有索引集合，从区间条件中进行匹配
+        for (index_name, index) in self.indexes.read().unwrap().iter() {
+            let mut status = IndexStatus::new(index.clone(), vec![]);
+            // 默认顺序
+            let mut asc = true;
+            // 判断是否存在排序条件
+            match self.constraint().sort() {
+                Some(sort) => {
+                    // 判断该条件是否存在索引支持
+                    match sort.clone().index {
+                        Some(index) => {
+                            // 判断该条件索引是否为正在遍历的索引
+                            if index.name().eq(index_name) {
+                                asc = sort.asc();
+                                status.fit_sort(sort.asc())
+                            }
+                        }
+                        _ => {}
+                    }
                 }
-                None => {}
+                _ => {}
             }
+            // 遍历区间条件，与索引名称进行匹配
+            for condition in self.constraint().conditions().iter() {
+                // 判断该条件是否存在索引支持
+                match condition.clone().index {
+                    Some(index) => {
+                        // 判断该条件索引是否为正在遍历的索引
+                        if index.name().eq(index_name) {
+                            // 将该索引条件进行填充
+                            match condition.compare() {
+                                Compare::GT => status.fit_start(condition.value_hash() + 1),
+                                Compare::GE => status.fit_start(condition.value_hash()),
+                                Compare::LT => status.fit_end(condition.value_hash() - 1),
+                                Compare::LE => status.fit_end(condition.value_hash()),
+                                Compare::EQ => {
+                                    if asc {
+                                        status.fit_start(condition.value_hash())
+                                    } else {
+                                        status.fit_end(condition.value_hash())
+                                    }
+                                }
+                                Compare::NE => {}
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            // 索引状态集合追加
+            cs.push(status);
         }
+        // 索引状态集合为空则返回None
         if cs.is_empty() {
             None
         } else {
+            // 索引状态集合按照评分
             cs.sort_by(|a, b| b.level.cmp(&a.level));
             Some(cs.get(0).unwrap().clone())
         }
-    }
-
-    /// 通过condition所包含参数匹配索引
-    ///
-    /// level 起始分，asc有意义为1，无意义为0
-    fn index_condition_param(
-        &self,
-        level: u8,
-        asc: bool,
-        idx_name: String,
-        idx: &Arc<dyn TIndex>,
-    ) -> IndexStatus {
-        let mut status = IndexStatus::new(idx.clone(), asc, 0, 0, vec![], level);
-        // 确认排序索引是否存在条件区间
-        for condition in self.constraint.conditions().iter() {
-            if condition.param() == idx_name {
-                match condition.compare() {
-                    Compare::GT => status.fit_start(condition.value_hash() + 1),
-                    Compare::GE => status.fit_start(condition.value_hash()),
-                    Compare::LT => status.fit_end(condition.value_hash() - 1),
-                    Compare::LE => status.fit_end(condition.value_hash()),
-                    Compare::EQ => {
-                        if asc {
-                            status.fit_start(condition.value_hash())
-                        } else {
-                            status.fit_end(condition.value_hash())
-                        }
-                    }
-                    Compare::NE => {}
-                }
-            } else {
-                status.append_condition(condition.clone());
-            }
-        }
-        status
     }
 }
