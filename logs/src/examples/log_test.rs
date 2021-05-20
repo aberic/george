@@ -63,6 +63,7 @@ mod log_test {
     }
 }
 
+#[cfg(test)]
 mod log_test_mod1 {
     pub fn logs_mod1() {
         log::trace!("Hello, world! logs_mod");
@@ -73,6 +74,7 @@ mod log_test_mod1 {
     }
 }
 
+#[cfg(test)]
 mod log_test_mod2 {
     pub fn logs_mod2() {
         log::trace!("Hello, world! logs_mod");

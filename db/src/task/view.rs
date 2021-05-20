@@ -113,7 +113,7 @@ impl View {
         view_bak.read().unwrap().create_index(
             view_bak.clone(),
             INDEX_CATALOG.to_string(),
-            IndexType::Dossier,
+            IndexType::Disk,
             KeyType::String,
             true,
             true,

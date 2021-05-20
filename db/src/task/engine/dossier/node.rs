@@ -349,7 +349,7 @@ impl Node {
             }
             seed.write().unwrap().modify(IndexPolicy::create(
                 key,
-                IndexType::Dossier,
+                IndexType::Disk,
                 self.record_filepath(),
                 record_view_info_seek,
             ));
@@ -573,7 +573,7 @@ impl Node {
             if self.unique {
                 seed.write().unwrap().modify(IndexPolicy::create(
                     key,
-                    IndexType::Dossier,
+                    IndexType::Disk,
                     self.node_filepath(),
                     node_real_seek + next_node_start as u64,
                 ));
@@ -660,7 +660,7 @@ impl Node {
                 if Vector::is_empty(record_next_seek_bytes.clone()) {
                     seed.write().unwrap().modify(IndexPolicy::create(
                         key,
-                        IndexType::Dossier,
+                        IndexType::Disk,
                         self.record_filepath(),
                         record_seek,
                     ));
@@ -1025,37 +1025,6 @@ impl Node {
 }
 
 impl Node {
-    pub fn mock_create(
-        view: Arc<RwLock<View>>,
-        index_name: String,
-        key_type: KeyType,
-        unique: bool,
-    ) -> GeorgeResult<Arc<Self>> {
-        let v_c = view.clone();
-        let v_r = v_c.read().unwrap();
-        let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
-        let node_filepath = Paths::node_filepath(index_path.clone(), String::from("dossier"));
-        let node_filer = Filed::mock(node_filepath.clone())?;
-        let record_filepath = Paths::record_filepath(index_path.clone());
-        let record_filer = Filed::mock(record_filepath.clone())?;
-        record_filer.append(vec![0x86, 0x87])?;
-        let rb = RootBytes::create(BYTES_LEN_FOR_DOSSIER);
-        node_filer.append(rb.bytes())?;
-        let root_bytes = Arc::new(RwLock::new(rb));
-        Ok(Arc::new(Node {
-            view,
-            index_name,
-            key_type,
-            index_path,
-            node_filepath,
-            record_filepath,
-            unique,
-            node_filer,
-            record_filer,
-            root_bytes,
-        }))
-    }
-
     pub fn mock_recovery(
         view: Arc<RwLock<View>>,
         index_name: String,

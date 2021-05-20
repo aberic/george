@@ -191,4 +191,42 @@ mod dossier_node_test {
             }
         }
     }
+
+    #[cfg(test)]
+    mod data_100000_test {
+        use crate::task::engine::dossier::node_test::dossier_node_test::create_node;
+        use crate::task::engine::traits::{TNode, TSeed};
+        use crate::task::seed::Seed;
+        use crate::task::view::View;
+        use crate::utils::enums::KeyType;
+
+        #[test]
+        fn put_100000_test() {
+            let view = View::mock_create_single("db".to_string(), "view".to_string()).unwrap();
+            let node = create_node(
+                "db".to_string(),
+                "view".to_string(),
+                "dossier100000".to_string(),
+                KeyType::String,
+                false,
+            )
+            .unwrap();
+            let mut pos = 0;
+            while pos < 100000 {
+                let key = format!("yes{}", pos);
+                let seed = Seed::create(view.clone(), key.clone(), "no".to_string().into_bytes());
+                match node.put(key, seed.clone(), false) {
+                    Ok(()) => {
+                        let seed_w = seed.write().unwrap();
+                        match seed_w.save() {
+                            Ok(()) => println!("put success!"),
+                            Err(err) => println!("seed save error! error is {}", err),
+                        }
+                    }
+                    Err(err) => println!("put error! error is {}", err),
+                }
+                pos += 1;
+            }
+        }
+    }
 }

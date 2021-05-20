@@ -21,7 +21,6 @@ use comm::strings::{StringHandler, Strings};
 
 use crate::task::engine::block::node::Node as NB;
 use crate::task::engine::dossier::node::Node as ND;
-use crate::task::engine::library::node::Node as NL;
 use crate::task::engine::sequence::node::Node as NS;
 use crate::task::engine::traits::{TIndex, TNode, TSeed};
 use crate::task::rich::{Constraint, Expectation};
@@ -116,8 +115,7 @@ impl Index {
         let root: Arc<dyn TNode>;
         match index_type {
             IndexType::Sequence => root = NS::create(view.clone(), name.clone(), key_type)?,
-            IndexType::Dossier => root = ND::create(view.clone(), name.clone(), key_type, unique)?,
-            IndexType::Library => root = NL::create(view.clone(), name.clone(), key_type, unique)?,
+            IndexType::Disk => root = ND::create(view.clone(), name.clone(), key_type, unique)?,
             IndexType::Block => root = NB::create(name.clone(), key_type),
             _ => return Err(Errs::str("unsupported engine type with none")),
         }
@@ -348,11 +346,8 @@ impl Index {
                     IndexType::Sequence => {
                         root = NS::recovery(view.clone(), name.clone(), key_type)?
                     }
-                    IndexType::Dossier => {
+                    IndexType::Disk => {
                         root = ND::recovery(view.clone(), name.clone(), key_type, unique)?
-                    }
-                    IndexType::Library => {
-                        root = NL::recovery(view.clone(), name.clone(), key_type, unique)?
                     }
                     IndexType::Block => root = NB::recovery(name.clone(), key_type),
                     _ => return Err(Errs::str("unsupported engine type")),

@@ -66,8 +66,8 @@ impl LogModule {
 
 pub struct LogHandle {
     handle: Handle,
-    /// 是否生产环境，在生产环境下控制台不会输出任何日志
-    production: bool,
+    // /// 是否生产环境，在生产环境下控制台不会输出任何日志
+    // production: bool,
 }
 
 pub static GLOBAL_LOG: Lazy<RwLock<LogHandle>> = Lazy::new(|| {
@@ -82,9 +82,9 @@ pub static GLOBAL_LOG: Lazy<RwLock<LogHandle>> = Lazy::new(|| {
     };
     let handle = LogHandle {
         handle: log4rs::init_config(log_config(module)).unwrap(),
-        production: false,
+        // production: false,
     };
-    fs::remove_dir_all("./wonder_log_test_rm");
+    fs::remove_dir_all("./wonder_log_test_rm").unwrap();
     RwLock::new(handle)
 });
 

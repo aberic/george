@@ -16,7 +16,6 @@ use chrono::{Duration, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 
 use crate::task::master::GLOBAL_MASTER;
-use crate::utils::comm::INDEX_SEQUENCE;
 use crate::utils::enums::{IndexType, KeyType};
 use comm::strings::{StringHandler, Strings};
 use std::error::Error;
@@ -62,23 +61,12 @@ mod master {
             // index_create_test
             let database_name = "database_index_create_test";
             let view_name = "view_index_create_test";
-            let index_name = "index_create_library_test";
-            create_index(
-                database_name,
-                view_name,
-                index_name,
-                IndexType::Library,
-                KeyType::String,
-                false,
-                true,
-                false,
-            );
             let index_name = "index_create_dossier_test";
             create_index(
                 database_name,
                 view_name,
                 index_name,
-                IndexType::Dossier,
+                IndexType::Disk,
                 KeyType::String,
                 false,
                 true,
@@ -141,21 +129,6 @@ mod master {
         #[test]
         fn view_metadata_test() {
             view_metadata("database_view_archive_test", "view_archive_test1")
-        }
-
-        #[test]
-        fn index_create_test() {
-            create_index(
-                "database_index_create_test",
-                "view_index_create_test",
-                "index_create_test",
-                IndexType::Library,
-                KeyType::String,
-                false,
-                true,
-                false,
-            );
-            database_map();
         }
     }
 
@@ -263,63 +236,189 @@ mod master {
             get(database_name, view_name, "hello3", 3);
         }
     }
-}
 
-#[test]
-fn sequence_test() {
-    let database_name = "database_sequence_base_test";
-    let view_name = "view_sequence_base_test";
-    create_view(database_name, view_name);
-    let mut i = 1;
-    while i < 5 {
-        // 循环体
-        put(database_name, view_name, "", "world", i);
-        get_by_index(
-            database_name,
-            view_name,
-            INDEX_SEQUENCE,
-            i.to_string().as_str(),
-            i,
-        );
-        i += 1;
+    #[cfg(test)]
+    mod get_by_index {
+        use crate::task::master_test::{create_view, del, get_by_index, put};
+        use crate::utils::comm::INDEX_SEQUENCE;
+
+        #[test]
+        fn sequence_test() {
+            let database_name = "database_sequence_base_test";
+            let view_name = "view_sequence_base_test";
+            create_view(database_name, view_name);
+            let mut i = 1;
+            while i < 5 {
+                // 循环体
+                put(database_name, view_name, "", "world", i);
+                get_by_index(
+                    database_name,
+                    view_name,
+                    INDEX_SEQUENCE,
+                    i.to_string().as_str(),
+                    i,
+                );
+                i += 1;
+            }
+        }
+
+        #[test]
+        fn sequence_test_after() {
+            let database_name = "database_sequence_base_test";
+            let view_name = "view_sequence_base_test";
+            put(
+                database_name,
+                view_name,
+                "7",
+                "hello12345hello67890world12345world67890",
+                1,
+            );
+            get_by_index(database_name, view_name, INDEX_SEQUENCE, "1", 1);
+            get_by_index(database_name, view_name, INDEX_SEQUENCE, "2", 2);
+            get_by_index(database_name, view_name, INDEX_SEQUENCE, "3", 3);
+            get_by_index(database_name, view_name, INDEX_SEQUENCE, "4", 4);
+            get_by_index(database_name, view_name, INDEX_SEQUENCE, "5", 5);
+            get_by_index(database_name, view_name, INDEX_SEQUENCE, "6", 6);
+            get_by_index(database_name, view_name, INDEX_SEQUENCE, "7", 7);
+            get_by_index(database_name, view_name, INDEX_SEQUENCE, "8", 8);
+        }
+
+        #[test]
+        fn sequence_test_delete() {
+            let database_name = "database_sequence_base_test";
+            let view_name = "view_sequence_base_test";
+            del(database_name, view_name, "2", 2);
+            get_by_index(database_name, view_name, INDEX_SEQUENCE, "1", 1);
+            get_by_index(database_name, view_name, INDEX_SEQUENCE, "2", 2);
+            get_by_index(database_name, view_name, INDEX_SEQUENCE, "3", 3);
+            get_by_index(database_name, view_name, INDEX_SEQUENCE, "4", 4);
+            get_by_index(database_name, view_name, INDEX_SEQUENCE, "5", 5);
+            get_by_index(database_name, view_name, INDEX_SEQUENCE, "6", 6);
+            get_by_index(database_name, view_name, INDEX_SEQUENCE, "7", 7);
+            get_by_index(database_name, view_name, INDEX_SEQUENCE, "8", 8);
+            get_by_index(database_name, view_name, INDEX_SEQUENCE, "9", 9);
+        }
     }
-}
 
-#[test]
-fn sequence_test_after() {
-    let database_name = "database_sequence_base_test";
-    let view_name = "view_sequence_base_test";
-    put(
-        database_name,
-        view_name,
-        "7",
-        "hello12345hello67890world12345world67890",
-        1,
-    );
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "1", 1);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "2", 2);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "3", 3);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "4", 4);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "5", 5);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "6", 6);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "7", 7);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "8", 8);
-}
+    #[cfg(test)]
+    mod select_sequence {
+        use crate::task::master_test::*;
 
-#[test]
-fn sequence_test_delete() {
-    let database_name = "database_sequence_base_test";
-    let view_name = "view_sequence_base_test";
-    del(database_name, view_name, "2", 2);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "1", 1);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "2", 2);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "3", 3);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "4", 4);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "5", 5);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "6", 6);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "7", 7);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "8", 8);
-    get_by_index(database_name, view_name, INDEX_SEQUENCE, "9", 9);
+        #[test]
+        fn select_sequence_prepare() {
+            let database_name = "database_select_sequence_base_test";
+            let view_name = "view_select_base_test";
+            create_view(database_name, view_name);
+
+            let mut pos1: u32 = 1;
+            while pos1 <= 100000 {
+                print!("{} ", pos1);
+                let user_str = serde_json::to_string(&create_t(pos1, 100000 - pos1)).unwrap();
+                put(
+                    database_name,
+                    view_name,
+                    pos1.to_string().as_str(),
+                    user_str.as_str(),
+                    pos1 as usize,
+                );
+                pos1 += 1
+            }
+        }
+
+        #[test]
+        fn select_select_sequence1() {
+            let database_name = "database_select_sequence_base_test";
+            let view_name = "view_select_base_test";
+            let cond_str0 = r#"
+                                  {
+                                    "Conditions":[
+                                        {
+                                            "Param":"george_db_index_sequence",
+                                            "Cond":"ge",
+                                            "Value":49900
+                                        },
+                                        {
+                                            "Param":"age",
+                                            "Cond":"ge",
+                                            "Value":49900
+                                        },
+                                        {
+                                            "Param":"age",
+                                            "Cond":"le",
+                                            "Value":90100
+                                        }
+                                    ],
+                                    "Sort":{
+                                        "Param":"height",
+                                        "Asc":true
+                                    },
+                                    "Skip":0,
+                                    "Limit":20
+                                  }"#;
+            select(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
+        }
+
+        #[test]
+        fn select_select_sequence2() {
+            let database_name = "database_select_sequence_base_test";
+            let view_name = "view_select_base_test";
+            let cond_str0 = r#"
+                                  {
+                                    "Conditions":[
+                                        {
+                                            "Param":"age",
+                                            "Cond":"ge",
+                                            "Value":49900
+                                        },
+                                        {
+                                            "Param":"age",
+                                            "Cond":"le",
+                                            "Value":50100
+                                        }
+                                    ],
+                                    "Sort":{
+                                        "Param":"height",
+                                        "Asc":false
+                                    },
+                                    "Skip":100,
+                                    "Limit":1000
+                                  }"#;
+            select(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
+        }
+
+        #[test]
+        fn select_delete_sequence1() {
+            let database_name = "database_select_sequence_base_test";
+            let view_name = "view_select_base_test";
+            let cond_str0 = r#"
+                                  {
+                                    "Conditions":[
+                                        {
+                                            "Param":"george_db_index_sequence",
+                                            "Cond":"ge",
+                                            "Value":49900
+                                        },
+                                        {
+                                            "Param":"age",
+                                            "Cond":"ge",
+                                            "Value":49900
+                                        },
+                                        {
+                                            "Param":"age",
+                                            "Cond":"le",
+                                            "Value":90100
+                                        }
+                                    ],
+                                    "Sort":{
+                                        "Param":"height",
+                                        "Asc":true
+                                    },
+                                    "Skip":100,
+                                    "Limit":1000
+                                  }"#;
+            delete(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -339,191 +438,6 @@ fn create_t(a: u32, h: u32) -> Teacher {
         blog: a.to_string(),
         married: a % 2 == 0,
     }
-}
-
-#[test]
-fn select_sequence_prepare() {
-    let database_name = "database_select_sequence_base_test";
-    let view_name = "view_select_base_test";
-    create_view(database_name, view_name);
-
-    let mut pos1: u32 = 1;
-    while pos1 <= 100000 {
-        print!("{} ", pos1);
-        let user_str = serde_json::to_string(&create_t(pos1, 100000 - pos1)).unwrap();
-        put(
-            database_name,
-            view_name,
-            pos1.to_string().as_str(),
-            user_str.as_str(),
-            pos1 as usize,
-        );
-        pos1 += 1
-    }
-}
-
-#[test]
-fn select_select_sequence1() {
-    let database_name = "database_select_sequence_base_test";
-    let view_name = "view_select_base_test";
-    let cond_str0 = r#"
-  {
-    "Conditions":[
-        {
-            "Param":"george_db_index_sequence",
-            "Cond":"ge",
-            "Value":49900
-        },
-        {
-            "Param":"age",
-            "Cond":"ge",
-            "Value":49900
-        },
-        {
-            "Param":"age",
-            "Cond":"le",
-            "Value":90100
-        }
-    ],
-    "Sort":{
-        "Param":"height",
-        "Asc":true
-    },
-    "Skip":0,
-    "Limit":20
-  }"#;
-    select(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
-}
-
-#[test]
-fn select_select_sequence2() {
-    let database_name = "database_select_sequence_base_test";
-    let view_name = "view_select_base_test";
-    let cond_str0 = r#"
-  {
-    "Conditions":[
-        {
-            "Param":"age",
-            "Cond":"ge",
-            "Value":49900
-        },
-        {
-            "Param":"age",
-            "Cond":"le",
-            "Value":50100
-        }
-    ],
-    "Sort":{
-        "Param":"height",
-        "Asc":false
-    },
-    "Skip":100,
-    "Limit":1000
-  }"#;
-    select(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
-}
-
-#[test]
-fn select_delete_sequence1() {
-    let database_name = "database_select_sequence_base_test";
-    let view_name = "view_select_base_test";
-    let cond_str0 = r#"
-  {
-    "Conditions":[
-        {
-            "Param":"george_db_index_sequence",
-            "Cond":"ge",
-            "Value":49900
-        },
-        {
-            "Param":"age",
-            "Cond":"ge",
-            "Value":49900
-        },
-        {
-            "Param":"age",
-            "Cond":"le",
-            "Value":90100
-        }
-    ],
-    "Sort":{
-        "Param":"height",
-        "Asc":true
-    },
-    "Skip":100,
-    "Limit":1000
-  }"#;
-    delete(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
-}
-
-#[test]
-fn index_catalog_sequence_test_prepare() {
-    let database_name = "database_index_catalog_sequence_test";
-    let view_name = "view_index_test";
-    create_view(database_name, view_name);
-
-    let mut pos1: u32 = 1;
-    while pos1 <= 100000 {
-        print!("{} ", pos1);
-        let user_str = serde_json::to_string(&create_t(pos1, 100000 - pos1)).unwrap();
-        put(
-            database_name,
-            view_name,
-            format!("key{}", pos1).as_str(),
-            user_str.as_str(),
-            pos1 as usize,
-        );
-        pos1 += 1
-    }
-}
-
-#[test]
-fn index_catalog_sequence_test_select1() {
-    let database_name = "database_index_catalog_sequence_test";
-    let view_name = "view_index_test";
-    let cond_str0 = r#"
-  {
-    "Conditions":[
-        {
-            "Param":"george_db_index_sequence",
-            "Cond":"ge",
-            "Value":49900
-        },
-        {
-            "Param":"age",
-            "Cond":"ge",
-            "Value":49900,
-            "Type": "i64"
-        },
-        {
-            "Param":"age",
-            "Cond":"le",
-            "Value":90100
-        }
-    ],
-    "Sort":{
-        "Param":"height",
-        "Asc":true
-    },
-    "Skip":100,
-    "Limit":1000
-  }"#;
-    select(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
-}
-
-#[test]
-fn library_index_test() {
-    create_index(
-        "database_library_index_test",
-        "view_index_test",
-        "age",
-        IndexType::Library,
-        KeyType::U32,
-        false,
-        true,
-        false,
-    );
-    database_map();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
