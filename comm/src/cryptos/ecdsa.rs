@@ -20,7 +20,7 @@ use openssl::pkey::{PKey, Private, Public};
 
 use crate::cryptos::base64::{Base64, Base64Encoder, Basee64Decoder};
 use crate::cryptos::hex::{Hex, HexDecoder, HexEncoder};
-use crate::errors::entrances::err_strs;
+use crate::errors::entrances::Errs;
 use crate::errors::entrances::GeorgeResult;
 use crate::io::file::{Filer, FilerWriter};
 use crate::strings::{StringHandler, Strings};
@@ -63,9 +63,9 @@ impl ECDSA {
                     sk_ec,
                     pk_ec,
                 }),
-                Err(err) => return Err(err_strs("PKey from_ec_key", err)),
+                Err(err) => return Err(Errs::strs("PKey from_ec_key", err)),
             },
-            Err(err) => return Err(err_strs("PKey from_ec_key", err)),
+            Err(err) => return Err(Errs::strs("PKey from_ec_key", err)),
         }
     }
 
@@ -79,7 +79,7 @@ impl ECDSA {
     pub fn from_sk_pem(sk: Vec<u8>) -> GeorgeResult<ECDSA> {
         match EcKey::private_key_from_pem(&sk) {
             Ok(sk) => ECDSA::from_sk(sk),
-            Err(err) => Err(err_strs("EcKey private_key_from_pem", err)),
+            Err(err) => Err(Errs::strs("EcKey private_key_from_pem", err)),
         }
     }
 
@@ -87,7 +87,7 @@ impl ECDSA {
     pub fn from_sk_der(sk: Vec<u8>) -> GeorgeResult<ECDSA> {
         match EcKey::private_key_from_der(&sk) {
             Ok(sk) => ECDSA::from_sk(sk),
-            Err(err) => Err(err_strs("EcKey private_key_from_pem", err)),
+            Err(err) => Err(Errs::strs("EcKey private_key_from_pem", err)),
         }
     }
 
@@ -116,9 +116,9 @@ impl ECDSA {
         match EcKey::private_key_from_pem(&sk) {
             Ok(sk_ec) => match EcKey::public_key_from_pem(&pk) {
                 Ok(pk_ec) => ECDSA::from(sk_ec, pk_ec),
-                Err(err) => Err(err_strs("EcKey public_key_from_pem", err)),
+                Err(err) => Err(Errs::strs("EcKey public_key_from_pem", err)),
             },
-            Err(err) => Err(err_strs("EcKey private_key_from_pem", err)),
+            Err(err) => Err(Errs::strs("EcKey private_key_from_pem", err)),
         }
     }
 
@@ -127,9 +127,9 @@ impl ECDSA {
         match EcKey::private_key_from_der(&sk) {
             Ok(sk_ec) => match EcKey::public_key_from_der(&pk) {
                 Ok(pk_ec) => ECDSA::from(sk_ec, pk_ec),
-                Err(err) => Err(err_strs("EcKey public_key_from_der", err)),
+                Err(err) => Err(Errs::strs("EcKey public_key_from_der", err)),
             },
-            Err(err) => Err(err_strs("EcKey private_key_from_der", err)),
+            Err(err) => Err(Errs::strs("EcKey private_key_from_der", err)),
         }
     }
 
@@ -266,7 +266,7 @@ impl ECDSA {
     pub fn sk_pem(&self) -> GeorgeResult<Vec<u8>> {
         match self.sk_ec.private_key_to_pem() {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
         }
     }
 
@@ -278,7 +278,7 @@ impl ECDSA {
     pub fn sk_pem_str(&self) -> GeorgeResult<String> {
         match self.sk_ec.private_key_to_pem() {
             Ok(res) => Strings::from_utf8(res),
-            Err(err) => Err(err_strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
         }
     }
 
@@ -291,7 +291,7 @@ impl ECDSA {
     pub fn sk_pem_hex(&self) -> GeorgeResult<String> {
         match self.sk_ec.private_key_to_pem() {
             Ok(res) => Ok(Hex::encode(res)),
-            Err(err) => Err(err_strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
         }
     }
 
@@ -302,14 +302,14 @@ impl ECDSA {
     pub fn sk_pem_base64(&self) -> GeorgeResult<String> {
         match self.sk_ec.private_key_to_pem() {
             Ok(res) => Ok(Base64::encode(res)),
-            Err(err) => Err(err_strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
         }
     }
 
     pub fn sk_der(&self) -> GeorgeResult<Vec<u8>> {
         match self.sk_ec.private_key_to_der() {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
         }
     }
 
@@ -319,7 +319,7 @@ impl ECDSA {
     pub fn sk_der_hex(&self) -> GeorgeResult<String> {
         match self.sk_ec.private_key_to_der() {
             Ok(res) => Ok(Hex::encode(res)),
-            Err(err) => Err(err_strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
         }
     }
 
@@ -328,7 +328,7 @@ impl ECDSA {
     pub fn sk_der_base64(&self) -> GeorgeResult<String> {
         match self.sk_ec.private_key_to_der() {
             Ok(res) => Ok(Base64::encode(res)),
-            Err(err) => Err(err_strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
         }
     }
 
@@ -341,7 +341,7 @@ impl ECDSA {
             &mut ctx,
         ) {
             Ok(res) => Ok(Hex::encode(res)),
-            Err(err) => Err(err_strs("public_key to_bytes", err)),
+            Err(err) => Err(Errs::strs("public_key to_bytes", err)),
         }
     }
 
@@ -354,14 +354,14 @@ impl ECDSA {
             &mut ctx,
         ) {
             Ok(res) => Ok(Base64::encode(res)),
-            Err(err) => Err(err_strs("public_key to_bytes", err)),
+            Err(err) => Err(Errs::strs("public_key to_bytes", err)),
         }
     }
 
     pub fn pk_pem(&self) -> GeorgeResult<Vec<u8>> {
         match self.pk_ec.public_key_to_pem() {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("public_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("public_key_to_pem", err)),
         }
     }
 
@@ -372,7 +372,7 @@ impl ECDSA {
     pub fn pk_pem_str(&self) -> GeorgeResult<String> {
         match self.pk_ec.public_key_to_pem() {
             Ok(res) => Strings::from_utf8(res),
-            Err(err) => Err(err_strs("public_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("public_key_to_pem", err)),
         }
     }
 
@@ -384,7 +384,7 @@ impl ECDSA {
     pub fn pk_pem_hex(&self) -> GeorgeResult<String> {
         match self.pk_ec.public_key_to_pem() {
             Ok(res) => Ok(Hex::encode(res)),
-            Err(err) => Err(err_strs("public_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("public_key_to_pem", err)),
         }
     }
 
@@ -394,14 +394,14 @@ impl ECDSA {
     pub fn pk_pem_base64(&self) -> GeorgeResult<String> {
         match self.pk_ec.public_key_to_pem() {
             Ok(res) => Ok(Base64::encode(res)),
-            Err(err) => Err(err_strs("public_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("public_key_to_pem", err)),
         }
     }
 
     pub fn pk_der(&self) -> GeorgeResult<Vec<u8>> {
         match self.pk_ec.public_key_to_der() {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("public_key_to_der", err)),
+            Err(err) => Err(Errs::strs("public_key_to_der", err)),
         }
     }
 
@@ -411,7 +411,7 @@ impl ECDSA {
     pub fn pk_der_hex(&self) -> GeorgeResult<String> {
         match self.pk_ec.public_key_to_der() {
             Ok(res) => Ok(Hex::encode(res)),
-            Err(err) => Err(err_strs("public_key_to_der", err)),
+            Err(err) => Err(Errs::strs("public_key_to_der", err)),
         }
     }
 
@@ -420,7 +420,7 @@ impl ECDSA {
     pub fn pk_der_base64(&self) -> GeorgeResult<String> {
         match self.pk_ec.public_key_to_der() {
             Ok(res) => Ok(Base64::encode(res)),
-            Err(err) => Err(err_strs("public_key_to_der", err)),
+            Err(err) => Err(Errs::strs("public_key_to_der", err)),
         }
     }
 }
@@ -431,9 +431,9 @@ impl ECDSA {
         match EcdsaSig::sign(data, &self.sk_ec) {
             Ok(sig) => match sig.to_der() {
                 Ok(res) => Ok(res),
-                Err(err) => Err(err_strs("EcdsaSig to_der", err)),
+                Err(err) => Err(Errs::strs("EcdsaSig to_der", err)),
             },
-            Err(err) => Err(err_strs("EcdsaSig sign", err)),
+            Err(err) => Err(Errs::strs("EcdsaSig sign", err)),
         }
     }
 
@@ -441,9 +441,9 @@ impl ECDSA {
         match EcdsaSig::from_der(der) {
             Ok(sig) => match sig.verify(data, &self.pk_ec) {
                 Ok(res) => Ok(res),
-                Err(err) => Err(err_strs("EcdsaSig verify", err)),
+                Err(err) => Err(Errs::strs("EcdsaSig verify", err)),
             },
-            Err(err) => Err(err_strs("EcdsaSig from_der", err)),
+            Err(err) => Err(Errs::strs("EcdsaSig from_der", err)),
         }
     }
 }
@@ -572,12 +572,12 @@ fn generate_nid(nid: Nid) -> GeorgeResult<(EcKey<Private>, EcKey<Public>)> {
                 let ec_point_ref = sk.public_key();
                 match EcKey::from_public_key(&group, ec_point_ref) {
                     Ok(pk) => Ok((sk, pk)),
-                    Err(err) => Err(err_strs("from_public_key", err)),
+                    Err(err) => Err(Errs::strs("from_public_key", err)),
                 }
             }
-            Err(err) => Err(err_strs("generate", err)),
+            Err(err) => Err(Errs::strs("generate", err)),
         },
-        Err(err) => Err(err_strs("from_curve_name", err)),
+        Err(err) => Err(Errs::strs("from_curve_name", err)),
     }
 }
 
@@ -590,7 +590,7 @@ fn generate_pk_from_sk(sk: EcKey<Private>) -> GeorgeResult<(EcKey<Private>, EcKe
     let ec_point_ref = sk.public_key();
     match EcKey::from_public_key(sk.group(), ec_point_ref) {
         Ok(pk) => Ok((sk, pk)),
-        Err(err) => Err(err_strs("from_public_key", err)),
+        Err(err) => Err(Errs::strs("from_public_key", err)),
     }
 }
 
@@ -609,9 +609,9 @@ fn from_bytes_nid(sk_bytes: Vec<u8>, pk_bytes: Vec<u8>, nid: Nid) -> GeorgeResul
     match BigNum::from_slice(&sk_bytes) {
         Ok(bn) => match EcKey::from_private_components(&group, &bn, &public_key) {
             Ok(sk_ec) => ECDSA::from(sk_ec, pk_ec),
-            Err(err) => Err(err_strs("EcKey from_private_components", err)),
+            Err(err) => Err(Errs::strs("EcKey from_private_components", err)),
         },
-        Err(err) => Err(err_strs("BigNum from_slice", err)),
+        Err(err) => Err(Errs::strs("BigNum from_slice", err)),
     }
 }
 
@@ -619,7 +619,7 @@ fn from_bytes_nid(sk_bytes: Vec<u8>, pk_bytes: Vec<u8>, nid: Nid) -> GeorgeResul
 fn load_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
     match read_to_string(filepath) {
         Ok(res) => Ok(res),
-        Err(err) => Err(err_strs("read", err)),
+        Err(err) => Err(Errs::strs("read", err)),
     }
 }
 
@@ -627,6 +627,6 @@ fn load_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
 fn load_bytes_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
     match read(filepath) {
         Ok(v8s) => Ok(v8s),
-        Err(err) => Err(err_strs("read", err)),
+        Err(err) => Err(Errs::strs("read", err)),
     }
 }

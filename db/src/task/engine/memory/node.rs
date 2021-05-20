@@ -18,7 +18,7 @@ use std::sync::{Arc, RwLock};
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
 
 use crate::task::engine::memory::seed::Seed;
-use crate::utils::comm::{hash_key_64, level_distance_64};
+use crate::utils::comm::{Distance, IndexKey};
 use crate::utils::enums::KeyType;
 use comm::errors::children::{DataExistError, DataNoExistError, NoneError};
 
@@ -121,18 +121,18 @@ impl Node {
 /// 封装方法函数
 impl Node {
     pub(crate) fn put(&self, key: String, value: Vec<u8>, force: bool) -> GeorgeResult<()> {
-        let flexible_key = hash_key_64(KeyType::String, key.clone())?;
+        let flexible_key = IndexKey::u64(KeyType::String, key.clone())?;
         let seed = Arc::new(RwLock::new(Seed::create(key, value)));
         self.put_in_node(1, flexible_key, seed, force)
     }
 
     pub(crate) fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        let flexible_key = hash_key_64(KeyType::String, key.clone())?;
+        let flexible_key = IndexKey::u64(KeyType::String, key.clone())?;
         self.get_in_node(1, key, flexible_key)
     }
 
     pub(crate) fn del(&self, key: String) -> GeorgeResult<()> {
-        let flexible_key = hash_key_64(KeyType::String, key.clone())?;
+        let flexible_key = IndexKey::u64(KeyType::String, key.clone())?;
         self.del_in_node(1, key, flexible_key)
     }
 }
@@ -172,7 +172,7 @@ impl Node {
         force: bool,
     ) -> GeorgeResult<()> {
         let next_flexible_key: u64;
-        let distance = level_distance_64(level);
+        let distance = Distance::level_64(level);
         let next_degree = (flexible_key / distance) as u16;
         next_flexible_key = flexible_key - next_degree as u64 * distance;
         let node_next: Arc<Node>;
@@ -402,7 +402,7 @@ impl Node {
         let next_flexible_key: u64;
         let next_degree: u16;
         if level.lt(&5) {
-            let distance = level_distance_64(level);
+            let distance = Distance::level_64(level);
             next_degree = (flexible_key / distance) as u16;
             next_flexible_key = flexible_key - next_degree as u64 * distance;
         } else {
@@ -471,7 +471,7 @@ impl Node {
         let next_flexible_key: u64;
         let next_degree: u16;
         if level.lt(&5) {
-            let distance = level_distance_64(level);
+            let distance = Distance::level_64(level);
             next_degree = (flexible_key / distance) as u16;
             next_flexible_key = flexible_key - next_degree as u64 * distance;
         } else {

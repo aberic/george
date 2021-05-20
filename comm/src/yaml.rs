@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-use crate::errors::entrances::{err_strs, GeorgeResult};
+use crate::errors::entrances::{Errs, GeorgeResult};
 use serde::de::DeserializeOwned;
 
 pub fn string_2_yaml<T: DeserializeOwned>(data: String) -> GeorgeResult<T> {
@@ -22,6 +22,6 @@ pub fn string_2_yaml<T: DeserializeOwned>(data: String) -> GeorgeResult<T> {
             t = serde_t;
             Ok(t)
         }
-        Err(err) => Err(err_strs("serde_yaml_from_str", err)),
+        Err(err) => Err(Errs::strs("serde_yaml_from_str", err)),
     }
 }

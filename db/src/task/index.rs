@@ -16,7 +16,7 @@ use std::sync::{Arc, RwLock};
 
 use chrono::{Duration, Local, NaiveDateTime};
 
-use comm::errors::entrances::{err_str, err_string, GeorgeResult};
+use comm::errors::entrances::{Errs, GeorgeResult};
 use comm::strings::{StringHandler, Strings};
 
 use crate::task::engine::block::node::Node as NB;
@@ -27,8 +27,8 @@ use crate::task::engine::traits::{TIndex, TNode, TSeed};
 use crate::task::rich::{Constraint, Expectation};
 use crate::task::view::View;
 use crate::utils::enums::{Enum, EnumHandler, IndexType, KeyType};
-use crate::utils::path::index_filepath;
-use crate::utils::store::{before_content_bytes, Metadata, HD};
+use crate::utils::path::Paths;
+use crate::utils::store::{ContentBytes, Metadata, HD};
 use crate::utils::writer::Filed;
 use serde_json::Value;
 
@@ -87,7 +87,7 @@ fn new_index(
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
     let v_c = view.clone();
     let v_r = v_c.read().unwrap();
-    let filepath = index_filepath(v_r.database_name(), v_r.name(), name.clone());
+    let filepath = Paths::index_filepath(v_r.database_name(), v_r.name(), name.clone());
     let index = Index {
         view,
         primary,
@@ -119,7 +119,7 @@ impl Index {
             IndexType::Dossier => root = ND::create(view.clone(), name.clone(), key_type, unique)?,
             IndexType::Library => root = NL::create(view.clone(), name.clone(), key_type, unique)?,
             IndexType::Block => root = NB::create(name.clone(), key_type),
-            _ => return Err(err_str("unsupported engine type with none")),
+            _ => return Err(Errs::str("unsupported engine type with none")),
         }
         let index = new_index(
             view,
@@ -134,7 +134,7 @@ impl Index {
         let mut metadata_bytes = index.metadata_bytes();
         let mut description = index.description();
         // 初始化为32 + 8，即head长度加正文描述符长度
-        let mut before_description = before_content_bytes(44, description.len() as u32);
+        let mut before_description = ContentBytes::before(44, description.len() as u32);
         metadata_bytes.append(&mut before_description);
         metadata_bytes.append(&mut description);
         index.append(metadata_bytes)?;
@@ -342,7 +342,7 @@ impl Index {
                 );
                 let v_c = view.clone();
                 let v_r = v_c.read().unwrap();
-                let filepath = index_filepath(v_r.database_name(), v_r.name(), name.clone());
+                let filepath = Paths::index_filepath(v_r.database_name(), v_r.name(), name.clone());
                 let root: Arc<dyn TNode>;
                 match hd.index_type() {
                     IndexType::Sequence => {
@@ -355,7 +355,7 @@ impl Index {
                         root = NL::recovery(view.clone(), name.clone(), key_type, unique)?
                     }
                     IndexType::Block => root = NB::recovery(name.clone(), key_type),
-                    _ => return Err(err_str("unsupported engine type")),
+                    _ => return Err(Errs::str("unsupported engine type")),
                 }
                 log::info!(
                     "recovery index {} from database.view {}.{}",
@@ -377,7 +377,7 @@ impl Index {
                 };
                 Ok(Arc::new(index))
             }
-            Err(err) => Err(err_string(format!(
+            Err(err) => Err(Errs::string(format!(
                 "recovery index decode failed! error is {}",
                 err
             ))),

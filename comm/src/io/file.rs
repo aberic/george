@@ -15,8 +15,7 @@
 use std::fs;
 use std::path::Path;
 
-use crate::errors::entrances::{err_string, err_strings};
-use crate::errors::entrances::{err_strs, GeorgeResult};
+use crate::errors::entrances::{Errs, GeorgeResult};
 use crate::io::dir::{Dir, DirHandler};
 use crate::vectors::{Vector, VectorHandler};
 use std::fs::{read, read_to_string, File, OpenOptions};
@@ -432,7 +431,7 @@ fn file_exist<P: AsRef<Path>>(filepath: P) -> bool {
 /// 创建文件
 fn file_touch<P: AsRef<Path>>(filepath: P) -> GeorgeResult<()> {
     if file_exist(&filepath) {
-        Err(err_string(format!(
+        Err(Errs::string(format!(
             "file {} already exist!",
             filepath.as_ref().to_str().unwrap()
         )))
@@ -448,7 +447,7 @@ fn file_touch<P: AsRef<Path>>(filepath: P) -> GeorgeResult<()> {
         }
         match File::create(&filepath) {
             Ok(_) => Ok(()),
-            Err(err) => Err(err_strings(
+            Err(err) => Err(Errs::strings(
                 format!("path {} touch error: ", filepath.as_ref().to_str().unwrap()),
                 err,
             )),
@@ -472,7 +471,7 @@ fn file_try_touch<P: AsRef<Path>>(filepath: P) -> GeorgeResult<()> {
         }
         match File::create(&filepath) {
             Ok(_) => Ok(()),
-            Err(err) => Err(err_strings(
+            Err(err) => Err(Errs::strings(
                 format!("path {} touch error: ", filepath.as_ref().to_str().unwrap()),
                 err,
             )),
@@ -485,7 +484,7 @@ fn file_remove<P: AsRef<Path>>(filepath: P) -> GeorgeResult<()> {
     if file_exist(&filepath) {
         match fs::remove_file(&filepath) {
             Ok(()) => Ok(()),
-            Err(err) => Err(err_strings(
+            Err(err) => Err(Errs::strings(
                 format!(
                     "path {} remove error: ",
                     filepath.as_ref().to_str().unwrap()
@@ -505,7 +504,7 @@ fn file_absolute<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
     if file_exist(&filepath) {
         match fs::canonicalize(&filepath) {
             Ok(path_buf) => Ok(path_buf.to_str().unwrap().to_string()),
-            Err(err) => Err(err_strings(
+            Err(err) => Err(Errs::strings(
                 format!(
                     "fs {} canonicalize error: ",
                     filepath.as_ref().to_str().unwrap()
@@ -514,7 +513,7 @@ fn file_absolute<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
             )),
         }
     } else {
-        Err(err_string(format!(
+        Err(Errs::string(format!(
             "file {} doesn't exist!",
             filepath.as_ref().to_str().unwrap()
         )))
@@ -531,7 +530,7 @@ fn file_last_name<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
             .unwrap()
             .to_string())
     } else {
-        Err(err_string(format!(
+        Err(Errs::string(format!(
             "path {} does't exist!",
             filepath.as_ref().to_str().unwrap()
         )))
@@ -553,7 +552,7 @@ fn file_last_name<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
 fn file_copy<P: AsRef<Path>>(file_from_path: P, file_to_path: P) -> GeorgeResult<()> {
     match fs::copy(&file_from_path, &file_to_path) {
         Ok(_) => Ok(()),
-        Err(err) => Err(err_strings(
+        Err(err) => Err(Errs::strings(
             format!(
                 "copy {} to {} error: ",
                 file_from_path.as_ref().to_str().unwrap(),
@@ -587,7 +586,7 @@ fn file_move<P: AsRef<Path>>(file_from_path: P, file_to_path: P) -> GeorgeResult
 pub fn file_write(mut file: File, content: &[u8]) -> GeorgeResult<usize> {
     match file.write(content) {
         Ok(size) => Ok(size),
-        Err(err) => Err(err_strs("file write all", err)),
+        Err(err) => Err(Errs::strs("file write all", err)),
     }
 }
 
@@ -597,7 +596,7 @@ pub fn file_write(mut file: File, content: &[u8]) -> GeorgeResult<usize> {
 pub fn filepath_write<P: AsRef<Path>>(filepath: P, content: &[u8]) -> GeorgeResult<usize> {
     match OpenOptions::new().write(true).open(filepath) {
         Ok(file) => file_write(file, content),
-        Err(err) => Err(err_strs("file open when write", err)),
+        Err(err) => Err(Errs::strs("file open when write", err)),
     }
 }
 
@@ -618,7 +617,7 @@ pub fn filepath_write_force<P: AsRef<Path>>(filepath: P, content: &[u8]) -> Geor
 fn filepath_append<P: AsRef<Path>>(filepath: P, content: &[u8]) -> GeorgeResult<()> {
     match OpenOptions::new().append(true).open(filepath) {
         Ok(file) => file_append(file, content),
-        Err(err) => Err(err_strs("file open when append", err)),
+        Err(err) => Err(Errs::strs("file open when append", err)),
     }
 }
 
@@ -634,7 +633,7 @@ fn filepath_append_force<P: AsRef<Path>>(filepath: P, content: &[u8]) -> GeorgeR
 fn file_append(mut file: File, content: &[u8]) -> GeorgeResult<()> {
     match file.write_all(content) {
         Ok(()) => Ok(()),
-        Err(err) => Err(err_strs("file write all", err)),
+        Err(err) => Err(Errs::strs("file write all", err)),
     }
 }
 
@@ -642,7 +641,7 @@ fn file_append(mut file: File, content: &[u8]) -> GeorgeResult<()> {
 fn filepath_write_seek<P: AsRef<Path>>(filepath: P, seek: u64, content: &[u8]) -> GeorgeResult<()> {
     match OpenOptions::new().write(true).open(filepath) {
         Ok(file) => file_write_seek(file, seek, content),
-        Err(err) => Err(err_strs("file open when write seek", err)),
+        Err(err) => Err(Errs::strs("file open when write seek", err)),
     }
 }
 
@@ -651,16 +650,16 @@ fn file_write_seek(mut file: File, seek: u64, content: &[u8]) -> GeorgeResult<()
     match file.seek(SeekFrom::Start(seek)) {
         Ok(_s) => match file.write_all(content) {
             Ok(()) => Ok(()),
-            Err(err) => Err(err_strs("file write all", err)),
+            Err(err) => Err(Errs::strs("file write all", err)),
         },
-        Err(err) => Err(err_strs("file open when write seek", err)),
+        Err(err) => Err(Errs::strs("file open when write seek", err)),
     }
 }
 
 fn filepath_read<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
     match read_to_string(filepath) {
         Ok(s) => Ok(s),
-        Err(err) => Err(err_strs("file read to string", err)),
+        Err(err) => Err(Errs::strs("file read to string", err)),
     }
 }
 
@@ -668,7 +667,7 @@ fn file_read(mut file: File) -> GeorgeResult<String> {
     let mut string = String::with_capacity(initial_buffer_size(&file));
     match file.read_to_string(&mut string) {
         Ok(_usize) => Ok(string),
-        Err(err) => Err(err_strs("file read to string", err)),
+        Err(err) => Err(Errs::strs("file read to string", err)),
     }
 }
 
@@ -683,7 +682,7 @@ fn initial_buffer_size(file: &File) -> usize {
 fn filepath_reads<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
     match read(filepath) {
         Ok(u8s) => Ok(u8s),
-        Err(err) => Err(err_strs("file read to string", err)),
+        Err(err) => Err(Errs::strs("file read to string", err)),
     }
 }
 
@@ -691,7 +690,7 @@ fn file_read_bytes(mut file: File) -> GeorgeResult<Vec<u8>> {
     let mut buffer = Vec::new();
     match file.read_to_end(&mut buffer) {
         Ok(_usize) => Ok(buffer),
-        Err(err) => Err(err_strs("file read to string", err)),
+        Err(err) => Err(Errs::strs("file read to string", err)),
     }
 }
 
@@ -703,7 +702,7 @@ fn filepath_read_sub<P: AsRef<Path>>(
 ) -> GeorgeResult<Vec<u8>> {
     match File::open(filepath) {
         Ok(file) => file_read_sub(file, start, last),
-        Err(err) => Err(err_string(err.to_string())),
+        Err(err) => Err(Errs::string(err.to_string())),
     }
 }
 
@@ -715,7 +714,7 @@ fn filepath_read_sub_allow_none<P: AsRef<Path>>(
 ) -> GeorgeResult<Vec<u8>> {
     match File::open(filepath) {
         Ok(file) => file_read_sub_allow_none(file, start, last),
-        Err(err) => Err(err_string(err.to_string())),
+        Err(err) => Err(Errs::string(err.to_string())),
     }
 }
 
@@ -726,7 +725,7 @@ fn filepath_len<P: AsRef<Path>>(filepath: P) -> GeorgeResult<u64> {
 fn file_len(mut file: File) -> GeorgeResult<u64> {
     match file.seek(SeekFrom::End(0)) {
         Ok(res) => Ok(res),
-        Err(err) => Err(err_string(err.to_string())),
+        Err(err) => Err(Errs::string(err.to_string())),
     }
 }
 
@@ -734,7 +733,7 @@ fn file_len(mut file: File) -> GeorgeResult<u64> {
 fn file_read_sub(mut file: File, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
     let file_len = file.seek(SeekFrom::End(0)).unwrap();
     if file_len < start + last as u64 {
-        Err(err_string(format!(
+        Err(Errs::string(format!(
             "read sub file read failed! file_len is {} while start {} and last {}",
             file_len, start, last
         )))
@@ -782,7 +781,7 @@ fn file_read_subs_helper(mut file: File, start: u64, last: usize) -> GeorgeResul
                             }
                         }
                         Err(err) => {
-                            return Err(err_string(format!(
+                            return Err(Errs::string(format!(
                                 "read sub file read failed! error is {}",
                                 err
                             )));
@@ -813,7 +812,7 @@ fn file_read_subs_helper(mut file: File, start: u64, last: usize) -> GeorgeResul
                             }
                         }
                         Err(err) => {
-                            return Err(err_string(format!(
+                            return Err(Errs::string(format!(
                                 "read sub file read failed! error is {}",
                                 err
                             )));
@@ -823,41 +822,41 @@ fn file_read_subs_helper(mut file: File, start: u64, last: usize) -> GeorgeResul
                 Ok(buf)
             }
         }
-        Err(err) => Err(err_string(err.to_string())),
+        Err(err) => Err(Errs::string(err.to_string())),
     }
 }
 
 fn rw_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<File> {
     match OpenOptions::new().read(true).write(true).open(filepath) {
         Ok(file) => Ok(file),
-        Err(err) => Err(err_strs("open read&write file", err)),
+        Err(err) => Err(Errs::strs("open read&write file", err)),
     }
 }
 
 fn ra_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<File> {
     match OpenOptions::new().read(true).append(true).open(filepath) {
         Ok(file) => Ok(file),
-        Err(err) => Err(err_strs("open read&write file", err)),
+        Err(err) => Err(Errs::strs("open read&write file", err)),
     }
 }
 
 fn r_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<File> {
     match OpenOptions::new().read(true).open(filepath) {
         Ok(file) => Ok(file),
-        Err(err) => Err(err_strs("open read file", err)),
+        Err(err) => Err(Errs::strs("open read file", err)),
     }
 }
 
 fn w_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<File> {
     match OpenOptions::new().write(true).open(filepath) {
         Ok(file) => Ok(file),
-        Err(err) => Err(err_strs("open write file", err)),
+        Err(err) => Err(Errs::strs("open write file", err)),
     }
 }
 
 fn a_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<File> {
     match OpenOptions::new().append(true).open(filepath) {
         Ok(file) => Ok(file),
-        Err(err) => Err(err_strs("open append file", err)),
+        Err(err) => Err(Errs::strs("open append file", err)),
     }
 }

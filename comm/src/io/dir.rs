@@ -16,9 +16,7 @@ use std::fs;
 use std::ops::Add;
 
 use crate::errors::children::DirExistError;
-use crate::errors::entrances::{
-    err_str, err_string, err_strings, err_strs, GeorgeError, GeorgeResult,
-};
+use crate::errors::entrances::{Errs, GeorgeError, GeorgeResult};
 use std::path::Path;
 
 pub trait DirHandler<T>: Sized {
@@ -113,7 +111,7 @@ fn dir_exist(path: String) -> GeorgeResult<bool> {
     let path_check = Path::new(&path);
     if path_check.exists() {
         if path_check.is_file() {
-            Err(err_string(format!("path {} is file", path)))
+            Err(Errs::string(format!("path {} is file", path)))
         } else {
             Ok(true)
         }
@@ -129,7 +127,7 @@ fn dir_create(path: String) -> GeorgeResult<()> {
     } else {
         match fs::create_dir_all(path.clone()) {
             Ok(_) => Ok(()),
-            Err(err) => Err(err_strings(format!("path {} create error: ", path), err)),
+            Err(err) => Err(Errs::strings(format!("path {} create error: ", path), err)),
         }
     }
 }
@@ -141,7 +139,7 @@ fn dir_create_uncheck(path: String) -> GeorgeResult<()> {
     } else {
         match fs::create_dir_all(path.clone()) {
             Ok(_) => Ok(()),
-            Err(err) => Err(err_strings(format!("path {} create error: ", path), err)),
+            Err(err) => Err(Errs::strings(format!("path {} create error: ", path), err)),
         }
     }
 }
@@ -150,7 +148,7 @@ fn dir_create_uncheck(path: String) -> GeorgeResult<()> {
 fn dir_remove(path: String) -> GeorgeResult<()> {
     match fs::remove_dir_all(path.clone()) {
         Ok(()) => Ok(()),
-        Err(err) => Err(err_strings(format!("path {} remove error: ", path), err)),
+        Err(err) => Err(Errs::strings(format!("path {} remove error: ", path), err)),
     }
 }
 
@@ -166,7 +164,7 @@ fn dir_absolute(path: String, force: bool) -> GeorgeResult<String> {
         if force {
             match fs::remove_dir_all(path.clone()) {
                 Ok(()) => dir_create_uncheck(path.clone())?,
-                Err(err) => return Err(err_strings(format!("remove dir {} error: ", path), err)),
+                Err(err) => return Err(Errs::strings(format!("remove dir {} error: ", path), err)),
             }
         }
     } else {
@@ -174,7 +172,7 @@ fn dir_absolute(path: String, force: bool) -> GeorgeResult<String> {
     }
     match fs::canonicalize(path.clone()) {
         Ok(path_buf) => Ok(path_buf.to_str().unwrap().to_string()),
-        Err(err) => Err(err_strings(
+        Err(err) => Err(Errs::strings(
             format!("fs {} canonicalize error: ", path),
             err,
         )),
@@ -191,7 +189,7 @@ fn dir_last_name(path: String) -> GeorgeResult<String> {
             .unwrap()
             .to_string())
     } else {
-        Err(err_string(format!("path {} does't exist!", path)))
+        Err(Errs::string(format!("path {} does't exist!", path)))
     }
 }
 
@@ -202,7 +200,7 @@ fn dir_copy(from_path: String, to_path: String, force: bool) -> GeorgeResult<()>
     let from_absolute_path_str = dir_absolute(from_path.clone(), false)?;
     let to_absolute_path_str = dir_absolute(to_path.clone(), force)?;
     if to_absolute_path_str.contains(&from_absolute_path_str) {
-        Err(err_string(format!(
+        Err(Errs::string(format!(
             "to path {} is a sub project of path {}",
             to_absolute_path_str, from_absolute_path_str
         )))
@@ -224,7 +222,7 @@ fn dir_copy(from_path: String, to_path: String, force: bool) -> GeorgeResult<()>
                                         dir_copy(now_from_path.to_string(), now_to_path, true)?
                                     }
                                     Err(err) => {
-                                        return Err(err_strings(
+                                        return Err(Errs::strings(
                                             format!("create dir {} error: ", now_to_path),
                                             err,
                                         ));
@@ -233,7 +231,7 @@ fn dir_copy(from_path: String, to_path: String, force: bool) -> GeorgeResult<()>
                             } else if dir.path().is_file() {
                                 match fs::copy(now_from_path.clone(), now_to_path.clone()) {
                                     Err(err) => {
-                                        return Err(err_strings(
+                                        return Err(Errs::strings(
                                             format!(
                                                 "file copy from {} to {} error: ",
                                                 now_from_path, now_to_path
@@ -244,17 +242,17 @@ fn dir_copy(from_path: String, to_path: String, force: bool) -> GeorgeResult<()>
                                     _ => {}
                                 }
                             } else {
-                                return Err(err_str("unsupported path type error!"));
+                                return Err(Errs::str("unsupported path type error!"));
                             }
                         }
                         Err(err) => {
-                            return Err(err_strs("dir entry error: ", err));
+                            return Err(Errs::strs("dir entry error: ", err));
                         }
                     }
                 }
                 Ok(())
             }
-            Err(err) => return Err(err_strs("read dir error: ", err)),
+            Err(err) => return Err(Errs::strs("read dir error: ", err)),
         }
     }
 }

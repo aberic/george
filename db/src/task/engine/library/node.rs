@@ -19,15 +19,15 @@ use crate::task::engine::DataReal;
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::task::view::View;
-use crate::utils::comm::{hash_key_64, level_distance_64};
+use crate::utils::comm::{Distance, IndexKey};
 use crate::utils::enums::{IndexType, KeyType};
-use crate::utils::path::{index_path, node_filepath, record_filepath};
+use crate::utils::path::Paths;
 use crate::utils::writer::Filed;
 use comm::errors::children::{DataExistError, DataNoExistError};
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerHandler};
 use comm::strings::{StringHandler, Strings};
-use comm::trans::{trans_bytes_2_u32_as_u64, trans_u32_2_bytes};
+use comm::trans::Trans;
 use comm::vectors::{Vector, VectorHandler};
 use std::ops::Add;
 
@@ -76,8 +76,8 @@ impl Node {
     ) -> GeorgeResult<Arc<Self>> {
         let v_c = view.clone();
         let v_r = v_c.read().unwrap();
-        let index_path = index_path(v_r.database_name(), v_r.name(), index_name.clone());
-        let record_filepath = record_filepath(index_path.clone());
+        let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
+        let record_filepath = Paths::record_filepath(index_path.clone());
         let record_filer = Filed::create(record_filepath.clone())?;
         record_filer.append(vec![0x86, 0x87])?;
         Ok(Arc::new(Node {
@@ -99,8 +99,8 @@ impl Node {
     ) -> GeorgeResult<Arc<Self>> {
         let v_c = view.clone();
         let v_r = v_c.read().unwrap();
-        let index_path = index_path(v_r.database_name(), v_r.name(), index_name.clone());
-        let record_filepath = record_filepath(index_path.clone());
+        let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
+        let record_filepath = Paths::record_filepath(index_path.clone());
         let record_filer = Filed::recovery(record_filepath.clone())?;
         Ok(Arc::new(Node {
             view,
@@ -160,11 +160,11 @@ impl TNode for Node {
     ///
     /// EngineResult<()>
     fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
-        let hash_key = hash_key_64(self.key_type(), key.clone())?;
+        let hash_key = IndexKey::u64(self.key_type(), key.clone())?;
         self.put_in_node(key, String::from(""), 1, hash_key, seed, force)
     }
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        let hash_key = hash_key_64(self.key_type(), key.clone())?;
+        let hash_key = IndexKey::u64(self.key_type(), key.clone())?;
         self.get_in_node(key, String::from(""), 1, hash_key)
     }
     fn del(&self, _key: String, _seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
@@ -213,12 +213,12 @@ impl Node {
         Self: Sized,
     {
         // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
-        let distance = level_distance_64(level);
+        let distance = Distance::level_64(level);
         // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数
         let next_degree = flexible_key / distance;
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
-            let node_filepath = node_filepath(self.index_path(), index_filename);
+            let node_filepath = Paths::node_filepath(self.index_path(), index_filename);
             // log::debug!("node_filepath = {}, degree = {}",node_filepath,next_degree);
             let node_file_seek = next_degree * 4;
             // 在record中的偏移量
@@ -254,11 +254,11 @@ impl Node {
                         let seek_next_bytes = self.record_read(record_next, 4)?;
                         // 如果有，则尝试读取后续内容
                         if Vector::is_fill(seek_next_bytes.clone()) {
-                            record_loop_seek = trans_bytes_2_u32_as_u64(seek_next_bytes)?;
+                            record_loop_seek = Trans::bytes_2_u32_as_u64(seek_next_bytes)?;
                         } else {
                             // 如果没有，则新建后续结构
                             seek = self.record_append(Vector::create_empty_bytes(12))?;
-                            self.record_write(record_next, trans_u32_2_bytes(seek as u32))?;
+                            self.record_write(record_next, Trans::u32_2_bytes(seek as u32))?;
                             break;
                         }
                     } else {
@@ -278,7 +278,7 @@ impl Node {
                 key,
                 node_filepath,
                 node_file_seek,
-                trans_u32_2_bytes(seek as u32),
+                Trans::u32_2_bytes(seek as u32),
             ));
             Ok(())
         } else {
@@ -307,12 +307,12 @@ impl Node {
         flexible_key: u64,
     ) -> GeorgeResult<Vec<u8>> {
         // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
-        let distance = level_distance_64(level);
+        let distance = Distance::level_64(level);
         // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数
         let next_degree = flexible_key / distance;
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
-            let node_filepath = node_filepath(self.index_path(), index_filename);
+            let node_filepath = Paths::node_filepath(self.index_path(), index_filename);
             // log::debug!("node_filepath = {}, degree = {}", node_filepath, next_degree);
             let node_file_seek = next_degree * 4;
             let record_seek = self.record_seek(node_filepath, node_file_seek)?;
@@ -333,7 +333,7 @@ impl Node {
                     let seek_next_bytes = self.record_read(record_loop_seek + 8, 4)?;
                     // 如果有，则尝试读取后续内容
                     if Vector::is_fill(seek_next_bytes.clone()) {
-                        record_loop_seek = trans_bytes_2_u32_as_u64(seek_next_bytes)?;
+                        record_loop_seek = Trans::bytes_2_u32_as_u64(seek_next_bytes)?;
                     } else {
                         // 如果没有，则返回无此数据
                         return Err(GeorgeError::from(DataNoExistError));
@@ -361,7 +361,7 @@ impl Node {
                 // 判断从索引中读取在record中的偏移量字节数组是否为空
                 // 如果为空，则新插入占位字节，并以占位字节为起始变更偏移量
                 if Vector::is_fill(seek_bytes.clone()) {
-                    trans_bytes_2_u32_as_u64(seek_bytes)
+                    Trans::bytes_2_u32_as_u64(seek_bytes)
                 } else {
                     self.record_append(Vector::create_empty_bytes(12))
                 }

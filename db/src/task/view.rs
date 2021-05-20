@@ -22,10 +22,9 @@ use std::thread;
 use chrono::{Duration, Local, NaiveDateTime};
 
 use comm::errors::children::IndexExistError;
-use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeError, GeorgeResult};
+use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerNormal, FilerReader};
 use comm::strings::{StringHandler, Strings};
-use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u48, trans_u32_2_bytes};
 use comm::vectors::{Vector, VectorHandler};
 
 use crate::task::engine::traits::{TIndex, TSeed};
@@ -33,10 +32,10 @@ use crate::task::engine::DataReal;
 use crate::task::index::Index as IndexDefault;
 use crate::task::rich::{Expectation, Selector};
 use crate::task::seed::Seed;
-use crate::utils::comm::{key_fetch, INDEX_CATALOG, INDEX_SEQUENCE};
+use crate::utils::comm::{IndexKey, INDEX_CATALOG, INDEX_SEQUENCE};
 use crate::utils::enums::{IndexType, KeyType};
-use crate::utils::path::{index_filepath, view_filepath, view_path};
-use crate::utils::store::{before_content_bytes, recovery_before_content, Metadata, HD};
+use crate::utils::path::Paths;
+use crate::utils::store::{ContentBytes, Metadata, HD};
 use crate::utils::writer::Filed;
 
 /// 视图，类似表
@@ -70,7 +69,7 @@ pub(crate) struct View {
 fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
-    let filepath = view_filepath(database_name.clone(), name.clone());
+    let filepath = Paths::view_filepath(database_name.clone(), name.clone());
     let metadata = Metadata::view_disk();
     let view = View {
         database_name: database_name.clone(),
@@ -94,7 +93,7 @@ fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
 fn mock_new_view(database_name: String, name: String) -> GeorgeResult<View> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
-    let filepath = view_filepath(database_name.clone(), name.clone());
+    let filepath = Paths::view_filepath(database_name.clone(), name.clone());
     let metadata = Metadata::view_disk();
     let view = View {
         database_name: database_name.clone(),
@@ -138,7 +137,7 @@ impl View {
         let mut metadata_bytes = self.metadata_bytes();
         let mut description = self.description();
         // 初始化为32 + 8，即head长度加正文描述符长度
-        let mut before_description = before_content_bytes(44, description.len() as u32);
+        let mut before_description = ContentBytes::before(44, description.len() as u32);
         metadata_bytes.append(&mut before_description);
         metadata_bytes.append(&mut description);
         self.append(metadata_bytes)?;
@@ -179,7 +178,7 @@ impl View {
     pub(crate) fn index_catalog(&self) -> GeorgeResult<Arc<dyn TIndex>> {
         match self.index_map().read().unwrap().get(INDEX_CATALOG) {
             Some(idx) => Ok(idx.clone()),
-            None => Err(err_str("index catalog does't found")),
+            None => Err(Errs::str("index catalog does't found")),
         }
     }
 
@@ -187,7 +186,7 @@ impl View {
     pub(crate) fn index(&self, index_name: &str) -> GeorgeResult<Arc<dyn TIndex>> {
         match self.index_map().read().unwrap().get(index_name) {
             Some(idx) => Ok(idx.clone()),
-            None => Err(err_string(format!("index {} doesn't found", index_name))),
+            None => Err(Errs::string(format!("index {} doesn't found", index_name))),
         }
     }
 
@@ -216,7 +215,7 @@ impl View {
                     return Ok(record.filepath());
                 }
             }
-            Err(err_str("no view version found while get view filepath"))
+            Err(Errs::str("no view version found while get view filepath"))
         }
     }
 
@@ -232,7 +231,7 @@ impl View {
                     return Ok(record.clone());
                 }
             }
-            Err(err_str("no view version found"))
+            Err(Errs::str("no view version found"))
         }
     }
 
@@ -276,17 +275,17 @@ impl View {
             self.name(),
             seek_end
         );
-        let content_new = before_content_bytes(seek_end, description.len() as u32);
+        let content_new = ContentBytes::before(seek_end, description.len() as u32);
         // 更新首部信息，初始化head为32，描述起始4字节，长度4字节
         self.write(32, content_new)?;
-        let view_path_old = view_path(old_db_name.clone(), old_view_name.clone());
-        let view_path_new = view_path(database_name.clone(), self.name());
+        let view_path_old = Paths::view_path(old_db_name.clone(), old_view_name.clone());
+        let view_path_new = Paths::view_path(database_name.clone(), self.name());
         match std::fs::rename(view_path_old, view_path_new) {
             Ok(_) => Ok(()),
             Err(err) => {
                 // 回滚数据
                 self.write(0, content_old)?;
-                Err(err_strs("file rename failed", err))
+                Err(Errs::strs("file rename failed", err))
             }
         }
     }
@@ -418,7 +417,7 @@ impl View {
         } else {
             match self.pigeonhole().history().get(&version) {
                 Some(record) => Ok(record.filepath()),
-                None => Err(err_str("index exist but value is none!")),
+                None => Err(Errs::str("index exist but value is none!")),
             }
         }
     }
@@ -473,7 +472,7 @@ impl View {
             thread::spawn(move || match index_name_clone.as_str() {
                 INDEX_CATALOG => sender.send(index_clone.put(key_clone, seed_clone, force)),
                 INDEX_SEQUENCE => sender.send(index_clone.put(key_clone, seed_clone, force)),
-                _ => match key_fetch(index_name_clone, value_clone) {
+                _ => match IndexKey::fetch(index_name_clone, value_clone) {
                     Ok(res) => sender.send(index_clone.put(res, seed_clone, force)),
                     Err(err) => {
                         log::debug!("key fetch error: {}", err);
@@ -489,7 +488,7 @@ impl View {
                     Err(err) => return Err(err),
                     _ => {}
                 },
-                Err(err) => return Err(err_string(err.to_string())),
+                Err(err) => return Err(Errs::string(err.to_string())),
             }
         }
         let seed_w = seed.write().unwrap();
@@ -523,7 +522,7 @@ impl View {
             thread::spawn(move || match index_name_clone.as_str() {
                 INDEX_CATALOG => sender.send(index_clone.del(key_clone, seed_clone)),
                 INDEX_SEQUENCE => sender.send(index_clone.del(key_clone, seed_clone)),
-                _ => match key_fetch(index_name_clone, value_clone) {
+                _ => match IndexKey::fetch(index_name_clone, value_clone) {
                     Ok(res) => sender.send(index_clone.del(res, seed_clone)),
                     Err(err) => {
                         log::debug!("key fetch error: {}", err);
@@ -539,7 +538,7 @@ impl View {
                     Err(err) => return Err(err),
                     _ => {}
                 },
-                Err(err) => return Err(err_string(err.to_string())),
+                Err(err) => return Err(Errs::string(err.to_string())),
             }
         }
         let seed_w = seed.write().unwrap();
@@ -571,7 +570,7 @@ impl View {
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
                 let pigeonhole = Pigeonhole::from_string(split.next().unwrap().to_string())?;
-                let filepath = view_filepath(database_name.clone(), name.clone());
+                let filepath = Paths::view_filepath(database_name.clone(), name.clone());
                 let view = View {
                     database_name: database_name.clone(),
                     name,
@@ -587,7 +586,7 @@ impl View {
                     database_name,
                 );
                 let view_bak = Arc::new(RwLock::new(view.clone()));
-                match read_dir(view_path(database_name, view.name())) {
+                match read_dir(Paths::view_path(database_name, view.name())) {
                     // 恢复indexes数据
                     Ok(paths) => {
                         view_bak
@@ -596,10 +595,10 @@ impl View {
                             .recovery_indexes(view_bak.clone(), paths)?;
                         Ok(view_bak)
                     }
-                    Err(err) => Err(err_strs("recovery view read dir", err)),
+                    Err(err) => Err(Errs::strs("recovery view read dir", err)),
                 }
             }
-            Err(err) => Err(err_strs("recovery view decode", err)),
+            Err(err) => Err(Errs::strs("recovery view decode", err)),
         }
     }
 
@@ -617,7 +616,7 @@ impl View {
                         self.recovery_index(view.clone(), index_name.clone())?;
                     }
                 }
-                Err(err) => return Err(err_strs("recovery indexes path", err)),
+                Err(err) => return Err(Errs::strs("recovery indexes path", err)),
             }
         }
         Ok(())
@@ -625,13 +624,14 @@ impl View {
 
     /// 恢复view数据
     fn recovery_index(&self, view: Arc<RwLock<View>>, index_name: String) -> GeorgeResult<()> {
-        let index_file_path = index_filepath(self.database_name(), self.name(), index_name.clone());
-        let hd = recovery_before_content(index_file_path.clone())?;
+        let index_file_path =
+            Paths::index_filepath(self.database_name(), self.name(), index_name.clone());
+        let hd = ContentBytes::recovery(index_file_path.clone())?;
         let metadata = hd.metadata();
         let index;
         // 恢复index数据
         match hd.index_type() {
-            IndexType::None => return Err(err_str("index engine type error")),
+            IndexType::None => return Err(Errs::str("index engine type error")),
             _ => index = IndexDefault::recover(view, hd)?,
         }
         log::debug!(
@@ -751,7 +751,7 @@ impl Pigeonhole {
                 let history = Pigeonhole::history_from_string(split.next().unwrap().to_string())?;
                 Ok(Pigeonhole { now, history })
             }
-            Err(err) => Err(err_string(format!(
+            Err(err) => Err(Errs::string(format!(
                 "recovery pigeonhole from utf8 1 failed! error is {}",
                 err
             ))),
@@ -831,7 +831,7 @@ impl Record {
                 );
                 Ok(Record::create(version, filepath, create_time))
             }
-            Err(err) => Err(err_string(format!(
+            Err(err) => Err(Errs::string(format!(
                 "recovery pigeonhole from utf8 1 failed! error is {}",
                 err
             ))),

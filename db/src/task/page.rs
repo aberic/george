@@ -16,12 +16,12 @@ use std::sync::{Arc, RwLock};
 
 use chrono::{Duration, Local, NaiveDateTime};
 
-use comm::errors::entrances::{err_strs, GeorgeResult};
+use comm::errors::entrances::{Errs, GeorgeResult};
 use comm::strings::{StringHandler, Strings};
 
 use crate::task::engine::memory::node::Node;
-use crate::utils::path::{page_filepath, page_path};
-use crate::utils::store::{before_content_bytes, Metadata, HD};
+use crate::utils::path::Paths;
+use crate::utils::store::{ContentBytes, Metadata, HD};
 use crate::utils::writer::Filed;
 
 #[derive(Debug, Clone)]
@@ -62,7 +62,7 @@ pub(crate) struct Page {
 fn new_page(name: String, comment: String, size: u64, period: u32) -> GeorgeResult<Page> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
-    let filepath = page_filepath(name.clone());
+    let filepath = Paths::page_filepath(name.clone());
     Ok(Page {
         name,
         comment,
@@ -94,7 +94,7 @@ impl Page {
         let mut metadata_bytes = page.metadata_bytes();
         let mut description = page.description();
         // 初始化为32 + 8，即head长度加正文描述符长度
-        let mut before_description = before_content_bytes(44, description.len() as u32);
+        let mut before_description = ContentBytes::before(44, description.len() as u32);
         metadata_bytes.append(&mut before_description);
         metadata_bytes.append(&mut description);
         page.append(metadata_bytes)?;
@@ -124,7 +124,7 @@ impl Page {
         let mut metadata_bytes = page.metadata_bytes();
         let mut description = page.description();
         // 初始化为32 + 8，即head长度加正文描述符长度
-        let mut before_description = before_content_bytes(44, description.len() as u32);
+        let mut before_description = ContentBytes::before(44, description.len() as u32);
         metadata_bytes.append(&mut before_description);
         metadata_bytes.append(&mut description);
         page.append(metadata_bytes)?;
@@ -187,17 +187,17 @@ impl Page {
             self.name(),
             seek_end
         );
-        let content_new = before_content_bytes(seek_end, description.len() as u32);
+        let content_new = ContentBytes::before(seek_end, description.len() as u32);
         // 更新首部信息，初始化head为32，描述起始4字节，长度4字节
         self.write(32, content_new)?;
-        let page_path_old = page_path(old_name);
-        let page_path_new = page_path(self.name());
+        let page_path_old = Paths::page_path(old_name);
+        let page_path_new = Paths::page_path(self.name());
         match std::fs::rename(page_path_old, page_path_new) {
             Ok(_) => Ok(()),
             Err(err) => {
                 // 回滚数据
                 self.write(0, content)?;
-                Err(err_strs("file rename failed", err.to_string()))
+                Err(Errs::strs("file rename failed", err.to_string()))
             }
         }
     }
@@ -286,7 +286,7 @@ impl Page {
                 let create_time = Duration::nanoseconds(
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
-                let filepath = page_filepath(name.clone());
+                let filepath = Paths::page_filepath(name.clone());
                 let page = Page {
                     name,
                     comment,
@@ -300,7 +300,7 @@ impl Page {
                 log::info!("recovery page {}", page.name());
                 Ok(page)
             }
-            Err(err) => Err(err_strs("recovery page decode", err)),
+            Err(err) => Err(Errs::strs("recovery page decode", err)),
         }
     }
 }

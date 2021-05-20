@@ -19,13 +19,13 @@ use std::sync::{Arc, RwLock};
 use chrono::{Duration, Local, NaiveDateTime};
 
 use comm::errors::children::{ViewExistError, ViewNoExistError};
-use comm::errors::entrances::{err_strs, GeorgeError, GeorgeResult};
+use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
 use comm::strings::{StringHandler, Strings};
 
 use crate::task::rich::Expectation;
 use crate::task::view::View;
-use crate::utils::path::{database_filepath, database_path, view_filepath};
-use crate::utils::store::{before_content_bytes, recovery_before_content, Metadata, HD};
+use crate::utils::path::Paths;
+use crate::utils::store::{ContentBytes, Metadata, HD};
 use crate::utils::writer::Filed;
 
 #[derive(Debug, Clone)]
@@ -60,7 +60,7 @@ pub(crate) struct Database {
 fn new_database(name: String, comment: String) -> GeorgeResult<Database> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
-    let filepath = database_filepath(name.clone());
+    let filepath = Paths::database_filepath(name.clone());
     Ok(Database {
         name,
         comment,
@@ -77,7 +77,7 @@ impl Database {
         let mut metadata_bytes = database.metadata_bytes();
         let mut description = database.description();
         // 初始化为32 + 8，即head长度加正文描述符长度
-        let mut before_description = before_content_bytes(44, description.len() as u32);
+        let mut before_description = ContentBytes::before(44, description.len() as u32);
         metadata_bytes.append(&mut before_description);
         metadata_bytes.append(&mut description);
         database.append(metadata_bytes)?;
@@ -141,17 +141,17 @@ impl Database {
             self.name(),
             seek_end
         );
-        let content_new = before_content_bytes(seek_end, description.len() as u32);
+        let content_new = ContentBytes::before(seek_end, description.len() as u32);
         // 更新首部信息，初始化head为32，描述起始4字节，长度4字节
         self.write(32, content_new)?;
-        let database_path_old = database_path(old_name);
-        let database_path_new = database_path(self.name());
+        let database_path_old = Paths::database_path(old_name);
+        let database_path_new = Paths::database_path(self.name());
         match std::fs::rename(database_path_old, database_path_new) {
             Ok(_) => Ok(()),
             Err(err) => {
                 // 回滚数据
                 self.write(0, content)?;
-                Err(err_strs("file rename failed", err.to_string()))
+                Err(Errs::strs("file rename failed", err.to_string()))
             }
         }
     }
@@ -369,7 +369,7 @@ impl Database {
                 let create_time = Duration::nanoseconds(
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
-                let filepath = database_filepath(name.clone());
+                let filepath = Paths::database_filepath(name.clone());
                 let database = Database {
                     name,
                     comment,
@@ -380,16 +380,16 @@ impl Database {
                 };
                 log::info!("recovery database {}", database.name());
                 // 读取database目录下所有文件
-                match read_dir(database_path(database.name())) {
+                match read_dir(Paths::database_path(database.name())) {
                     // 恢复views数据
                     Ok(paths) => {
                         database.recovery_views(paths)?;
                         Ok(database)
                     }
-                    Err(err) => Err(err_strs("recovery databases read dir", err)),
+                    Err(err) => Err(Errs::strs("recovery databases read dir", err)),
                 }
             }
-            Err(err) => Err(err_strs("recovery database decode", err)),
+            Err(err) => Err(Errs::strs("recovery database decode", err)),
         }
     }
 
@@ -405,12 +405,12 @@ impl Database {
                         log::debug!("recovery view from {}", view_name);
                         // 恢复view数据
                         match self.recovery_view(view_name) {
-                            Err(err) => return Err(err_strs("recovery view", err)),
+                            Err(err) => return Err(Errs::strs("recovery view", err)),
                             _ => {}
                         }
                     }
                 }
-                Err(err) => return Err(err_strs("recovery views path", err)),
+                Err(err) => return Err(Errs::strs("recovery views path", err)),
             }
         }
         Ok(())
@@ -418,8 +418,8 @@ impl Database {
 
     /// 恢复view数据
     fn recovery_view(&self, view_name: String) -> GeorgeResult<()> {
-        let view_file_path = view_filepath(self.name(), view_name);
-        let hd = recovery_before_content(view_file_path.clone())?;
+        let view_file_path = Paths::view_filepath(self.name(), view_name);
+        let hd = ContentBytes::recovery(view_file_path.clone())?;
         let view = View::recover(self.name(), hd.clone())?;
         let view_c = view.clone();
         let view_r = view_c.read().unwrap();

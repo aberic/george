@@ -210,23 +210,43 @@ impl GeorgeString<&str> for GeorgeError {
     }
 }
 
-pub fn err_string(msg: String) -> GeorgeError {
+pub struct Errs;
+
+impl Errs {
+    pub fn string(msg: String) -> GeorgeError {
+        err_string(msg)
+    }
+
+    pub fn str(msg: &str) -> GeorgeError {
+        err_str(msg)
+    }
+
+    pub fn strs<Err: ToString>(msg: &str, err: Err) -> GeorgeError {
+        err_strs(msg, err)
+    }
+
+    pub fn strings<Err: ToString>(msg: String, err: Err) -> GeorgeError {
+        err_strings(msg, err)
+    }
+}
+
+fn err_string(msg: String) -> GeorgeError {
     GeorgeError::StringError(StringError { error_msg: msg })
 }
 
-pub fn err_str(msg: &str) -> GeorgeError {
+fn err_str(msg: &str) -> GeorgeError {
     GeorgeError::StringError(StringError {
         error_msg: msg.to_string(),
     })
 }
 
-pub fn err_strs<Err: ToString>(msg: &str, err: Err) -> GeorgeError {
+fn err_strs<Err: ToString>(msg: &str, err: Err) -> GeorgeError {
     GeorgeError::StringError(StringError {
         error_msg: format!("{} error: {}", msg, err.to_string()),
     })
 }
 
-pub fn err_strings<Err: ToString>(msg: String, err: Err) -> GeorgeError {
+fn err_strings<Err: ToString>(msg: String, err: Err) -> GeorgeError {
     GeorgeError::StringError(StringError {
         error_msg: format!("{} error: {}", msg, err.to_string()),
     })

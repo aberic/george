@@ -13,7 +13,7 @@
  */
 
 use crate::cryptos::hex::{Hex, HexEncoder};
-use crate::errors::entrances::{err_strings, err_strs, GeorgeResult};
+use crate::errors::entrances::{Errs, GeorgeResult};
 use crate::strings::{StringHandler, Strings};
 use openssl::hash::{Hasher, MessageDigest};
 use std::ops::Add;
@@ -286,11 +286,11 @@ fn digest(md: MessageDigest, comment: &[u8]) -> GeorgeResult<String> {
         Ok(mut hasher) => match hasher.update(comment) {
             Ok(()) => match hasher.finish() {
                 Ok(d_bytes) => Ok(Hex::encode(d_bytes.to_vec())),
-                Err(err) => Err(err_strs("hasher finish", err)),
+                Err(err) => Err(Errs::strs("hasher finish", err)),
             },
-            Err(err) => Err(err_strs("hasher update", err)),
+            Err(err) => Err(Errs::strs("hasher update", err)),
         },
-        Err(err) => Err(err_strs("hasher new", err)),
+        Err(err) => Err(Errs::strs("hasher new", err)),
     }
 }
 
@@ -336,56 +336,56 @@ fn hashcode64_string(comment: String) -> u64 {
 fn hashcode32_u32(comment: String) -> GeorgeResult<u32> {
     match comment.parse::<u32>() {
         Ok(real) => Ok(real),
-        Err(err) => Err(err_strings(format!("{} parse to u32", comment), err)),
+        Err(err) => Err(Errs::strings(format!("{} parse to u32", comment), err)),
     }
 }
 
 fn hashcode64_u64(comment: String) -> GeorgeResult<u64> {
     match comment.parse::<u64>() {
         Ok(real) => Ok(real),
-        Err(err) => Err(err_strings(format!("{} parse to u64", comment), err)),
+        Err(err) => Err(Errs::strings(format!("{} parse to u64", comment), err)),
     }
 }
 
 fn hashcode32_i32(comment: String) -> GeorgeResult<u32> {
     match comment.parse::<i32>() {
         Ok(real) => Ok(hashcode32_i32_real(real)),
-        Err(err) => Err(err_strings(format!("{} parse to i32", comment), err)),
+        Err(err) => Err(Errs::strings(format!("{} parse to i32", comment), err)),
     }
 }
 
 fn hashcode64_i64(comment: String) -> GeorgeResult<u64> {
     match comment.parse::<i64>() {
         Ok(real) => Ok(hashcode64_i64_real(real)),
-        Err(err) => Err(err_strings(format!("{} parse to i64", comment), err)),
+        Err(err) => Err(Errs::strings(format!("{} parse to i64", comment), err)),
     }
 }
 
 fn hashcode32_f32(comment: String) -> GeorgeResult<u32> {
     match comment.parse::<f32>() {
         Ok(real) => Ok(hashcode32_f32_real(real)),
-        Err(err) => Err(err_strings(format!("{} parse to f32", comment), err)),
+        Err(err) => Err(Errs::strings(format!("{} parse to f32", comment), err)),
     }
 }
 
 fn hashcode64_f64(comment: String) -> GeorgeResult<u64> {
     match comment.parse::<f64>() {
         Ok(real) => Ok(hashcode64_f64_real(real)),
-        Err(err) => Err(err_strings(format!("{} parse to f64", comment), err)),
+        Err(err) => Err(Errs::strings(format!("{} parse to f64", comment), err)),
     }
 }
 
 fn hashcode32_bl(comment: String) -> GeorgeResult<u32> {
     match comment.parse::<bool>() {
         Ok(real) => Ok(hashcode32_bool_real(real)),
-        Err(err) => Err(err_strings(format!("{} parse to bool", comment), err)),
+        Err(err) => Err(Errs::strings(format!("{} parse to bool", comment), err)),
     }
 }
 
 fn hashcode64_bl(comment: String) -> GeorgeResult<u64> {
     match comment.parse::<bool>() {
         Ok(real) => Ok(hashcode64_bool_real(real)),
-        Err(err) => Err(err_strings(format!("{} parse to bool", comment), err)),
+        Err(err) => Err(Errs::strings(format!("{} parse to bool", comment), err)),
     }
 }
 

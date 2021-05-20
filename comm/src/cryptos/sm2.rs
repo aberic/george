@@ -21,8 +21,7 @@ use num_bigint::BigUint;
 
 use crate::cryptos::base64::{Base64, Base64Encoder, Basee64Decoder};
 use crate::cryptos::hex::{Hex, HexDecoder, HexEncoder};
-use crate::errors::entrances::err_strs;
-use crate::errors::entrances::{err_string, GeorgeResult};
+use crate::errors::entrances::{Errs, GeorgeResult};
 use crate::io::file::{Filer, FilerWriter};
 
 /// 字节数组与字符串通过Base64转换
@@ -71,7 +70,7 @@ impl SM2 {
         let pk_point: Point;
         match self.ctx.load_pubkey(pk) {
             Ok(pp) => pk_point = pp,
-            Err(err) => return Err(err_string(format!("load pub key error! {:#?}", err))),
+            Err(err) => return Err(Errs::string(format!("load pub key error! {:#?}", err))),
         }
         let sig = self.ctx.sign(msg, &self.sk, &pk_point);
         Ok(sig.der_encode())
@@ -81,7 +80,7 @@ impl SM2 {
         let sig: Signature;
         match Signature::der_decode(der) {
             Ok(s) => sig = s,
-            Err(err) => return Err(err_strs("der decode", err)),
+            Err(err) => return Err(Errs::strs("der decode", err)),
         }
         Ok(self.ctx.verify(msg, &self.pk, &sig))
     }
@@ -91,11 +90,11 @@ impl SM2 {
         let sig: Signature;
         match self.ctx.load_pubkey(pk) {
             Ok(pp) => pk_point = pp,
-            Err(err) => return Err(err_string(format!("load pub key error! {:#?}", err))),
+            Err(err) => return Err(Errs::string(format!("load pub key error! {:#?}", err))),
         }
         match Signature::der_decode(der) {
             Ok(s) => sig = s,
-            Err(err) => return Err(err_strs("der decode", err)),
+            Err(err) => return Err(Errs::strs("der decode", err)),
         }
         Ok(self.ctx.verify(msg, &pk_point, &sig))
     }
@@ -377,9 +376,9 @@ impl SM2LoadKey for SM2 {
         match ctx.load_pubkey(pk_bytes.as_slice()) {
             Ok(pk) => match ctx.load_seckey(sk_bytes.as_slice()) {
                 Ok(sk) => Ok(SM2 { ctx, sk, pk }),
-                Err(err) => return Err(err_string(format!("load pub key error! {:#?}", err))),
+                Err(err) => return Err(Errs::string(format!("load pub key error! {:#?}", err))),
             },
-            Err(err) => return Err(err_string(format!("load pub key error! {:#?}", err))),
+            Err(err) => return Err(Errs::string(format!("load pub key error! {:#?}", err))),
         }
     }
 
@@ -1521,56 +1520,56 @@ impl SM2VerifyPath<&str, &str> for SM2 {
 fn stores<P: AsRef<Path>>(key: &[u8], key_filepath: P) -> GeorgeResult<()> {
     match Filer::write_force(key_filepath, key) {
         Ok(_) => Ok(()),
-        Err(err) => Err(err_strs("store key", err)),
+        Err(err) => Err(Errs::strs("store key", err)),
     }
 }
 
 fn store_hex_key<P: AsRef<Path>>(key: &[u8], key_filepath: P) -> GeorgeResult<()> {
     match Filer::write_force(key_filepath, Hex::encode(key)) {
         Ok(_) => Ok(()),
-        Err(err) => Err(err_strs("store key", err)),
+        Err(err) => Err(Errs::strs("store key", err)),
     }
 }
 
 fn store_hex_bytes_key<P: AsRef<Path>>(key: Vec<u8>, key_filepath: P) -> GeorgeResult<()> {
     match Filer::write_force(key_filepath, Hex::encode(key)) {
         Ok(_) => Ok(()),
-        Err(err) => Err(err_strs("store key", err)),
+        Err(err) => Err(Errs::strs("store key", err)),
     }
 }
 
 fn store_base64_key<P: AsRef<Path>>(key: &[u8], key_filepath: P) -> GeorgeResult<()> {
     match Filer::write_force(key_filepath, Base64::encode(key)) {
         Ok(_) => Ok(()),
-        Err(err) => Err(err_strs("store key", err)),
+        Err(err) => Err(Errs::strs("store key", err)),
     }
 }
 
 fn store_base64_bytes_key<P: AsRef<Path>>(key: Vec<u8>, key_filepath: P) -> GeorgeResult<()> {
     match Filer::write_force(key_filepath, Base64::encode(key)) {
         Ok(_) => Ok(()),
-        Err(err) => Err(err_strs("store key", err)),
+        Err(err) => Err(Errs::strs("store key", err)),
     }
 }
 
 fn store_key<P: AsRef<Path>>(key: String, key_filepath: P) -> GeorgeResult<()> {
     match Filer::write_force(key_filepath, key) {
         Ok(_) => Ok(()),
-        Err(err) => Err(err_strs("store key", err)),
+        Err(err) => Err(Errs::strs("store key", err)),
     }
 }
 
 fn load_key_string_from_file<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<String> {
     match read_to_string(key_filepath) {
         Ok(res) => Ok(res),
-        Err(err) => Err(err_strs("read", err)),
+        Err(err) => Err(Errs::strs("read", err)),
     }
 }
 
 fn load_key_from_file<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<Vec<u8>> {
     match read_to_string(key_filepath) {
         Ok(res) => Ok(Base64::decode(res)?),
-        Err(err) => Err(err_strs("read", err)),
+        Err(err) => Err(Errs::strs("read", err)),
     }
 }
 
@@ -1600,7 +1599,7 @@ fn generate_pk_from_sk(sk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
     let ctx = SigCtx::new();
     match ctx.load_seckey(sk.as_slice()) {
         Ok(p) => Ok(ctx.serialize_pubkey(&ctx.pk_from_sk(&p), true)),
-        Err(err) => Err(err_string(format!("unknown {:#?}", err))),
+        Err(err) => Err(Errs::string(format!("unknown {:#?}", err))),
     }
 }
 
@@ -1615,14 +1614,14 @@ fn generate_pk_from_sk_base64(sk: String) -> GeorgeResult<Vec<u8>> {
 fn generate_pk_from_sk_hex_file<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>> {
     match read_to_string(sk_filepath) {
         Ok(sk) => generate_pk_from_sk_hex(sk),
-        Err(err) => Err(err_strs("read to string", err)),
+        Err(err) => Err(Errs::strs("read to string", err)),
     }
 }
 
 fn generate_pk_from_sk_base64_file<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>> {
     match read_to_string(sk_filepath) {
         Ok(sk) => generate_pk_from_sk_base64(sk),
-        Err(err) => Err(err_strs("read to string", err)),
+        Err(err) => Err(Errs::strs("read to string", err)),
     }
 }
 
@@ -1680,11 +1679,11 @@ fn sign(msg: &[u8], sk: &[u8], pk: &[u8]) -> GeorgeResult<Vec<u8>> {
     let sig: Signature;
     match ctx.load_pubkey(pk) {
         Ok(pp) => pk_point = pp,
-        Err(err) => return Err(err_string(format!("load pub key error! {:#?}", err))),
+        Err(err) => return Err(Errs::string(format!("load pub key error! {:#?}", err))),
     }
     match ctx.load_seckey(sk) {
         Ok(sk_bu) => sig = ctx.sign(msg, &sk_bu, &pk_point),
-        Err(err) => return Err(err_string(format!("load pub key error! {:#?}", err))),
+        Err(err) => return Err(Errs::string(format!("load pub key error! {:#?}", err))),
     }
     Ok(sig.der_encode())
 }
@@ -1695,11 +1694,11 @@ fn verify(msg: &[u8], pk: &[u8], der: &[u8]) -> GeorgeResult<bool> {
     let sig: Signature;
     match ctx.load_pubkey(pk) {
         Ok(pp) => pk_point = pp,
-        Err(err) => return Err(err_string(format!("load pub key error! {:#?}", err))),
+        Err(err) => return Err(Errs::string(format!("load pub key error! {:#?}", err))),
     }
     match Signature::der_decode(der) {
         Ok(s) => sig = s,
-        Err(err) => return Err(err_strs("der decode", err)),
+        Err(err) => return Err(Errs::strs("der decode", err)),
     }
     Ok(ctx.verify(msg, &pk_point, &sig))
 }

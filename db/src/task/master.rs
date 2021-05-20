@@ -18,20 +18,17 @@ use crate::task::rich::Expectation;
 use crate::utils::comm::{DEFAULT_COMMENT, DEFAULT_NAME, GEORGE_DB_CONFIG, INDEX_CATALOG};
 use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
 use crate::utils::enums::{IndexType, KeyType};
-use crate::utils::path::{
-    bootstrap_filepath, data_database_path, data_page_path, data_path, database_filepath,
-    page_filepath,
-};
-use crate::utils::store::recovery_before_content;
+use crate::utils::path::Paths;
+use crate::utils::store::ContentBytes;
 use chrono::{Duration, Local, NaiveDateTime};
 use comm::env;
 use comm::errors::children::{
     DatabaseExistError, DatabaseNoExistError, PageExistError, PageNoExistError,
 };
-use comm::errors::entrances::{err_strs, GeorgeError, GeorgeResult};
+use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
 use comm::io::dir::{Dir, DirHandler};
 use comm::io::file::{Filer, FilerHandler, FilerWriter};
-use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u48};
+use comm::trans::Trans;
 use comm::vectors::{Vector, VectorHandler};
 use log::LevelFilter;
 use logs::{log_level, set_log, LogModule};
@@ -264,11 +261,11 @@ impl Master {
         view_info_index: Vec<u8>,
     ) -> GeorgeResult<Vec<u8>> {
         // 读取view版本号(2字节)
-        let view_version = trans_bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
+        let view_version = Trans::bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
         // 读取view长度(4字节)
-        let view_data_len = trans_bytes_2_u32(Vector::sub(view_info_index.clone(), 2, 6)?)?;
+        let view_data_len = Trans::bytes_2_u32(Vector::sub(view_info_index.clone(), 2, 6)?)?;
         // 读取view偏移量(6字节)
-        let view_data_seek = trans_bytes_2_u48(Vector::sub(view_info_index.clone(), 6, 12)?)?;
+        let view_data_seek = Trans::bytes_2_u48(Vector::sub(view_info_index.clone(), 6, 12)?)?;
         self.database(database_name)?
             .read()
             .unwrap()
@@ -607,7 +604,7 @@ impl Master {
 impl Master {
     /// 初始化或恢复数据
     fn init_or_recovery(&self) -> GeorgeResult<()> {
-        let bootstrap_file = bootstrap_filepath();
+        let bootstrap_file = Paths::bootstrap_filepath();
         match read_to_string(bootstrap_file.clone()) {
             Ok(text) => {
                 if text.is_empty() {
@@ -619,7 +616,7 @@ impl Master {
                     self.recovery()
                 }
             }
-            Err(err) => Err(err_strs("init_or_recovery", err)),
+            Err(err) => Err(Errs::strs("init_or_recovery", err)),
         }
     }
 
@@ -627,8 +624,8 @@ impl Master {
     fn init(&self) -> GeorgeResult<()> {
         log::info!("bootstrap init!");
         // 创建系统库，用户表(含权限等信息)、库历史记录表(含变更、归档等信息) todo
-        match Filer::write_force(bootstrap_filepath(), vec![0x01]) {
-            Err(err) => Err(err_strs("init", err)),
+        match Filer::write_force(Paths::bootstrap_filepath(), vec![0x01]) {
+            Err(err) => Err(Errs::strs("init", err)),
             _ => self.init_default(),
         }
     }
@@ -647,15 +644,15 @@ impl Master {
     fn recovery(&self) -> GeorgeResult<()> {
         log::info!("bootstrap recovery!");
         // 读取data目录下所有文件
-        match read_dir(data_database_path()) {
+        match read_dir(Paths::data_database_path()) {
             Ok(database_paths) => match self.recovery_databases(database_paths) {
-                Ok(()) => match read_dir(data_page_path()) {
+                Ok(()) => match read_dir(Paths::data_page_path()) {
                     Ok(page_paths) => self.recovery_pages(page_paths),
-                    Err(err) => Err(err_strs("recovery read dir page_paths", err)),
+                    Err(err) => Err(Errs::strs("recovery read dir page_paths", err)),
                 },
-                Err(err) => Err(err_strs("recovery databases", err)),
+                Err(err) => Err(Errs::strs("recovery databases", err)),
             },
-            Err(err) => Err(err_strs("recovery read dir database_paths", err)),
+            Err(err) => Err(Errs::strs("recovery read dir database_paths", err)),
         }
     }
 
@@ -670,12 +667,12 @@ impl Master {
                         let database_name = dir.file_name().to_str().unwrap().to_string();
                         log::debug!("recovery database from {}", database_name);
                         match self.recovery_database(database_name) {
-                            Err(err) => return Err(err_strs("recovery database", err)),
+                            Err(err) => return Err(Errs::strs("recovery database", err)),
                             _ => {}
                         }
                     }
                 }
-                Err(err) => return Err(err_strs("recovery databases path", err)),
+                Err(err) => return Err(Errs::strs("recovery databases path", err)),
             }
         }
         Ok(())
@@ -683,7 +680,7 @@ impl Master {
 
     /// 恢复database数据
     fn recovery_database(&self, database_name: String) -> GeorgeResult<()> {
-        let hd = recovery_before_content(database_filepath(database_name))?;
+        let hd = ContentBytes::recovery(Paths::database_filepath(database_name))?;
         // 恢复database数据
         let db = Database::recover(hd.clone())?;
         log::debug!(
@@ -713,12 +710,12 @@ impl Master {
                         let page_name = dir.file_name().to_str().unwrap().to_string();
                         log::debug!("recovery page from {}", page_name);
                         match self.recovery_page(page_name) {
-                            Err(err) => return Err(err_strs("recovery page", err)),
+                            Err(err) => return Err(Errs::strs("recovery page", err)),
                             _ => {}
                         }
                     }
                 }
-                Err(err) => return Err(err_strs("recovery page path", err)),
+                Err(err) => return Err(Errs::strs("recovery page path", err)),
             }
         }
         Ok(())
@@ -726,7 +723,7 @@ impl Master {
 
     /// 恢复page数据
     fn recovery_page(&self, page_name: String) -> GeorgeResult<()> {
-        let hd = recovery_before_content(page_filepath(page_name))?;
+        let hd = ContentBytes::recovery(Paths::page_filepath(page_name))?;
         // 恢复database数据
         let page = Page::recover(hd.clone())?;
         log::debug!(
@@ -760,11 +757,11 @@ pub(super) static GLOBAL_MASTER: Lazy<Arc<Master>> = Lazy::new(|| {
     };
     let master_arc = Arc::new(master);
     // 创建数据根目录
-    match Dir::mk_uncheck(data_path()) {
+    match Dir::mk_uncheck(Paths::data_path()) {
         Ok(_file) => log::info!("load data path success!"),
         Err(err) => panic!("create data path failed! error is {}", err),
     }
-    let bootstrap_file_path = bootstrap_filepath();
+    let bootstrap_file_path = Paths::bootstrap_filepath();
     if !Filer::exist(bootstrap_file_path.clone()) {
         // 创建引导文件
         match Filer::touch(bootstrap_file_path) {

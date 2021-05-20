@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-use crate::errors::entrances::{err_strs, GeorgeResult};
+use crate::errors::entrances::{Errs, GeorgeResult};
 
 pub trait StringHandler {
     /// 字符串截取
@@ -178,6 +178,6 @@ fn repeated_string(repeated: &str, len: usize) -> String {
 fn from_utf8(data: Vec<u8>) -> GeorgeResult<String> {
     match String::from_utf8(data) {
         Ok(res) => Ok(res),
-        Err(err) => Err(err_strs("string from utf8", err)),
+        Err(err) => Err(Errs::strs("string from utf8", err)),
     }
 }

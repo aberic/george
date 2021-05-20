@@ -12,23 +12,23 @@
  * limitations under the License.
  */
 
-use crate::utils::path::{bootstrap_filepath, data_path, database_path, index_filepath, view_path};
+use crate::utils::path::Paths;
 
 #[test]
 fn path_test() {
-    println!("data_path = {}", data_path());
+    println!("data_path = {}", Paths::data_path());
     println!(
         "database_path = {}",
-        database_path(String::from("database"))
+        Paths::database_path(String::from("database"))
     );
     println!(
         "view_path = {}",
-        view_path(String::from("database"), String::from("view"))
+        Paths::view_path(String::from("database"), String::from("view"))
     );
-    println!("bootstrap_file_path = {}", bootstrap_filepath());
+    println!("bootstrap_file_path = {}", Paths::bootstrap_filepath());
     println!(
         "index_file_path = {}",
-        index_filepath(
+        Paths::index_filepath(
             String::from("database"),
             String::from("view"),
             String::from("index")

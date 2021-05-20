@@ -16,7 +16,7 @@ use std::fs::File;
 use std::io::{Seek, SeekFrom, Write};
 use std::sync::{Arc, RwLock};
 
-use comm::errors::entrances::err_strs;
+use comm::errors::entrances::Errs;
 use comm::errors::entrances::GeorgeResult;
 use comm::io::file::{Filer, FilerExecutor, FilerHandler, FilerNormal, FilerReader};
 
@@ -97,11 +97,11 @@ impl FiledExec {
             Ok(mut file) => match file.seek(SeekFrom::Start(seek)) {
                 Ok(_s) => match file.write_all(content.as_slice()) {
                     Ok(()) => Ok(()),
-                    Err(err) => Err(err_strs("filed write while write all", err)),
+                    Err(err) => Err(Errs::strs("filed write while write all", err)),
                 },
-                Err(err) => Err(err_strs("filed write while seek", err)),
+                Err(err) => Err(Errs::strs("filed write while seek", err)),
             },
-            Err(err) => Err(err_strs("filed read", err)),
+            Err(err) => Err(Errs::strs("filed read", err)),
         }
     }
     fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
@@ -111,9 +111,9 @@ impl FiledExec {
                     Filer::appends(file, content.clone())?;
                     Ok(seek_end_before)
                 }
-                Err(err) => Err(err_strs("write append file try clone1", err)),
+                Err(err) => Err(Errs::strs("write append file try clone1", err)),
             },
-            Err(err) => Err(err_strs("filed read", err)),
+            Err(err) => Err(Errs::strs("filed read", err)),
         }
     }
 }

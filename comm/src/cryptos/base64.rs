@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-use crate::errors::entrances::{err_strs, GeorgeResult};
+use crate::errors::entrances::{Errs, GeorgeResult};
 use openssl::base64::{decode_block, encode_block};
 
 #[derive(Debug, Clone)]
@@ -42,7 +42,7 @@ impl Basee64Decoder<&str> for Base64 {
     fn decode(src: &str) -> GeorgeResult<Vec<u8>> {
         match decode_block(src) {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("base64 decode", err)),
+            Err(err) => Err(Errs::strs("base64 decode", err)),
         }
     }
 }
@@ -51,7 +51,7 @@ impl Basee64Decoder<String> for Base64 {
     fn decode(src: String) -> GeorgeResult<Vec<u8>> {
         match decode_block(src.as_str()) {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("base64 decode", err)),
+            Err(err) => Err(Errs::strs("base64 decode", err)),
         }
     }
 }

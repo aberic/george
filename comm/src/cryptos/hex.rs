@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-use crate::errors::entrances::{err_strs, GeorgeResult};
+use crate::errors::entrances::{Errs, GeorgeResult};
 
 #[derive(Debug, Clone)]
 pub struct Hex;
@@ -47,7 +47,7 @@ impl HexDecoder<&str> for Hex {
     fn decode(src: &str) -> GeorgeResult<Vec<u8>> {
         match hex::decode(src) {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("base64 decode", err)),
+            Err(err) => Err(Errs::strs("base64 decode", err)),
         }
     }
 }
@@ -56,7 +56,7 @@ impl HexDecoder<String> for Hex {
     fn decode(src: String) -> GeorgeResult<Vec<u8>> {
         match hex::decode(src.as_str()) {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("base64 decode", err)),
+            Err(err) => Err(Errs::strs("base64 decode", err)),
         }
     }
 }

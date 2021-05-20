@@ -29,7 +29,7 @@ use openssl::x509::{
     X509StoreContext, X509VerifyResult, X509,
 };
 
-use crate::errors::entrances::err_strs;
+use crate::errors::entrances::Errs;
 use crate::errors::entrances::GeorgeResult;
 use crate::io::file::{Filer, FilerReader, FilerWriter};
 use openssl::stack::Stack;
@@ -87,7 +87,7 @@ impl Cert {
             message_digest,
         ) {
             Ok(x509) => Ok(Cert { x509 }),
-            Err(err) => Err(err_strs("create_cert", err)),
+            Err(err) => Err(Errs::strs("create_cert", err)),
         }
     }
 
@@ -219,7 +219,7 @@ impl Cert {
             message_digest,
         ) {
             Ok(x509) => Ok(Cert { x509 }),
-            Err(err) => Err(err_strs("create_cert", err)),
+            Err(err) => Err(Errs::strs("create_cert", err)),
         }
     }
 
@@ -480,7 +480,7 @@ impl Cert {
             .build()
         {
             Ok(ext) => basic_constraints = ext,
-            Err(err) => return Err(err_strs("BasicConstraints build", err)),
+            Err(err) => return Err(Errs::strs("BasicConstraints build", err)),
         }
         let key_usage: X509Extension;
         match KeyUsage::new() // 密钥使用
@@ -490,7 +490,7 @@ impl Cert {
             .build()
         {
             Ok(ext) => key_usage = ext,
-            Err(err) => return Err(err_strs("BasicConstraints build", err)),
+            Err(err) => return Err(Errs::strs("BasicConstraints build", err)),
         }
         let ext_key_usage: Option<X509Extension>;
         match ExtendedKeyUsage::new() // 扩展的密钥使用
@@ -499,7 +499,7 @@ impl Cert {
             .build()
         {
             Ok(ext) => ext_key_usage = Some(ext),
-            Err(err) => return Err(err_strs("BasicConstraints build", err)),
+            Err(err) => return Err(Errs::strs("BasicConstraints build", err)),
         }
         match generate_x509(
             Some(x509),
@@ -519,7 +519,7 @@ impl Cert {
             message_digest,
         ) {
             Ok(x509) => Ok(Cert { x509 }),
-            Err(err) => Err(err_strs("create_cert", err)),
+            Err(err) => Err(Errs::strs("create_cert", err)),
         }
     }
 
@@ -753,7 +753,7 @@ impl Cert {
                 Filer::write_force(filepath, v8s)?;
                 Ok(())
             }
-            Err(err) => Err(err_strs("x509 to_pem", err)),
+            Err(err) => Err(Errs::strs("x509 to_pem", err)),
         }
     }
 
@@ -763,7 +763,7 @@ impl Cert {
                 Filer::write_force(filepath, v8s)?;
                 Ok(())
             }
-            Err(err) => Err(err_strs("x509 to_der", err)),
+            Err(err) => Err(Errs::strs("x509 to_der", err)),
         }
     }
 }
@@ -773,28 +773,28 @@ impl Cert {
     pub fn load_pem(bytes: Vec<u8>) -> GeorgeResult<Cert> {
         match X509::from_pem(bytes.as_slice()) {
             Ok(x509) => Ok(Cert { x509 }),
-            Err(err) => Err(err_strs("X509 from_pem", err)),
+            Err(err) => Err(Errs::strs("X509 from_pem", err)),
         }
     }
 
     pub fn load_der(bytes: Vec<u8>) -> GeorgeResult<Cert> {
         match X509::from_der(bytes.as_slice()) {
             Ok(x509) => Ok(Cert { x509 }),
-            Err(err) => Err(err_strs("X509 from_der", err)),
+            Err(err) => Err(Errs::strs("X509 from_der", err)),
         }
     }
 
     pub fn load_pem_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Cert> {
         match read(filepath) {
             Ok(bytes) => Cert::load_pem(bytes),
-            Err(err) => Err(err_strs("read", err)),
+            Err(err) => Err(Errs::strs("read", err)),
         }
     }
 
     pub fn load_der_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Cert> {
         match read(filepath) {
             Ok(bytes) => Cert::load_der(bytes),
-            Err(err) => Err(err_strs("read", err)),
+            Err(err) => Err(Errs::strs("read", err)),
         }
     }
 }
@@ -809,7 +809,7 @@ impl Cert {
     pub fn verify(sk: PKey<Public>, x509: X509) -> GeorgeResult<bool> {
         match x509.verify(&sk) {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("x509 verify", err)),
+            Err(err) => Err(Errs::strs("x509 verify", err)),
         }
     }
 
@@ -820,7 +820,7 @@ impl Cert {
     pub fn verify_cert(pre_x509: X509, x509: X509) -> GeorgeResult<()> {
         match pre_x509.issued(&x509) {
             X509VerifyResult::OK => Ok(()),
-            ver_err => Err(err_strs("x509 issued", ver_err)),
+            ver_err => Err(Errs::strs("x509 issued", ver_err)),
         }
     }
 
@@ -838,17 +838,17 @@ impl Cert {
         let chain: Stack<X509>;
         match Stack::new() {
             Ok(res) => chain = res,
-            Err(err) => return Err(err_strs("Stack new", err)),
+            Err(err) => return Err(Errs::strs("Stack new", err)),
         }
 
         let mut store_builder: X509StoreBuilder;
         match X509StoreBuilder::new() {
             Ok(res) => store_builder = res,
-            Err(err) => return Err(err_strs("store_builder add_cert", err)),
+            Err(err) => return Err(Errs::strs("store_builder add_cert", err)),
         }
         for x509 in pre_x509s {
             match store_builder.add_cert(x509) {
-                Err(err) => return Err(err_strs("store_builder add_cert", err)),
+                Err(err) => return Err(Errs::strs("store_builder add_cert", err)),
                 _ => {}
             }
         }
@@ -857,11 +857,11 @@ impl Cert {
         let mut context: X509StoreContext;
         match X509StoreContext::new() {
             Ok(res) => context = res,
-            Err(err) => return Err(err_strs("X509StoreContext new", err)),
+            Err(err) => return Err(Errs::strs("X509StoreContext new", err)),
         }
         match context.init(&store, &x509, &chain, |c| c.verify_cert()) {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("X509StoreContext verify_cert", err)),
+            Err(err) => Err(Errs::strs("X509StoreContext verify_cert", err)),
         }
     }
 
@@ -872,7 +872,7 @@ impl Cert {
                 Ok(mut v8s) => {
                     stacks.append(&mut v8s);
                 }
-                Err(err) => return Err(err_strs("x509 to_pem", err)),
+                Err(err) => return Err(Errs::strs("x509 to_pem", err)),
             }
         }
         Filer::write_force(filepath, stacks)?;
@@ -883,7 +883,7 @@ impl Cert {
         let bytes = Filer::read_bytes(filepath)?;
         match X509::stack_from_pem(bytes.as_slice()) {
             Ok(v8s) => Ok(v8s),
-            Err(err) => return Err(err_strs("x509 stack_from_pem", err)),
+            Err(err) => return Err(Errs::strs("x509 stack_from_pem", err)),
         }
     }
 }
@@ -914,13 +914,13 @@ impl CSR {
                 Ok(()) => match req_builder.set_subject_name(&subject_info) {
                     Ok(()) => match req_builder.sign(&sk, message_digest) {
                         Ok(()) => Ok(req_builder.build()),
-                        Err(err) => Err(err_strs("sign", err)),
+                        Err(err) => Err(Errs::strs("sign", err)),
                     },
-                    Err(err) => Err(err_strs("set_subject_name", err)),
+                    Err(err) => Err(Errs::strs("set_subject_name", err)),
                 },
-                Err(err) => Err(err_strs("set_pubkey", err)),
+                Err(err) => Err(Errs::strs("set_pubkey", err)),
             },
-            Err(err) => Err(err_strs("X509ReqBuilder_new", err)),
+            Err(err) => Err(Errs::strs("X509ReqBuilder_new", err)),
         }
     }
 
@@ -943,7 +943,7 @@ impl CSR {
     pub fn pk(&self) -> GeorgeResult<PKey<Public>> {
         match self.x509_req.public_key() {
             Ok(pk) => Ok(pk),
-            Err(err) => Err(err_strs("x509_req public_key", err)),
+            Err(err) => Err(Errs::strs("x509_req public_key", err)),
         }
     }
 
@@ -953,7 +953,7 @@ impl CSR {
     pub fn verify(pk: PKey<Public>, x509_req: X509Req) -> GeorgeResult<bool> {
         match x509_req.verify(&pk) {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("x509_req verify", err)),
+            Err(err) => Err(Errs::strs("x509_req verify", err)),
         }
     }
 
@@ -970,7 +970,7 @@ impl CSR {
                 Filer::write_force(filepath, v8s)?;
                 Ok(())
             }
-            Err(err) => Err(err_strs("x509 to_pem", err)),
+            Err(err) => Err(Errs::strs("x509 to_pem", err)),
         }
     }
 
@@ -985,35 +985,35 @@ impl CSR {
                 Filer::write_force(filepath, v8s)?;
                 Ok(())
             }
-            Err(err) => Err(err_strs("x509 to_der", err)),
+            Err(err) => Err(Errs::strs("x509 to_der", err)),
         }
     }
 
     pub fn load_pem(bytes: Vec<u8>) -> GeorgeResult<CSR> {
         match X509Req::from_pem(bytes.as_slice()) {
             Ok(x509_req) => Ok(CSR { x509_req }),
-            Err(err) => Err(err_strs("X509Req from_pem", err)),
+            Err(err) => Err(Errs::strs("X509Req from_pem", err)),
         }
     }
 
     pub fn load_der(bytes: Vec<u8>) -> GeorgeResult<CSR> {
         match X509Req::from_der(bytes.as_slice()) {
             Ok(x509_req) => Ok(CSR { x509_req }),
-            Err(err) => Err(err_strs("X509Req from_der", err)),
+            Err(err) => Err(Errs::strs("X509Req from_der", err)),
         }
     }
 
     pub fn load_pem_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<CSR> {
         match read(filepath) {
             Ok(bytes) => CSR::load_pem(bytes),
-            Err(err) => Err(err_strs("read", err)),
+            Err(err) => Err(Errs::strs("read", err)),
         }
     }
 
     pub fn load_der_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<CSR> {
         match read(filepath) {
             Ok(bytes) => CSR::load_der(bytes),
-            Err(err) => Err(err_strs("read", err)),
+            Err(err) => Err(Errs::strs("read", err)),
         }
     }
 }
@@ -1133,7 +1133,7 @@ fn ca_basic_constraints_ext() -> GeorgeResult<X509Extension> {
         .build()
     {
         Ok(ext) => Ok(ext),
-        Err(err) => Err(err_strs("BasicConstraints build", err)),
+        Err(err) => Err(Errs::strs("BasicConstraints build", err)),
     }
 }
 
@@ -1147,7 +1147,7 @@ fn ca_key_usage_ext() -> GeorgeResult<X509Extension> {
         .build()
     {
         Ok(ext) => Ok(ext),
-        Err(err) => Err(err_strs("KeyUsage build", err)),
+        Err(err) => Err(Errs::strs("KeyUsage build", err)),
     }
 }
 
@@ -1400,7 +1400,7 @@ impl X509NameInfo {
         };
         match xni.build() {
             Ok(x509_name) => Ok(x509_name),
-            Err(err) => Err(err_strs("X509Name build", err)),
+            Err(err) => Err(Errs::strs("X509Name build", err)),
         }
     }
 
@@ -1424,7 +1424,7 @@ impl X509NameInfo {
         };
         match xni.build() {
             Ok(x509_name) => Ok(x509_name),
-            Err(err) => Err(err_strs("X509Name build", err)),
+            Err(err) => Err(Errs::strs("X509Name build", err)),
         }
     }
 

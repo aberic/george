@@ -15,9 +15,9 @@
 use crate::task::master::GLOBAL_MASTER;
 use crate::task::rich::Condition;
 use crate::task::view::View;
-use comm::errors::entrances::{err_string, err_strs, GeorgeResult};
+use comm::errors::entrances::{Errs, GeorgeResult};
 use comm::io::file::{Filer, FilerWriter};
-use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u48};
+use comm::trans::Trans;
 use comm::vectors::{Vector, VectorHandler};
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
@@ -41,11 +41,11 @@ fn check(
     } else {
         let v_r = view.read().unwrap();
         // 读取view版本号(2字节)
-        let view_version = trans_bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
+        let view_version = Trans::bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
         // 读取view持续长度(4字节)
-        let view_data_len = trans_bytes_2_u32(Vector::sub(view_info_index.clone(), 2, 6)?)?;
+        let view_data_len = Trans::bytes_2_u32(Vector::sub(view_info_index.clone(), 2, 6)?)?;
         // 读取view偏移量(6字节)
-        let view_data_seek = trans_bytes_2_u48(Vector::sub(view_info_index.clone(), 6, 12)?)?;
+        let view_data_seek = Trans::bytes_2_u48(Vector::sub(view_info_index.clone(), 6, 12)?)?;
         let real =
             DataReal::from(v_r.read_content(view_version, view_data_len, view_data_seek)?)?;
         let value_bytes = real.value();
@@ -78,7 +78,7 @@ impl DataReal {
     pub(crate) fn values(&self) -> GeorgeResult<Vec<u8>> {
         match serde_json::to_vec(&self) {
             Ok(v8s) => Ok(v8s),
-            Err(err) => Err(err_strs("data real 2 bytes", err)),
+            Err(err) => Err(Errs::strs("data real 2 bytes", err)),
         }
     }
     pub(crate) fn set_seq(&mut self, sequence: u64) {
@@ -97,7 +97,7 @@ impl DataReal {
     fn from(real_bytes: Vec<u8>) -> GeorgeResult<DataReal> {
         match serde_json::from_slice(real_bytes.as_slice()) {
             Ok(dr) => Ok(dr),
-            Err(err) => Err(err_strs("data real from u8s", err)),
+            Err(err) => Err(Errs::strs("data real from u8s", err)),
         }
     }
 }
@@ -119,7 +119,7 @@ impl RootBytes {
     pub(crate) fn recovery(bytes: Vec<u8>, len: usize) -> GeorgeResult<RootBytes> {
         let bytes_len = bytes.len();
         if bytes_len != len {
-            Err(err_string(format!(
+            Err(Errs::string(format!(
                 "bytes len is {}, while expect {}",
                 bytes_len, len
             )))

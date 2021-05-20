@@ -15,7 +15,7 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 
-use comm::errors::entrances::{err_str, GeorgeError, GeorgeResult};
+use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerReader};
 
 use crate::task::engine::check;
@@ -23,12 +23,12 @@ use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::task::view::View;
-use crate::utils::comm::hash_key_64;
+use crate::utils::comm::IndexKey;
 use crate::utils::enums::{IndexType, KeyType};
-use crate::utils::path::{index_path, node_filepath};
+use crate::utils::path::Paths;
 use crate::utils::writer::Filed;
 use comm::errors::children::DataNoExistError;
-use comm::trans::{trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u48};
+use comm::trans::Trans;
 use comm::vectors::{Vector, VectorHandler};
 
 /// 索引B+Tree结点结构
@@ -65,8 +65,8 @@ impl Node {
         let atomic_key = Arc::new(AtomicU64::new(1));
         let v_c = view.clone();
         let v_r = v_c.read().unwrap();
-        let index_path = index_path(v_r.database_name(), v_r.name(), index_name.clone());
-        let node_filepath = node_filepath(index_path, String::from("increment"));
+        let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
+        let node_filepath = Paths::node_filepath(index_path, String::from("increment"));
         let filer = Filed::create(node_filepath.clone())?;
         filer.append(Vector::create_empty_bytes(12))?;
         Ok(Arc::new(Node {
@@ -87,8 +87,8 @@ impl Node {
     ) -> GeorgeResult<Arc<Self>> {
         let v_c = view.clone();
         let v_r = v_c.read().unwrap();
-        let index_path = index_path(v_r.database_name(), v_r.name(), index_name.clone());
-        let node_filepath = node_filepath(index_path, String::from("increment"));
+        let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
+        let node_filepath = Paths::node_filepath(index_path, String::from("increment"));
         let file_len = Filer::len(node_filepath.clone())?;
         let last_key = file_len / 12;
         // log::debug!("atomic_key_u32 = {}", atomic_key_u32);
@@ -161,12 +161,12 @@ impl TNode for Node {
     }
 
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        let hash_key = hash_key_64(self.key_type(), key)?;
+        let hash_key = IndexKey::u64(self.key_type(), key)?;
         self.get_in_node(hash_key)
     }
 
     fn del(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
-        let hash_key = hash_key_64(self.key_type(), key.clone())?;
+        let hash_key = IndexKey::u64(self.key_type(), key.clone())?;
         self.del_in_node(key, hash_key, seed)
     }
 
@@ -210,7 +210,7 @@ impl Node {
         if !force {
             let res = self.read(seek, 12)?;
             if Vector::is_fill(res) {
-                return Err(err_str("auto increment key has been used"));
+                return Err(Errs::str("auto increment key has been used"));
             }
         }
         seed.write().unwrap().modify(IndexPolicy::create(
@@ -227,11 +227,11 @@ impl Node {
         let res = self.read(seek, 12)?;
         return if Vector::is_fill(res.clone()) {
             // 读取view版本号(2字节)
-            let view_version = trans_bytes_2_u16(Vector::sub(res.clone(), 0, 2)?)?;
+            let view_version = Trans::bytes_2_u16(Vector::sub(res.clone(), 0, 2)?)?;
             // 读取view持续长度(4字节)
-            let view_data_len = trans_bytes_2_u32(Vector::sub(res.clone(), 2, 6)?)?;
+            let view_data_len = Trans::bytes_2_u32(Vector::sub(res.clone(), 2, 6)?)?;
             // 读取view偏移量(6字节)
-            let view_data_seek = trans_bytes_2_u48(Vector::sub(res.clone(), 6, 12)?)?;
+            let view_data_seek = Trans::bytes_2_u48(Vector::sub(res.clone(), 6, 12)?)?;
             self.view
                 .read()
                 .unwrap()

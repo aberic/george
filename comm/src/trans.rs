@@ -16,9 +16,128 @@ use std::collections::HashMap;
 
 use phf::{phf_map, Map};
 
-use crate::errors::entrances::{err_string, GeorgeResult};
+use crate::errors::entrances::{Errs, GeorgeResult};
 use crate::strings::{StringHandler, Strings};
 use std::ops::{Add, Sub};
+
+pub struct Trans;
+
+impl Trans {
+    /// u64转64进制字符串<p><p>
+    ///
+    /// 最大值2^64=18446744073709551616，64进制字符串为11位“-----------”
+    pub fn u64_2_string64(uint64: u64) -> String {
+        trans_u64_2_string64(uint64)
+    }
+
+    /// 64进制字符串转u64
+    pub fn string64_2_u64(string64: String) -> u64 {
+        trans_string64_2_u64(string64)
+    }
+
+    /// u32转64进制字符串<p><p>
+    ///
+    /// 最大值2^32=4294967295，64进制字符串为6位“------”
+    pub fn u32_2_string64(uint32: u32) -> String {
+        trans_u32_2_string64(uint32)
+    }
+
+    /// 64进制字符串转u32
+    pub fn string64_2_u32(string64: String) -> u32 {
+        trans_string64_2_u32(string64)
+    }
+
+    /// u32转64进制字符串<p><p>
+    ///
+    /// 最大值2^32=4294967295，64进制字符串为6位“------”
+    ///
+    /// 左侧补齐，保证总长度是6
+    pub fn u32_2_string64_fit(uint32: u32) -> String {
+        trans_u32_2_string64_fit(uint32)
+    }
+
+    /// 64进制字符串转u32
+    ///
+    /// 删除左侧多余
+    pub fn string64_2_u32_fit(string64: String) -> u32 {
+        trans_string64_2_u32_fit(string64)
+    }
+
+    /// u64转16进制数组
+    pub fn u64_2_bytes(uint64: u64) -> Vec<u8> {
+        trans_u64_2_bytes(uint64)
+    }
+
+    /// 16进制数组转u64
+    ///
+    /// 字节数组长度不得超过8，超过将溢出
+    pub fn bytes_2_u64(bs: Vec<u8>) -> GeorgeResult<u64> {
+        trans_bytes_2_u64(bs)
+    }
+
+    /// u48转16进制数组
+    pub fn u48_2_bytes(uint64: u64) -> Vec<u8> {
+        trans_u48_2_bytes(uint64)
+    }
+
+    /// 16进制数组转u48
+    ///
+    /// 字节数组长度不得超过6，超过将溢出
+    pub fn bytes_2_u48(bs: Vec<u8>) -> GeorgeResult<u64> {
+        trans_bytes_2_u48(bs)
+    }
+
+    /// u40转16进制数组
+    pub fn u40_2_bytes(uint64: u64) -> Vec<u8> {
+        trans_u40_2_bytes(uint64)
+    }
+
+    /// 16进制数组转u40
+    ///
+    /// 字节数组长度不得超过6，超过将溢出
+    pub fn bytes_2_u40(bs: Vec<u8>) -> GeorgeResult<u64> {
+        trans_bytes_2_u40(bs)
+    }
+
+    /// u32转16进制数组
+    pub fn u32_2_bytes(uint32: u32) -> Vec<u8> {
+        trans_u32_2_bytes(uint32)
+    }
+
+    /// 16进制数组转u32
+    ///
+    /// 字节数组长度不得超过4，超过将溢出
+    pub fn bytes_2_u32(bs: Vec<u8>) -> GeorgeResult<u32> {
+        trans_bytes_2_u32(bs)
+    }
+
+    /// 16进制数组转u32，但返回u64
+    ///
+    /// 字节数组长度不得超过4，超过将溢出
+    pub fn bytes_2_u32_as_u64(bs: Vec<u8>) -> GeorgeResult<u64> {
+        trans_bytes_2_u32_as_u64(bs)
+    }
+
+    /// u16转16进制数组
+    pub fn u16_2_bytes(uint16: u16) -> Vec<u8> {
+        trans_u16_2_bytes(uint16)
+    }
+
+    /// 16进制数组转u16
+    ///
+    /// 字节数组长度不得超过2，超过将溢出
+    pub fn bytes_2_u16(bs: Vec<u8>) -> GeorgeResult<u16> {
+        trans_bytes_2_u16(bs)
+    }
+
+    pub fn i64_2_u64(res: i64) -> u64 {
+        trans_i64_2_u64(res)
+    }
+
+    pub fn i32_2_u64(res: i32) -> u64 {
+        trans_i32_2_u64(res)
+    }
+}
 
 /// 十进制对应64进制映射
 static STRING_2_U64_MAP: Map<&'static str, u64> = phf_map! {
@@ -115,7 +234,7 @@ lazy_static! {
 /// u64转64进制字符串<p><p>
 ///
 /// 最大值2^64=18446744073709551616，64进制字符串为11位“-----------”
-pub fn trans_u64_2_string64(mut uint64: u64) -> String {
+fn trans_u64_2_string64(mut uint64: u64) -> String {
     let mut res = String::new();
     while uint64 > 0 {
         if uint64 >= 64 {
@@ -130,7 +249,7 @@ pub fn trans_u64_2_string64(mut uint64: u64) -> String {
 }
 
 /// 64进制字符串转u64
-pub fn trans_string64_2_u64(mut string64: String) -> u64 {
+fn trans_string64_2_u64(mut string64: String) -> u64 {
     let str_len = string64.len();
     let mut res: u64 = 0;
     let mut i = 0;
@@ -148,12 +267,12 @@ pub fn trans_string64_2_u64(mut string64: String) -> u64 {
 /// u32转64进制字符串<p><p>
 ///
 /// 最大值2^32=4294967295，64进制字符串为6位“------”
-pub fn trans_u32_2_string64(uint32: u32) -> String {
+fn trans_u32_2_string64(uint32: u32) -> String {
     trans_u64_2_string64(uint32 as u64)
 }
 
 /// 64进制字符串转u32
-pub fn trans_string64_2_u32(string64: String) -> u32 {
+fn trans_string64_2_u32(string64: String) -> u32 {
     trans_string64_2_u64(string64) as u32
 }
 
@@ -162,19 +281,19 @@ pub fn trans_string64_2_u32(string64: String) -> u32 {
 /// 最大值2^32=4294967295，64进制字符串为6位“------”
 ///
 /// 左侧补齐，保证总长度是6
-pub fn trans_u32_2_string64_fit(uint32: u32) -> String {
+fn trans_u32_2_string64_fit(uint32: u32) -> String {
     Strings::left_fits(trans_u32_2_string64(uint32), "*".parse().unwrap(), 6)
 }
 
 /// 64进制字符串转u32
 ///
 /// 删除左侧多余
-pub fn trans_string64_2_u32_fit(string64: String) -> u32 {
+fn trans_string64_2_u32_fit(string64: String) -> u32 {
     trans_string64_2_u64(Strings::left_un_fits(string64, "*".parse().unwrap())) as u32
 }
 
 /// u64转16进制数组
-pub fn trans_u64_2_bytes(uint64: u64) -> Vec<u8> {
+fn trans_u64_2_bytes(uint64: u64) -> Vec<u8> {
     let mut bs: Vec<u8> = vec![];
     bs.push(((uint64 >> 56) & 0xFF) as u8);
     bs.push(((uint64 >> 48) & 0xFF) as u8);
@@ -190,10 +309,10 @@ pub fn trans_u64_2_bytes(uint64: u64) -> Vec<u8> {
 /// 16进制数组转u64
 ///
 /// 字节数组长度不得超过8，超过将溢出
-pub fn trans_bytes_2_u64(bs: Vec<u8>) -> GeorgeResult<u64> {
+fn trans_bytes_2_u64(bs: Vec<u8>) -> GeorgeResult<u64> {
     let bs_len = bs.len();
     if bs_len > 8 {
-        Err(err_string(format!(
+        Err(Errs::string(format!(
             "trans bytes 2 u16 out of bounds, except le 8, but receive {}",
             bs_len
         )))
@@ -209,7 +328,7 @@ pub fn trans_bytes_2_u64(bs: Vec<u8>) -> GeorgeResult<u64> {
 }
 
 /// u48转16进制数组
-pub fn trans_u48_2_bytes(uint64: u64) -> Vec<u8> {
+fn trans_u48_2_bytes(uint64: u64) -> Vec<u8> {
     let mut bs: Vec<u8> = vec![];
     bs.push(((uint64 >> 40) & 0xFF) as u8);
     bs.push(((uint64 >> 32) & 0xFF) as u8);
@@ -223,10 +342,10 @@ pub fn trans_u48_2_bytes(uint64: u64) -> Vec<u8> {
 /// 16进制数组转u48
 ///
 /// 字节数组长度不得超过6，超过将溢出
-pub fn trans_bytes_2_u48(bs: Vec<u8>) -> GeorgeResult<u64> {
+fn trans_bytes_2_u48(bs: Vec<u8>) -> GeorgeResult<u64> {
     let bs_len = bs.len();
     if bs_len > 6 {
-        Err(err_string(format!(
+        Err(Errs::string(format!(
             "trans bytes 2 u16 out of bounds, except le 6, but receive {}",
             bs_len
         )))
@@ -242,7 +361,7 @@ pub fn trans_bytes_2_u48(bs: Vec<u8>) -> GeorgeResult<u64> {
 }
 
 /// u40转16进制数组
-pub fn trans_u40_2_bytes(uint64: u64) -> Vec<u8> {
+fn trans_u40_2_bytes(uint64: u64) -> Vec<u8> {
     let mut bs: Vec<u8> = vec![];
     bs.push(((uint64 >> 32) & 0xFF) as u8);
     bs.push(((uint64 >> 24) & 0xFF) as u8);
@@ -255,10 +374,10 @@ pub fn trans_u40_2_bytes(uint64: u64) -> Vec<u8> {
 /// 16进制数组转u40
 ///
 /// 字节数组长度不得超过6，超过将溢出
-pub fn trans_bytes_2_u40(bs: Vec<u8>) -> GeorgeResult<u64> {
+fn trans_bytes_2_u40(bs: Vec<u8>) -> GeorgeResult<u64> {
     let bs_len = bs.len();
     if bs_len > 5 {
-        Err(err_string(format!(
+        Err(Errs::string(format!(
             "trans bytes 2 u16 out of bounds, except le 5, but receive {}",
             bs_len
         )))
@@ -274,7 +393,7 @@ pub fn trans_bytes_2_u40(bs: Vec<u8>) -> GeorgeResult<u64> {
 }
 
 /// u32转16进制数组
-pub fn trans_u32_2_bytes(uint32: u32) -> Vec<u8> {
+fn trans_u32_2_bytes(uint32: u32) -> Vec<u8> {
     let mut bs: Vec<u8> = vec![];
     bs.push(((uint32 >> 24) & 0xFF) as u8);
     bs.push(((uint32 >> 16) & 0xFF) as u8);
@@ -286,10 +405,10 @@ pub fn trans_u32_2_bytes(uint32: u32) -> Vec<u8> {
 /// 16进制数组转u32
 ///
 /// 字节数组长度不得超过4，超过将溢出
-pub fn trans_bytes_2_u32(bs: Vec<u8>) -> GeorgeResult<u32> {
+fn trans_bytes_2_u32(bs: Vec<u8>) -> GeorgeResult<u32> {
     let bs_len = bs.len();
     if bs_len > 4 {
-        Err(err_string(format!(
+        Err(Errs::string(format!(
             "trans bytes 2 u16 out of bounds, except le 4, but receive {}",
             bs_len
         )))
@@ -307,10 +426,10 @@ pub fn trans_bytes_2_u32(bs: Vec<u8>) -> GeorgeResult<u32> {
 /// 16进制数组转u32，但返回u64
 ///
 /// 字节数组长度不得超过4，超过将溢出
-pub fn trans_bytes_2_u32_as_u64(bs: Vec<u8>) -> GeorgeResult<u64> {
+fn trans_bytes_2_u32_as_u64(bs: Vec<u8>) -> GeorgeResult<u64> {
     let bs_len = bs.len();
     if bs_len > 4 {
-        Err(err_string(format!(
+        Err(Errs::string(format!(
             "trans bytes 2 u16 out of bounds, except le 4, but receive {}",
             bs_len
         )))
@@ -326,7 +445,7 @@ pub fn trans_bytes_2_u32_as_u64(bs: Vec<u8>) -> GeorgeResult<u64> {
 }
 
 /// u16转16进制数组
-pub fn trans_u16_2_bytes(uint16: u16) -> Vec<u8> {
+fn trans_u16_2_bytes(uint16: u16) -> Vec<u8> {
     let mut bs: Vec<u8> = vec![];
     bs.push(((uint16 >> 8) & 0xFF) as u8);
     bs.push((uint16 & 0xFF) as u8);
@@ -336,10 +455,10 @@ pub fn trans_u16_2_bytes(uint16: u16) -> Vec<u8> {
 /// 16进制数组转u16
 ///
 /// 字节数组长度不得超过2，超过将溢出
-pub fn trans_bytes_2_u16(bs: Vec<u8>) -> GeorgeResult<u16> {
+fn trans_bytes_2_u16(bs: Vec<u8>) -> GeorgeResult<u16> {
     let bs_len = bs.len();
     if bs_len > 2 {
-        Err(err_string(format!(
+        Err(Errs::string(format!(
             "trans bytes 2 u16 out of bounds, except le 2, but receive {}",
             bs_len
         )))
@@ -354,7 +473,7 @@ pub fn trans_bytes_2_u16(bs: Vec<u8>) -> GeorgeResult<u16> {
     }
 }
 
-pub fn trans_i64_2_u64(res: i64) -> u64 {
+fn trans_i64_2_u64(res: i64) -> u64 {
     if res >= 0 {
         (res as u64).add(9223372036854775809)
     } else {
@@ -362,7 +481,7 @@ pub fn trans_i64_2_u64(res: i64) -> u64 {
     }
 }
 
-pub fn trans_i32_2_u64(res: i32) -> u64 {
+fn trans_i32_2_u64(res: i32) -> u64 {
     if res >= 0 {
         (res as u64).add(2147483649)
     } else {

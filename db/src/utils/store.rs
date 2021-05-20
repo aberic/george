@@ -15,12 +15,10 @@
 use std::fmt;
 use std::fs::File;
 
+use comm::errors::entrances::Errs;
 use comm::errors::entrances::GeorgeResult;
-use comm::errors::entrances::{err_str, err_string};
 use comm::io::file::{Filer, FilerReader};
-use comm::trans::{
-    trans_bytes_2_u16, trans_bytes_2_u32, trans_bytes_2_u64, trans_u32_2_bytes, trans_u64_2_bytes,
-};
+use comm::trans::Trans;
 
 use crate::utils::deploy::VERSION;
 use crate::utils::enums::{Enum, EnumHandler, IndexType, Tag};
@@ -51,7 +49,7 @@ impl fmt::Debug for Metadata {
             "tag = {:#?}, index_type = {:#?}, version = {:#?}, sequence = {:#?}",
             self.tag,
             self.index_type,
-            trans_bytes_2_u16(version).unwrap(),
+            Trans::bytes_2_u16(version).unwrap(),
             self.sequence
         )
     }
@@ -132,7 +130,7 @@ impl Metadata {
 
     pub fn index(index_type: IndexType) -> GeorgeResult<Metadata> {
         match index_type {
-            IndexType::None => Err(err_str("unsupported engine type with none")),
+            IndexType::None => Err(Errs::str("unsupported engine type with none")),
             _ => Ok(Metadata {
                 tag: Tag::Index,
                 index_type,
@@ -144,9 +142,9 @@ impl Metadata {
 
     fn from_bytes(head: Vec<u8>) -> GeorgeResult<Metadata> {
         if 0x20 != head.get(0).unwrap().clone() || 0x19 != head.get(1).unwrap().clone() {
-            Err(err_str("recovery head failed! front is invalid!"))
+            Err(Errs::str("recovery head failed! front is invalid!"))
         } else if 0x02 != head.get(30).unwrap().clone() || 0x19 != head.get(31).unwrap().clone() {
-            Err(err_str("recovery head failed! end is invalid!"))
+            Err(Errs::str("recovery head failed! end is invalid!"))
         } else {
             let tag = Enum::tag(head.get(2).unwrap().clone());
             match tag {
@@ -167,7 +165,7 @@ impl Metadata {
                     [head.get(4).unwrap().clone(), head.get(5).unwrap().clone()],
                     head.get(6).unwrap().clone(),
                 )),
-                _ => Err(err_str("recovery head failed! tag doesn't support!")),
+                _ => Err(Errs::str("recovery head failed! tag doesn't support!")),
             }
         }
     }
@@ -184,7 +182,7 @@ impl Metadata {
 
     /// 版本号
     pub fn version(&self) -> GeorgeResult<u16> {
-        trans_bytes_2_u16(vec![self.version[0], self.version[1]])
+        Trans::bytes_2_u16(vec![self.version[0], self.version[1]])
     }
 
     /// 序号
@@ -260,18 +258,6 @@ impl Metadata {
     }
 }
 
-/// 正文前所有信息，包括头部信息和正文描述信息
-///
-/// start 正文描述起始位置，初始化为32 + 12，即head长度加正文描述符长度
-///
-/// description_len 正文描述内容持续长度
-pub fn before_content_bytes(start: u64, description_len: u32) -> Vec<u8> {
-    let mut start_bytes = trans_u64_2_bytes(start);
-    let mut last_bytes = trans_u32_2_bytes(description_len);
-    start_bytes.append(&mut last_bytes);
-    start_bytes
-}
-
 #[derive(Debug, Clone)]
 pub struct HD {
     pub metadata: Metadata,
@@ -292,8 +278,39 @@ impl HD {
     }
 }
 
+/// 正文内容之前文件信息
+pub struct ContentBytes;
+
+impl ContentBytes {
+    /// 正文前所有信息，包括头部信息和正文描述信息
+    ///
+    /// start 正文描述起始位置，初始化为32 + 12，即head长度加正文描述符长度
+    ///
+    /// description_len 正文描述内容持续长度
+    pub fn before(start: u64, description_len: u32) -> Vec<u8> {
+        before_content_bytes(start, description_len)
+    }
+
+    /// 恢复首部信息和正文描述信息，即正文内容之前的所有信息
+    pub fn recovery(filepath: String) -> GeorgeResult<HD> {
+        recovery_before_content(filepath)
+    }
+}
+
+/// 正文前所有信息，包括头部信息和正文描述信息
+///
+/// start 正文描述起始位置，初始化为32 + 12，即head长度加正文描述符长度
+///
+/// description_len 正文描述内容持续长度
+fn before_content_bytes(start: u64, description_len: u32) -> Vec<u8> {
+    let mut start_bytes = Trans::u64_2_bytes(start);
+    let mut last_bytes = Trans::u32_2_bytes(description_len);
+    start_bytes.append(&mut last_bytes);
+    start_bytes
+}
+
 /// 恢复首部信息和正文描述信息，即正文内容之前的所有信息
-pub fn recovery_before_content(filepath: String) -> GeorgeResult<HD> {
+fn recovery_before_content(filepath: String) -> GeorgeResult<HD> {
     match File::open(filepath.clone()) {
         Ok(file) => {
             match file.try_clone() {
@@ -315,8 +332,8 @@ pub fn recovery_before_content(filepath: String) -> GeorgeResult<HD> {
                         }
                         position += 1
                     }
-                    let start = trans_bytes_2_u64(start_bytes.clone())?;
-                    let last = trans_bytes_2_u32(last_bytes.clone())? as usize;
+                    let start = Trans::bytes_2_u64(start_bytes.clone())?;
+                    let last = Trans::bytes_2_u32(last_bytes.clone())? as usize;
                     let metadata = Metadata::from_bytes(metadata_bytes)?;
                     // 读取正文描述
                     let description = Filer::read_file_sub(file, start, last)?;
@@ -330,13 +347,13 @@ pub fn recovery_before_content(filepath: String) -> GeorgeResult<HD> {
                         description,
                     })
                 }
-                Err(err) => Err(err_string(format!(
+                Err(err) => Err(Errs::string(format!(
                     "recovery before content file {} try clone failed! error is {}",
                     filepath, err
                 ))),
             }
         }
-        Err(err) => Err(err_string(format!(
+        Err(err) => Err(Errs::string(format!(
             "recovery from path {} open failed! error is {}",
             filepath, err
         ))),

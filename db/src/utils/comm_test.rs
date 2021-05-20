@@ -14,7 +14,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::utils::comm::key_fetch;
+use crate::utils::comm::IndexKey;
 
 #[derive(Serialize, Deserialize)]
 struct User {
@@ -49,22 +49,22 @@ fn key_fetch_test() {
     let user_byte = user_json_str.into_bytes();
     println!(
         "res1 = {:#?}",
-        key_fetch(String::from("name"), user_byte.clone())
+        IndexKey::fetch(String::from("name"), user_byte.clone())
     );
     println!(
         "res2 = {:#?}",
-        key_fetch(String::from("age"), user_byte.clone())
+        IndexKey::fetch(String::from("age"), user_byte.clone())
     );
     println!(
         "res3 = {:#?}",
-        key_fetch(String::from("blog"), user_byte.clone())
+        IndexKey::fetch(String::from("blog"), user_byte.clone())
     );
     println!(
         "res4 = {:#?}",
-        key_fetch(String::from("married"), user_byte.clone())
+        IndexKey::fetch(String::from("married"), user_byte.clone())
     );
     println!(
         "res4 = {:#?}",
-        key_fetch(String::from("job"), user_byte.clone())
+        IndexKey::fetch(String::from("job"), user_byte.clone())
     );
 }

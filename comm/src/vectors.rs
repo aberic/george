@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-use crate::errors::entrances::{err_str, err_string, GeorgeResult};
+use crate::errors::entrances::{Errs, GeorgeResult};
 
 pub trait VectorHandler {
     /// 变更数组内容
@@ -127,7 +127,7 @@ fn vector_modify<T: Clone>(mut source: Vec<T>, target: Vec<T>, mut start: usize)
 fn vector_sub<T: Clone>(source: Vec<T>, start: usize, end: usize) -> GeorgeResult<Vec<T>> {
     let source_len = source.len();
     if source_len < end {
-        Err(err_str("source array type out of bounds"))
+        Err(Errs::str("source array type out of bounds"))
     } else {
         let mut s1 = source.to_vec();
         let mut s2 = s1.split_off(start);
@@ -153,7 +153,7 @@ fn vector_find_last_eq_bytes(bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<u8>>
             position += 1
         } else {
             if temp.len().ne(&eq) {
-                return Err(err_str("temp length out of 8"));
+                return Err(Errs::str("temp length out of 8"));
             }
             if valid {
                 res = temp.to_vec();
@@ -175,7 +175,7 @@ fn vector_find_last_eq_bytes(bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<u8>>
 /// 从可被`eq`整除的bytes长度的字节数组中查找所有与`eq`长度相同的不为0的字节数组集合
 fn vector_find_eq_vec_bytes(mut bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<Vec<u8>>> {
     if bytes.len() % eq != 0 {
-        return Err(err_string(format!("bytes length can't % by {}", eq)));
+        return Err(Errs::string(format!("bytes length can't % by {}", eq)));
     }
     // 此步确保能够遍历完成最后一组
     bytes.push(0x00);
@@ -192,7 +192,7 @@ fn vector_find_eq_vec_bytes(mut bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<V
             position += 1
         } else {
             if temp.len().ne(&eq) {
-                return Err(err_str("temp length out of 8"));
+                return Err(Errs::str("temp length out of 8"));
             }
             if valid {
                 res.push(temp.to_vec())

@@ -22,8 +22,8 @@ use openssl::symm::Cipher;
 
 use crate::cryptos::base64::{Base64, Base64Encoder, Basee64Decoder};
 use crate::cryptos::hex::{Hex, HexDecoder, HexEncoder};
+use crate::errors::entrances::Errs;
 use crate::errors::entrances::GeorgeResult;
-use crate::errors::entrances::{err_str, err_strs};
 use crate::io::file::{Filer, FilerWriter};
 use crate::strings::{StringHandler, Strings};
 use openssl::hash::MessageDigest;
@@ -99,7 +99,7 @@ impl RSA {
         let sk = load_sk_pkey_file(sk_filepath)?;
         let pk = load_pk_pkey_file(pk_filepath)?;
         if !sk.public_eq(&pk) {
-            Err(err_str("sk public_eq false"))
+            Err(Errs::str("sk public_eq false"))
         } else {
             let rsa_sk = generate_rsa(sk.clone())?;
             let rsa_pk = generate_rsa(pk.clone())?;
@@ -145,28 +145,28 @@ impl RSA {
     pub fn sk_pkcs1_pem(&self) -> GeorgeResult<Vec<u8>> {
         match self.rsa_sk.private_key_to_pem() {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
         }
     }
 
     pub fn pk_pkcs1_pem(&self) -> GeorgeResult<Vec<u8>> {
         match self.rsa_pk.public_key_to_pem_pkcs1() {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
         }
     }
 
     pub fn sk_pkcs8_pem(&self) -> GeorgeResult<Vec<u8>> {
         match self.sk.private_key_to_pem_pkcs8() {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
         }
     }
 
     pub fn pk_pkcs8_pem(&self) -> GeorgeResult<Vec<u8>> {
         match self.pk.public_key_to_pem() {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
         }
     }
 
@@ -224,28 +224,28 @@ impl RSA {
     pub fn sk_pkcs1_der(&self) -> GeorgeResult<Vec<u8>> {
         match self.rsa_sk.private_key_to_der() {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
         }
     }
 
     pub fn pk_pkcs1_der(&self) -> GeorgeResult<Vec<u8>> {
         match self.rsa_pk.public_key_to_der() {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
         }
     }
 
     pub fn sk_pkcs8_der(&self) -> GeorgeResult<Vec<u8>> {
         match self.sk.private_key_to_der() {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
         }
     }
 
     pub fn pk_pkcs8_der(&self) -> GeorgeResult<Vec<u8>> {
         match self.pk.public_key_to_der() {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
         }
     }
 
@@ -288,19 +288,19 @@ impl RSA {
         let mut signer: Signer;
         match Signer::new(MessageDigest::sha256(), &self.sk) {
             Ok(sig) => signer = sig,
-            Err(err) => return Err(err_strs("signer new", err)),
+            Err(err) => return Err(Errs::strs("signer new", err)),
         }
         match signer.set_rsa_padding(Padding::PKCS1) {
-            Err(err) => return Err(err_strs("signer set_rsa_padding", err)),
+            Err(err) => return Err(Errs::strs("signer set_rsa_padding", err)),
             _ => {}
         }
         match signer.update(msg) {
-            Err(err) => return Err(err_strs("signer update", err)),
+            Err(err) => return Err(Errs::strs("signer update", err)),
             _ => {}
         }
         match signer.sign_to_vec() {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("signer sign_to_vec", err)),
+            Err(err) => Err(Errs::strs("signer sign_to_vec", err)),
         }
     }
 
@@ -313,19 +313,19 @@ impl RSA {
         let mut signer: Signer;
         match Signer::new(digest, &self.sk) {
             Ok(sig) => signer = sig,
-            Err(err) => return Err(err_strs("signer new", err)),
+            Err(err) => return Err(Errs::strs("signer new", err)),
         }
         match signer.set_rsa_padding(padding) {
-            Err(err) => return Err(err_strs("signer set_rsa_padding", err)),
+            Err(err) => return Err(Errs::strs("signer set_rsa_padding", err)),
             _ => {}
         }
         match signer.update(msg) {
-            Err(err) => return Err(err_strs("signer update", err)),
+            Err(err) => return Err(Errs::strs("signer update", err)),
             _ => {}
         }
         match signer.sign_to_vec() {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("signer sign_to_vec", err)),
+            Err(err) => Err(Errs::strs("signer sign_to_vec", err)),
         }
     }
 
@@ -333,15 +333,15 @@ impl RSA {
         let mut verifier: Verifier;
         match Verifier::new(MessageDigest::sha256(), &self.pk) {
             Ok(ver) => verifier = ver,
-            Err(err) => return Err(err_strs("verifier new", err)),
+            Err(err) => return Err(Errs::strs("verifier new", err)),
         }
         match verifier.update(msg) {
-            Err(err) => return Err(err_strs("verifier update", err)),
+            Err(err) => return Err(Errs::strs("verifier update", err)),
             _ => {}
         }
         match verifier.verify(der) {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("verifier verify", err)),
+            Err(err) => Err(Errs::strs("verifier verify", err)),
         }
     }
 
@@ -355,19 +355,19 @@ impl RSA {
         let mut verifier: Verifier;
         match Verifier::new(digest, &self.pk) {
             Ok(ver) => verifier = ver,
-            Err(err) => return Err(err_strs("verifier update", err)),
+            Err(err) => return Err(Errs::strs("verifier update", err)),
         }
         match verifier.set_rsa_padding(padding) {
-            Err(err) => return Err(err_strs("verifier set_rsa_padding", err)),
+            Err(err) => return Err(Errs::strs("verifier set_rsa_padding", err)),
             _ => {}
         }
         match verifier.update(msg) {
-            Err(err) => return Err(err_strs("verifier update", err)),
+            Err(err) => return Err(Errs::strs("verifier update", err)),
             _ => {}
         }
         match verifier.verify(der) {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("verifier verify", err)),
+            Err(err) => Err(Errs::strs("verifier verify", err)),
         }
     }
 }
@@ -381,7 +381,7 @@ impl RSA {
             .private_encrypt(data, &mut emesg, Padding::PKCS1)
         {
             Ok(_) => Ok(emesg),
-            Err(err) => Err(err_strs("private_encrypt", err)),
+            Err(err) => Err(Errs::strs("private_encrypt", err)),
         }
     }
 
@@ -392,7 +392,7 @@ impl RSA {
             .private_decrypt(data, &mut emesg, Padding::PKCS1)
         {
             Ok(_) => Ok(emesg),
-            Err(err) => Err(err_strs("private_decrypt", err)),
+            Err(err) => Err(Errs::strs("private_decrypt", err)),
         }
     }
 
@@ -400,7 +400,7 @@ impl RSA {
         let mut emesg = vec![0; self.rsa_pk.size() as usize];
         match self.rsa_pk.public_encrypt(data, &mut emesg, Padding::PKCS1) {
             Ok(_) => Ok(emesg),
-            Err(err) => Err(err_strs("public_encrypt", err)),
+            Err(err) => Err(Errs::strs("public_encrypt", err)),
         }
     }
 
@@ -408,7 +408,7 @@ impl RSA {
         let mut emesg = vec![0; self.rsa_pk.size() as usize];
         match self.rsa_pk.public_decrypt(data, &mut emesg, Padding::PKCS1) {
             Ok(_) => Ok(emesg),
-            Err(err) => Err(err_strs("public_decrypt", err)),
+            Err(err) => Err(Errs::strs("public_decrypt", err)),
         }
     }
 
@@ -416,7 +416,7 @@ impl RSA {
         let mut emesg = vec![0; self.rsa_sk.size() as usize];
         match self.rsa_sk.private_encrypt(data, &mut emesg, padding) {
             Ok(_) => Ok(emesg),
-            Err(err) => Err(err_strs("private_encrypt", err)),
+            Err(err) => Err(Errs::strs("private_encrypt", err)),
         }
     }
 
@@ -424,7 +424,7 @@ impl RSA {
         let mut emesg = vec![0; self.rsa_sk.size() as usize];
         match self.rsa_sk.private_decrypt(data, &mut emesg, padding) {
             Ok(_) => Ok(emesg),
-            Err(err) => Err(err_strs("private_decrypt", err)),
+            Err(err) => Err(Errs::strs("private_decrypt", err)),
         }
     }
 
@@ -432,7 +432,7 @@ impl RSA {
         let mut emesg = vec![0; self.rsa_pk.size() as usize];
         match self.rsa_pk.public_encrypt(data, &mut emesg, padding) {
             Ok(_) => Ok(emesg),
-            Err(err) => Err(err_strs("public_encrypt", err)),
+            Err(err) => Err(Errs::strs("public_encrypt", err)),
         }
     }
 
@@ -440,7 +440,7 @@ impl RSA {
         let mut emesg = vec![0; self.rsa_pk.size() as usize];
         match self.rsa_pk.public_decrypt(data, &mut emesg, padding) {
             Ok(_) => Ok(emesg),
-            Err(err) => Err(err_strs("public_decrypt", err)),
+            Err(err) => Err(Errs::strs("public_decrypt", err)),
         }
     }
 }
@@ -1568,21 +1568,21 @@ impl RSALoadKey for RSA {
 fn generate(bits: u32) -> GeorgeResult<Rsa<Private>> {
     match Rsa::generate(bits) {
         Ok(rsa) => Ok(rsa),
-        Err(err) => Err(err_strs("generate_pkcs1", err)),
+        Err(err) => Err(Errs::strs("generate_pkcs1", err)),
     }
 }
 
 fn generate_rsa<T>(key: PKey<T>) -> GeorgeResult<Rsa<T>> {
     match key.rsa() {
         Ok(rsa) => Ok(rsa),
-        Err(err) => Err(err_strs("generate_pkey", err)),
+        Err(err) => Err(Errs::strs("generate_pkey", err)),
     }
 }
 
 fn generate_pkey<T>(rsa: Rsa<T>) -> GeorgeResult<PKey<T>> {
     match PKey::from_rsa(rsa) {
         Ok(rsa) => Ok(rsa),
-        Err(err) => Err(err_strs("generate_pkey", err)),
+        Err(err) => Err(Errs::strs("generate_pkey", err)),
     }
 }
 
@@ -1590,9 +1590,9 @@ fn generate_pkcs1_sk_pem(bits: u32) -> GeorgeResult<Vec<u8>> {
     match Rsa::generate(bits) {
         Ok(rsa) => match rsa.private_key_to_pem() {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("private_key_to_pem_pkcs1", err)),
+            Err(err) => Err(Errs::strs("private_key_to_pem_pkcs1", err)),
         },
-        Err(err) => Err(err_strs("generate", err)),
+        Err(err) => Err(Errs::strs("generate", err)),
     }
 }
 
@@ -1601,11 +1601,11 @@ fn generate_pkcs8_sk_pem(bits: u32) -> GeorgeResult<Vec<u8>> {
         Ok(rsa) => match PKey::from_rsa(rsa) {
             Ok(key) => match key.private_key_to_pem_pkcs8() {
                 Ok(res) => Ok(res),
-                Err(err) => Err(err_strs("private_key_to_pem_pkcs8", err)),
+                Err(err) => Err(Errs::strs("private_key_to_pem_pkcs8", err)),
             },
-            Err(err) => Err(err_strs("from_rsa", err)),
+            Err(err) => Err(Errs::strs("from_rsa", err)),
         },
-        Err(err) => Err(err_strs("generate", err)),
+        Err(err) => Err(Errs::strs("generate", err)),
     }
 }
 
@@ -1617,9 +1617,9 @@ fn generate_pkcs1_sk_pem_pass(
     match Rsa::generate(bits) {
         Ok(rsa) => match rsa.private_key_to_pem_passphrase(cipher, passphrase) {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("private_key_to_pem_pkcs1", err)),
+            Err(err) => Err(Errs::strs("private_key_to_pem_pkcs1", err)),
         },
-        Err(err) => Err(err_strs("generate", err)),
+        Err(err) => Err(Errs::strs("generate", err)),
     }
 }
 
@@ -1632,11 +1632,11 @@ fn generate_pkcs8_sk_pem_pass(
         Ok(rsa) => match PKey::from_rsa(rsa) {
             Ok(key) => match key.private_key_to_pem_pkcs8_passphrase(cipher, passphrase) {
                 Ok(res) => Ok(res),
-                Err(err) => Err(err_strs("private_key_to_pem_pkcs8", err)),
+                Err(err) => Err(Errs::strs("private_key_to_pem_pkcs8", err)),
             },
-            Err(err) => Err(err_strs("from_rsa", err)),
+            Err(err) => Err(Errs::strs("from_rsa", err)),
         },
-        Err(err) => Err(err_strs("generate", err)),
+        Err(err) => Err(Errs::strs("generate", err)),
     }
 }
 
@@ -1644,9 +1644,9 @@ fn generate_pkcs1_sk_der(bits: u32) -> GeorgeResult<Vec<u8>> {
     match Rsa::generate(bits) {
         Ok(rsa) => match rsa.private_key_to_der() {
             Ok(res) => Ok(res),
-            Err(err) => Err(err_strs("private_key_to_pem_pkcs1", err)),
+            Err(err) => Err(Errs::strs("private_key_to_pem_pkcs1", err)),
         },
-        Err(err) => Err(err_strs("generate", err)),
+        Err(err) => Err(Errs::strs("generate", err)),
     }
 }
 
@@ -1655,11 +1655,11 @@ fn generate_pkcs8_sk_der(bits: u32) -> GeorgeResult<Vec<u8>> {
         Ok(rsa) => match PKey::from_rsa(rsa) {
             Ok(key) => match key.private_key_to_der() {
                 Ok(res) => Ok(res),
-                Err(err) => Err(err_strs("private_key_to_pem_pkcs8", err)),
+                Err(err) => Err(Errs::strs("private_key_to_pem_pkcs8", err)),
             },
-            Err(err) => Err(err_strs("from_rsa", err)),
+            Err(err) => Err(Errs::strs("from_rsa", err)),
         },
-        Err(err) => Err(err_strs("generate", err)),
+        Err(err) => Err(Errs::strs("generate", err)),
     }
 }
 
@@ -1669,14 +1669,14 @@ fn generate_pkcs8_sk_der(bits: u32) -> GeorgeResult<Vec<u8>> {
 fn generate_pkcs1_sk_pem_string(bits: u32) -> GeorgeResult<String> {
     match generate_pkcs1_sk_pem(bits) {
         Ok(v8s) => Strings::from_utf8(v8s),
-        Err(err) => Err(err_strs("generate_sk_pem", err)),
+        Err(err) => Err(Errs::strs("generate_sk_pem", err)),
     }
 }
 
 fn generate_pkcs8_sk_pem_string(bits: u32) -> GeorgeResult<String> {
     match generate_pkcs8_sk_pem(bits) {
         Ok(v8s) => Strings::from_utf8(v8s),
-        Err(err) => Err(err_strs("generate_sk_pem", err)),
+        Err(err) => Err(Errs::strs("generate_sk_pem", err)),
     }
 }
 
@@ -1687,7 +1687,7 @@ fn generate_pkcs1_sk_pem_pass_string(
 ) -> GeorgeResult<String> {
     match generate_pkcs1_sk_pem_pass(bits, cipher, passphrase) {
         Ok(v8s) => Strings::from_utf8(v8s),
-        Err(err) => Err(err_strs("generate_sk_pem", err)),
+        Err(err) => Err(Errs::strs("generate_sk_pem", err)),
     }
 }
 
@@ -1698,35 +1698,35 @@ fn generate_pkcs8_sk_pem_pass_string(
 ) -> GeorgeResult<String> {
     match generate_pkcs8_sk_pem_pass(bits, cipher, passphrase) {
         Ok(v8s) => Strings::from_utf8(v8s),
-        Err(err) => Err(err_strs("generate_sk_pem", err)),
+        Err(err) => Err(Errs::strs("generate_sk_pem", err)),
     }
 }
 
 fn generate_pkcs1_sk_der_base64_string(bits: u32) -> GeorgeResult<String> {
     match generate_pkcs1_sk_der(bits) {
         Ok(v8s) => Ok(Base64::encode(v8s)),
-        Err(err) => Err(err_strs("generate_sk_pem", err)),
+        Err(err) => Err(Errs::strs("generate_sk_pem", err)),
     }
 }
 
 fn generate_pkcs8_sk_der_base64_string(bits: u32) -> GeorgeResult<String> {
     match generate_pkcs8_sk_der(bits) {
         Ok(v8s) => Ok(Base64::encode(v8s)),
-        Err(err) => Err(err_strs("generate_sk_pem", err)),
+        Err(err) => Err(Errs::strs("generate_sk_pem", err)),
     }
 }
 
 fn generate_pkcs1_sk_der_hex_string(bits: u32) -> GeorgeResult<String> {
     match generate_pkcs1_sk_der(bits) {
         Ok(v8s) => Ok(hex::encode(v8s)),
-        Err(err) => Err(err_strs("generate_sk_pem", err)),
+        Err(err) => Err(Errs::strs("generate_sk_pem", err)),
     }
 }
 
 fn generate_pkcs8_sk_der_hex_string(bits: u32) -> GeorgeResult<String> {
     match generate_pkcs8_sk_der(bits) {
         Ok(v8s) => Ok(hex::encode(v8s)),
-        Err(err) => Err(err_strs("generate_sk_pem", err)),
+        Err(err) => Err(Errs::strs("generate_sk_pem", err)),
     }
 }
 
@@ -1741,7 +1741,7 @@ fn generate_pkcs1_sk_pem_file<P: AsRef<Path>>(bits: u32, filepath: P) -> GeorgeR
             Filer::write_force(filepath, v8s.clone())?;
             Ok(v8s)
         }
-        Err(err) => Err(err_strs("generate_sk", err)),
+        Err(err) => Err(Errs::strs("generate_sk", err)),
     }
 }
 
@@ -1756,7 +1756,7 @@ fn generate_pkcs8_sk_pem_file<P: AsRef<Path>>(bits: u32, filepath: P) -> GeorgeR
             Filer::write_force(filepath, v8s.clone())?;
             Ok(v8s)
         }
-        Err(err) => Err(err_strs("generate_sk", err)),
+        Err(err) => Err(Errs::strs("generate_sk", err)),
     }
 }
 
@@ -1769,7 +1769,7 @@ fn generate_pkcs1_sk_pem_file_string<P: AsRef<Path>>(
             Filer::write_force(filepath, res.clone())?;
             Ok(res)
         }
-        Err(err) => Err(err_strs("generate_sk", err)),
+        Err(err) => Err(Errs::strs("generate_sk", err)),
     }
 }
 
@@ -1782,7 +1782,7 @@ fn generate_pkcs8_sk_pem_file_string<P: AsRef<Path>>(
             Filer::write_force(filepath, res.clone())?;
             Ok(res)
         }
-        Err(err) => Err(err_strs("generate_sk", err)),
+        Err(err) => Err(Errs::strs("generate_sk", err)),
     }
 }
 
@@ -1797,7 +1797,7 @@ fn generate_pkcs1_sk_pem_pass_file<P: AsRef<Path>>(
             Filer::write_force(filepath, v8s.clone())?;
             Ok(v8s)
         }
-        Err(err) => Err(err_strs("generate_sk", err)),
+        Err(err) => Err(Errs::strs("generate_sk", err)),
     }
 }
 
@@ -1812,7 +1812,7 @@ fn generate_pkcs8_sk_pem_pass_file<P: AsRef<Path>>(
             Filer::write_force(filepath, v8s.clone())?;
             Ok(v8s)
         }
-        Err(err) => Err(err_strs("generate_sk", err)),
+        Err(err) => Err(Errs::strs("generate_sk", err)),
     }
 }
 
@@ -1827,7 +1827,7 @@ fn generate_pkcs1_sk_pem_pass_file_string<P: AsRef<Path>>(
             Filer::write_force(filepath, res.clone())?;
             Ok(res)
         }
-        Err(err) => Err(err_strs("generate_sk", err)),
+        Err(err) => Err(Errs::strs("generate_sk", err)),
     }
 }
 
@@ -1842,7 +1842,7 @@ fn generate_pkcs8_sk_pem_pass_file_string<P: AsRef<Path>>(
             Filer::write_force(filepath, res.clone())?;
             Ok(res)
         }
-        Err(err) => Err(err_strs("generate_sk", err)),
+        Err(err) => Err(Errs::strs("generate_sk", err)),
     }
 }
 
@@ -1852,7 +1852,7 @@ fn generate_pkcs1_sk_der_file<P: AsRef<Path>>(bits: u32, filepath: P) -> GeorgeR
             Filer::write_force(filepath, v8s.clone())?;
             Ok(v8s)
         }
-        Err(err) => Err(err_strs("generate_sk", err)),
+        Err(err) => Err(Errs::strs("generate_sk", err)),
     }
 }
 
@@ -1862,7 +1862,7 @@ fn generate_pkcs8_sk_der_file<P: AsRef<Path>>(bits: u32, filepath: P) -> GeorgeR
             Filer::write_force(filepath, v8s.clone())?;
             Ok(v8s)
         }
-        Err(err) => Err(err_strs("generate_sk", err)),
+        Err(err) => Err(Errs::strs("generate_sk", err)),
     }
 }
 
@@ -1875,7 +1875,7 @@ fn generate_pkcs1_sk_der_base64_file<P: AsRef<Path>>(
             Filer::write_force(filepath, res.clone())?;
             Ok(res)
         }
-        Err(err) => Err(err_strs("generate_sk", err)),
+        Err(err) => Err(Errs::strs("generate_sk", err)),
     }
 }
 
@@ -1888,7 +1888,7 @@ fn generate_pkcs8_sk_der_base64_file<P: AsRef<Path>>(
             Filer::write_force(filepath, res.clone())?;
             Ok(res)
         }
-        Err(err) => Err(err_strs("generate_sk", err)),
+        Err(err) => Err(Errs::strs("generate_sk", err)),
     }
 }
 
@@ -1898,7 +1898,7 @@ fn generate_pkcs1_sk_der_hex_file<P: AsRef<Path>>(bits: u32, filepath: P) -> Geo
             Filer::write_force(filepath, res.clone())?;
             Ok(res)
         }
-        Err(err) => Err(err_strs("generate_sk", err)),
+        Err(err) => Err(Errs::strs("generate_sk", err)),
     }
 }
 
@@ -1908,7 +1908,7 @@ fn generate_pkcs8_sk_der_hex_file<P: AsRef<Path>>(bits: u32, filepath: P) -> Geo
             Filer::write_force(filepath, res.clone())?;
             Ok(res)
         }
-        Err(err) => Err(err_strs("generate_sk", err)),
+        Err(err) => Err(Errs::strs("generate_sk", err)),
     }
 }
 
@@ -1920,7 +1920,7 @@ fn load_sk_pkey_u8s(sk: &[u8]) -> GeorgeResult<PKey<Private>> {
             Ok(key) => Ok(key),
             Err(_) => match PKey::private_key_from_der(sk) {
                 Ok(key) => Ok(key),
-                Err(err) => Err(err_strs("private_key_from_pem", err)),
+                Err(err) => Err(Errs::strs("private_key_from_pem", err)),
             },
         },
     }
@@ -1941,7 +1941,7 @@ pub fn load_sk_pkey_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<PKey<Priva
                 Ok(res) => load_sk_pkey(Hex::decode(res)?),
                 Err(_) => match read_to_string(filepath) {
                     Ok(res) => load_sk_pkey_u8s(res.as_bytes()),
-                    Err(err) => Err(err_strs("load_sk_pkey_file", err)),
+                    Err(err) => Err(Errs::strs("load_sk_pkey_file", err)),
                 },
             },
         },
@@ -1954,7 +1954,7 @@ fn load_pk_pkey_u8s(pk: &[u8]) -> GeorgeResult<PKey<Public>> {
         Ok(key) => Ok(key),
         Err(_) => match PKey::public_key_from_der(pk) {
             Ok(key) => Ok(key),
-            Err(err) => Err(err_strs("private_key_from_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_from_pem", err)),
         },
     }
 }
@@ -1974,7 +1974,7 @@ pub fn load_pk_pkey_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<PKey<Publi
                 Ok(res) => load_pk_pkey(Hex::decode(res)?),
                 Err(_) => match read_to_string(filepath) {
                     Ok(res) => load_pk_pkey_u8s(res.as_bytes()),
-                    Err(err) => Err(err_strs("load_sk_pkey_file", err)),
+                    Err(err) => Err(Errs::strs("load_sk_pkey_file", err)),
                 },
             },
         },
@@ -1987,7 +1987,7 @@ fn load_sk_u8s(sk: &[u8]) -> GeorgeResult<Rsa<Private>> {
         Ok(key) => Ok(key),
         Err(_) => match Rsa::private_key_from_der(sk) {
             Ok(key) => Ok(key),
-            Err(err) => Err(err_strs("private_key_from_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_from_pem", err)),
         },
     }
 }
@@ -2007,7 +2007,7 @@ fn load_sk_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Rsa<Private>> {
                 Ok(res) => load_sk(Hex::decode(res)?),
                 Err(_) => match read_to_string(filepath) {
                     Ok(res) => load_sk_u8s(res.as_bytes()),
-                    Err(err) => Err(err_strs("load_sk_pkey_file", err)),
+                    Err(err) => Err(Errs::strs("load_sk_pkey_file", err)),
                 },
             },
         },
@@ -2024,7 +2024,7 @@ fn load_pk_u8s(pk: &[u8]) -> GeorgeResult<Rsa<Public>> {
                 Ok(key) => Ok(key),
                 Err(_) => match Rsa::public_key_from_der_pkcs1(pk) {
                     Ok(key) => Ok(key),
-                    Err(err) => Err(err_strs("private_key_from_pem", err)),
+                    Err(err) => Err(Errs::strs("private_key_from_pem", err)),
                 },
             },
         },
@@ -2046,7 +2046,7 @@ pub fn load_pk_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Rsa<Public>> {
                 Ok(res) => load_pk(Hex::decode(res)?),
                 Err(_) => match read_to_string(filepath) {
                     Ok(res) => load_pk_u8s(res.as_bytes()),
-                    Err(err) => Err(err_strs("load_sk_pkey_file", err)),
+                    Err(err) => Err(Errs::strs("load_sk_pkey_file", err)),
                 },
             },
         },
@@ -2058,9 +2058,9 @@ fn generate_pk_pkey_from_pkey_sk(sk: PKey<Private>) -> GeorgeResult<PKey<Public>
     match sk.public_key_to_pem() {
         Ok(u8s) => match PKey::public_key_from_pem(u8s.as_slice()) {
             Ok(pk) => Ok(pk),
-            Err(err) => Err(err_strs("public_key_from_pem", err)),
+            Err(err) => Err(Errs::strs("public_key_from_pem", err)),
         },
-        Err(err) => Err(err_strs("public_key_to_pem", err)),
+        Err(err) => Err(Errs::strs("public_key_to_pem", err)),
     }
 }
 
@@ -2070,11 +2070,11 @@ fn generate_pk_pkey_from_pkey_sk_bytes(sk: Vec<u8>) -> GeorgeResult<PKey<Public>
         Ok(sk) => match sk.public_key_to_pem() {
             Ok(u8s) => match PKey::public_key_from_pem(u8s.as_slice()) {
                 Ok(pk) => Ok(pk),
-                Err(err) => Err(err_strs("public_key_from_pem", err)),
+                Err(err) => Err(Errs::strs("public_key_from_pem", err)),
             },
-            Err(err) => Err(err_strs("public_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("public_key_to_pem", err)),
         },
-        Err(err) => Err(err_strs("load_sk_pkey", err)),
+        Err(err) => Err(Errs::strs("load_sk_pkey", err)),
     }
 }
 
@@ -2084,11 +2084,11 @@ fn generate_pk_pkey_from_pkey_sk_file<P: AsRef<Path>>(filepath: P) -> GeorgeResu
         Ok(sk) => match sk.public_key_to_pem() {
             Ok(u8s) => match PKey::public_key_from_pem(u8s.as_slice()) {
                 Ok(pk) => Ok(pk),
-                Err(err) => Err(err_strs("public_key_from_pem", err)),
+                Err(err) => Err(Errs::strs("public_key_from_pem", err)),
             },
-            Err(err) => Err(err_strs("public_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("public_key_to_pem", err)),
         },
-        Err(err) => Err(err_strs("load_sk_pkey", err)),
+        Err(err) => Err(Errs::strs("load_sk_pkey", err)),
     }
 }
 
@@ -2097,9 +2097,9 @@ fn generate_pk_rsa_pkcs1_from_rsa_sk(sk: Rsa<Private>) -> GeorgeResult<Rsa<Publi
     match sk.public_key_to_pem_pkcs1() {
         Ok(u8s) => match Rsa::public_key_from_pem_pkcs1(u8s.as_slice()) {
             Ok(pk) => Ok(pk),
-            Err(err) => Err(err_strs("public_key_from_pem_pkcs1", err)),
+            Err(err) => Err(Errs::strs("public_key_from_pem_pkcs1", err)),
         },
-        Err(err) => Err(err_strs("public_key_to_pem_pkcs1", err)),
+        Err(err) => Err(Errs::strs("public_key_to_pem_pkcs1", err)),
     }
 }
 
@@ -2108,9 +2108,9 @@ fn generate_pk_rsa_pkcs8_from_rsa_sk(sk: Rsa<Private>) -> GeorgeResult<Rsa<Publi
     match sk.public_key_to_pem() {
         Ok(u8s) => match Rsa::public_key_from_pem(u8s.as_slice()) {
             Ok(pk) => Ok(pk),
-            Err(err) => Err(err_strs("public_key_from_pem", err)),
+            Err(err) => Err(Errs::strs("public_key_from_pem", err)),
         },
-        Err(err) => Err(err_strs("public_key_to_pem", err)),
+        Err(err) => Err(Errs::strs("public_key_to_pem", err)),
     }
 }
 
@@ -2118,7 +2118,7 @@ fn generate_pk_rsa_pkcs8_from_rsa_sk(sk: Rsa<Private>) -> GeorgeResult<Rsa<Publi
 fn generate_pk_rsa_pkcs1_pem_from_rsa_sk(sk: Rsa<Private>) -> GeorgeResult<Vec<u8>> {
     match sk.public_key_to_pem_pkcs1() {
         Ok(u8s) => Ok(u8s),
-        Err(err) => Err(err_strs("public_key_to_pem", err)),
+        Err(err) => Err(Errs::strs("public_key_to_pem", err)),
     }
 }
 
@@ -2126,7 +2126,7 @@ fn generate_pk_rsa_pkcs1_pem_from_rsa_sk(sk: Rsa<Private>) -> GeorgeResult<Vec<u
 fn generate_pk_rsa_pkcs8_pem_from_rsa_sk(sk: Rsa<Private>) -> GeorgeResult<Vec<u8>> {
     match sk.public_key_to_pem() {
         Ok(u8s) => Ok(u8s),
-        Err(err) => Err(err_strs("public_key_to_pem", err)),
+        Err(err) => Err(Errs::strs("public_key_to_pem", err)),
     }
 }
 
@@ -2134,7 +2134,7 @@ fn generate_pk_rsa_pkcs8_pem_from_rsa_sk(sk: Rsa<Private>) -> GeorgeResult<Vec<u
 fn generate_pk_rsa_pkcs1_der_from_rsa_sk(sk: Rsa<Private>) -> GeorgeResult<Vec<u8>> {
     match sk.public_key_to_der_pkcs1() {
         Ok(u8s) => Ok(u8s),
-        Err(err) => Err(err_strs("public_key_to_pem", err)),
+        Err(err) => Err(Errs::strs("public_key_to_pem", err)),
     }
 }
 
@@ -2142,7 +2142,7 @@ fn generate_pk_rsa_pkcs1_der_from_rsa_sk(sk: Rsa<Private>) -> GeorgeResult<Vec<u
 fn generate_pk_rsa_pkcs8_der_from_rsa_sk(sk: Rsa<Private>) -> GeorgeResult<Vec<u8>> {
     match sk.public_key_to_der() {
         Ok(u8s) => Ok(u8s),
-        Err(err) => Err(err_strs("public_key_to_pem", err)),
+        Err(err) => Err(Errs::strs("public_key_to_pem", err)),
     }
 }
 
@@ -2150,7 +2150,7 @@ fn generate_pk_rsa_pkcs8_der_from_rsa_sk(sk: Rsa<Private>) -> GeorgeResult<Vec<u
 fn generate_pk_rsa_pkcs1_from_rsa_sk_bytes(sk: Vec<u8>) -> GeorgeResult<Rsa<Public>> {
     match load_sk(sk) {
         Ok(sk) => generate_pk_rsa_pkcs1_from_rsa_sk(sk),
-        Err(err) => Err(err_strs("load_sk_pkey", err)),
+        Err(err) => Err(Errs::strs("load_sk_pkey", err)),
     }
 }
 
@@ -2158,7 +2158,7 @@ fn generate_pk_rsa_pkcs1_from_rsa_sk_bytes(sk: Vec<u8>) -> GeorgeResult<Rsa<Publ
 fn generate_pk_rsa_pkcs8_from_rsa_sk_bytes(sk: Vec<u8>) -> GeorgeResult<Rsa<Public>> {
     match load_sk(sk) {
         Ok(sk) => generate_pk_rsa_pkcs8_from_rsa_sk(sk),
-        Err(err) => Err(err_strs("load_sk_pkey", err)),
+        Err(err) => Err(Errs::strs("load_sk_pkey", err)),
     }
 }
 
@@ -2168,7 +2168,7 @@ fn generate_pk_rsa_pkcs1_from_rsa_sk_file<P: AsRef<Path>>(
 ) -> GeorgeResult<Rsa<Public>> {
     match load_sk_file(filepath) {
         Ok(sk) => generate_pk_rsa_pkcs1_from_rsa_sk(sk),
-        Err(err) => Err(err_strs("load_sk_pkey", err)),
+        Err(err) => Err(Errs::strs("load_sk_pkey", err)),
     }
 }
 
@@ -2178,7 +2178,7 @@ fn generate_pk_rsa_pkcs8_from_rsa_sk_file<P: AsRef<Path>>(
 ) -> GeorgeResult<Rsa<Public>> {
     match load_sk_file(filepath) {
         Ok(sk) => generate_pk_rsa_pkcs8_from_rsa_sk(sk),
-        Err(err) => Err(err_strs("load_sk_pkey", err)),
+        Err(err) => Err(Errs::strs("load_sk_pkey", err)),
     }
 }
 
@@ -2186,7 +2186,7 @@ fn generate_pk_rsa_pkcs8_from_rsa_sk_file<P: AsRef<Path>>(
 fn generate_pk_rsa_pkcs1_pem_from_sk_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
     match load_sk_file(filepath) {
         Ok(key) => generate_pk_rsa_pkcs1_pem_from_rsa_sk(key),
-        Err(err) => Err(err_strs("load_sk_file", err)),
+        Err(err) => Err(Errs::strs("load_sk_file", err)),
     }
 }
 
@@ -2194,7 +2194,7 @@ fn generate_pk_rsa_pkcs1_pem_from_sk_file<P: AsRef<Path>>(filepath: P) -> George
 fn generate_pk_rsa_pkcs8_pem_from_sk_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
     match load_sk_file(filepath) {
         Ok(key) => generate_pk_rsa_pkcs8_pem_from_rsa_sk(key),
-        Err(err) => Err(err_strs("load_sk_file", err)),
+        Err(err) => Err(Errs::strs("load_sk_file", err)),
     }
 }
 
@@ -2241,7 +2241,7 @@ fn generate_pk_rsa_pkcs8_der_base64_from_sk_file<P: AsRef<Path>>(
 fn generate_pk_rsa_pkcs1_der_from_sk_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
     match load_sk_file(filepath) {
         Ok(key) => generate_pk_rsa_pkcs1_der_from_rsa_sk(key),
-        Err(err) => Err(err_strs("load_sk_file", err)),
+        Err(err) => Err(Errs::strs("load_sk_file", err)),
     }
 }
 
@@ -2249,7 +2249,7 @@ fn generate_pk_rsa_pkcs1_der_from_sk_file<P: AsRef<Path>>(filepath: P) -> George
 fn generate_pk_rsa_pkcs8_der_from_sk_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
     match load_sk_file(filepath) {
         Ok(key) => generate_pk_rsa_pkcs8_der_from_rsa_sk(key),
-        Err(err) => Err(err_strs("load_sk_file", err)),
+        Err(err) => Err(Errs::strs("load_sk_file", err)),
     }
 }
 
@@ -2257,7 +2257,7 @@ fn generate_pk_rsa_pkcs8_der_from_sk_file<P: AsRef<Path>>(filepath: P) -> George
 fn load_bytes_from_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
     match read(filepath) {
         Ok(u8s) => Ok(u8s),
-        Err(err) => Err(err_strs("read", err)),
+        Err(err) => Err(Errs::strs("read", err)),
     }
 }
 
@@ -2265,6 +2265,6 @@ fn load_bytes_from_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
 fn load_string_from_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
     match read_to_string(filepath) {
         Ok(res) => Ok(res),
-        Err(err) => Err(err_strs("read", err)),
+        Err(err) => Err(Errs::strs("read", err)),
     }
 }

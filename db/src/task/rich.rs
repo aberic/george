@@ -13,9 +13,9 @@
  */
 
 use crate::task::engine::traits::TIndex;
-use crate::utils::comm::{hash_key_64, hash_key_number};
+use crate::utils::comm::IndexKey;
 use crate::utils::enums::KeyType;
-use comm::errors::entrances::{err_str, err_string, err_strs, GeorgeResult};
+use comm::errors::entrances::{Errs, GeorgeResult};
 use serde_json::{Error, Value};
 use std::collections::HashMap;
 use std::ops::Add;
@@ -67,7 +67,7 @@ impl Condition {
         value: String,
         index: Option<Arc<dyn TIndex>>,
     ) -> GeorgeResult<Condition> {
-        let value_hash = hash_key_64(key_type, value.clone())?;
+        let value_hash = IndexKey::u64(key_type, value.clone())?;
         let value_bool: bool;
         if value.eq("true") {
             value_bool = true
@@ -167,7 +167,7 @@ impl Condition {
                 },
                 _ => false,
             },
-            Value::Number(ref val) => match hash_key_number(self.key_type(), val) {
+            Value::Number(ref val) => match IndexKey::number64(self.key_type(), val) {
                 Ok(real) => self.compare_value(real),
                 _ => false,
             },
@@ -203,6 +203,7 @@ impl Sort {
     pub fn param(&self) -> String {
         self.param.clone()
     }
+
     pub fn asc(&self) -> bool {
         self.asc
     }
@@ -263,7 +264,7 @@ impl Constraint {
                 constraint.fit_conditions(indexes, value["Conditions"].clone())?;
                 Ok(constraint)
             }
-            Err(err) => Err(err_strs("new constraint", err)),
+            Err(err) => Err(Errs::strs("new constraint", err)),
         }
     }
 
@@ -371,7 +372,7 @@ impl Constraint {
                 // 解析`Param`，任一单一对象中都不能缺省`Param`，否则返回对应错误
                 match v["Param"].as_str() {
                     Some(ref val_param) => param = val_param,
-                    _ => return Err(err_str("fit conditions no match param")),
+                    _ => return Err(Errs::str("fit conditions no match param")),
                 }
                 // 解析`Cond`，任一单一对象中都不能缺省`Cond`，否则返回对应错误
                 match v["Cond"].as_str() {
@@ -389,13 +390,13 @@ impl Constraint {
                         } else if val_cond.eq(&"ne") {
                             compare = Compare::NE
                         } else {
-                            return Err(err_string(format!(
+                            return Err(Errs::string(format!(
                                 "fit conditions cond {} only support gt,ge,lt,le,eq and ne",
                                 val_cond
                             )));
                         }
                     }
-                    _ => return Err(err_str("fit conditions no match cond")),
+                    _ => return Err(Errs::str("fit conditions no match cond")),
                 }
                 let indexes_clone = indexes.clone();
                 let index_r = indexes_clone.read().unwrap();
@@ -422,10 +423,10 @@ impl Constraint {
                         match key_type {
                             KeyType::None => key_type = KeyType::F64,
                             KeyType::String => {
-                                return Err(err_str("fit conditions no match key type"))
+                                return Err(Errs::str("fit conditions no match key type"))
                             }
                             KeyType::Bool => {
-                                return Err(err_str("fit conditions no match key type"))
+                                return Err(Errs::str("fit conditions no match key type"))
                             }
                             _ => {}
                         }
@@ -436,7 +437,7 @@ impl Constraint {
                         match key_type {
                             KeyType::None => key_type = KeyType::None,
                             KeyType::Bool => {}
-                            _ => return Err(err_str("fit conditions no match key type")),
+                            _ => return Err(Errs::str("fit conditions no match key type")),
                         }
                         val_str = res.to_string();
                     }
@@ -445,12 +446,12 @@ impl Constraint {
                         match key_type {
                             KeyType::None => key_type = KeyType::String,
                             KeyType::String => {}
-                            _ => return Err(err_str("fit conditions no match key type")),
+                            _ => return Err(Errs::str("fit conditions no match key type")),
                         }
                         val_str = res.to_string();
                     }
                     _ => {
-                        return Err(err_str(
+                        return Err(Errs::str(
                             "fit conditions value type only support bool,string and number",
                         ))
                     }
@@ -466,7 +467,7 @@ impl Constraint {
             }
             Ok(())
         } else {
-            return Err(err_str("fit conditions conditions is not array"));
+            return Err(Errs::str("fit conditions conditions is not array"));
         }
     }
 }
@@ -632,7 +633,7 @@ impl Selector {
                 idx.1.clone(),
                 self.constraint.conditions(),
             )),
-            None => Err(err_str("no index found!")),
+            None => Err(Errs::str("no index found!")),
         }
     }
 

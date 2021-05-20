@@ -14,7 +14,7 @@
 
 use crate::utils::enums::{IndexType, KeyType};
 use comm::cryptos::hash::{Hash, HashCRCHandler, HashCRCTypeHandler};
-use comm::errors::entrances::{err_str, err_string, GeorgeResult};
+use comm::errors::entrances::{Errs, GeorgeResult};
 use comm::strings::{StringHandler, Strings};
 use serde_json::{Error, Number, Value};
 
@@ -60,8 +60,22 @@ const LEVEL3DISTANCE64: u64 = 65536;
 /// LEVEL4DISTANCE level4间隔 65536^0 = 1 | 测试 4^0 = 1
 const LEVEL4DISTANCE64: u64 = 1;
 
+pub struct Distance;
+
+impl Distance {
+    /// 获取在2^32量级组成树的指定层中元素的间隔数，即每一度中存在的元素数量
+    pub fn level_32(level: u8) -> u32 {
+        level_distance_32(level)
+    }
+
+    /// 获取在2^64量级组成树的指定层中元素的间隔数，即每一度中存在的元素数量
+    pub fn level_64(level: u8) -> u64 {
+        level_distance_64(level)
+    }
+}
+
 /// 获取在2^32量级组成树的指定层中元素的间隔数，即每一度中存在的元素数量
-pub fn level_distance_32(level: u8) -> u32 {
+fn level_distance_32(level: u8) -> u32 {
     match level {
         1 => return LEVEL1DISTANCE32,
         2 => return LEVEL2DISTANCE32,
@@ -72,7 +86,7 @@ pub fn level_distance_32(level: u8) -> u32 {
 }
 
 /// 获取在2^64量级组成树的指定层中元素的间隔数，即每一度中存在的元素数量
-pub fn level_distance_64(level: u8) -> u64 {
+fn level_distance_64(level: u8) -> u64 {
     match level {
         1 => return LEVEL1DISTANCE64,
         2 => return LEVEL2DISTANCE64,
@@ -82,67 +96,61 @@ pub fn level_distance_64(level: u8) -> u64 {
     }
 }
 
-pub fn key_fetch(index_name: String, value: Vec<u8>) -> GeorgeResult<String> {
+pub struct IndexKey;
+
+impl IndexKey {
+    pub fn fetch(index_name: String, value: Vec<u8>) -> GeorgeResult<String> {
+        key_fetch(index_name, value)
+    }
+
+    pub fn u32(key_type: KeyType, key: String) -> GeorgeResult<u32> {
+        hash_key_32(key_type, key)
+    }
+
+    pub fn u64(key_type: KeyType, key: String) -> GeorgeResult<u64> {
+        hash_key_64(key_type, key)
+    }
+
+    pub fn number64(key_type: KeyType, key: &Number) -> GeorgeResult<u64> {
+        hash_key_number(key_type, key)
+    }
+}
+
+fn key_fetch(index_name: String, value: Vec<u8>) -> GeorgeResult<String> {
     let value_str = Strings::from_utf8(value)?;
     let res: Result<Value, Error> = serde_json::from_str(value_str.as_ref());
     match res {
         Ok(v) => match v[index_name.clone()] {
-            Value::Null => Err(err_string(format!(
+            Value::Null => Err(Errs::string(format!(
                 "key structure {} do not support none!",
                 index_name
             ))),
-            Value::Object(..) => Err(err_string(format!(
+            Value::Object(..) => Err(Errs::string(format!(
                 "key structure {} do not support object!",
                 index_name
             ))),
-            Value::Array(..) => Err(err_string(format!(
+            Value::Array(..) => Err(Errs::string(format!(
                 "key structure {} do not support array!",
                 index_name
             ))),
             _ => Ok(format!("{}", v[index_name])),
         },
-        Err(err) => Err(err_string(err.to_string())),
+        Err(err) => Err(Errs::string(err.to_string())),
     }
 }
 
-pub struct HashKey;
-
-pub(crate) trait HashKeyHandler<T> {
-    fn obtain(index_type: IndexType, key_type: KeyType, key: String) -> GeorgeResult<T>;
-}
-
-impl HashKeyHandler<u32> for HashKey {
-    fn obtain(index_type: IndexType, key_type: KeyType, key: String) -> GeorgeResult<u32> {
-        match index_type {
-            IndexType::Dossier => hash_key_32(key_type, key),
-            IndexType::Block => hash_key_32(key_type, key),
-            _ => Err(err_str("key type not support!")),
-        }
-    }
-}
-
-impl HashKeyHandler<u64> for HashKey {
-    fn obtain(index_type: IndexType, key_type: KeyType, key: String) -> GeorgeResult<u64> {
-        match index_type {
-            IndexType::Sequence => hash_key_64(key_type, key),
-            IndexType::Library => hash_key_64(key_type, key),
-            _ => Err(err_str("key type not support!")),
-        }
-    }
-}
-
-pub fn hash_key_32(key_type: KeyType, key: String) -> GeorgeResult<u32> {
+fn hash_key_32(key_type: KeyType, key: String) -> GeorgeResult<u32> {
     match key_type {
         KeyType::String => Hash::crc32_string(key),
         KeyType::Bool => Hash::crc32_bool(key),
         KeyType::U32 => Hash::crc32_u32(key),
         KeyType::F32 => Hash::crc32_f32(key),
         KeyType::I32 => Hash::crc32_i32(key),
-        _ => Err(err_str("key type not support!")),
+        _ => Err(Errs::str("key type not support!")),
     }
 }
 
-pub fn hash_key_64(key_type: KeyType, key: String) -> GeorgeResult<u64> {
+fn hash_key_64(key_type: KeyType, key: String) -> GeorgeResult<u64> {
     match key_type {
         KeyType::String => Hash::crc64_string(key),
         KeyType::Bool => Hash::crc64_bool(key),
@@ -152,11 +160,23 @@ pub fn hash_key_64(key_type: KeyType, key: String) -> GeorgeResult<u64> {
         KeyType::F64 => Hash::crc64_f64(key),
         KeyType::I32 => Hash::crc64_i32(key),
         KeyType::I64 => Hash::crc64_i64(key),
-        _ => Err(err_str("key type not support!")),
+        _ => Err(Errs::str("key type not support!")),
     }
 }
 
-pub fn hash_key_number(key_type: KeyType, key: &Number) -> GeorgeResult<u64> {
+// fn hash_key_number_u32(key_type: KeyType, key: &Number) -> GeorgeResult<u32> {
+//     match key_type {
+//         KeyType::U32 => Ok(key.as_u64().unwrap() as u32),
+//         KeyType::U64 => Ok(key.as_u64().unwrap()),
+//         KeyType::F32 => Ok(Hash::crc64(key.as_f64().unwrap())),
+//         KeyType::F64 => Ok(Hash::crc64(key.as_f64().unwrap())),
+//         KeyType::I32 => Ok(Hash::crc64(key.as_i64().unwrap())),
+//         KeyType::I64 => Ok(Hash::crc64(key.as_i64().unwrap())),
+//         _ => Err(Errs::str("key type not support!")),
+//     }
+// }
+
+fn hash_key_number(key_type: KeyType, key: &Number) -> GeorgeResult<u64> {
     match key_type {
         KeyType::U32 => Ok(key.as_u64().unwrap()),
         KeyType::U64 => Ok(key.as_u64().unwrap()),
@@ -164,6 +184,6 @@ pub fn hash_key_number(key_type: KeyType, key: &Number) -> GeorgeResult<u64> {
         KeyType::F64 => Ok(Hash::crc64(key.as_f64().unwrap())),
         KeyType::I32 => Ok(Hash::crc64(key.as_i64().unwrap())),
         KeyType::I64 => Ok(Hash::crc64(key.as_i64().unwrap())),
-        _ => Err(err_str("key type not support!")),
+        _ => Err(Errs::str("key type not support!")),
     }
 }
