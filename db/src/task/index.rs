@@ -39,6 +39,8 @@ pub(crate) struct Index {
     view: Arc<RwLock<View>>,
     /// 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
     name: String,
+    /// 存储引擎类型
+    index_type: IndexType,
     /// 是否主键，主键也是唯一索引，即默认列表依赖索引
     primary: bool,
     /// 是否唯一索引
@@ -75,6 +77,7 @@ pub(crate) struct Index {
 fn new_index(
     view: Arc<RwLock<View>>,
     name: String,
+    index_type: IndexType,
     primary: bool,
     unique: bool,
     null: bool,
@@ -98,6 +101,7 @@ fn new_index(
         unique,
         null,
         filer: Filed::create(filepath)?,
+        index_type,
     };
     Ok(index)
 }
@@ -122,6 +126,7 @@ impl Index {
         let index = new_index(
             view,
             name,
+            index_type.clone(),
             primary,
             unique,
             null,
@@ -155,36 +160,51 @@ impl TIndex for Index {
     fn view(&self) -> Arc<RwLock<View>> {
         self.view.clone()
     }
+
     fn database_name(&self) -> String {
         self.view().read().unwrap().database_name()
     }
+
     fn view_name(&self) -> String {
         self.view().read().unwrap().name()
     }
+
     fn name(&self) -> String {
         self.name.clone()
     }
+
+    fn index_type(&self) -> IndexType {
+        self.index_type.clone()
+    }
+
     fn key_type(&self) -> KeyType {
         self.key_type.clone()
     }
+
     fn metadata(&self) -> Metadata {
         self.metadata.clone()
     }
+
     fn metadata_bytes(&self) -> Vec<u8> {
         self.metadata.bytes()
     }
+
     fn create_time(&self) -> Duration {
         self.create_time.clone()
     }
+
     fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
         self.root.put(key, seed, force)
     }
+
     fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
         self.root.get(key)
     }
+
     fn del(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
         self.root.del(key, seed)
     }
+
     fn select(
         &self,
         left: bool,
@@ -311,8 +331,9 @@ impl Index {
     /// 生成文件描述
     fn description(&self) -> Vec<u8> {
         hex::encode(format!(
-            "{}:#?{}:#?{}:#?{}:#?{}:#?{}",
+            "{}:#?{}:#?{}:#?{}:#?{}:#?{}:#?{}",
             self.name,
+            Enum::index_type_u8(self.index_type()),
             self.primary,
             self.unique,
             self.null,
@@ -321,6 +342,7 @@ impl Index {
         ))
         .into_bytes()
     }
+
     /// 通过文件描述恢复结构信息
     pub(crate) fn recover(view: Arc<RwLock<View>>, hd: HD) -> GeorgeResult<Arc<dyn TIndex>> {
         let des_bytes = hd.description();
@@ -330,6 +352,8 @@ impl Index {
                 let real = Strings::from_utf8(vu8)?;
                 let mut split = real.split(":#?");
                 let name = split.next().unwrap().to_string();
+                let index_type =
+                    Enum::index_type(split.next().unwrap().to_string().parse::<u8>().unwrap());
                 let primary = split.next().unwrap().to_string().parse::<bool>().unwrap();
                 let unique = split.next().unwrap().to_string().parse::<bool>().unwrap();
                 let null = split.next().unwrap().to_string().parse::<bool>().unwrap();
@@ -361,6 +385,7 @@ impl Index {
                 let index = Index {
                     view,
                     name,
+                    index_type,
                     primary,
                     unique,
                     create_time,

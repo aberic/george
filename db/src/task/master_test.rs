@@ -145,7 +145,6 @@ mod master {
             while i < 5 {
                 // 循环体
                 put(database_name, view_name, i.to_string().as_str(), "world", i);
-                get(database_name, view_name, i.to_string().as_str(), i);
                 i += 1;
             }
         }

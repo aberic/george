@@ -21,7 +21,7 @@ use comm::errors::entrances::GeorgeResult;
 use crate::task::rich::{Condition, Constraint, Expectation};
 use crate::task::seed::IndexPolicy;
 use crate::task::view::View;
-use crate::utils::enums::KeyType;
+use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::store::Metadata;
 use serde::__private::fmt::Debug;
 
@@ -35,6 +35,8 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     /// 索引名称，可以自定义；<p>
     /// siam::Index 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入<p><p>
     fn name(&self) -> String;
+    /// 存储引擎类型
+    fn index_type(&self) -> IndexType;
     /// 索引值类型
     fn key_type(&self) -> KeyType;
     /// 文件信息
