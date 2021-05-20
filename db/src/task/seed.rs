@@ -54,6 +54,7 @@ impl IndexPolicy {
             custom: vec![],
         }
     }
+
     pub fn create_custom(
         key: String,
         node_filepath: String,
@@ -68,11 +69,9 @@ impl IndexPolicy {
             custom,
         }
     }
+
     fn node_file_path(&self) -> String {
         self.node_filepath.clone()
-    }
-    fn original_key(&self) -> String {
-        self.original_key.clone()
     }
 }
 
@@ -103,17 +102,7 @@ impl Seed {
             view,
         }))
     }
-    pub fn empty(view: View) -> Arc<RwLock<Seed>> {
-        Arc::new(RwLock::new(Seed {
-            real: DataReal {
-                sequence: 0,
-                key: String::new(),
-                value: vec![],
-            },
-            policies: Vec::new(),
-            view,
-        }))
-    }
+
     fn values(&self) -> GeorgeResult<Vec<u8>> {
         self.real.values()
     }
@@ -124,9 +113,11 @@ impl TSeed for Seed {
     fn key(&self) -> String {
         self.real.key()
     }
+
     fn value(&self) -> GeorgeResult<Vec<u8>> {
         Ok(self.real.value())
     }
+
     fn modify(&mut self, index_policy: IndexPolicy) {
         match index_policy.index_type {
             IndexType::Sequence => self.real.set_seq(index_policy.seek / 8),
@@ -134,6 +125,7 @@ impl TSeed for Seed {
         }
         self.policies.push(index_policy)
     }
+
     fn save(&self) -> GeorgeResult<()> {
         if self.policies.len() == 0 {
             return Ok(());
@@ -170,6 +162,7 @@ impl TSeed for Seed {
         }
         Ok(())
     }
+
     fn remove(&self) -> GeorgeResult<()> {
         // 将在数据在view中的空坐标存入各个index
         // 坐标内容由view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)组成，因此是12个字节

@@ -12,11 +12,9 @@
  * limitations under the License.
  */
 
-use crate::task::master::GLOBAL_MASTER;
 use crate::task::rich::Condition;
 use crate::task::view::View;
 use comm::errors::entrances::{Errs, GeorgeResult};
-use comm::io::file::{Filer, FilerWriter};
 use comm::trans::Trans;
 use comm::vectors::{Vector, VectorHandler};
 use serde::{Deserialize, Serialize};
@@ -72,28 +70,22 @@ impl DataReal {
     pub(crate) fn key(&self) -> String {
         self.key.clone()
     }
+
     pub(crate) fn value(&self) -> Vec<u8> {
         self.value.clone()
     }
+
     pub(crate) fn values(&self) -> GeorgeResult<Vec<u8>> {
         match serde_json::to_vec(&self) {
             Ok(v8s) => Ok(v8s),
             Err(err) => Err(Errs::strs("data real 2 bytes", err)),
         }
     }
+
     pub(crate) fn set_seq(&mut self, sequence: u64) {
         self.sequence = sequence
     }
-    pub(crate) fn value_bytes(real_bytes: Vec<u8>) -> GeorgeResult<Vec<u8>> {
-        Ok(DataReal::from(real_bytes)?.value)
-    }
-    pub(crate) fn froms(
-        database_name: String,
-        view_name: String,
-        view_info_index: Vec<u8>,
-    ) -> GeorgeResult<DataReal> {
-        DataReal::from(GLOBAL_MASTER.read_content_by(database_name, view_name, view_info_index)?)
-    }
+
     fn from(real_bytes: Vec<u8>) -> GeorgeResult<DataReal> {
         match serde_json::from_slice(real_bytes.as_slice()) {
             Ok(dr) => Ok(dr),
@@ -116,6 +108,7 @@ impl RootBytes {
         let bytes = Vector::create_empty_bytes(len);
         RootBytes { bytes }
     }
+
     pub(crate) fn recovery(bytes: Vec<u8>, len: usize) -> GeorgeResult<RootBytes> {
         let bytes_len = bytes.len();
         if bytes_len != len {
@@ -127,10 +120,12 @@ impl RootBytes {
             Ok(RootBytes { bytes })
         }
     }
+
     pub(crate) fn bytes(&self) -> Vec<u8> {
         self.bytes.clone()
     }
-    pub(crate) fn modify(&mut self, source: Vec<u8>, target: Vec<u8>, start: usize) {
-        self.bytes = Vector::modify(source, target, start)
-    }
+
+    // pub(crate) fn modify(&mut self, source: Vec<u8>, target: Vec<u8>, start: usize) {
+    //     self.bytes = Vector::modify(source, target, start)
+    // }
 }

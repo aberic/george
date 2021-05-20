@@ -28,8 +28,6 @@ use comm::errors::children::{
 use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
 use comm::io::dir::{Dir, DirHandler};
 use comm::io::file::{Filer, FilerHandler, FilerWriter};
-use comm::trans::Trans;
-use comm::vectors::{Vector, VectorHandler};
 use log::LevelFilter;
 use logs::{log_level, set_log, LogModule};
 use once_cell::sync::Lazy;
@@ -253,26 +251,16 @@ impl Master {
             .view_record(view_name, version)
     }
 
-    /// 当前视图文件地址
-    pub(super) fn read_content_by(
+    /// 视图文件信息
+    pub(crate) fn view_metadata(
         &self,
         database_name: String,
         view_name: String,
-        view_info_index: Vec<u8>,
-    ) -> GeorgeResult<Vec<u8>> {
-        // 读取view版本号(2字节)
-        let view_version = Trans::bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
-        // 读取view长度(4字节)
-        let view_data_len = Trans::bytes_2_u32(Vector::sub(view_info_index.clone(), 2, 6)?)?;
-        // 读取view偏移量(6字节)
-        let view_data_seek = Trans::bytes_2_u48(Vector::sub(view_info_index.clone(), 6, 12)?)?;
+    ) -> GeorgeResult<String> {
         self.database(database_name)?
             .read()
             .unwrap()
-            .view(view_name)?
-            .read()
-            .unwrap()
-            .read_content(view_version, view_data_len, view_data_seek)
+            .view_metadata(view_name)
     }
 
     /// 在指定库及视图中创建索引

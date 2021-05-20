@@ -101,36 +101,6 @@ impl Page {
         Ok(Arc::new(RwLock::new(page)))
     }
 
-    /// 新建缓存页
-    ///
-    /// 具体传参参考如下定义：<p><p>
-    ///
-    /// ###Params
-    ///
-    /// name 缓存页名称
-    ///
-    /// comment 缓存页描述
-    ///
-    /// size 可使用内存大小(单位：Mb)
-    ///
-    /// period 默认有效期(单位：秒)，如无设置，默认维300
-    pub(crate) fn creates(
-        name: String,
-        comment: String,
-        size: u64,
-        period: u32,
-    ) -> GeorgeResult<Arc<RwLock<Page>>> {
-        let page = new_page(name, comment, size, period)?;
-        let mut metadata_bytes = page.metadata_bytes();
-        let mut description = page.description();
-        // 初始化为32 + 8，即head长度加正文描述符长度
-        let mut before_description = ContentBytes::before(44, description.len() as u32);
-        metadata_bytes.append(&mut before_description);
-        metadata_bytes.append(&mut description);
-        page.append(metadata_bytes)?;
-        Ok(Arc::new(RwLock::new(page)))
-    }
-
     /// 名称
     pub(crate) fn name(&self) -> String {
         self.name.clone()
@@ -164,42 +134,6 @@ impl Page {
     /// seek_end_before 写之前文件字节数据长度
     fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
         self.filer.append(content)
-    }
-
-    fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
-        self.filer.read(start, last)
-    }
-
-    fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
-        self.filer.write(seek, content)
-    }
-
-    pub(crate) fn modify(&mut self, name: String, comment: String) -> GeorgeResult<()> {
-        let old_name = self.name();
-        let content = self.read(0, 44)?;
-        self.name = name.clone();
-        self.comment = comment.clone();
-        let description = self.description();
-        let seek_end = self.append(description.clone())?;
-        log::debug!(
-            "page {} modify to {} with file seek_end = {}",
-            old_name.clone(),
-            self.name(),
-            seek_end
-        );
-        let content_new = ContentBytes::before(seek_end, description.len() as u32);
-        // 更新首部信息，初始化head为32，描述起始4字节，长度4字节
-        self.write(32, content_new)?;
-        let page_path_old = Paths::page_path(old_name);
-        let page_path_new = Paths::page_path(self.name());
-        match std::fs::rename(page_path_old, page_path_new) {
-            Ok(_) => Ok(()),
-            Err(err) => {
-                // 回滚数据
-                self.write(0, content)?;
-                Err(Errs::strs("file rename failed", err.to_string()))
-            }
-        }
     }
 }
 

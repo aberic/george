@@ -151,28 +151,8 @@ impl Node {
         self.view.clone()
     }
 
-    fn database_name(&self) -> String {
-        self.view().read().unwrap().database_name()
-    }
-
-    fn view_name(&self) -> String {
-        self.view().read().unwrap().name()
-    }
-
-    fn index_name(&self) -> String {
-        self.index_name.clone()
-    }
-
     fn key_type(&self) -> KeyType {
         self.key_type.clone()
-    }
-
-    fn index_path(&self) -> String {
-        self.index_path.clone()
-    }
-
-    fn node_filepath(&self) -> String {
-        self.node_filepath.clone()
     }
 
     fn node_bytes(&self) -> Vec<u8> {
@@ -322,9 +302,9 @@ impl Node {
         // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数
         let next_degree = flexible_key / distance;
         // 相对当前结点字节数组，下一结点在字节数组中的偏移量
-        let next_node_start = (next_degree * 8) as usize;
+        let next_node_start = next_degree * 8;
         // 下一结点字节数组起始坐标
-        let mut next_node_seek_bytes = Vector::sub_last(node_bytes, next_node_start, 8)?;
+        let mut next_node_seek_bytes = Vector::sub_last(node_bytes, next_node_start as usize, 8)?;
         // 下一结点的真实坐标
         let next_node_seek: u64;
         // 由view视图执行save操作时反写进record文件中value起始seek

@@ -51,7 +51,7 @@ impl EnumHandler for Enum {
 }
 
 /// 标识符
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Tag {
     /// 引导文件
     Bootstrap,

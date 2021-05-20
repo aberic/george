@@ -15,6 +15,8 @@
 use std::fmt;
 use std::fs::File;
 
+use serde::{Deserialize, Serialize};
+
 use comm::errors::entrances::Errs;
 use comm::errors::entrances::GeorgeResult;
 use comm::io::file::{Filer, FilerReader};
@@ -29,7 +31,7 @@ const FRONT: [u8; 2] = [0x20, 0x19];
 const END: [u8; 2] = [0x02, 0x19];
 
 /// 文件信息
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Metadata {
     /// 标识符
     pub tag: Tag,

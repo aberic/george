@@ -23,12 +23,10 @@ use chrono::{Duration, Local, NaiveDateTime};
 
 use comm::errors::children::IndexExistError;
 use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
-use comm::io::file::{Filer, FilerNormal, FilerReader};
+use comm::io::file::{Filer, FilerReader};
 use comm::strings::{StringHandler, Strings};
-use comm::vectors::{Vector, VectorHandler};
 
 use crate::task::engine::traits::{TIndex, TSeed};
-use crate::task::engine::DataReal;
 use crate::task::index::Index as IndexDefault;
 use crate::task::rich::{Expectation, Selector};
 use crate::task::seed::Seed;
@@ -174,14 +172,6 @@ impl View {
         self.indexes.clone()
     }
 
-    /// 获取默认索引
-    pub(crate) fn index_catalog(&self) -> GeorgeResult<Arc<dyn TIndex>> {
-        match self.index_map().read().unwrap().get(INDEX_CATALOG) {
-            Some(idx) => Ok(idx.clone()),
-            None => Err(Errs::str("index catalog does't found")),
-        }
-    }
-
     /// 获取索引
     pub(crate) fn index(&self, index_name: &str) -> GeorgeResult<Arc<dyn TIndex>> {
         match self.index_map().read().unwrap().get(index_name) {
@@ -252,12 +242,6 @@ impl View {
 
     fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
         self.filer.write(seek, content)
-    }
-
-    /// 视图变更
-    pub(crate) fn modify_clone(&mut self, database_name: String, view_name: String) {
-        self.database_name = database_name;
-        self.name = view_name
     }
 
     /// 视图变更
@@ -378,7 +362,7 @@ impl View {
     /// ###Return
     ///
     /// IndexResult<()>
-    pub(crate) fn remove(&self, key: String, mut value: Vec<u8>) -> GeorgeResult<()> {
+    pub(crate) fn remove(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
         self.del(key, value)
     }
 
@@ -404,22 +388,6 @@ impl View {
     pub(crate) fn archive(&self, archive_file_path: String) -> GeorgeResult<()> {
         self.filer.clone().archive(archive_file_path)?;
         self.init()
-    }
-
-    /// 取出可用数据集合
-    ///
-    /// data_info 记录表文件属性(数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
-    ///
-    /// key 原始key
-    pub(crate) fn path(&self, version: u16) -> GeorgeResult<String> {
-        if self.version() == version {
-            Ok(self.filepath())
-        } else {
-            match self.pigeonhole().history().get(&version) {
-                Some(record) => Ok(record.filepath()),
-                None => Err(Errs::str("index exist but value is none!")),
-            }
-        }
     }
 
     /// 组装写入视图的内容，即持续长度+该长度的原文内容

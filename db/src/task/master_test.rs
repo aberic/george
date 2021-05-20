@@ -27,8 +27,8 @@ mod master {
     #[cfg(test)]
     mod base {
         use crate::task::master_test::{
-            archive_view, create_database, create_index, create_view, database_map,
-            modify_database, modify_view,
+            archive_view, create_database, create_index, create_page, create_view, database_map,
+            modify_database, modify_page, modify_view, view_metadata, view_record,
         };
         use crate::utils::enums::{IndexType, KeyType};
 
@@ -54,6 +54,11 @@ mod master {
             create_view(database_name, view_name);
             modify_view(database_name, view_name, view_new_name);
             modify_view(database_name, view_name, view_new_name);
+            // page_test
+            let page_name = "page_modify_base_test1";
+            let page_new_name = "page_modify_base_test2";
+            create_page(page_name);
+            modify_page(page_name, page_new_name);
             // index_create_test
             let database_name = "database_index_create_test";
             let view_name = "view_index_create_test";
@@ -126,6 +131,16 @@ mod master {
                 "src/test/dir/x.ge",
             );
             database_map();
+        }
+
+        #[test]
+        fn view_record_test() {
+            view_record("database_view_archive_test", "view_archive_test1", 0)
+        }
+
+        #[test]
+        fn view_metadata_test() {
+            view_metadata("database_view_archive_test", "view_archive_test1")
         }
 
         #[test]
@@ -233,8 +248,9 @@ mod master {
             let view_name = "view_disk_base_test";
             create_view(database_name, view_name);
             put(database_name, view_name, "hello1", "world1", 1);
-            put(database_name, view_name, "hello2", "world2", 1);
-            put(database_name, view_name, "hello3", "world3", 1);
+            put(database_name, view_name, "hello2", "world2", 2);
+            put(database_name, view_name, "hello3", "world3", 3);
+            set(database_name, view_name, "hello1", "world4", 4);
         }
 
         #[test]
@@ -513,6 +529,7 @@ fn library_index_test() {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 fn database_map() {
+    db_create_time();
     for (database_name, db) in GLOBAL_MASTER
         .database_map()
         .read()
@@ -573,11 +590,11 @@ fn database_map() {
     }
 }
 
-fn create_page(page_name: &str) {
-    match GLOBAL_MASTER.create_page(String::from(page_name), String::from("comment")) {
-        Ok(()) => println!("create page {}", page_name),
-        Err(err) => println!("create page {} error, {}", page_name, err),
-    }
+fn db_create_time() {
+    let duration = GLOBAL_MASTER.create_time();
+    let time_from_stamp = NaiveDateTime::from_timestamp(duration.num_seconds(), 0);
+    let time_format = time_from_stamp.format("%Y-%m-%d %H:%M:%S");
+    println!("db_create_time = {}", time_format)
 }
 
 fn create_database(database_name: &str) {
@@ -597,6 +614,23 @@ fn modify_database(database_name: &str, database_new_name: &str) {
         Err(err) => println!(
             "modify database {} to {} error, {}",
             database_name, database_new_name, err
+        ),
+    }
+}
+
+fn create_page(page_name: &str) {
+    match GLOBAL_MASTER.create_page(String::from(page_name), String::from("comment")) {
+        Ok(()) => println!("create page {}", page_name),
+        Err(err) => println!("create page {} error, {}", page_name, err),
+    }
+}
+
+fn modify_page(page_name: &str, page_new_name: &str) {
+    match GLOBAL_MASTER.modify_page(String::from(page_name), String::from(page_new_name)) {
+        Ok(()) => println!("modify page {} to {}", page_name, page_new_name),
+        Err(err) => println!(
+            "modify page {} to {} error, {}",
+            page_name, page_new_name, err
         ),
     }
 }
@@ -641,6 +675,28 @@ fn archive_view(database_name: &str, view_name: &str, archive_file_path: &str) {
     ) {
         Ok(()) => println!("archive view {} success!", view_name),
         Err(err) => println!("archive view {} error: {}", view_name, err),
+    }
+}
+
+fn view_record(database_name: &str, view_name: &str, version: u16) {
+    match GLOBAL_MASTER.view_record(
+        String::from(database_name),
+        String::from(view_name),
+        version,
+    ) {
+        Ok((filepath, create_time)) => println!(
+            "filepath = {}, create_time = {}",
+            filepath,
+            create_time.num_nanoseconds().unwrap().to_string(),
+        ),
+        Err(err) => println!("archive view {} error: {}", view_name, err),
+    }
+}
+
+fn view_metadata(database_name: &str, view_name: &str) {
+    match GLOBAL_MASTER.view_metadata(String::from(database_name), String::from(view_name)) {
+        Ok(res) => println!("view_metadata = {}", res),
+        Err(err) => println!("view_metadata {} error: {}", view_name, err),
     }
 }
 
@@ -753,21 +809,6 @@ fn get_by_index(
             Strings::from_utf8(vu8).unwrap().as_str()
         ),
         Err(ie) => println!("get{} is {:#?}", position, ie.source().unwrap().to_string()),
-    }
-}
-
-fn remove(database_name: &str, view_name: &str, key: &str, position: usize) {
-    match GLOBAL_MASTER.remove_disk(
-        database_name.to_string(),
-        view_name.to_string(),
-        key.to_string(),
-    ) {
-        Ok(_) => println!("remove{} success!", position),
-        Err(ie) => println!(
-            "remove{} is {:#?}",
-            position,
-            ie.source().unwrap().to_string()
-        ),
     }
 }
 

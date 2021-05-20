@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-use crate::utils::enums::{IndexType, KeyType};
+use crate::utils::enums::KeyType;
 use comm::cryptos::hash::{Hash, HashCRCHandler, HashCRCTypeHandler};
 use comm::errors::entrances::{Errs, GeorgeResult};
 use comm::strings::{StringHandler, Strings};

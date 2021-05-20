@@ -40,18 +40,13 @@ impl Node {
             key_type,
         });
     }
+
     /// 恢复根结点
     pub fn recovery(index_name: String, key_type: KeyType) -> Arc<Self> {
         return Arc::new(Node {
             index_name,
             key_type,
         });
-    }
-    fn index_name(&self) -> String {
-        self.index_name.clone()
-    }
-    fn key_type(&self) -> KeyType {
-        self.key_type.clone()
     }
 }
 

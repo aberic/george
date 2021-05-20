@@ -104,43 +104,16 @@ impl Node {
         }))
     }
 
-    fn index_name(&self) -> String {
-        self.index_name.clone()
-    }
-
     fn key_type(&self) -> KeyType {
         self.key_type.clone()
-    }
-
-    fn database_name(&self) -> String {
-        self.view.clone().read().unwrap().database_name()
-    }
-
-    fn view_name(&self) -> String {
-        self.view.clone().read().unwrap().name()
     }
 
     fn node_filepath(&self) -> String {
         self.node_filepath.clone()
     }
 
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
-    /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
-    ///
-    /// #Return
-    ///
-    /// seek_end_before 写之前文件字节数据长度
-    fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.filer.clone().append(content)
-    }
-
     fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         self.filer.clone().read_allow_none(start, last)
-    }
-
-    fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
-        self.filer.clone().write(seek, content)
     }
 }
 

@@ -27,6 +27,7 @@ use crate::task::view::View;
 use crate::utils::path::Paths;
 use crate::utils::store::{ContentBytes, Metadata, HD};
 use crate::utils::writer::Filed;
+use comm::json::Json;
 
 #[derive(Debug, Clone)]
 pub(crate) struct Database {
@@ -240,6 +241,11 @@ impl Database {
     ) -> GeorgeResult<(String, Duration)> {
         let record = self.view(view_name)?.read().unwrap().record(version)?;
         Ok((record.filepath(), record.create_time()))
+    }
+
+    /// 视图文件信息
+    pub(crate) fn view_metadata(&self, view_name: String) -> GeorgeResult<String> {
+        Json::obj_2_string(&self.view(view_name)?.read().unwrap().metadata())
     }
 }
 
