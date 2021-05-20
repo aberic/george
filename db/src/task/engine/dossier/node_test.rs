@@ -13,10 +13,8 @@
  */
 
 #[cfg(test)]
-mod node_test {
+mod dossier_node_test {
     use crate::task::engine::dossier::node::Node;
-    use crate::task::engine::traits::{TNode, TSeed};
-    use crate::task::seed::Seed;
     use crate::task::view::View;
     use crate::utils::enums::KeyType;
     use comm::errors::entrances::GeorgeResult;
@@ -46,68 +44,151 @@ mod node_test {
         println!("node create success! {:#?}", node);
     }
 
-    #[test]
-    fn put_test() {
-        let view = View::mock_create_single("db".to_string(), "view".to_string()).unwrap();
-        let node = create_node(
-            "db".to_string(),
-            "view".to_string(),
-            "index".to_string(),
-            KeyType::String,
-            true,
-        )
-        .unwrap();
-        let seed = Seed::create(view, "yes".to_string(), "no".to_string().into_bytes());
-        match node.put("yes".to_string(), seed.clone(), false) {
-            Ok(()) => {
-                let seed_w = seed.write().unwrap();
-                match seed_w.save() {
-                    Ok(()) => println!("put success!"),
-                    Err(err) => println!("seed save error! error is {}", err),
+    #[cfg(test)]
+    mod unique_test {
+        use crate::task::engine::dossier::node_test::dossier_node_test::create_node;
+        use crate::task::engine::traits::{TNode, TSeed};
+        use crate::task::seed::Seed;
+        use crate::task::view::View;
+        use crate::utils::enums::KeyType;
+
+        #[test]
+        fn put_test() {
+            let view = View::mock_create_single("db".to_string(), "view".to_string()).unwrap();
+            let node = create_node(
+                "db".to_string(),
+                "view".to_string(),
+                "dossier".to_string(),
+                KeyType::String,
+                true,
+            )
+            .unwrap();
+            let seed = Seed::create(view, "yes".to_string(), "no".to_string().into_bytes());
+            match node.put("yes".to_string(), seed.clone(), false) {
+                Ok(()) => {
+                    let seed_w = seed.write().unwrap();
+                    match seed_w.save() {
+                        Ok(()) => println!("put success!"),
+                        Err(err) => println!("seed save error! error is {}", err),
+                    }
                 }
+                Err(err) => println!("put error! error is {}", err),
             }
-            Err(err) => println!("put error! error is {}", err),
+        }
+
+        #[test]
+        fn get_test() {
+            View::mock_create_single("db".to_string(), "view".to_string()).unwrap();
+            let node = create_node(
+                "db".to_string(),
+                "view".to_string(),
+                "dossier".to_string(),
+                KeyType::String,
+                true,
+            )
+            .unwrap();
+            match node.get("yes".to_string()) {
+                Ok(v8s) => println!("res = {:#?}", String::from_utf8(v8s).unwrap().as_str()),
+                Err(err) => println!("get error! error is {}", err),
+            }
+        }
+
+        #[test]
+        fn del_test() {
+            let view = View::mock_create_single("db".to_string(), "view".to_string()).unwrap();
+            let node = create_node(
+                "db".to_string(),
+                "view".to_string(),
+                "dossier".to_string(),
+                KeyType::String,
+                true,
+            )
+            .unwrap();
+            let seed = Seed::create(view, "yes".to_string(), "no".to_string().into_bytes());
+            match node.del("yes".to_string(), seed.clone()) {
+                Ok(v8s) => {
+                    let seed_w = seed.write().unwrap();
+                    match seed_w.remove() {
+                        Ok(()) => println!("del success!"),
+                        Err(err) => println!("seed save error! error is {}", err),
+                    }
+                }
+                Err(err) => println!("del error! error is {}", err),
+            }
         }
     }
 
-    #[test]
-    fn get_test() {
-        View::mock_create_single("db".to_string(), "view".to_string()).unwrap();
-        let node = create_node(
-            "db".to_string(),
-            "view".to_string(),
-            "index".to_string(),
-            KeyType::String,
-            true,
-        )
-        .unwrap();
-        match node.get("yes".to_string()) {
-            Ok(v8s) => println!("res = {:#?}", String::from_utf8(v8s).unwrap().as_str()),
-            Err(err) => println!("get error! error is {}", err),
-        }
-    }
+    #[cfg(test)]
+    mod un_unique_test {
+        use crate::task::engine::dossier::node_test::dossier_node_test::create_node;
+        use crate::task::engine::traits::{TNode, TSeed};
+        use crate::task::seed::Seed;
+        use crate::task::view::View;
+        use crate::utils::enums::KeyType;
 
-    #[test]
-    fn del_test() {
-        let view = View::mock_create_single("db".to_string(), "view".to_string()).unwrap();
-        let node = create_node(
-            "db".to_string(),
-            "view".to_string(),
-            "index".to_string(),
-            KeyType::String,
-            true,
-        )
-        .unwrap();
-        let seed = Seed::create(view, "yes".to_string(), "no".to_string().into_bytes());
-        match node.del("yes".to_string(), seed.clone()) {
-            Ok(v8s) => {
-                let seed_w = seed.write().unwrap();
-                match seed_w.remove() {
-                    Ok(()) => println!("del success!"),
-                    Err(err) => println!("seed save error! error is {}", err),
+        #[test]
+        fn put_test() {
+            let view = View::mock_create_single("db".to_string(), "view".to_string()).unwrap();
+            let node = create_node(
+                "db".to_string(),
+                "view".to_string(),
+                "dossier1".to_string(),
+                KeyType::String,
+                false,
+            )
+            .unwrap();
+            let seed = Seed::create(view, "yes".to_string(), "no".to_string().into_bytes());
+            match node.put("yes".to_string(), seed.clone(), false) {
+                Ok(()) => {
+                    let seed_w = seed.write().unwrap();
+                    match seed_w.save() {
+                        Ok(()) => println!("put success!"),
+                        Err(err) => println!("seed save error! error is {}", err),
+                    }
                 }
+                Err(err) => println!("put error! error is {}", err),
             }
-            Err(err) => println!("del error! error is {}", err),
+        }
+
+        #[test]
+        fn get_test() {
+            View::mock_create_single("db".to_string(), "view".to_string()).unwrap();
+            let node = create_node(
+                "db".to_string(),
+                "view".to_string(),
+                "dossier1".to_string(),
+                KeyType::String,
+                false,
+            )
+            .unwrap();
+            match node.get("yes".to_string()) {
+                Ok(v8s) => println!("res = {:#?}", String::from_utf8(v8s).unwrap().as_str()),
+                Err(err) => println!("get error! error is {}", err),
+            }
+        }
+
+        #[test]
+        fn del_test() {
+            let view = View::mock_create_single("db".to_string(), "view".to_string()).unwrap();
+            let node = create_node(
+                "db".to_string(),
+                "view".to_string(),
+                "dossier1".to_string(),
+                KeyType::String,
+                false,
+            )
+            .unwrap();
+            let seed = Seed::create(view, "yes".to_string(), "no".to_string().into_bytes());
+            match node.del("yes".to_string(), seed.clone()) {
+                Ok(v8s) => {
+                    let seed_w = seed.write().unwrap();
+                    match seed_w.remove() {
+                        Ok(()) => println!("del success!"),
+                        Err(err) => println!("seed save error! error is {}", err),
+                    }
+                }
+                Err(err) => println!("del error! error is {}", err),
+            }
         }
     }
 }

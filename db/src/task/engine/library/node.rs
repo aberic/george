@@ -159,6 +159,10 @@ impl Node {
         self.root_bytes.read().unwrap().bytes()
     }
 
+    fn node_filepath(&self) -> String {
+        self.node_filepath.clone()
+    }
+
     /// 根据文件路径获取该文件追加写入的写对象
     ///
     /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
@@ -225,7 +229,7 @@ impl TNode for Node {
 
     fn del(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
         let hash_key = IndexKey::u64(self.key_type(), key.clone())?;
-        self.del_in_node(self.node_bytes(), key, 1, hash_key, seed)
+        self.del_in_node(self.node_bytes(), 0, key, 1, hash_key, seed)
     }
 
     fn select(
@@ -306,7 +310,7 @@ impl Node {
         // 下一结点字节数组起始坐标
         let mut next_node_seek_bytes = Vector::sub_last(node_bytes, next_node_start as usize, 8)?;
         // 下一结点的真实坐标
-        let next_node_seek: u64;
+        let next_node_real_seek: u64;
         // 由view视图执行save操作时反写进record文件中value起始seek
         let record_view_info_seek: u64;
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
@@ -314,20 +318,23 @@ impl Node {
             // 如果存在坐标值，则继续，否则新建
             if Vector::is_fill(next_node_seek_bytes.clone()) {
                 // 索引执行插入真实坐标
-                next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
+                next_node_real_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
                 // 已存在该索引值，需要继续判断插入可行性
                 // 如果唯一且非强制覆盖，返回数据已存在
                 if self.unique {
                     if force {
-                        record_view_info_seek =
-                            self.record_view_info_seek_put(key.clone(), next_node_seek, force)?;
+                        record_view_info_seek = self.record_view_info_seek_put(
+                            key.clone(),
+                            next_node_real_seek,
+                            force,
+                        )?;
                     } else {
                         return Err(GeorgeError::from(DataExistError));
                     }
                 } else {
                     // 如果非唯一，则需要判断hash碰撞，hash碰撞未发生才会继续进行强制性判断
                     record_view_info_seek =
-                        self.record_view_info_seek_put(key.clone(), next_node_seek, force)?;
+                        self.record_view_info_seek_put(key.clone(), next_node_real_seek, force)?;
                 }
             } else {
                 // 不存在下一坐标值，新建
@@ -336,9 +343,9 @@ impl Node {
                 // record新追加链式子结构坐标字节数组
                 let record_seek_bytes = Trans::u64_2_bytes(record_view_info_seek);
                 // record起始链式结构在node文件中真实坐标
-                next_node_seek = node_bytes_seek + next_node_start;
+                next_node_real_seek = node_bytes_seek + next_node_start;
                 // 将record新追加链式子结构坐标字节数组写入record起始链式结构在node文件中真实坐标
-                self.node_write(next_node_seek, record_seek_bytes)?;
+                self.node_write(next_node_real_seek, record_seek_bytes)?;
             }
             seed.write().unwrap().modify(IndexPolicy::create(
                 key,
@@ -352,14 +359,16 @@ impl Node {
             let next_node_bytes: Vec<u8>;
             // 如果存在坐标值，则继续，否则新建
             if Vector::is_fill(next_node_seek_bytes.clone()) {
-                next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
-                next_node_bytes = self.node_read(next_node_seek, BYTES_LEN_FOR_LIBRARY)?;
+                // 下一结点的真实坐标
+                next_node_real_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
+                // 读取下一结点字节数组
+                next_node_bytes = self.node_read(next_node_real_seek, BYTES_LEN_FOR_LIBRARY)?;
             } else {
                 // 创建新的结点字节数组
                 next_node_bytes = Vector::create_empty_bytes(BYTES_LEN_FOR_LIBRARY);
                 // 将新的结点字节数组写入node_file并返回写入前的起始坐标
-                next_node_seek = self.node_append(next_node_bytes.clone())?;
-                next_node_seek_bytes = Trans::u64_2_bytes(next_node_seek);
+                next_node_real_seek = self.node_append(next_node_bytes.clone())?;
+                next_node_seek_bytes = Trans::u64_2_bytes(next_node_real_seek);
                 // 下一结点坐标记录在文件中的坐标
                 let next_node_seek_real_seek = node_bytes_seek + next_node_start as u64;
                 self.node_write(next_node_seek_real_seek, next_node_seek_bytes)?;
@@ -367,7 +376,7 @@ impl Node {
             // 通过当前层真实key减去下一层的度数与间隔数的乘积获取结点所在下一层的真实key
             let next_flexible_key = flexible_key - next_degree * distance;
             self.put_in_node(
-                next_node_seek,
+                next_node_real_seek,
                 next_node_bytes,
                 key,
                 level + 1,
@@ -465,9 +474,9 @@ impl Node {
             // 如果存在坐标值，则继续，否则新建
             if Vector::is_fill(next_node_seek_bytes.clone()) {
                 // 下一结点的真实坐标
-                let next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
+                let next_node_real_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
                 // 下一结点字节数组
-                let next_node_bytes = self.node_read(next_node_seek, BYTES_LEN_FOR_LIBRARY)?;
+                let next_node_bytes = self.node_read(next_node_real_seek, BYTES_LEN_FOR_LIBRARY)?;
                 // 通过当前层真实key减去下一层的度数与间隔数的乘积获取结点所在下一层的真实key
                 let next_flexible_key = flexible_key - next_degree * distance;
                 self.get_in_node(next_node_bytes, key, level + 1, next_flexible_key)
@@ -546,6 +555,7 @@ impl Node {
     fn del_in_node(
         &self,
         node_bytes: Vec<u8>,
+        node_real_seek: u64,
         key: String,
         level: u8,
         flexible_key: u64,
@@ -561,17 +571,35 @@ impl Node {
         let next_node_seek_bytes = Vector::sub_last(node_bytes, next_node_start, 8)?;
         // 如果当前层高为4，则达到最底层，否则递归下一层逻辑
         if level == 4 {
-            self.judge_seek_bytes_for_del(key, next_node_seek_bytes, seed)
+            // 如果唯一，直接删除
+            if self.unique {
+                seed.write().unwrap().modify(IndexPolicy::create(
+                    key,
+                    IndexType::Library,
+                    self.node_filepath(),
+                    node_real_seek + next_node_start as u64,
+                ));
+                Ok(())
+            } else {
+                self.judge_seek_bytes_for_del(key, next_node_seek_bytes, seed)
+            }
         } else {
             // 如果存在坐标值，则继续，否则新建
             if Vector::is_fill(next_node_seek_bytes.clone()) {
                 // 下一结点的真实坐标
-                let next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
+                let next_node_real_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
                 // 下一结点字节数组
-                let next_node_bytes = self.node_read(next_node_seek, BYTES_LEN_FOR_LIBRARY)?;
+                let next_node_bytes = self.node_read(next_node_real_seek, BYTES_LEN_FOR_LIBRARY)?;
                 // 通过当前层真实key减去下一层的度数与间隔数的乘积获取结点所在下一层的真实key
                 let next_flexible_key = flexible_key - next_degree * distance;
-                self.del_in_node(next_node_bytes, key, level + 1, next_flexible_key, seed)
+                self.del_in_node(
+                    next_node_bytes,
+                    next_node_real_seek,
+                    key,
+                    level + 1,
+                    next_flexible_key,
+                    seed,
+                )
             } else {
                 // 如果为空，则返回无此数据
                 Err(GeorgeError::from(DataNoExistError))
@@ -628,8 +656,10 @@ impl Node {
             let date = DataReal::from(info)?;
             // 因为hash key指向同一碰撞，对比key是否相同
             if date.key == key {
-                // 如果唯一，则不存在hash碰撞，直接将待删除内容替换为空字节数组即可
-                if self.unique {
+                // 可能存在hash碰撞，将后续索引链式结构循环坐标读取出来
+                let record_next_seek_bytes = Vector::sub_last(res, 12, 8)?;
+                // 如果后续坐标内容为空，则不存在后续数据，直接将待删除内容替换为空字节数组即可
+                if Vector::is_empty(record_next_seek_bytes.clone()) {
                     seed.write().unwrap().modify(IndexPolicy::create(
                         key,
                         IndexType::Library,
@@ -637,30 +667,18 @@ impl Node {
                         record_seek,
                     ));
                 } else {
-                    // 如果不唯一，则可能存在hash碰撞，将后续索引链式结构循环坐标读取出来
-                    let record_next_seek_bytes = Vector::sub_last(res, 12, 8)?;
-                    // 如果后续坐标内容为空，则不存在后续数据，直接将待删除内容替换为空字节数组即可
-                    if Vector::is_empty(record_next_seek_bytes.clone()) {
-                        seed.write().unwrap().modify(IndexPolicy::create(
-                            key,
-                            IndexType::Library,
-                            self.record_filepath(),
-                            record_seek,
-                        ));
-                    } else {
-                        // 如果存在后续坐标内容
-                        // 获取下一个索引执行插入真实坐标
-                        let next_node_seek = Trans::bytes_2_u64(record_next_seek_bytes)?;
-                        // 获取下一个record存储固定长度的数据，长度为20，即view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
-                        let next_node_bytes = self.record_read(next_node_seek, 20)?;
-                        // 将下一个record记录写入当前记录，以此实现删除
-                        seed.write().unwrap().modify(IndexPolicy::create_custom(
-                            key,
-                            self.record_filepath(),
-                            record_seek,
-                            next_node_bytes,
-                        ));
-                    }
+                    // 如果存在后续坐标内容
+                    // 获取下一个索引执行插入真实坐标
+                    let next_node_seek = Trans::bytes_2_u64(record_next_seek_bytes)?;
+                    // 获取下一个record存储固定长度的数据，长度为20，即view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
+                    let next_node_bytes = self.record_read(next_node_seek, 20)?;
+                    // 将下一个record记录写入当前记录，以此实现删除
+                    seed.write().unwrap().modify(IndexPolicy::create_custom(
+                        key,
+                        self.record_filepath(),
+                        record_seek,
+                        next_node_bytes,
+                    ));
                 }
                 Ok(())
             } else {
