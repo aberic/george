@@ -16,6 +16,7 @@
 extern crate lazy_static;
 extern crate phf;
 
+pub mod argument;
 pub mod cryptos;
 pub mod env;
 mod env_test;

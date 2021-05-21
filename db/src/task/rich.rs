@@ -14,7 +14,7 @@
 
 use crate::task::engine::traits::TIndex;
 use crate::utils::comm::IndexKey;
-use crate::utils::enums::KeyType;
+use crate::utils::enums::{IndexType, KeyType};
 use comm::errors::entrances::{Errs, GeorgeResult};
 use serde_json::{Error, Value};
 use std::collections::HashMap;
@@ -47,6 +47,8 @@ pub struct Condition {
     param: String,
     /// 条件 gt/ge/lt/le/eq/ne 大于/大于等于/小于/小于等于/等于/不等
     compare: Compare,
+    /// 索引类型
+    index_type: IndexType,
     /// 索引值类型
     key_type: KeyType,
     /// 比较对象为string
@@ -65,6 +67,7 @@ impl Condition {
     fn new(
         param: String,
         compare: Compare,
+        index_type: IndexType,
         key_type: KeyType,
         value: String,
         index: Option<Arc<dyn TIndex>>,
@@ -80,6 +83,7 @@ impl Condition {
         Ok(Condition {
             param,
             compare,
+            index_type,
             key_type,
             value,
             value_hash_64,
@@ -382,6 +386,8 @@ impl Constraint {
                 let param: &str;
                 // 比较条件 gt/ge/lt/le/eq/ne 大于/大于等于/小于/小于等于/等于/不等
                 let compare: Compare;
+                // 索引类型，初始化默认为None
+                let mut index_type: IndexType = IndexType::None;
                 // 条件值类型，初始化默认为None
                 let mut key_type: KeyType = KeyType::None;
                 // 开始解析单一对象
@@ -423,6 +429,8 @@ impl Constraint {
                     Some(idx) => {
                         // 赋值当前单一对象可匹配索引
                         index = Some(idx.clone());
+                        // 赋值索引类型
+                        index_type = idx.index_type();
                         // 赋值条件值类型
                         key_type = idx.key_type();
                     }
@@ -476,6 +484,7 @@ impl Constraint {
                 self.conditions.push(Condition::new(
                     param.to_string(),
                     compare,
+                    index_type,
                     key_type,
                     val_str,
                     index,

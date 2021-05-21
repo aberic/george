@@ -16,7 +16,7 @@
 mod json {
     use serde::{Deserialize, Serialize};
 
-    use crate::json::{Json, JsonFrom};
+    use crate::json::{Json, JsonArray, JsonGet, JsonHandler, JsonNew};
 
     #[derive(Debug, Serialize, Deserialize)]
     struct User {
@@ -42,13 +42,122 @@ mod json {
                             "blog": "https://www.qttc.net",
                             "addr": "4114 Sepulveda Blvd"
                         }"#;
+    const GET: &str = r#"
+                        {
+                            "string": "text",
+                            "u64": 127,
+                            "i64": -128,
+                            "f64": 549.127,
+                            "bool": false,
+                            "object": {
+                                          "string": "text",
+                                          "u64": 127,
+                                          "i64": -128,
+                                          "f64": 549.127,
+                                          "bool": false
+                                       }
+                        }"#;
+    const ARRAY: &str = r#"
+                        {
+                            "string": "text",
+                            "u64": 127,
+                            "i64": -128,
+                            "f64": 549.127,
+                            "bool": false,
+                            "object": {
+                                          "string": "text",
+                                          "u64": 127,
+                                          "i64": -128,
+                                          "f64": 549.127,
+                                          "bool": false
+                             },
+                            "array1": [
+                                {
+                                    "string": "text",
+                                    "u64": 127,
+                                    "i64": -128,
+                                    "f64": 549.127,
+                                    "bool": false,
+                                    "array": ["hello", "world", "test"]
+                                },
+                                {
+                                    "string": "text",
+                                    "u64": 127,
+                                    "i64": -128,
+                                    "f64": 549.127,
+                                    "bool": false,
+                                    "array": [1, 100, 10000]
+                                },
+                                {
+                                    "string": "text",
+                                    "u64": 127,
+                                    "i64": -128,
+                                    "f64": 549.127,
+                                    "bool": false,
+                                    "array": [5.4, 100.1, 10000.98]
+                                }
+                            ],
+                            "array2": ["one", "two", { "three": "object" }]
+                        }"#;
+    const ARRAYS: &str = r#"
+                        [
+                            {
+                                "string": "text",
+                                "u64": 127,
+                                "i64": -128,
+                                "f64": 549.127,
+                                "bool": false,
+                                "array": ["hello", "world", "test"]
+                            },
+                            {
+                                "string": "text",
+                                "u64": 127,
+                                "i64": -128,
+                                "f64": 549.127,
+                                "bool": false,
+                                "array": [1, 100, 10000]
+                            },
+                            {
+                                "string": "text",
+                                "u64": 127,
+                                "i64": -128,
+                                "f64": 549.127,
+                                "bool": false,
+                                "array": [5.4, 100.1, 10000.98]
+                            },
+                            {
+                                "string": "text",
+                                "u64": 127,
+                                "i64": -128,
+                                "f64": 549.127,
+                                "bool": false,
+                                "array": [5.4, "test", 10000, false, -99]
+                            }
+                        ]
+                        "#;
+    const ARRAY_OBJECT: &str = r#"
+                        [
+                            {
+                                "name": "琼台博客",
+                                "age": 30,
+                                "blog": "https://www.qttc.net",
+                                "addr": "4114 Sepulveda Blvd"
+                            },
+                            {
+                                "name": "琼台博客",
+                                "age": 30,
+                                "blog": "https://www.qttc.net",
+                                "addr": "4114 Sepulveda Blvd"
+                            }
+                        ]
+                        "#;
 
     #[test]
     fn test_self() {
-        let json1 = Json::from_string(DATA).unwrap();
-        let json2 = Json::from_string(DATA.to_string()).unwrap();
-        let json3 = Json::from_slice(DATA.as_bytes()).unwrap();
-        let json4 = Json::from_slice(DATA.as_bytes().to_vec()).unwrap();
+        let json1 = Json::new(DATA).unwrap();
+        let json2 = Json::new(DATA.to_string()).unwrap();
+        let json3 = Json::new(DATA.as_bytes()).unwrap();
+        let json4 = Json::new(DATA.as_bytes().to_vec()).unwrap();
         println!("json1 to string = {}", json1.to_string());
         println!("json2 to string = {}", json2.to_string());
         println!("json3 to string = {}", json3.to_string());
@@ -58,9 +167,97 @@ mod json {
 
     #[test]
     fn test_obj() {
-        let json = Json::from_string(USER).unwrap();
-        let user: User = json.to_obj().unwrap();
-        println!("user = {:#?}", user)
+        let json = Json::new(USER).unwrap();
+        let user: User = json.to_object().unwrap();
+        println!("user = {:#?}", user);
+    }
+
+    #[test]
+    fn test_object_get() {
+        let json = Json::new(GET).unwrap();
+        println!("string = {}", json.get_string("string").unwrap());
+        println!("u64 = {}", json.get_u64("u64").unwrap());
+        println!("i64 = {}", json.get_i64("i64").unwrap());
+        println!("f64 = {}", json.get_f64("f64").unwrap());
+        println!("bool = {}", json.get_bool("bool").unwrap());
+        let object = json.get_object("object").unwrap();
+        println!("object string = {}", object.get_string("string").unwrap());
+        println!("object u64 = {}", object.get_u64("u64").unwrap());
+        println!("object i64 = {}", object.get_i64("i64").unwrap());
+        println!("object f64 = {}", object.get_f64("f64").unwrap());
+        println!("object bool = {}", object.get_bool("bool").unwrap());
+    }
+
+    #[test]
+    fn test_array_self() {
+        let array1 = Json::new(ARRAYS).unwrap();
+        let array2 = Json::new(ARRAYS.to_string()).unwrap();
+        let array3 = Json::new(ARRAYS.as_bytes()).unwrap();
+        let array4 = Json::new(ARRAYS.as_bytes().to_vec()).unwrap();
+        println!("array1 to string = {}", array1.to_string());
+        println!("array2 to string = {}", array2.to_string());
+        println!("array3 to string = {}", array3.to_string());
+        println!("array4 to string = {}", array4.to_string());
+        println!(
+            "array1 to slice = {:#?}",
+            String::from_utf8(array1.to_vec())
+        )
+    }
+
+    #[test]
+    fn test_array_obj() {
+        let array = JsonArray::new(ARRAY_OBJECT).unwrap();
+        let users: Vec<User> = array.to_object().unwrap();
+        println!("user = {:#?}", users);
+    }
+
+    #[test]
+    fn test_array1() {
+        let json = Json::new(ARRAY).unwrap();
+        println!("string = {}", json.get_string("string").unwrap());
+        println!("u64 = {}", json.get_u64("u64").unwrap());
+        println!("i64 = {}", json.get_i64("i64").unwrap());
+        println!("f64 = {}", json.get_f64("f64").unwrap());
+        println!("bool = {}", json.get_bool("bool").unwrap());
+        let array = json.get_array("array1").unwrap();
+        let object = array.get_object(0).unwrap();
+        println!("object string = {}", object.get_string("string").unwrap());
+        println!("object u64 = {}", object.get_u64("u64").unwrap());
+        println!("object i64 = {}", object.get_i64("i64").unwrap());
+        println!("object f64 = {}", object.get_f64("f64").unwrap());
+        println!("object bool = {}", object.get_bool("bool").unwrap());
+        let array = object.get_array("array").unwrap();
+        println!("array 0 = {}", array.get_string(0).unwrap());
+    }
+
+    #[test]
+    fn test_array2() {
+        let array = JsonArray::new(ARRAYS).unwrap();
+        let json = array.get_object(0).unwrap();
+        println!("string = {}", json.get_string("string").unwrap());
+        println!("u64 = {}", json.get_u64("u64").unwrap());
+        println!("i64 = {}", json.get_i64("i64").unwrap());
+        println!("f64 = {}", json.get_f64("f64").unwrap());
+        println!("bool = {}", json.get_bool("bool").unwrap());
+        let array = json.get_array("array").unwrap();
+        println!("array 0 = {}", array.get_string(0).unwrap());
+    }
+
+    #[test]
+    fn test_array3() {
+        let array = JsonArray::new(ARRAYS).unwrap();
+        let json = array.get_object(3).unwrap();
+        println!("string = {}", json.get_string("string").unwrap());
+        println!("u64 = {}", json.get_u64("u64").unwrap());
+        println!("i64 = {}", json.get_i64("i64").unwrap());
+        println!("f64 = {}", json.get_f64("f64").unwrap());
+        println!("bool = {}", json.get_bool("bool").unwrap());
+        let array = json.get_array("array").unwrap();
+        println!("array 0 = {}", array.get_f64(0).unwrap());
+        println!("array 0 = {}", array.get_string(1).unwrap());
+        println!("array 0 = {}", array.get_u64(2).unwrap());
+        println!("array 0 = {}", array.get_bool(3).unwrap());
+        println!("array 0 = {}", array.get_i64(4).unwrap());
     }
 
     #[test]
@@ -76,5 +273,6 @@ mod json {
             "object to string = {:#?}",
             String::from_utf8(Json::obj_2_vec(&user).unwrap())
         );
+        println!("object = {}", Json::object(&user).unwrap().to_string());
     }
 }
