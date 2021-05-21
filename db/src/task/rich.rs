@@ -55,8 +55,9 @@ pub struct Condition {
     key_type: KeyType,
     /// 比较对象为string
     value: String,
-    // /// 比较对象为int/float，类索引key，可通过hash转换string生成，长度为无符号32位整型，是数据存放于索引树中的坐标
-    // value_hash_32: u32,
+    value_hash: u64,
+    /// 比较对象为int/float，类索引key，可通过hash转换string生成，长度为无符号32位整型，是数据存放于索引树中的坐标
+    value_hash_32: u32,
     /// 比较对象为int/float，类索引key，可通过hash转换string生成，长度为无符号64位整型，是数据存放于索引树中的坐标
     value_hash_64: u64,
     /// 比较对象为bool
@@ -74,18 +75,34 @@ impl Condition {
         value: String,
         index: Option<Arc<dyn TIndex>>,
     ) -> GeorgeResult<Condition> {
+        let value_hash: u64;
         let mut value_hash_32: u32 = 0;
         let mut value_hash_64: u64 = 0;
         let mut value_bool = false;
         match key_type {
-            KeyType::U64 => value_hash_64 = IndexKey::u64(key_type, value.clone())?,
-            KeyType::I64 => value_hash_64 = IndexKey::u64(key_type, value.clone())?,
-            KeyType::F64 => value_hash_64 = IndexKey::u64(key_type, value.clone())?,
+            KeyType::U64 => {
+                value_hash_64 = IndexKey::u64(key_type, value.clone())?;
+                value_hash = value_hash_64
+            }
+            KeyType::I64 => {
+                value_hash_64 = IndexKey::u64(key_type, value.clone())?;
+                value_hash = value_hash_64
+            }
+            KeyType::F64 => {
+                value_hash_64 = IndexKey::u64(key_type, value.clone())?;
+                value_hash = value_hash_64
+            }
             KeyType::Bool => match value.parse::<bool>() {
-                Ok(real) => value_bool = real,
+                Ok(real) => {
+                    value_bool = real;
+                    value_hash = 0
+                }
                 Err(err) => return Err(Errs::strings(format!("{} parse to bool", value), err)),
             },
-            _ => value_hash_32 = IndexKey::u32(key_type, value.clone())?,
+            _ => {
+                value_hash_32 = IndexKey::u32(key_type, value.clone())?;
+                value_hash = value_hash_32 as u64
+            }
         }
         Ok(Condition {
             param,
@@ -93,6 +110,8 @@ impl Condition {
             index_type,
             key_type,
             value,
+            value_hash,
+            value_hash_32,
             value_hash_64,
             value_bool,
             index,
@@ -119,10 +138,15 @@ impl Condition {
         self.value.clone()
     }
 
-    // /// 比较对象值
-    // fn value_hash_32(&self) -> u32 {
-    //     self.value_hash_32
-    // }
+    /// 比较对象值
+    fn value_hash(&self) -> u64 {
+        self.value_hash
+    }
+
+    /// 比较对象值
+    fn value_hash_32(&self) -> u32 {
+        self.value_hash_32
+    }
 
     /// 比较对象值
     fn value_hash_64(&self) -> u64 {
@@ -165,12 +189,12 @@ impl Condition {
     fn valid(&self, value: Value) -> bool {
         return match value[self.param()] {
             Value::Number(ref key) => match self.key_type() {
-                KeyType::U32 => self.compare_value_64(key.as_u64().unwrap()),
+                KeyType::U32 => self.compare_value_32(key.as_u64().unwrap() as u32),
+                KeyType::I32 => self.compare_value_32(Hash::crc32(key.as_i64().unwrap() as i32)),
+                KeyType::F32 => self.compare_value_32(Hash::crc32(key.as_f64().unwrap() as f32)),
                 KeyType::U64 => self.compare_value_64(key.as_u64().unwrap()),
-                KeyType::F32 => self.compare_value_64(Hash::crc64(key.as_f64().unwrap())),
-                KeyType::F64 => self.compare_value_64(Hash::crc64(key.as_f64().unwrap())),
-                KeyType::I32 => self.compare_value_64(Hash::crc64(key.as_i64().unwrap())),
                 KeyType::I64 => self.compare_value_64(Hash::crc64(key.as_i64().unwrap())),
+                KeyType::F64 => self.compare_value_64(Hash::crc64(key.as_f64().unwrap())),
                 _ => false,
             },
             Value::Bool(ref val) => match self.key_type() {
@@ -209,17 +233,17 @@ impl Condition {
         }
     }
 
-    // /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
-    // fn compare_value_32(&self, value_hash: u32) -> bool {
-    //     match self.compare() {
-    //         Compare::EQ => value_hash == self.value_hash_32(),
-    //         Compare::GT => value_hash > self.value_hash_32(),
-    //         Compare::GE => value_hash >= self.value_hash_32(),
-    //         Compare::LT => value_hash < self.value_hash_32(),
-    //         Compare::LE => value_hash <= self.value_hash_32(),
-    //         Compare::NE => value_hash != self.value_hash_32(),
-    //     }
-    // }
+    /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
+    fn compare_value_32(&self, value_hash: u32) -> bool {
+        match self.compare() {
+            Compare::EQ => value_hash == self.value_hash_32(),
+            Compare::GT => value_hash > self.value_hash_32(),
+            Compare::GE => value_hash >= self.value_hash_32(),
+            Compare::LT => value_hash < self.value_hash_32(),
+            Compare::LE => value_hash <= self.value_hash_32(),
+            Compare::NE => value_hash != self.value_hash_32(),
+        }
+    }
 
     /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
     fn compare_value_64(&self, value_hash: u64) -> bool {
@@ -715,15 +739,15 @@ impl Selector {
                         if index.name().eq(index_name) {
                             // 将该索引条件进行填充
                             match condition.compare() {
-                                Compare::GT => status.fit_start(condition.value_hash_64() + 1),
-                                Compare::GE => status.fit_start(condition.value_hash_64()),
-                                Compare::LT => status.fit_end(condition.value_hash_64() - 1),
-                                Compare::LE => status.fit_end(condition.value_hash_64()),
+                                Compare::GT => status.fit_start(condition.value_hash() + 1),
+                                Compare::GE => status.fit_start(condition.value_hash()),
+                                Compare::LT => status.fit_end(condition.value_hash() - 1),
+                                Compare::LE => status.fit_end(condition.value_hash()),
                                 Compare::EQ => {
                                     if asc {
-                                        status.fit_start(condition.value_hash_64())
+                                        status.fit_start(condition.value_hash())
                                     } else {
-                                        status.fit_end(condition.value_hash_64())
+                                        status.fit_end(condition.value_hash())
                                     }
                                 }
                                 Compare::NE => {}
