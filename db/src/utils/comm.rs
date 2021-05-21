@@ -15,8 +15,8 @@
 use crate::utils::enums::KeyType;
 use comm::cryptos::hash::{Hash, HashCRCHandler, HashCRCTypeHandler};
 use comm::errors::entrances::{Errs, GeorgeResult};
-use comm::strings::{StringHandler, Strings};
-use serde_json::{Error, Number, Value};
+use comm::json::{Json, JsonGet, JsonNew};
+use serde_json::{Number, Value};
 
 pub const GEORGE_DB_CONFIG: &str = "GEORGE_DB_CONFIG";
 pub const GEORGE_DB_DATA_DIR: &str = "GEORGE_DB_DATA_DIR";
@@ -118,25 +118,22 @@ impl IndexKey {
 }
 
 fn key_fetch(index_name: String, value: Vec<u8>) -> GeorgeResult<String> {
-    let value_str = Strings::from_utf8(value)?;
-    let res: Result<Value, Error> = serde_json::from_str(value_str.as_ref());
-    match res {
-        Ok(v) => match v[index_name.clone()] {
-            Value::Null => Err(Errs::string(format!(
-                "key structure {} do not support none!",
-                index_name
-            ))),
-            Value::Object(..) => Err(Errs::string(format!(
-                "key structure {} do not support object!",
-                index_name
-            ))),
-            Value::Array(..) => Err(Errs::string(format!(
-                "key structure {} do not support array!",
-                index_name
-            ))),
-            _ => Ok(format!("{}", v[index_name])),
-        },
-        Err(err) => Err(Errs::string(err.to_string())),
+    let json = Json::new(value)?;
+    let value = json.get_value(index_name.clone())?;
+    match value {
+        Value::Null => Err(Errs::string(format!(
+            "key structure {} do not support none!",
+            index_name
+        ))),
+        Value::Object(_) => Err(Errs::string(format!(
+            "key structure {} do not support object!",
+            index_name
+        ))),
+        Value::Array(_) => Err(Errs::string(format!(
+            "key structure {} do not support array!",
+            index_name
+        ))),
+        _ => Ok(format!("{}", value)),
     }
 }
 

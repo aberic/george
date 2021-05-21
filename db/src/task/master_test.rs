@@ -302,6 +302,7 @@ mod master {
     #[cfg(test)]
     mod select_sequence {
         use crate::task::master_test::*;
+        use comm::json::{Json, JsonHandler};
 
         #[test]
         fn select_sequence_prepare() {
@@ -312,7 +313,7 @@ mod master {
             let mut pos1: u32 = 1;
             while pos1 <= 100000 {
                 print!("{} ", pos1);
-                let user_str = serde_json::to_string(&create_t(pos1, 100000 - pos1)).unwrap();
+                let user_str = Json::obj_2_string(&create_t(pos1, 100000 - pos1)).unwrap();
                 put(
                     database_name,
                     view_name,

@@ -15,6 +15,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::utils::comm::IndexKey;
+use comm::json::{Json, JsonHandler};
 
 #[derive(Serialize, Deserialize)]
 struct User {
@@ -45,26 +46,25 @@ fn key_fetch_test() {
             age: 20,
         },
     };
-    let user_json_str = serde_json::to_string(&user).unwrap();
-    let user_byte = user_json_str.into_bytes();
+    let json_bytes = Json::obj_2_bytes(&user).unwrap();
     println!(
         "res1 = {:#?}",
-        IndexKey::fetch(String::from("name"), user_byte.clone())
+        IndexKey::fetch(String::from("name"), json_bytes.clone())
     );
     println!(
         "res2 = {:#?}",
-        IndexKey::fetch(String::from("age"), user_byte.clone())
+        IndexKey::fetch(String::from("age"), json_bytes.clone())
     );
     println!(
         "res3 = {:#?}",
-        IndexKey::fetch(String::from("blog"), user_byte.clone())
+        IndexKey::fetch(String::from("blog"), json_bytes.clone())
     );
     println!(
         "res4 = {:#?}",
-        IndexKey::fetch(String::from("married"), user_byte.clone())
+        IndexKey::fetch(String::from("married"), json_bytes.clone())
     );
     println!(
         "res4 = {:#?}",
-        IndexKey::fetch(String::from("job"), user_byte.clone())
+        IndexKey::fetch(String::from("job"), json_bytes.clone())
     );
 }

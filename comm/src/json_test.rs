@@ -16,7 +16,7 @@
 mod json {
     use serde::{Deserialize, Serialize};
 
-    use crate::json::{Json, JsonArray, JsonGet, JsonHandler, JsonNew};
+    use crate::json::{Json, JsonArray, JsonExec, JsonGet, JsonHandler, JsonNew};
 
     #[derive(Debug, Serialize, Deserialize)]
     struct User {
@@ -170,16 +170,35 @@ mod json {
         let json = Json::new(USER).unwrap();
         let user: User = json.to_object().unwrap();
         println!("user = {:#?}", user);
+        let u1: User = Json::string_2_obj(json.to_string().as_str()).unwrap();
+        println!("user = {:#?}", u1);
+        let u2: User = Json::bytes_2_obj(json.to_vec().as_slice()).unwrap();
+        println!("user = {:#?}", u2);
+        let u3: User = Json::value_2_obj(json.value()).unwrap();
+        println!("user = {:#?}", u3);
     }
 
     #[test]
-    fn test_object_get() {
+    fn test_object_exec() {
         let json = Json::new(GET).unwrap();
         println!("string = {}", json.get_string("string").unwrap());
         println!("u64 = {}", json.get_u64("u64").unwrap());
         println!("i64 = {}", json.get_i64("i64").unwrap());
         println!("f64 = {}", json.get_f64("f64").unwrap());
         println!("bool = {}", json.get_bool("bool").unwrap());
+        println!();
+        println!("string = {}", json.is_string("string"));
+        println!("u64 = {}", json.is_u64("u64"));
+        println!("i64 = {}", json.is_i64("i64"));
+        println!("f64 = {}", json.is_f64("f64"));
+        println!("bool = {}", json.is_bool("bool"));
+        println!();
+        println!("string = {}", json.is_u64("string"));
+        println!("u64 = {}", json.is_i64("u64"));
+        println!("i64 = {}", json.is_f64("i64"));
+        println!("f64 = {}", json.is_bool("f64"));
+        println!("bool = {}", json.is_string("bool"));
+        println!();
         let object = json.get_object("object").unwrap();
         println!("object string = {}", object.get_string("string").unwrap());
         println!("object u64 = {}", object.get_u64("u64").unwrap());
@@ -271,7 +290,7 @@ mod json {
         println!("object to string = {}", Json::obj_2_string(&user).unwrap());
         println!(
             "object to string = {:#?}",
-            String::from_utf8(Json::obj_2_vec(&user).unwrap())
+            String::from_utf8(Json::obj_2_bytes(&user).unwrap())
         );
         println!("object = {}", Json::object(&user).unwrap().to_string());
     }

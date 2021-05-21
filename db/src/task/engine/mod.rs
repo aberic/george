@@ -15,6 +15,7 @@
 use crate::task::rich::Condition;
 use crate::task::view::View;
 use comm::errors::entrances::{Errs, GeorgeResult};
+use comm::json::{Json, JsonHandler};
 use comm::trans::Trans;
 use comm::vectors::{Vector, VectorHandler};
 use serde::{Deserialize, Serialize};
@@ -75,10 +76,7 @@ impl DataReal {
     }
 
     pub(crate) fn values(&self) -> GeorgeResult<Vec<u8>> {
-        match serde_json::to_vec(&self) {
-            Ok(v8s) => Ok(v8s),
-            Err(err) => Err(Errs::strs("data real 2 bytes", err)),
-        }
+        Json::obj_2_bytes(&self)
     }
 
     pub(crate) fn set_seq(&mut self, sequence: u64) {
@@ -86,10 +84,7 @@ impl DataReal {
     }
 
     fn from(real_bytes: Vec<u8>) -> GeorgeResult<DataReal> {
-        match serde_json::from_slice(real_bytes.as_slice()) {
-            Ok(dr) => Ok(dr),
-            Err(err) => Err(Errs::strs("data real from u8s", err)),
-        }
+        Json::bytes_2_obj(real_bytes.as_slice())
     }
 }
 

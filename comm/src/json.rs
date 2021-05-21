@@ -15,7 +15,6 @@
 use crate::errors::entrances::{Errs, GeorgeResult};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use serde_json::value::Index;
 use serde_json::Value;
 
 pub struct Json {
@@ -34,79 +33,12 @@ pub trait JsonHandler {
 
     fn value(&self) -> Value;
 
-    fn to_string(&self) -> String;
-
-    fn to_vec(&self) -> Vec<u8>;
-
-    fn to_object<Object>(&self) -> GeorgeResult<Object>
-    where
-        Object: DeserializeOwned;
-
-    fn obj_2_vec<Object>(value: &Object) -> GeorgeResult<Vec<u8>>
-    where
-        Object: ?Sized + Serialize;
-
-    fn obj_2_string<Object>(value: &Object) -> GeorgeResult<String>
-    where
-        Object: ?Sized + Serialize;
-}
-
-pub trait JsonNew<T>: Sized {
-    fn new(data: T) -> GeorgeResult<Self>;
-    fn from(&mut self, data: T) -> GeorgeResult<()>;
-}
-
-pub trait JsonTake<Param> {
-    fn take_string(&mut self, param: Param) -> GeorgeResult<String>;
-    fn take_u64(&mut self, param: Param) -> GeorgeResult<u64>;
-    fn take_i64(&mut self, param: Param) -> GeorgeResult<i64>;
-    fn take_f64(&mut self, param: Param) -> GeorgeResult<f64>;
-    fn take_bool(&mut self, param: Param) -> GeorgeResult<bool>;
-    fn take_object(&mut self, param: Param) -> GeorgeResult<Json>;
-    fn take_array(&mut self, param: Param) -> GeorgeResult<JsonArray>;
-}
-
-pub trait JsonGet<Param> {
-    fn get_string(&self, param: Param) -> GeorgeResult<String>;
-    fn get_u64(&self, param: Param) -> GeorgeResult<u64>;
-    fn get_i64(&self, param: Param) -> GeorgeResult<i64>;
-    fn get_f64(&self, param: Param) -> GeorgeResult<f64>;
-    fn get_bool(&self, param: Param) -> GeorgeResult<bool>;
-    fn get_object(&self, param: Param) -> GeorgeResult<Json>;
-    fn get_array(&self, param: Param) -> GeorgeResult<JsonArray>;
-}
-
-pub trait JsonArrayGet<Int> {
-    fn get_string(&self, index: Int) -> GeorgeResult<String>;
-    fn get_u64(&self, index: Int) -> GeorgeResult<u64>;
-    fn get_i64(&self, index: Int) -> GeorgeResult<i64>;
-    fn get_f64(&self, index: Int) -> GeorgeResult<f64>;
-    fn get_bool(&self, index: Int) -> GeorgeResult<bool>;
-    fn get_object(&self, index: Int) -> GeorgeResult<Json>;
-    fn get_array(&self, index: Int) -> GeorgeResult<JsonArray>;
-}
-
-impl JsonHandler for Json {
-    fn object<Object>(object: &Object) -> GeorgeResult<Self>
-    where
-        Object: ?Sized + Serialize,
-    {
-        match serde_json::to_value(object) {
-            Ok(res) => Ok(Json { value: res }),
-            Err(err) => Err(Errs::strs("object to bytes", err)),
-        }
-    }
-
-    fn value(&self) -> Value {
-        self.value.clone()
-    }
-
     fn to_string(&self) -> String {
-        self.value.to_string()
+        self.value().to_string()
     }
 
     fn to_vec(&self) -> Vec<u8> {
-        self.value.to_string().into_bytes()
+        self.value().to_string().into_bytes()
     }
 
     fn to_object<Object>(&self) -> GeorgeResult<Object>
@@ -119,7 +51,7 @@ impl JsonHandler for Json {
         }
     }
 
-    fn obj_2_vec<Object>(value: &Object) -> GeorgeResult<Vec<u8>>
+    fn obj_2_bytes<Object>(value: &Object) -> GeorgeResult<Vec<u8>>
     where
         Object: ?Sized + Serialize,
     {
@@ -137,6 +69,97 @@ impl JsonHandler for Json {
             Ok(res) => Ok(res),
             Err(err) => Err(Errs::strs("object to string", err)),
         }
+    }
+
+    fn obj_2_value<Object>(value: &Object) -> GeorgeResult<Value>
+    where
+        Object: ?Sized + Serialize,
+    {
+        match serde_json::to_value(value) {
+            Ok(res) => Ok(res),
+            Err(err) => Err(Errs::strs("object to string", err)),
+        }
+    }
+
+    fn bytes_2_obj<Object>(data: &[u8]) -> GeorgeResult<Object>
+    where
+        Object: DeserializeOwned,
+    {
+        match serde_json::from_slice(data) {
+            Ok(t) => Ok(t),
+            Err(err) => Err(Errs::strs("json to object", err)),
+        }
+    }
+
+    fn string_2_obj<Object>(data: &str) -> GeorgeResult<Object>
+    where
+        Object: DeserializeOwned,
+    {
+        match serde_json::from_str(data) {
+            Ok(t) => Ok(t),
+            Err(err) => Err(Errs::strs("json to object", err)),
+        }
+    }
+
+    fn value_2_obj<Object>(data: Value) -> GeorgeResult<Object>
+    where
+        Object: DeserializeOwned,
+    {
+        match serde_json::from_value(data) {
+            Ok(t) => Ok(t),
+            Err(err) => Err(Errs::strs("json to object", err)),
+        }
+    }
+}
+
+pub trait JsonNew<T>: Sized {
+    fn new(data: T) -> GeorgeResult<Self>;
+    fn from(&mut self, data: T) -> GeorgeResult<()>;
+}
+
+pub trait JsonExec<Param> {
+    /// 表示json中不存在`param`或者`param`的值为null
+    fn has(&self, param: Param) -> bool;
+    fn take_string(&mut self, param: Param) -> GeorgeResult<String>;
+    fn take_u64(&mut self, param: Param) -> GeorgeResult<u64>;
+    fn take_i64(&mut self, param: Param) -> GeorgeResult<i64>;
+    fn take_f64(&mut self, param: Param) -> GeorgeResult<f64>;
+    fn take_bool(&mut self, param: Param) -> GeorgeResult<bool>;
+    fn take_object(&mut self, param: Param) -> GeorgeResult<Json>;
+    fn take_array(&mut self, param: Param) -> GeorgeResult<JsonArray>;
+    fn is_string(&self, param: Param) -> bool;
+    fn is_u64(&self, param: Param) -> bool;
+    fn is_i64(&self, param: Param) -> bool;
+    fn is_f64(&self, param: Param) -> bool;
+    fn is_bool(&self, param: Param) -> bool;
+    fn is_object(&self, param: Param) -> bool;
+    fn is_array(&self, param: Param) -> bool;
+}
+
+pub trait JsonGet<Param> {
+    fn get_value(&self, param: Param) -> GeorgeResult<Value>;
+    fn get_string(&self, param: Param) -> GeorgeResult<String>;
+    fn get_u64(&self, param: Param) -> GeorgeResult<u64>;
+    fn get_i64(&self, param: Param) -> GeorgeResult<i64>;
+    fn get_f64(&self, param: Param) -> GeorgeResult<f64>;
+    fn get_bool(&self, param: Param) -> GeorgeResult<bool>;
+    fn get_object(&self, param: Param) -> GeorgeResult<Json>;
+    fn get_array(&self, param: Param) -> GeorgeResult<JsonArray>;
+}
+
+impl JsonHandler for Json {
+    fn object<Object>(object: &Object) -> GeorgeResult<Self>
+    where
+        Object: ?Sized + Serialize,
+    {
+        match serde_json::to_value(object) {
+            Ok(res) => Ok(Json { value: res }),
+            Err(err) => Err(Errs::strs("object to bytes", err)),
+        }
+    }
+
+    fn value(&self) -> Value {
+        self.value.clone()
     }
 }
 
@@ -169,12 +192,12 @@ impl JsonNew<Vec<u8>> for Json {
 impl JsonNew<&str> for Json {
     fn new(data: &str) -> GeorgeResult<Self> {
         Ok(Json {
-            value: from_slice(data.as_bytes())?,
+            value: from_string(data)?,
         })
     }
 
     fn from(&mut self, data: &str) -> GeorgeResult<()> {
-        self.value = from_slice(data.as_bytes())?;
+        self.value = from_string(data)?;
         Ok(())
     }
 }
@@ -182,12 +205,12 @@ impl JsonNew<&str> for Json {
 impl JsonNew<String> for Json {
     fn new(data: String) -> GeorgeResult<Self> {
         Ok(Json {
-            value: from_slice(data.as_bytes())?,
+            value: from_string(data.as_str())?,
         })
     }
 
     fn from(&mut self, data: String) -> GeorgeResult<()> {
-        self.value = from_slice(data.as_bytes())?;
+        self.value = from_string(data.as_str())?;
         Ok(())
     }
 }
@@ -216,7 +239,11 @@ impl JsonNew<&Value> for Json {
     }
 }
 
-impl JsonTake<&str> for Json {
+impl JsonExec<&str> for Json {
+    fn has(&self, param: &str) -> bool {
+        self.value[param] == Value::Null
+    }
+
     fn take_string(&mut self, param: &str) -> GeorgeResult<String> {
         match self.value[param].take().as_str() {
             Some(res) => Ok(res.to_string()),
@@ -274,9 +301,41 @@ impl JsonTake<&str> for Json {
     fn take_array(&mut self, param: &str) -> GeorgeResult<JsonArray> {
         JsonArray::new(self.value[param].take())
     }
+
+    fn is_string(&self, param: &str) -> bool {
+        self.value[param].is_string()
+    }
+
+    fn is_u64(&self, param: &str) -> bool {
+        self.value[param].is_u64()
+    }
+
+    fn is_i64(&self, param: &str) -> bool {
+        self.value[param].is_i64()
+    }
+
+    fn is_f64(&self, param: &str) -> bool {
+        self.value[param].is_f64()
+    }
+
+    fn is_bool(&self, param: &str) -> bool {
+        self.value[param].is_boolean()
+    }
+
+    fn is_object(&self, param: &str) -> bool {
+        self.value[param].is_object()
+    }
+
+    fn is_array(&self, param: &str) -> bool {
+        self.value[param].is_array()
+    }
 }
 
-impl JsonTake<String> for Json {
+impl JsonExec<String> for Json {
+    fn has(&self, param: String) -> bool {
+        self.value[param] != Value::Null
+    }
+
     fn take_string(&mut self, param: String) -> GeorgeResult<String> {
         match self.value[param.clone()].take().as_str() {
             Some(res) => Ok(res.to_string()),
@@ -334,9 +393,41 @@ impl JsonTake<String> for Json {
     fn take_array(&mut self, param: String) -> GeorgeResult<JsonArray> {
         JsonArray::new(self.value[param.clone()].take())
     }
+
+    fn is_string(&self, param: String) -> bool {
+        self.value[param].is_string()
+    }
+
+    fn is_u64(&self, param: String) -> bool {
+        self.value[param].is_u64()
+    }
+
+    fn is_i64(&self, param: String) -> bool {
+        self.value[param].is_i64()
+    }
+
+    fn is_f64(&self, param: String) -> bool {
+        self.value[param].is_f64()
+    }
+
+    fn is_bool(&self, param: String) -> bool {
+        self.value[param].is_boolean()
+    }
+
+    fn is_object(&self, param: String) -> bool {
+        self.value[param].is_object()
+    }
+
+    fn is_array(&self, param: String) -> bool {
+        self.value[param].is_array()
+    }
 }
 
 impl JsonGet<&str> for Json {
+    fn get_value(&self, param: &str) -> GeorgeResult<Value> {
+        Ok(self.value[param].clone())
+    }
+
     fn get_string(&self, param: &str) -> GeorgeResult<String> {
         match self.value[param].as_str() {
             Some(res) => Ok(res.to_string()),
@@ -409,6 +500,10 @@ impl JsonGet<&str> for Json {
 }
 
 impl JsonGet<String> for Json {
+    fn get_value(&self, param: String) -> GeorgeResult<Value> {
+        Ok(self.value[param].clone())
+    }
+
     fn get_string(&self, param: String) -> GeorgeResult<String> {
         match self.value[param.clone()].as_str() {
             Some(res) => Ok(res.to_string()),
@@ -494,44 +589,6 @@ impl JsonHandler for JsonArray {
     fn value(&self) -> Value {
         self.value.clone()
     }
-
-    fn to_string(&self) -> String {
-        self.value.to_string()
-    }
-
-    fn to_vec(&self) -> Vec<u8> {
-        self.value.to_string().into_bytes()
-    }
-
-    fn to_object<Object>(&self) -> GeorgeResult<Object>
-    where
-        Object: DeserializeOwned,
-    {
-        match serde_json::from_value(self.value()) {
-            Ok(t) => Ok(t),
-            Err(err) => Err(Errs::strs("json array to object", err)),
-        }
-    }
-
-    fn obj_2_vec<Object>(value: &Object) -> GeorgeResult<Vec<u8>>
-    where
-        Object: ?Sized + Serialize,
-    {
-        match serde_json::to_vec(value) {
-            Ok(res) => Ok(res),
-            Err(err) => Err(Errs::strs("object to bytes", err)),
-        }
-    }
-
-    fn obj_2_string<Object>(value: &Object) -> GeorgeResult<String>
-    where
-        Object: ?Sized + Serialize,
-    {
-        match serde_json::to_string(value) {
-            Ok(res) => Ok(res),
-            Err(err) => Err(Errs::strs("object to string", err)),
-        }
-    }
 }
 
 impl JsonNew<&[u8]> for JsonArray {
@@ -563,12 +620,12 @@ impl JsonNew<Vec<u8>> for JsonArray {
 impl JsonNew<&str> for JsonArray {
     fn new(data: &str) -> GeorgeResult<Self> {
         Ok(JsonArray {
-            value: from_slice(data.as_bytes())?,
+            value: from_string(data)?,
         })
     }
 
     fn from(&mut self, data: &str) -> GeorgeResult<()> {
-        self.value = from_slice(data.as_bytes())?;
+        self.value = from_string(data)?;
         Ok(())
     }
 }
@@ -576,12 +633,12 @@ impl JsonNew<&str> for JsonArray {
 impl JsonNew<String> for JsonArray {
     fn new(data: String) -> GeorgeResult<Self> {
         Ok(JsonArray {
-            value: from_slice(data.as_bytes())?,
+            value: from_string(data.as_str())?,
         })
     }
 
     fn from(&mut self, data: String) -> GeorgeResult<()> {
-        self.value = from_slice(data.as_bytes())?;
+        self.value = from_string(data.as_str())?;
         Ok(())
     }
 }
@@ -611,13 +668,24 @@ impl JsonNew<&Value> for JsonArray {
 }
 
 impl JsonGet<usize> for JsonArray {
+    fn get_value(&self, index: usize) -> GeorgeResult<Value> {
+        match self.value.get(index as usize) {
+            Some(res) => Ok(res.clone()),
+            None => Err(Errs::string(format!(
+                "value can not get from json array while index is {}!",
+                index
+            ))),
+        }
+    }
+
     fn get_string(&self, index: usize) -> GeorgeResult<String> {
         match self.value.get(index) {
             Some(res) => match res.as_str() {
                 Some(res) => Ok(res.to_string()),
-                None => Err(Errs::str(
-                    "value can not trans string while json array get string!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get string!")),
         }
@@ -627,9 +695,10 @@ impl JsonGet<usize> for JsonArray {
         match self.value.get(index) {
             Some(res) => match res.as_u64() {
                 Some(res) => Ok(res),
-                None => Err(Errs::str(
-                    "value can not trans string while json array get u64!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get u64!")),
         }
@@ -639,9 +708,10 @@ impl JsonGet<usize> for JsonArray {
         match self.value.get(index) {
             Some(res) => match res.as_i64() {
                 Some(res) => Ok(res),
-                None => Err(Errs::str(
-                    "value can not trans string while json array get i64!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get i64!")),
         }
@@ -651,9 +721,10 @@ impl JsonGet<usize> for JsonArray {
         match self.value.get(index) {
             Some(res) => match res.as_f64() {
                 Some(res) => Ok(res),
-                None => Err(Errs::str(
-                    "value can not trans string while json array get f64!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get f64!")),
         }
@@ -663,9 +734,10 @@ impl JsonGet<usize> for JsonArray {
         match self.value.get(index) {
             Some(res) => match res.as_bool() {
                 Some(res) => Ok(res),
-                None => Err(Errs::str(
-                    "value can not trans string while json array get bool!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get bool!")),
         }
@@ -674,30 +746,43 @@ impl JsonGet<usize> for JsonArray {
     fn get_object(&self, index: usize) -> GeorgeResult<Json> {
         match self.value.get(index) {
             Some(res) => Json::new(res),
-            None => Err(Errs::str(
-                "value can not trans string while json array get object!",
-            )),
+            None => Err(Errs::string(format!(
+                "value can not get from json array while index is {}!",
+                index
+            ))),
         }
     }
 
     fn get_array(&self, index: usize) -> GeorgeResult<JsonArray> {
         match self.value.get(index) {
             Some(res) => JsonArray::new(res),
-            None => Err(Errs::str(
-                "value can not trans string while json array get array!",
-            )),
+            None => Err(Errs::string(format!(
+                "value can not get from json array while index is {}!",
+                index
+            ))),
         }
     }
 }
 
 impl JsonGet<i32> for JsonArray {
+    fn get_value(&self, index: i32) -> GeorgeResult<Value> {
+        match self.value.get(index as usize) {
+            Some(res) => Ok(res.clone()),
+            None => Err(Errs::string(format!(
+                "value can not get from json array while index is {}!",
+                index
+            ))),
+        }
+    }
+
     fn get_string(&self, index: i32) -> GeorgeResult<String> {
         match self.value.get(index as usize) {
             Some(res) => match res.as_str() {
                 Some(res) => Ok(res.to_string()),
-                None => Err(Errs::str(
-                    "value can not trans string while json array get string!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get string!")),
         }
@@ -707,9 +792,10 @@ impl JsonGet<i32> for JsonArray {
         match self.value.get(index as usize) {
             Some(res) => match res.as_u64() {
                 Some(res) => Ok(res),
-                None => Err(Errs::str(
-                    "value can not trans string while json array get u64!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get u64!")),
         }
@@ -719,9 +805,10 @@ impl JsonGet<i32> for JsonArray {
         match self.value.get(index as usize) {
             Some(res) => match res.as_i64() {
                 Some(res) => Ok(res),
-                None => Err(Errs::str(
-                    "value can not trans string while json array get i64!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get i64!")),
         }
@@ -731,9 +818,10 @@ impl JsonGet<i32> for JsonArray {
         match self.value.get(index as usize) {
             Some(res) => match res.as_f64() {
                 Some(res) => Ok(res),
-                None => Err(Errs::str(
-                    "value can not trans string while json array get f64!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get f64!")),
         }
@@ -743,9 +831,10 @@ impl JsonGet<i32> for JsonArray {
         match self.value.get(index as usize) {
             Some(res) => match res.as_bool() {
                 Some(res) => Ok(res),
-                None => Err(Errs::str(
-                    "value can not trans string while json array get bool!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get bool!")),
         }
@@ -754,26 +843,37 @@ impl JsonGet<i32> for JsonArray {
     fn get_object(&self, index: i32) -> GeorgeResult<Json> {
         match self.value.get(index as usize) {
             Some(res) => Json::new(res),
-            None => Err(Errs::str("json array get object error!")),
+            None => Err(Errs::str("index out of bound while json array get string!")),
         }
     }
 
     fn get_array(&self, index: i32) -> GeorgeResult<JsonArray> {
         match self.value.get(index as usize) {
             Some(res) => JsonArray::new(res),
-            None => Err(Errs::str("json array get array error!")),
+            None => Err(Errs::str("index out of bound while json array get string!")),
         }
     }
 }
 
 impl JsonGet<u32> for JsonArray {
+    fn get_value(&self, index: u32) -> GeorgeResult<Value> {
+        match self.value.get(index as usize) {
+            Some(res) => Ok(res.clone()),
+            None => Err(Errs::string(format!(
+                "value can not get from json array while index is {}!",
+                index
+            ))),
+        }
+    }
+
     fn get_string(&self, index: u32) -> GeorgeResult<String> {
         match self.value.get(index as usize) {
             Some(res) => match res.as_str() {
                 Some(res) => Ok(res.to_string()),
-                None => Err(Errs::str(
-                    "value can not trans string while json array get string!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get string!")),
         }
@@ -783,9 +883,10 @@ impl JsonGet<u32> for JsonArray {
         match self.value.get(index as usize) {
             Some(res) => match res.as_u64() {
                 Some(res) => Ok(res),
-                None => Err(Errs::str(
-                    "value can not trans u64 while json array get u64!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get u64!")),
         }
@@ -795,9 +896,10 @@ impl JsonGet<u32> for JsonArray {
         match self.value.get(index as usize) {
             Some(res) => match res.as_i64() {
                 Some(res) => Ok(res),
-                None => Err(Errs::str(
-                    "value can not trans i64 while json array get i64!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get i64!")),
         }
@@ -807,9 +909,10 @@ impl JsonGet<u32> for JsonArray {
         match self.value.get(index as usize) {
             Some(res) => match res.as_f64() {
                 Some(res) => Ok(res),
-                None => Err(Errs::str(
-                    "value can not trans f64 while json array get f64!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get f64!")),
         }
@@ -819,9 +922,10 @@ impl JsonGet<u32> for JsonArray {
         match self.value.get(index as usize) {
             Some(res) => match res.as_bool() {
                 Some(res) => Ok(res),
-                None => Err(Errs::str(
-                    "value can not trans bool while json array get bool!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get bool!")),
         }
@@ -830,26 +934,37 @@ impl JsonGet<u32> for JsonArray {
     fn get_object(&self, index: u32) -> GeorgeResult<Json> {
         match self.value.get(index as usize) {
             Some(res) => Json::new(res),
-            None => Err(Errs::str("json array get object error!")),
+            None => Err(Errs::str("index out of bound while json array get string!")),
         }
     }
 
     fn get_array(&self, index: u32) -> GeorgeResult<JsonArray> {
         match self.value.get(index as usize) {
             Some(res) => JsonArray::new(res),
-            None => Err(Errs::str("json array get array error!")),
+            None => Err(Errs::str("index out of bound while json array get string!")),
         }
     }
 }
 
 impl JsonGet<u64> for JsonArray {
+    fn get_value(&self, index: u64) -> GeorgeResult<Value> {
+        match self.value.get(index as usize) {
+            Some(res) => Ok(res.clone()),
+            None => Err(Errs::string(format!(
+                "value can not get from json array while index is {}!",
+                index
+            ))),
+        }
+    }
+
     fn get_string(&self, index: u64) -> GeorgeResult<String> {
         match self.value.get(index as usize) {
             Some(res) => match res.as_str() {
                 Some(res) => Ok(res.to_string()),
-                None => Err(Errs::str(
-                    "value can not trans string while json array get string!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get string!")),
         }
@@ -859,9 +974,10 @@ impl JsonGet<u64> for JsonArray {
         match self.value.get(index as usize) {
             Some(res) => match res.as_u64() {
                 Some(res) => Ok(res),
-                None => Err(Errs::str(
-                    "value can not trans u64 while json array get u64!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get u64!")),
         }
@@ -871,9 +987,10 @@ impl JsonGet<u64> for JsonArray {
         match self.value.get(index as usize) {
             Some(res) => match res.as_i64() {
                 Some(res) => Ok(res),
-                None => Err(Errs::str(
-                    "value can not trans i64 while json array get i64!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get i64!")),
         }
@@ -883,9 +1000,10 @@ impl JsonGet<u64> for JsonArray {
         match self.value.get(index as usize) {
             Some(res) => match res.as_f64() {
                 Some(res) => Ok(res),
-                None => Err(Errs::str(
-                    "value can not trans f64 while json array get f64!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get f64!")),
         }
@@ -895,9 +1013,10 @@ impl JsonGet<u64> for JsonArray {
         match self.value.get(index as usize) {
             Some(res) => match res.as_bool() {
                 Some(res) => Ok(res),
-                None => Err(Errs::str(
-                    "value can not trans bool while json array get bool!",
-                )),
+                None => Err(Errs::string(format!(
+                    "value can not get from json array while index is {}!",
+                    index
+                ))),
             },
             None => Err(Errs::str("index out of bound while json array get bool!")),
         }
@@ -906,14 +1025,14 @@ impl JsonGet<u64> for JsonArray {
     fn get_object(&self, index: u64) -> GeorgeResult<Json> {
         match self.value.get(index as usize) {
             Some(res) => Json::new(res),
-            None => Err(Errs::str("json array get object error!")),
+            None => Err(Errs::str("index out of bound while json array get bool!")),
         }
     }
 
     fn get_array(&self, index: u64) -> GeorgeResult<JsonArray> {
         match self.value.get(index as usize) {
             Some(res) => JsonArray::new(res),
-            None => Err(Errs::str("json array get array error!")),
+            None => Err(Errs::str("index out of bound while json array get bool!")),
         }
     }
 }
