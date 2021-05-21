@@ -18,6 +18,7 @@ use chrono::Duration;
 
 use comm::errors::entrances::GeorgeResult;
 
+use crate::task::engine::DataReal;
 use crate::task::rich::{Condition, Constraint, Expectation};
 use crate::task::seed::IndexPolicy;
 use crate::task::view::View;
@@ -65,8 +66,8 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     ///
     /// ###Return
     ///
-    /// Seed value信息
-    fn get(&self, key: String) -> GeorgeResult<Vec<u8>>;
+    /// DataReal 真实存入文件中的信息
+    fn get(&self, key: String) -> GeorgeResult<DataReal>;
     /// 删除数据<p><p>
     ///
     /// ###Params
@@ -117,8 +118,8 @@ pub(crate) trait TNode: Send + Sync + Debug {
     ///
     /// ###Return
     ///
-    /// Seed value信息
-    fn get(&self, key: String) -> GeorgeResult<Vec<u8>>;
+    /// DataReal 真实存入文件中的信息
+    fn get(&self, key: String) -> GeorgeResult<DataReal>;
     /// 删除数据<p><p>
     ///
     /// ###Params
@@ -171,7 +172,9 @@ pub(crate) trait TSeed: Send + Sync + Debug {
     /// 获取当前结果原始key信息
     fn key(&self) -> String;
     /// value最终存储在文件中的内容
-    fn value(&self) -> GeorgeResult<Vec<u8>>;
+    fn value(&self) -> Vec<u8>;
+    /// value最终存储在文件中的内容
+    fn sequence(&self) -> u64;
     /// 修改value值
     fn modify(&mut self, index_policy: IndexPolicy);
     /// 存储操作

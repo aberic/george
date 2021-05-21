@@ -222,7 +222,7 @@ impl TNode for Node {
         self.put_in_node(0, self.node_bytes(), key, 1, hash_key, seed, force)
     }
 
-    fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
+    fn get(&self, key: String) -> GeorgeResult<DataReal> {
         let hash_key = IndexKey::u32(self.key_type(), key.clone())?;
         self.get_in_node(self.node_bytes(), key, 1, hash_key)
     }
@@ -456,7 +456,7 @@ impl Node {
         key: String,
         level: u8,
         flexible_key: u32,
-    ) -> GeorgeResult<Vec<u8>> {
+    ) -> GeorgeResult<DataReal> {
         // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
         let distance = Distance::level_32(level);
         // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数
@@ -492,7 +492,7 @@ impl Node {
         &self,
         key: String,
         next_node_seek_bytes: Vec<u8>,
-    ) -> GeorgeResult<Vec<u8>> {
+    ) -> GeorgeResult<DataReal> {
         // 如果存在坐标值，则继续，否则返回无此数据
         if Vector::is_fill(next_node_seek_bytes.clone()) {
             // 索引执行插入真实坐标
@@ -505,7 +505,7 @@ impl Node {
     }
 
     /// 获取由view视图执行save操作时反写进record文件中value起始seek
-    fn record_view_info_seek_get(&self, key: String, record_seek: u64) -> GeorgeResult<Vec<u8>> {
+    fn record_view_info_seek_get(&self, key: String, record_seek: u64) -> GeorgeResult<DataReal> {
         // 读取record中该坐标值
         // record存储固定长度的数据，长度为20，即view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
         let res = self.record_read(record_seek, 20)?;
@@ -528,7 +528,7 @@ impl Node {
             let date = DataReal::from(info)?;
             // 因为hash key指向同一碰撞，对比key是否相同
             if date.key == key {
-                Ok(date.value)
+                Ok(date)
             } else {
                 // 如果key不同，则需要进一步判断是否唯一
                 // 如果唯一，则不存在hash碰撞

@@ -27,6 +27,7 @@ use comm::io::file::{Filer, FilerReader};
 use comm::strings::{StringHandler, Strings};
 
 use crate::task::engine::traits::{TIndex, TSeed};
+use crate::task::engine::DataReal;
 use crate::task::index::Index as IndexDefault;
 use crate::task::rich::{Expectation, Selector};
 use crate::task::seed::Seed;
@@ -350,7 +351,7 @@ impl View {
     /// Seed value信息
     pub(crate) fn get(&self, index_name: &str, key: String) -> GeorgeResult<Vec<u8>> {
         let index = self.index(index_name)?;
-        index.get(key.clone())
+        Ok(index.get(key.clone())?.value())
     }
 
     /// 删除数据<p><p>
@@ -361,9 +362,28 @@ impl View {
     ///
     /// ###Return
     ///
-    /// IndexResult<()>
+    /// GeorgeResult<()>
     pub(crate) fn remove(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        self.del(key, value)
+        let real = self.index(INDEX_CATALOG)?.get(key.clone())?;
+        self.del(key, real.sequence, value)
+    }
+
+    /// 删除数据<p><p>
+    ///
+    /// ###Params
+    /// * key 删除`put`、`set`等插入键
+    /// * sequence 删除序列键使用
+    ///
+    /// ###Return
+    ///
+    /// GeorgeResult<()>
+    pub(crate) fn remove_enhance(
+        &self,
+        key: String,
+        sequence: u64,
+        value: Vec<u8>,
+    ) -> GeorgeResult<()> {
+        self.del(key, sequence, value)
     }
 
     /// 条件检索
@@ -476,8 +496,8 @@ impl View {
     /// ###Return
     ///
     /// IndexResult<()>
-    fn del(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        let seed = Seed::create(self.clone(), key.clone(), value.clone());
+    fn del(&self, key: String, sequence: u64, value: Vec<u8>) -> GeorgeResult<()> {
+        let seed = Seed::create_cus(self.clone(), key.clone(), sequence, value.clone());
         let mut receives = Vec::new();
         for (index_name, index) in self.index_map().read().unwrap().iter() {
             let (sender, receive) = mpsc::channel();

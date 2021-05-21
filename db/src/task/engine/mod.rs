@@ -59,6 +59,8 @@ fn check(
 }
 
 /// 真实存储数据
+///
+/// 执行`put`、`set`及`insert`等方法插入数据时，存入文件中的真实数据为[序列号 + key + value]组合
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DataReal {
     pub(crate) sequence: u64,

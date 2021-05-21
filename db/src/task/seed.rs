@@ -103,6 +103,19 @@ impl Seed {
         }))
     }
 
+    /// 新建seed
+    pub fn create_cus(view: View, key: String, sequence: u64, value: Vec<u8>) -> Arc<RwLock<Seed>> {
+        Arc::new(RwLock::new(Seed {
+            real: DataReal {
+                sequence,
+                key,
+                value,
+            },
+            policies: Vec::new(),
+            view,
+        }))
+    }
+
     fn values(&self) -> GeorgeResult<Vec<u8>> {
         self.real.values()
     }
@@ -114,8 +127,12 @@ impl TSeed for Seed {
         self.real.key()
     }
 
-    fn value(&self) -> GeorgeResult<Vec<u8>> {
-        Ok(self.real.value())
+    fn value(&self) -> Vec<u8> {
+        self.real.value()
+    }
+
+    fn sequence(&self) -> u64 {
+        self.real.sequence
     }
 
     fn modify(&mut self, index_policy: IndexPolicy) {

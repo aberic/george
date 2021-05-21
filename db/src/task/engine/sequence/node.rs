@@ -18,8 +18,8 @@ use std::sync::{Arc, RwLock};
 use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerReader};
 
-use crate::task::engine::check;
 use crate::task::engine::traits::{TNode, TSeed};
+use crate::task::engine::{check, DataReal};
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::task::view::View;
@@ -57,11 +57,7 @@ impl Node {
     /// 新建根结点
     ///
     /// 该结点没有Links，也没有preNode，是B+Tree的创世结点
-    pub fn create(
-        view: Arc<RwLock<View>>,
-        index_name: String,
-        key_type: KeyType,
-    ) -> GeorgeResult<Arc<Self>> {
+    pub fn create(view: Arc<RwLock<View>>, index_name: String) -> GeorgeResult<Arc<Self>> {
         let atomic_key = Arc::new(AtomicU64::new(1));
         let v_c = view.clone();
         let v_r = v_c.read().unwrap();
@@ -73,18 +69,14 @@ impl Node {
             view,
             atomic_key,
             index_name,
-            key_type,
+            key_type: KeyType::U64,
             node_filepath,
             filer,
         }))
     }
 
     /// 恢复根结点
-    pub fn recovery(
-        view: Arc<RwLock<View>>,
-        index_name: String,
-        key_type: KeyType,
-    ) -> GeorgeResult<Arc<Self>> {
+    pub fn recovery(view: Arc<RwLock<View>>, index_name: String) -> GeorgeResult<Arc<Self>> {
         let v_c = view.clone();
         let v_r = v_c.read().unwrap();
         let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
@@ -98,7 +90,7 @@ impl Node {
             view,
             atomic_key,
             index_name,
-            key_type,
+            key_type: KeyType::U64,
             node_filepath,
             filer,
         }))
@@ -133,14 +125,13 @@ impl TNode for Node {
         self.put_in_node(key, hash_key, seed, force)
     }
 
-    fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
+    fn get(&self, key: String) -> GeorgeResult<DataReal> {
         let hash_key = IndexKey::u64(self.key_type(), key)?;
         self.get_in_node(hash_key)
     }
 
     fn del(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
-        let hash_key = IndexKey::u64(self.key_type(), key.clone())?;
-        self.del_in_node(key, hash_key, seed)
+        self.del_in_node(key, seed.clone().read().unwrap().sequence(), seed)
     }
 
     fn select(
@@ -195,7 +186,7 @@ impl Node {
         Ok(())
     }
 
-    fn get_in_node(&self, hash_key: u64) -> GeorgeResult<Vec<u8>> {
+    fn get_in_node(&self, hash_key: u64) -> GeorgeResult<DataReal> {
         let seek = hash_key * 12;
         let res = self.read(seek, 12)?;
         return if Vector::is_fill(res.clone()) {
@@ -205,10 +196,15 @@ impl Node {
             let view_data_len = Trans::bytes_2_u32(Vector::sub(res.clone(), 2, 6)?)?;
             // 读取view偏移量(6字节)
             let view_data_seek = Trans::bytes_2_u48(Vector::sub(res.clone(), 6, 12)?)?;
-            self.view
-                .read()
-                .unwrap()
-                .read_content(view_version, view_data_len, view_data_seek)
+            // 从view视图中读取真实数据内容
+            let info = self.view.read().unwrap().read_content(
+                view_version,
+                view_data_len,
+                view_data_seek,
+            )?;
+            // 将字节数组内容转换为可读kv
+            let date = DataReal::from(info)?;
+            Ok(date)
         } else {
             Err(GeorgeError::from(DataNoExistError))
         };

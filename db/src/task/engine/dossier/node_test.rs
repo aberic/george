@@ -88,7 +88,10 @@ mod dossier_node_test {
             )
             .unwrap();
             match node.get("yes".to_string()) {
-                Ok(v8s) => println!("res = {:#?}", String::from_utf8(v8s).unwrap().as_str()),
+                Ok(v8s) => println!(
+                    "res = {:#?}",
+                    String::from_utf8(v8s.value()).unwrap().as_str()
+                ),
                 Err(err) => println!("get error! error is {}", err),
             }
         }
@@ -162,7 +165,10 @@ mod dossier_node_test {
             )
             .unwrap();
             match node.get("yes".to_string()) {
-                Ok(v8s) => println!("res = {:#?}", String::from_utf8(v8s).unwrap().as_str()),
+                Ok(v8s) => println!(
+                    "res = {:#?}",
+                    String::from_utf8(v8s.value()).unwrap().as_str()
+                ),
                 Err(err) => println!("get error! error is {}", err),
             }
         }

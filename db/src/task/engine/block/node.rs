@@ -15,6 +15,7 @@
 use std::sync::{Arc, RwLock};
 
 use crate::task::engine::traits::{TNode, TSeed};
+use crate::task::engine::DataReal;
 use crate::task::rich::Condition;
 use crate::utils::enums::KeyType;
 use comm::errors::entrances::GeorgeResult;
@@ -64,7 +65,7 @@ impl TNode for Node {
     fn put(&self, _key: String, _seed: Arc<RwLock<dyn TSeed>>, _force: bool) -> GeorgeResult<()> {
         unimplemented!()
     }
-    fn get(&self, _key: String) -> GeorgeResult<Vec<u8>> {
+    fn get(&self, _key: String) -> GeorgeResult<DataReal> {
         unimplemented!()
     }
     fn del(&self, _key: String, _seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {

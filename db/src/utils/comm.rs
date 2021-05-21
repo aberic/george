@@ -111,10 +111,6 @@ impl IndexKey {
     pub fn u64(key_type: KeyType, key: String) -> GeorgeResult<u64> {
         hash_key_64(key_type, key)
     }
-
-    pub fn number64(key_type: KeyType, key: &Number) -> GeorgeResult<u64> {
-        hash_key_number(key_type, key)
-    }
 }
 
 fn key_fetch(index_name: String, value: Vec<u8>) -> GeorgeResult<String> {
@@ -150,38 +146,9 @@ fn hash_key_32(key_type: KeyType, key: String) -> GeorgeResult<u32> {
 
 fn hash_key_64(key_type: KeyType, key: String) -> GeorgeResult<u64> {
     match key_type {
-        KeyType::String => Hash::crc64_string(key),
-        KeyType::Bool => Hash::crc64_bool(key),
-        KeyType::U32 => Hash::crc64_u32(key),
         KeyType::U64 => Hash::crc64_u64(key),
-        KeyType::F32 => Hash::crc64_f32(key),
         KeyType::F64 => Hash::crc64_f64(key),
-        KeyType::I32 => Hash::crc64_i32(key),
         KeyType::I64 => Hash::crc64_i64(key),
-        _ => Err(Errs::str("key type not support!")),
-    }
-}
-
-// fn hash_key_number_u32(key_type: KeyType, key: &Number) -> GeorgeResult<u32> {
-//     match key_type {
-//         KeyType::U32 => Ok(key.as_u64().unwrap() as u32),
-//         KeyType::U64 => Ok(key.as_u64().unwrap()),
-//         KeyType::F32 => Ok(Hash::crc64(key.as_f64().unwrap())),
-//         KeyType::F64 => Ok(Hash::crc64(key.as_f64().unwrap())),
-//         KeyType::I32 => Ok(Hash::crc64(key.as_i64().unwrap())),
-//         KeyType::I64 => Ok(Hash::crc64(key.as_i64().unwrap())),
-//         _ => Err(Errs::str("key type not support!")),
-//     }
-// }
-
-fn hash_key_number(key_type: KeyType, key: &Number) -> GeorgeResult<u64> {
-    match key_type {
-        KeyType::U32 => Ok(key.as_u64().unwrap()),
-        KeyType::U64 => Ok(key.as_u64().unwrap()),
-        KeyType::F32 => Ok(Hash::crc64(key.as_f64().unwrap())),
-        KeyType::F64 => Ok(Hash::crc64(key.as_f64().unwrap())),
-        KeyType::I32 => Ok(Hash::crc64(key.as_i64().unwrap())),
-        KeyType::I64 => Ok(Hash::crc64(key.as_i64().unwrap())),
         _ => Err(Errs::str("key type not support!")),
     }
 }

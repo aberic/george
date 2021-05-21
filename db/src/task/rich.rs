@@ -15,7 +15,9 @@
 use crate::task::engine::traits::TIndex;
 use crate::utils::comm::IndexKey;
 use crate::utils::enums::{IndexType, KeyType};
+use comm::cryptos::hash::{Hash, HashCRCHandler};
 use comm::errors::entrances::{Errs, GeorgeResult};
+use comm::json::{Json, JsonExec, JsonNew};
 use serde_json::{Error, Value};
 use std::collections::HashMap;
 use std::ops::Add;
@@ -72,13 +74,18 @@ impl Condition {
         value: String,
         index: Option<Arc<dyn TIndex>>,
     ) -> GeorgeResult<Condition> {
-        // let value_hash_32 = IndexKey::u32(key_type, value.clone())?;
-        let value_hash_64 = IndexKey::u64(key_type, value.clone())?;
-        let value_bool: bool;
-        if value.eq("true") {
-            value_bool = true
-        } else {
-            value_bool = false
+        let mut value_hash_32: u32 = 0;
+        let mut value_hash_64: u64 = 0;
+        let mut value_bool = false;
+        match key_type {
+            KeyType::U64 => value_hash_64 = IndexKey::u64(key_type, value.clone())?,
+            KeyType::I64 => value_hash_64 = IndexKey::u64(key_type, value.clone())?,
+            KeyType::F64 => value_hash_64 = IndexKey::u64(key_type, value.clone())?,
+            KeyType::Bool => match value.parse::<bool>() {
+                Ok(real) => value_bool = real,
+                Err(err) => return Err(Errs::strings(format!("{} parse to bool", value), err)),
+            },
+            _ => value_hash_32 = IndexKey::u32(key_type, value.clone())?,
         }
         Ok(Condition {
             param,
@@ -157,34 +164,49 @@ impl Condition {
     /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
     fn valid(&self, value: Value) -> bool {
         return match value[self.param()] {
+            Value::Number(ref key) => match self.key_type() {
+                KeyType::U32 => self.compare_value_64(key.as_u64().unwrap()),
+                KeyType::U64 => self.compare_value_64(key.as_u64().unwrap()),
+                KeyType::F32 => self.compare_value_64(Hash::crc64(key.as_f64().unwrap())),
+                KeyType::F64 => self.compare_value_64(Hash::crc64(key.as_f64().unwrap())),
+                KeyType::I32 => self.compare_value_64(Hash::crc64(key.as_i64().unwrap())),
+                KeyType::I64 => self.compare_value_64(Hash::crc64(key.as_i64().unwrap())),
+                _ => false,
+            },
             Value::Bool(ref val) => match self.key_type() {
-                KeyType::Bool => match self.compare() {
-                    Compare::EQ => self.value_bool().eq(val),
-                    Compare::GT => self.value_bool().gt(val),
-                    Compare::GE => self.value_bool().ge(val),
-                    Compare::LT => self.value_bool().lt(val),
-                    Compare::LE => self.value_bool().le(val),
-                    Compare::NE => self.value_bool().ne(val),
-                },
+                KeyType::Bool => self.compare_value_bool(val),
                 _ => false,
             },
             Value::String(ref val) => match self.key_type() {
-                KeyType::String => match self.compare() {
-                    Compare::EQ => self.value().eq(val),
-                    Compare::GT => self.value().gt(val),
-                    Compare::GE => self.value().ge(val),
-                    Compare::LT => self.value().lt(val),
-                    Compare::LE => self.value().le(val),
-                    Compare::NE => self.value().ne(val),
-                },
-                _ => false,
-            },
-            Value::Number(ref val) => match IndexKey::number64(self.key_type(), val) {
-                Ok(real) => self.compare_value_64(real),
+                KeyType::String => self.compare_value_string(val),
                 _ => false,
             },
             _ => false,
         };
+    }
+
+    /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
+    fn compare_value_bool(&self, value: &bool) -> bool {
+        match self.compare() {
+            Compare::EQ => self.value_bool().eq(value),
+            Compare::GT => self.value_bool().gt(value),
+            Compare::LT => self.value_bool().lt(value),
+            Compare::GE => self.value_bool().ge(value),
+            Compare::LE => self.value_bool().le(value),
+            Compare::NE => self.value_bool().ne(value),
+        }
+    }
+
+    /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
+    fn compare_value_string(&self, value: &String) -> bool {
+        match self.compare() {
+            Compare::EQ => self.value().eq(value),
+            Compare::GT => self.value().gt(value),
+            Compare::GE => self.value().ge(value),
+            Compare::LT => self.value().lt(value),
+            Compare::LE => self.value().le(value),
+            Compare::NE => self.value().ne(value),
+        }
     }
 
     // /// 条件 gt/lt/eq/ne 大于/小于/等于/不等

@@ -23,6 +23,7 @@ use crate::task::engine::block::node::Node as NB;
 use crate::task::engine::dossier::node::Node as ND;
 use crate::task::engine::sequence::node::Node as NS;
 use crate::task::engine::traits::{TIndex, TNode, TSeed};
+use crate::task::engine::DataReal;
 use crate::task::rich::{Constraint, Expectation};
 use crate::task::view::View;
 use crate::utils::enums::{Enum, EnumHandler, IndexType, KeyType};
@@ -118,7 +119,7 @@ impl Index {
     ) -> GeorgeResult<Arc<dyn TIndex>> {
         let root: Arc<dyn TNode>;
         match index_type {
-            IndexType::Sequence => root = NS::create(view.clone(), name.clone(), key_type)?,
+            IndexType::Sequence => root = NS::create(view.clone(), name.clone())?,
             IndexType::Disk => root = ND::create(view.clone(), name.clone(), key_type, unique)?,
             IndexType::Block => root = NB::create(name.clone(), key_type),
             _ => return Err(Errs::str("unsupported engine type with none")),
@@ -197,7 +198,7 @@ impl TIndex for Index {
         self.root.put(key, seed, force)
     }
 
-    fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
+    fn get(&self, key: String) -> GeorgeResult<DataReal> {
         self.root.get(key)
     }
 
@@ -367,9 +368,7 @@ impl Index {
                 let filepath = Paths::index_filepath(v_r.database_name(), v_r.name(), name.clone());
                 let root: Arc<dyn TNode>;
                 match hd.index_type() {
-                    IndexType::Sequence => {
-                        root = NS::recovery(view.clone(), name.clone(), key_type)?
-                    }
+                    IndexType::Sequence => root = NS::recovery(view.clone(), name.clone())?,
                     IndexType::Disk => {
                         root = ND::recovery(view.clone(), name.clone(), key_type, unique)?
                     }
