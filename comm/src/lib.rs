@@ -30,3 +30,4 @@ mod trans_test;
 pub mod vectors;
 mod vectors_test;
 pub mod yaml;
+mod yaml_test;
