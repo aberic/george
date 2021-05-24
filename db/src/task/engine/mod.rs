@@ -16,12 +16,12 @@ use crate::task::rich::Condition;
 use crate::task::view::View;
 use comm::errors::entrances::{Errs, GeorgeResult};
 use comm::json::{Json, JsonHandler};
-use comm::trans::Trans;
 use comm::vectors::{Vector, VectorHandler};
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
 
 pub(super) mod block;
+pub(super) mod disk;
 pub(super) mod dossier;
 pub(super) mod memory;
 pub(super) mod sequence;
@@ -38,14 +38,7 @@ fn check(
         Ok((false, vec![]))
     } else {
         let v_r = view.read().unwrap();
-        // 读取view版本号(2字节)
-        let view_version = Trans::bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
-        // 读取view持续长度(4字节)
-        let view_data_len = Trans::bytes_2_u32(Vector::sub(view_info_index.clone(), 2, 6)?)?;
-        // 读取view偏移量(6字节)
-        let view_data_seek = Trans::bytes_2_u48(Vector::sub(view_info_index.clone(), 6, 12)?)?;
-        let real =
-            DataReal::from(v_r.read_content(view_version, view_data_len, view_data_seek)?)?;
+        let real = DataReal::from(v_r.read_content_by_info(view_info_index)?)?;
         let value_bytes = real.value();
         if Condition::validate(conditions.clone(), value_bytes.clone()) {
             if delete {

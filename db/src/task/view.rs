@@ -27,7 +27,6 @@ use comm::io::file::{Filer, FilerReader};
 use comm::strings::{StringHandler, Strings};
 
 use crate::task::engine::traits::{TIndex, TSeed};
-use crate::task::engine::DataReal;
 use crate::task::index::Index as IndexDefault;
 use crate::task::rich::{Expectation, Selector};
 use crate::task::seed::Seed;
@@ -36,6 +35,8 @@ use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::Paths;
 use crate::utils::store::{ContentBytes, Metadata, HD};
 use crate::utils::writer::Filed;
+use comm::trans::Trans;
+use comm::vectors::{Vector, VectorHandler};
 
 /// 视图，类似表
 #[derive(Debug, Clone)]
@@ -429,6 +430,20 @@ impl View {
         data_len: u32,
         seek: u64,
     ) -> GeorgeResult<Vec<u8>> {
+        let filepath = self.filepath_by_version(version)?;
+        Filer::read_sub(filepath, seek, data_len as usize)
+    }
+
+    /// 读取已组装写入视图的内容，根据view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
+    ///
+    /// * view_info_index 数据索引字节数组
+    pub(crate) fn read_content_by_info(&self, view_info_index: Vec<u8>) -> GeorgeResult<Vec<u8>> {
+        // 读取view版本号(2字节)
+        let version = Trans::bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
+        // 读取view持续长度(4字节)
+        let data_len = Trans::bytes_2_u32(Vector::sub(view_info_index.clone(), 2, 6)?)?;
+        // 读取view偏移量(6字节)
+        let seek = Trans::bytes_2_u48(Vector::sub(view_info_index.clone(), 6, 12)?)?;
         let filepath = self.filepath_by_version(version)?;
         Filer::read_sub(filepath, seek, data_len as usize)
     }

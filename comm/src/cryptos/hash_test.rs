@@ -351,8 +351,8 @@ mod md5 {
         let i3 = String::from("-0");
         let i4 = String::from("0");
         let i5 = String::from("1");
-        let i6 = String::from("9223372036854775806");
-        let i7 = String::from("9223372036854775807");
+        let i6 = String::from("9223372036854775805");
+        let i7 = String::from("9223372036854775806");
         println!(
             "i64 = {}, i0 = {}",
             Hash::crc64_i64(i0.clone()).unwrap(),

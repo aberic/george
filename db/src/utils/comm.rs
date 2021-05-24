@@ -13,10 +13,10 @@
  */
 
 use crate::utils::enums::KeyType;
-use comm::cryptos::hash::{Hash, HashCRCHandler, HashCRCTypeHandler};
+use comm::cryptos::hash::{Hash, HashCRCTypeHandler};
 use comm::errors::entrances::{Errs, GeorgeResult};
 use comm::json::{Json, JsonGet, JsonNew};
-use serde_json::{Number, Value};
+use serde_json::Value;
 
 pub const GEORGE_DB_CONFIG: &str = "GEORGE_DB_CONFIG";
 pub const GEORGE_DB_DATA_DIR: &str = "GEORGE_DB_DATA_DIR";
@@ -61,6 +61,21 @@ const LEVEL3DISTANCE64: u64 = 65536;
 /// LEVEL4DISTANCE level4间隔 65536^0 = 1 | 测试 4^0 = 1
 const LEVEL4DISTANCE64: u64 = 1;
 
+/// LEVEL1DISTANCES level1间隔 1170^6 = 2565164201769000000 | 测试 4^3 = 64 | 9223372036854775808 * 2<p>
+const LEVEL1DISTANCE64S: u64 = 2565164201769000000;
+/// LEVEL2DISTANCES level1间隔 1170^5 = 2192448035700000 | 测试 4^3 = 64 | 9223372036854775808 * 2<p>
+const LEVEL2DISTANCE64S: u64 = 2192448035700000;
+/// LEVEL3DISTANCES level2间隔 1170^4 = 1873887210000 | 测试 4^2 = 16
+const LEVEL3DISTANCE64S: u64 = 1873887210000;
+/// LEVEL4DISTANCES level2间隔 1170^3 = 1601613000 | 测试 4^2 = 16
+const LEVEL4DISTANCE64S: u64 = 1601613000;
+/// LEVEL5DISTANCES level2间隔 1170^2 = 1368900 | 测试 4^2 = 16
+const LEVEL5DISTANCE64S: u64 = 1368900;
+/// LEVEL6DISTANCES level3间隔 1170^1 = 1170 | 测试 4^1 = 4
+const LEVEL6DISTANCE64S: u64 = 1170;
+/// LEVEL7DISTANCES level4间隔 1170^0 = 1 | 测试 4^0 = 1
+const LEVEL7DISTANCE64S: u64 = 1;
+
 pub struct Distance;
 
 impl Distance {
@@ -72,6 +87,11 @@ impl Distance {
     /// 获取在2^64量级组成树的指定层中元素的间隔数，即每一度中存在的元素数量
     pub fn level_64(level: u8) -> u64 {
         level_distance_64(level)
+    }
+
+    /// 获取在2^64量级组成树的指定层中元素的间隔数，即每一度中存在的元素数量
+    pub fn level_64s(level: u8) -> u64 {
+        level_distance_64s(level)
     }
 }
 
@@ -93,6 +113,20 @@ fn level_distance_64(level: u8) -> u64 {
         2 => return LEVEL2DISTANCE64,
         3 => return LEVEL3DISTANCE64,
         4 => return LEVEL4DISTANCE64,
+        _ => 0,
+    }
+}
+
+/// 获取在2^64量级组成树的指定层中元素的间隔数，即每一度中存在的元素数量
+fn level_distance_64s(level: u8) -> u64 {
+    match level {
+        1 => return LEVEL1DISTANCE64S,
+        2 => return LEVEL2DISTANCE64S,
+        3 => return LEVEL3DISTANCE64S,
+        4 => return LEVEL4DISTANCE64S,
+        5 => return LEVEL5DISTANCE64S,
+        6 => return LEVEL6DISTANCE64S,
+        7 => return LEVEL7DISTANCE64S,
         _ => 0,
     }
 }
@@ -146,6 +180,8 @@ fn hash_key_32(key_type: KeyType, key: String) -> GeorgeResult<u32> {
 
 fn hash_key_64(key_type: KeyType, key: String) -> GeorgeResult<u64> {
     match key_type {
+        KeyType::String => Hash::crc64_string(key),
+        KeyType::Bool => Hash::crc64_bool(key),
         KeyType::U64 => Hash::crc64_u64(key),
         KeyType::F64 => Hash::crc64_f64(key),
         KeyType::I64 => Hash::crc64_i64(key),
