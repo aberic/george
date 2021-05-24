@@ -326,7 +326,7 @@ fn hashcode32_string(comment: String) -> u32 {
 fn hashcode64(comment: &[u8]) -> u64 {
     let mut c = crc64fast::Digest::new();
     c.write(comment);
-    c.sum64()
+    c.sum64().add(1)
 }
 
 fn hashcode64_string(comment: String) -> u64 {
@@ -342,7 +342,7 @@ fn hashcode32_u32(comment: String) -> GeorgeResult<u32> {
 
 fn hashcode64_u64(comment: String) -> GeorgeResult<u64> {
     match comment.parse::<u64>() {
-        Ok(real) => Ok(real),
+        Ok(real) => Ok(real.add(1)),
         Err(err) => Err(Errs::strings(format!("{} parse to u64", comment), err)),
     }
 }
@@ -398,6 +398,10 @@ fn hashcode32_i32_real(real: i32) -> u32 {
 }
 
 fn hashcode64_i64_real(real: i64) -> u64 {
+    hashcode64_i64_trans(real).add(1)
+}
+
+fn hashcode64_i64_trans(real: i64) -> u64 {
     if real < 0 {
         real.add(9223372036854775807).add(1) as u64
     } else {
@@ -417,11 +421,11 @@ fn hashcode32_f32_real(real: f32) -> u32 {
 
 fn hashcode64_f64_real(real: f64) -> u64 {
     if real > 0.0 {
-        real.to_bits().add(9223372036854775808)
+        real.to_bits().add(9223372036854775809)
     } else if real < 0.0 {
-        9223372036854775807 + 9223372036854775807 - real.to_bits() + 2
+        18446744073709551615 - real.to_bits() + 2
     } else {
-        9223372036854775808
+        9223372036854775809
     }
 }
 
@@ -435,8 +439,8 @@ fn hashcode32_bool_real(real: bool) -> u32 {
 
 fn hashcode64_bool_real(real: bool) -> u64 {
     if real {
-        1
+        2
     } else {
-        0
+        1
     }
 }
