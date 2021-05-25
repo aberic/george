@@ -67,14 +67,15 @@ pub(crate) struct Index {
 /// 该索引需要定义ID，此外索引所表达的字段组成内容也是必须的，并通过primary判断索引类型，具体传参参考如下定义：<p><p>
 ///
 /// ###Params
-///
-/// index_name 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
-///
-/// primary 是否主键
-///
-/// root 根结点
-///
-/// metadata 文件信息
+/// * view 视图
+/// * name 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
+/// * index_type 存储引擎类型
+/// * primary 是否主键，主键也是唯一索引，即默认列表依赖索引
+/// * unique 是否唯一索引
+/// * null 是否允许为空
+/// * key_type 索引值类型
+/// * root 根结点
+/// * metadata 索引文件信息
 fn new_index(
     view: Arc<RwLock<View>>,
     name: String,
@@ -108,6 +109,16 @@ fn new_index(
 }
 
 impl Index {
+    /// 创建索引
+    ///
+    /// ###Params
+    /// * view 视图
+    /// * name 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
+    /// * index_type 存储引擎类型
+    /// * primary 是否主键，主键也是唯一索引，即默认列表依赖索引
+    /// * unique 是否唯一索引
+    /// * null 是否允许为空
+    /// * key_type 索引值类型
     pub(crate) fn create(
         view: Arc<RwLock<View>>,
         name: String,

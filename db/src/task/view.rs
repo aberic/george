@@ -284,6 +284,15 @@ impl View {
     }
 
     /// 创建索引
+    ///
+    /// ###Params
+    /// * view 视图
+    /// * index_name 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
+    /// * index_type 存储引擎类型
+    /// * key_type 索引值类型
+    /// * primary 是否主键，主键也是唯一索引，即默认列表依赖索引
+    /// * unique 是否唯一索引
+    /// * null 是否允许为空
     pub(crate) fn create_index(
         &self,
         view: Arc<RwLock<View>>,

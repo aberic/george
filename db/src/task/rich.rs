@@ -753,7 +753,7 @@ impl Selector {
                             }
                         }
                     }
-                    _ => {}
+                    _ => status.conditions.push(condition.clone()),
                 }
             }
             // 索引状态集合追加

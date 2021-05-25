@@ -184,8 +184,8 @@ mod disk_node_test {
                 false,
             )
             .unwrap();
-            let seed = Seed::create(view, "yes".to_string(), "no".to_string().into_bytes());
-            match node.del("yes".to_string(), seed.clone()) {
+            let seed = Seed::create(view, "yes0".to_string(), "no".to_string().into_bytes());
+            match node.del("yes0".to_string(), seed.clone()) {
                 Ok(v8s) => {
                     let seed_w = seed.write().unwrap();
                     match seed_w.remove() {

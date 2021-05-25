@@ -22,7 +22,6 @@ use std::sync::{Arc, RwLock};
 
 pub(super) mod block;
 pub(super) mod disk;
-pub(super) mod dossier;
 pub(super) mod memory;
 pub(super) mod sequence;
 pub(super) mod traits;

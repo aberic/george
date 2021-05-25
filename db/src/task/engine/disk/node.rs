@@ -15,7 +15,7 @@
 use std::sync::{Arc, RwLock};
 
 use comm::errors::children::{DataExistError, DataNoExistError};
-use comm::errors::entrances::{GeorgeError, GeorgeResult};
+use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerHandler};
 use comm::trans::Trans;
 use comm::vectors::{Vector, VectorHandler};
@@ -281,8 +281,8 @@ impl TNode for Node {
             let (_, _, total, count, values) = self.right_query(
                 self.node_bytes(),
                 1,
-                start as u32,
-                end as u32,
+                start,
+                end,
                 conditions,
                 skip,
                 limit,
@@ -316,16 +316,12 @@ impl Node {
     where
         Self: Sized,
     {
-        // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
-        let distance = Distance::level_64s(level);
-        // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数和模
-        let (next_degree, rem) = flexible_key.div_rem(&distance);
-        // 由view视图执行save操作时反写进record文件中value起始seek
-        let record_info_seek: u64;
         // 如果当前层高为7，则达到最底层，否则递归下一层逻辑
         if level == 7 {
+            // 由view视图执行save操作时反写进record文件中value起始seek
+            let record_info_seek: u64;
             // 相对当前结点字节数组，下一结点在字节数组中的偏移量
-            let next_node_start = next_degree * 6;
+            let next_node_start = flexible_key * 6;
             // 记录在record中有关view数据的字节数组记录坐标，即视图文件中存放数据数组起始坐标
             let record_seek_bytes = Vector::sub_last(node_bytes, next_node_start as usize, 6)?;
             // 记录在record中有关view数据的真实坐标
@@ -367,10 +363,16 @@ impl Node {
             ));
             Ok(())
         } else {
+            // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
+            let distance = Distance::level_64s(level);
+            // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数和模
+            let (next_degree, rem) = flexible_key.div_rem(&distance);
             // 相对当前结点字节数组，下一结点在字节数组中的偏移量
             let next_node_start = next_degree * 14;
             // 如果模为0，则表示在当前层对应度节点可获取该数据
             if rem == 0 {
+                // 由view视图执行save操作时反写进record文件中value起始seek
+                let record_info_seek: u64;
                 // 获取当前数据指针在结点中记录的字节数组起始坐标(下一结点指针8字节 + 当前数据指针6字节)
                 let next_node_record_start = (next_node_start + 8) as usize;
                 // 记录在record中有关view数据的字节数组记录坐标，即视图文件中存放数据数组起始坐标
@@ -549,18 +551,18 @@ impl Node {
         level: u8,
         flexible_key: u64,
     ) -> GeorgeResult<DataReal> {
-        // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
-        let distance = Distance::level_64s(level);
-        // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数和模
-        let (next_degree, rem) = flexible_key.div_rem(&distance);
         // 如果当前层高为7，则达到最底层，否则递归下一层逻辑
         if level == 7 {
             // 相对当前结点字节数组，下一结点在字节数组中的偏移量
-            let next_node_start = next_degree * 6;
+            let next_node_start = flexible_key * 6;
             // 记录在record中有关view数据的字节数组记录坐标，即视图文件中存放数据数组起始坐标
             let record_seek_bytes = Vector::sub_last(node_bytes, next_node_start as usize, 6)?;
             self.judge_seek_bytes(key, record_seek_bytes)
         } else {
+            // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
+            let distance = Distance::level_64s(level);
+            // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数和模
+            let (next_degree, rem) = flexible_key.div_rem(&distance);
             // 相对当前结点字节数组，下一结点在字节数组中的偏移量
             let next_node_start = next_degree * 14;
             // 如果模为0，则表示在当前层对应度节点可获取该数据
@@ -667,14 +669,10 @@ impl Node {
         flexible_key: u64,
         seed: Arc<RwLock<dyn TSeed>>,
     ) -> GeorgeResult<()> {
-        // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
-        let distance = Distance::level_64s(level);
-        // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数和模
-        let (next_degree, rem) = flexible_key.div_rem(&distance);
         // 如果当前层高为7，则达到最底层，否则递归下一层逻辑
         if level == 7 {
             // 相对当前结点字节数组，下一结点在字节数组中的偏移量
-            let next_node_start = next_degree * 6;
+            let next_node_start = flexible_key * 6;
             // 如果唯一，直接删除
             if self.unique {
                 seed.write().unwrap().modify(IndexPolicy::create(
@@ -690,6 +688,10 @@ impl Node {
                 self.judge_seek_bytes_for_del(key, record_seek_bytes, seed)
             }
         } else {
+            // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
+            let distance = Distance::level_64s(level);
+            // 通过当前层真实key除以下一层间隔数获取结点处在下一层的度数和模
+            let (next_degree, rem) = flexible_key.div_rem(&distance);
             // 相对当前结点字节数组，下一结点在字节数组中的偏移量
             let next_node_start = next_degree * 14;
             // 如果模为0，则表示在当前层对应度节点可获取该数据
@@ -858,49 +860,10 @@ impl Node {
         let mut count: u64 = 0;
         let mut values: Vec<Vec<u8>> = vec![];
 
-        // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
-        let distance = Distance::level_64s(level);
         // 如果当前层高为7，则达到最底层，否则递归下一层逻辑
         if level == 7 {
             // 待查询结果索引字节数组
-            let node_seek_bytes: Vec<u8>;
-            // 最底层范围查询分区间查询、左区间查询、右区间查询和全量查询4种
-            // 区间查询即start不为0，end不为0，需要取包含start到end及之间的有效数据
-            // 左区间查询即start不为0，end为0，需要取包含start到末端及之间的有效数据
-            // 右区间查询即start为0，end不为0，需要取包含首端到end及之间的有效数据
-            // 全量查询start为0，end为0，需要取首尾两端及之间的有效数据
-            if start > 0 && end > 0 {
-                // start不为0，end不为0
-                // 通过当前层真实`start key`除以下一层间隔数获取结点处在下一层的起始度数
-                let next_start_degree = start / distance;
-                // 通过当前层真实`end key`除以下一层间隔数获取结点处在下一层的截至度数
-                let next_end_degree = end / distance;
-                // 相对当前结点字节数组，下一结点在字节数组中的偏移量
-                let next_node_start = (next_start_degree * 6) as usize;
-                let next_node_end = (next_end_degree * 6) as usize;
-                // 待查询结果索引字节数组为包含start到end及之间的有效数据
-                node_seek_bytes = Vector::sub(node_bytes, next_node_start, next_node_end + 1)?;
-            } else if start > 0 && end == 0 {
-                // start不为0，end为0
-                // 通过当前层真实`start key`除以下一层间隔数获取结点处在下一层的起始度数
-                let next_start_degree = start / distance;
-                // 相对当前结点字节数组，下一结点在字节数组中的偏移量
-                let next_node_start = (next_start_degree * 6) as usize;
-                // 待查询结果索引字节数组为包含start到末端及之间的有效数据
-                node_seek_bytes = Vector::sub(node_bytes, next_node_start, 0)?;
-            } else if start == 0 && end > 0 {
-                // start为0，end不为0
-                // 通过当前层真实`end key`除以下一层间隔数获取结点处在下一层的截至度数
-                let next_end_degree = end / distance;
-                // 相对当前结点字节数组，下一结点在字节数组中的偏移量
-                let next_node_end = (next_end_degree * 6) as usize;
-                // 待查询结果索引字节数组为包含包含首端到end及之间的有效数据
-                node_seek_bytes = Vector::sub(node_bytes, 0, next_node_end + 1)?;
-            } else {
-                // start为0，end为0
-                // 待查询结果索引字节数组为包含首尾两端及之间的有效数据
-                node_seek_bytes = node_bytes;
-            }
+            let node_seek_bytes = self.node_seek_bytes(node_bytes, start, end)?;
             // 生成待查询结果索引数组，将待查询结果索引字节数组以每6个字节为一组进行重新组合
             let vs_res = Vector::find_eq_vec_bytes(node_seek_bytes, 6)?;
             // 遍历待查询结果索引数组
@@ -931,16 +894,20 @@ impl Node {
                 }
             }
         } else {
+            // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
+            let distance = Distance::level_64s(level);
             // 通过当前层真实`start key`除以下一层间隔数获取结点处在下一层的起始度数
             let (next_start_degree, rem_start) = start.div_rem(&distance);
             // 通过当前层真实`end key`除以下一层间隔数获取结点处在下一层的截至度数
             let (next_end_degree, rem_end) = end.div_rem(&distance);
             // 相对当前结点字节数组，下一结点在字节数组中的偏移量
-            let next_node_end = (next_start_degree * 14) as usize;
+            let next_node_start = (next_start_degree * 14) as usize;
+
+            // 优先获取当前在读字节可匹配到的数据
             // 如果模为0，则表示在当前层对应度节点可获取该数据
             if rem_start == 0 {
                 // 获取当前数据指针在结点中记录的字节数组起始坐标(下一结点指针8字节 + 当前数据指针6字节)
-                let next_node_record_start = (next_node_end + 8) as usize;
+                let next_node_record_start = (next_node_start + 8) as usize;
                 // 记录在record中有关view数据的字节数组记录坐标，即视图文件中存放数据数组起始坐标
                 let record_seek_bytes =
                     Vector::sub_last(node_bytes.clone(), next_node_record_start as usize, 6)?;
@@ -966,33 +933,50 @@ impl Node {
                     }
                 }
             }
+
+            let disk_bytes: usize;
+            if level == 6 {
+                disk_bytes = BYTES_LEN_FOR_DISK_LEAF;
+            } else {
+                disk_bytes = BYTES_LEN_FOR_DISK;
+            }
+
             // 如果下一层的起始度数与下一层的截至度数相同，则表示操作未分层，继续进行左查询
             if next_start_degree == next_end_degree {
                 // 通过当前层真实key减去下一层的度数与间隔数的乘积获取结点所在下一层的真实key
                 let next_start_key = start - next_start_degree * distance;
                 let next_end_key = end - next_end_degree * distance;
                 // 下一结点字节数组起始坐标(下一结点指针8字节 + 下一结点数据指针6字节)
-                let next_node_seek_bytes = Vector::sub_last(node_bytes.clone(), next_node_end, 8)?;
-                let (s, l, t, c, mut v) = self.left_query(
-                    next_node_seek_bytes,
-                    level + 1,
-                    next_start_key,
-                    next_end_key,
-                    conditions.clone(),
-                    skip,
-                    limit,
-                    delete,
-                )?;
-                skip = s;
-                limit = l;
-                total += t;
-                count += c;
-                values.append(&mut v);
-                // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
-                if limit == 0 {
-                    return Ok((skip, limit, total, count, values));
+                let next_node_seek_bytes =
+                    Vector::sub_last(node_bytes.clone(), next_node_start, 8)?;
+                // 如果存在坐标值，则继续，否则新建
+                if Vector::is_fill(next_node_seek_bytes.clone()) {
+                    // 下一结点的真实坐标
+                    let next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
+                    // 下一结点字节数组
+                    let next_node_bytes = self.node_read(next_node_seek, disk_bytes)?;
+                    let (s, l, t, c, mut v) = self.left_query(
+                        next_node_bytes,
+                        level + 1,
+                        next_start_key,
+                        next_end_key,
+                        conditions.clone(),
+                        skip,
+                        limit,
+                        delete,
+                    )?;
+                    skip = s;
+                    limit = l;
+                    total += t;
+                    count += c;
+                    values.append(&mut v);
+                    // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
+                    if limit == 0 {
+                        return Ok((skip, limit, total, count, values));
+                    }
                 }
             } else {
+                // todo
                 // 如果下一层的起始度数与下一层的截至度数不同，则表示操作已分层，需要循环左查询
                 // 需要循环左查询首尾两次为特殊查询
                 // 首次查询的起始坐标由start确定，终止坐标为0
@@ -1002,25 +986,33 @@ impl Node {
                 // 通过当前层真实key减去下一层的度数与间隔数的乘积获取结点所在下一层的真实key
                 let next_start_key = start - next_start_degree * distance;
                 // 下一结点字节数组起始坐标
-                let next_node_seek_bytes = Vector::sub_last(node_bytes.clone(), next_node_end, 8)?;
-                let (s, l, t, c, mut v) = self.left_query(
-                    next_node_seek_bytes,
-                    level + 1,
-                    next_start_key,
-                    0,
-                    conditions.clone(),
-                    skip,
-                    limit,
-                    delete,
-                )?;
-                skip = s;
-                limit = l;
-                total += t;
-                count += c;
-                values.append(&mut v);
-                // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
-                if limit == 0 {
-                    return Ok((skip, limit, total, count, values));
+                let next_node_seek_bytes =
+                    Vector::sub_last(node_bytes.clone(), next_node_start, 8)?;
+                // 如果存在坐标值，则继续，否则新建
+                if Vector::is_fill(next_node_seek_bytes.clone()) {
+                    // 下一结点的真实坐标
+                    let next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
+                    // 下一结点字节数组
+                    let next_node_bytes = self.node_read(next_node_seek, disk_bytes)?;
+                    let (s, l, t, c, mut v) = self.left_query(
+                        next_node_bytes,
+                        level + 1,
+                        next_start_key,
+                        0,
+                        conditions.clone(),
+                        skip,
+                        limit,
+                        delete,
+                    )?;
+                    skip = s;
+                    limit = l;
+                    total += t;
+                    count += c;
+                    values.append(&mut v);
+                    // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
+                    if limit == 0 {
+                        return Ok((skip, limit, total, count, values));
+                    }
                 }
                 // 首次查询结束
 
@@ -1033,24 +1025,31 @@ impl Node {
                     // 下一结点字节数组起始坐标
                     let next_node_seek_bytes =
                         Vector::sub_last(node_bytes.clone(), next_node_start, 8)?;
-                    let (s, l, t, c, mut v) = self.left_query(
-                        next_node_seek_bytes,
-                        level + 1,
-                        0,
-                        0,
-                        conditions.clone(),
-                        skip,
-                        limit,
-                        delete,
-                    )?;
-                    skip = s;
-                    limit = l;
-                    total += t;
-                    count += c;
-                    values.append(&mut v);
-                    // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则继续循环
-                    if limit == 0 {
-                        return Ok((skip, limit, total, count, values));
+                    // 如果存在坐标值，则继续，否则新建
+                    if Vector::is_fill(next_node_seek_bytes.clone()) {
+                        // 下一结点的真实坐标
+                        let next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
+                        // 下一结点字节数组
+                        let next_node_bytes = self.node_read(next_node_seek, disk_bytes)?;
+                        let (s, l, t, c, mut v) = self.left_query(
+                            next_node_bytes,
+                            level + 1,
+                            next_start_key,
+                            0,
+                            conditions.clone(),
+                            skip,
+                            limit,
+                            delete,
+                        )?;
+                        skip = s;
+                        limit = l;
+                        total += t;
+                        count += c;
+                        values.append(&mut v);
+                        // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
+                        if limit == 0 {
+                            return Ok((skip, limit, total, count, values));
+                        }
                     }
                     // 待检查起始坐标递增1，继续下一轮循环左查询
                     check_start_degree += 1;
@@ -1064,30 +1063,39 @@ impl Node {
                 let next_end_key = end - next_end_degree * distance;
                 // 下一结点字节数组起始坐标
                 let next_node_seek_bytes = Vector::sub_last(node_bytes.clone(), next_node_end, 8)?;
-                let (s, l, t, c, mut v) = self.left_query(
-                    next_node_seek_bytes,
-                    level + 1,
-                    0,
-                    next_end_key,
-                    conditions.clone(),
-                    skip,
-                    limit,
-                    delete,
-                )?;
-                skip = s;
-                limit = l;
-                total += t;
-                count += c;
-                values.append(&mut v);
-                // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
-                if limit <= 0 {
-                    return Ok((skip, limit, total, count, values));
+                // 如果存在坐标值，则继续，否则新建
+                if Vector::is_fill(next_node_seek_bytes.clone()) {
+                    // 下一结点的真实坐标
+                    let next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
+                    // 下一结点字节数组
+                    let next_node_bytes = self.node_read(next_node_seek, disk_bytes)?;
+                    let (s, l, t, c, mut v) = self.left_query(
+                        next_node_bytes,
+                        level + 1,
+                        0,
+                        next_end_key,
+                        conditions.clone(),
+                        skip,
+                        limit,
+                        delete,
+                    )?;
+                    skip = s;
+                    limit = l;
+                    total += t;
+                    count += c;
+                    values.append(&mut v);
+                    // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
+                    if limit <= 0 {
+                        return Ok((skip, limit, total, count, values));
+                    }
                 }
                 // 末次查询结束
             }
 
             // 如果下一层的起始度数与下一层的截至度数相同，则表示操作未分层，继续进行左查询
             if rem_end == 0 {
+                // 相对当前结点字节数组，下一结点在字节数组中的偏移量
+                let next_node_end = (next_start_degree * 14) as usize;
                 // 获取当前数据指针在结点中记录的字节数组起始坐标(下一结点指针8字节 + 当前数据指针6字节)
                 let next_node_record_end = (next_node_end + 8) as usize;
                 // 记录在record中有关view数据的字节数组记录坐标，即视图文件中存放数据数组起始坐标
@@ -1168,6 +1176,65 @@ impl Node {
         Ok((skip, limit, total, count, values))
     }
 
+    /// 根据查询起止条件获取待查询结果索引字节数组
+    /// * 最底层范围查询分区间查询、左区间查询、右区间查询和全量查询4种
+    /// * 区间查询即start不为0，end不为0，需要取包含start到end及之间的有效数据
+    /// * 左区间查询即start不为0，end为0，需要取包含start到末端及之间的有效数据
+    /// * 右区间查询即start为0，end不为0，需要取包含首端到end及之间的有效数据
+    /// * 全量查询start为0，end为0，需要取首尾两端及之间的有效数据
+    ///
+    /// ###Params
+    ///
+    /// * node_bytes 当前操作结点的字节数组
+    /// * start 查询起始坐标，如为0则表示前置数据没有起始符
+    /// * end 查询终止坐标，如为0则表示后续数据没有终止符
+    ///
+    /// ###Return
+    ///
+    /// * node_seek_bytes 待查询结果索引字节数组
+    fn node_seek_bytes(&self, node_bytes: Vec<u8>, start: u64, end: u64) -> GeorgeResult<Vec<u8>> {
+        // 待查询结果索引字节数组
+        let node_seek_bytes: Vec<u8>;
+        // 最底层范围查询分区间查询、左区间查询、右区间查询和全量查询4种
+        // 区间查询即start不为0，end不为0，需要取包含start到end及之间的有效数据
+        // 左区间查询即start不为0，end为0，需要取包含start到末端及之间的有效数据
+        // 右区间查询即start为0，end不为0，需要取包含首端到end及之间的有效数据
+        // 全量查询start为0，end为0，需要取首尾两端及之间的有效数据
+        if start > 0 && end > 0 {
+            // start不为0，end不为0
+            // 通过当前层真实`start key`除以下一层间隔数获取结点处在下一层的起始度数
+            let next_start_degree = start;
+            // 通过当前层真实`end key`除以下一层间隔数获取结点处在下一层的截至度数
+            let next_end_degree = end;
+            // 相对当前结点字节数组，下一结点在字节数组中的偏移量
+            let next_node_start = (next_start_degree * 6) as usize;
+            let next_node_end = (next_end_degree * 6) as usize;
+            // 待查询结果索引字节数组为包含start到end及之间的有效数据
+            node_seek_bytes = Vector::sub(node_bytes, next_node_start, next_node_end + 1)?;
+        } else if start > 0 && end == 0 {
+            // start不为0，end为0
+            // 通过当前层真实`start key`除以下一层间隔数获取结点处在下一层的起始度数
+            let next_start_degree = start;
+            // 相对当前结点字节数组，下一结点在字节数组中的偏移量
+            let next_node_start = (next_start_degree * 6) as usize;
+            // 待查询结果索引字节数组为包含start到末端及之间的有效数据
+            node_seek_bytes = Vector::sub(node_bytes, next_node_start, 0)?;
+        } else if start == 0 && end > 0 {
+            // start为0，end不为0
+            // 通过当前层真实`end key`除以下一层间隔数获取结点处在下一层的截至度数
+            let next_end_degree = end;
+            // 相对当前结点字节数组，下一结点在字节数组中的偏移量
+            let next_node_end = (next_end_degree * 6) as usize;
+            // 待查询结果索引字节数组为包含包含首端到end及之间的有效数据
+            node_seek_bytes = Vector::sub(node_bytes, 0, next_node_end + 1)?;
+        } else {
+            // start为0，end为0
+            // 待查询结果索引字节数组为包含首尾两端及之间的有效数据
+            node_seek_bytes = node_bytes;
+        }
+        Ok(node_seek_bytes)
+    }
+
     /// 通过右查询约束获取数据集
     ///
     /// ###Params
@@ -1192,14 +1259,271 @@ impl Node {
         &self,
         node_bytes: Vec<u8>,
         level: u8,
-        start: u32,
-        end: u32,
+        start: u64,
+        end: u64,
         conditions: Vec<Condition>,
         mut skip: u64,
         mut limit: u64,
         delete: bool,
     ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)> {
-        unimplemented!()
+        let mut total: u64 = 0;
+        let mut count: u64 = 0;
+        let mut values: Vec<Vec<u8>> = vec![];
+
+        // 如果当前层高为7，则达到最底层，否则递归下一层逻辑
+        if level == 7 {
+            let node_seek_bytes = self.node_seek_bytes(node_bytes, start, end)?;
+            // 生成待查询结果索引数组，将待查询结果索引字节数组以每6个字节为一组进行重新组合
+            let vs_res = Vector::find_eq_vec_bytes(node_seek_bytes, 6)?;
+            let mut len = vs_res.len() - 1;
+            while len < 0 {
+                // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
+                if limit <= 0 {
+                    break;
+                }
+                match vs_res.get(len) {
+                    Some(res) => {
+                        // 如果存在坐标值，则继续，否则返回无此数据
+                        if Vector::is_fill(res.clone()) {
+                            // 索引执行插入真实坐标
+                            let record_seek = Trans::bytes_2_u48(res.clone())?;
+                            let (s, l, t, c, mut v) = self.record_view_info_seek_valid(
+                                record_seek,
+                                conditions.clone(),
+                                skip,
+                                limit,
+                                delete,
+                            )?;
+                            skip = s;
+                            limit = l;
+                            total += t;
+                            count += c;
+                            values.append(&mut v);
+                        }
+                    }
+                    None => return Err(Errs::str("select bytes get none error")),
+                }
+            }
+        } else {
+            // 通过当前树下一层高获取结点间间隔数量，即每一度中存在的元素数量
+            let distance = Distance::level_64s(level);
+            // 通过当前层真实`start key`除以下一层间隔数获取结点处在下一层的起始度数
+            let (next_start_degree, rem_start) = start.div_rem(&distance);
+            // 通过当前层真实`end key`除以下一层间隔数获取结点处在下一层的截至度数
+            let (next_end_degree, rem_end) = end.div_rem(&distance);
+            // 相对当前结点字节数组，下一结点在字节数组中的偏移量
+            let next_node_start = (next_start_degree * 14) as usize;
+
+            // 优先获取当前在读字节可匹配到的数据
+            // 如果下一层的起始度数与下一层的截至度数相同，则表示操作未分层，继续进行左查询
+            if rem_end == 0 {
+                // 相对当前结点字节数组，下一结点在字节数组中的偏移量
+                let next_node_end = (next_start_degree * 14) as usize;
+                // 获取当前数据指针在结点中记录的字节数组起始坐标(下一结点指针8字节 + 当前数据指针6字节)
+                let next_node_record_end = (next_node_end + 8) as usize;
+                // 记录在record中有关view数据的字节数组记录坐标，即视图文件中存放数据数组起始坐标
+                let record_seek_bytes =
+                    Vector::sub_last(node_bytes.clone(), next_node_record_end as usize, 6)?;
+                // 如果存在坐标值，则继续，否则返回无此数据
+                if Vector::is_fill(record_seek_bytes.clone()) {
+                    // 索引执行插入真实坐标
+                    let record_seek = Trans::bytes_2_u48(record_seek_bytes)?;
+                    let (s, l, t, c, mut v) = self.record_view_info_seek_valid(
+                        record_seek,
+                        conditions.clone(),
+                        skip,
+                        limit,
+                        delete,
+                    )?;
+                    skip = s;
+                    limit = l;
+                    total += t;
+                    count += c;
+                    values.append(&mut v);
+                }
+            }
+
+            // 如果下一层的起始度数与下一层的截至度数相同，则表示操作未分层，继续进行左查询
+            if next_start_degree == next_end_degree {
+                // 通过当前层真实key减去下一层的度数与间隔数的乘积获取结点所在下一层的真实key
+                let next_start_key = start - next_start_degree * distance;
+                let next_end_key = end - next_end_degree * distance;
+                // 下一结点字节数组起始坐标(下一结点指针8字节 + 下一结点数据指针6字节)
+                let next_node_seek_bytes =
+                    Vector::sub_last(node_bytes.clone(), next_node_start, 8)?;
+                let (s, l, t, c, mut v) = self.left_query(
+                    next_node_seek_bytes,
+                    level + 1,
+                    next_start_key,
+                    next_end_key,
+                    conditions.clone(),
+                    skip,
+                    limit,
+                    delete,
+                )?;
+                skip = s;
+                limit = l;
+                total += t;
+                count += c;
+                values.append(&mut v);
+                // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
+                if limit == 0 {
+                    return Ok((skip, limit, total, count, values));
+                }
+            } else {
+                // 如果下一层的起始度数与下一层的截至度数不同，则表示操作已分层，需要循环左查询
+                // 需要循环左查询首尾两次为特殊查询
+                // 首次查询的起始坐标由start确定，终止坐标为0
+                // 末次查询的终止坐标由end确定，起始坐标为0
+
+                let disk_bytes: usize;
+                if level == 6 {
+                    disk_bytes = BYTES_LEN_FOR_DISK_LEAF;
+                } else {
+                    disk_bytes = BYTES_LEN_FOR_DISK;
+                }
+
+                // 首次查询开始
+                // 通过当前层真实key减去下一层的度数与间隔数的乘积获取结点所在下一层的真实key
+                let next_start_key = start - next_start_degree * distance;
+                // 下一结点字节数组起始坐标
+                let next_node_seek_bytes =
+                    Vector::sub_last(node_bytes.clone(), next_node_start, 8)?;
+                // 如果存在坐标值，则继续，否则新建
+                if Vector::is_fill(next_node_seek_bytes.clone()) {
+                    // 下一结点的真实坐标
+                    let next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
+                    // 下一结点字节数组
+                    let next_node_bytes = self.node_read(next_node_seek, disk_bytes)?;
+                    let (s, l, t, c, mut v) = self.left_query(
+                        next_node_bytes,
+                        level + 1,
+                        next_start_key,
+                        0,
+                        conditions.clone(),
+                        skip,
+                        limit,
+                        delete,
+                    )?;
+                    skip = s;
+                    limit = l;
+                    total += t;
+                    count += c;
+                    values.append(&mut v);
+                    // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
+                    if limit == 0 {
+                        return Ok((skip, limit, total, count, values));
+                    }
+                }
+                // 首次查询结束
+
+                // 循环查询开始
+                // 待检查起始坐标
+                let mut check_start_degree = next_start_degree;
+                while check_start_degree < next_end_degree {
+                    // 相对当前结点字节数组，下一结点在字节数组中的偏移量
+                    let next_node_start = (check_start_degree * 8) as usize;
+                    // 下一结点字节数组起始坐标
+                    let next_node_seek_bytes =
+                        Vector::sub_last(node_bytes.clone(), next_node_start, 8)?;
+                    // 如果存在坐标值，则继续，否则新建
+                    if Vector::is_fill(next_node_seek_bytes.clone()) {
+                        // 下一结点的真实坐标
+                        let next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
+                        // 下一结点字节数组
+                        let next_node_bytes = self.node_read(next_node_seek, disk_bytes)?;
+                        let (s, l, t, c, mut v) = self.left_query(
+                            next_node_bytes,
+                            level + 1,
+                            next_start_key,
+                            0,
+                            conditions.clone(),
+                            skip,
+                            limit,
+                            delete,
+                        )?;
+                        skip = s;
+                        limit = l;
+                        total += t;
+                        count += c;
+                        values.append(&mut v);
+                        // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
+                        if limit == 0 {
+                            return Ok((skip, limit, total, count, values));
+                        }
+                    }
+                    // 待检查起始坐标递增1，继续下一轮循环左查询
+                    check_start_degree += 1;
+                }
+                // 循环查询结束
+
+                // 末次查询开始
+                // 相对当前结点字节数组，下一结点在字节数组中的偏移量
+                let next_node_end = (next_end_degree * 8) as usize;
+                // 通过当前层真实key减去下一层的度数与间隔数的乘积获取结点所在下一层的真实key
+                let next_end_key = end - next_end_degree * distance;
+                // 下一结点字节数组起始坐标
+                let next_node_seek_bytes = Vector::sub_last(node_bytes.clone(), next_node_end, 8)?;
+                // 如果存在坐标值，则继续，否则新建
+                if Vector::is_fill(next_node_seek_bytes.clone()) {
+                    // 下一结点的真实坐标
+                    let next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
+                    // 下一结点字节数组
+                    let next_node_bytes = self.node_read(next_node_seek, disk_bytes)?;
+                    let (s, l, t, c, mut v) = self.left_query(
+                        next_node_bytes,
+                        level + 1,
+                        0,
+                        next_end_key,
+                        conditions.clone(),
+                        skip,
+                        limit,
+                        delete,
+                    )?;
+                    skip = s;
+                    limit = l;
+                    total += t;
+                    count += c;
+                    values.append(&mut v);
+                    // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
+                    if limit <= 0 {
+                        return Ok((skip, limit, total, count, values));
+                    }
+                }
+                // 末次查询结束
+            }
+
+            // 如果模为0，则表示在当前层对应度节点可获取该数据
+            if rem_start == 0 {
+                // 获取当前数据指针在结点中记录的字节数组起始坐标(下一结点指针8字节 + 当前数据指针6字节)
+                let next_node_record_start = (next_node_start + 8) as usize;
+                // 记录在record中有关view数据的字节数组记录坐标，即视图文件中存放数据数组起始坐标
+                let record_seek_bytes =
+                    Vector::sub_last(node_bytes.clone(), next_node_record_start as usize, 6)?;
+                // 如果存在坐标值，则继续，否则返回无此数据
+                if Vector::is_fill(record_seek_bytes.clone()) {
+                    // 索引执行插入真实坐标
+                    let record_seek = Trans::bytes_2_u48(record_seek_bytes)?;
+                    let (s, l, t, c, mut v) = self.record_view_info_seek_valid(
+                        record_seek,
+                        conditions.clone(),
+                        skip,
+                        limit,
+                        delete,
+                    )?;
+                    skip = s;
+                    limit = l;
+                    total += t;
+                    count += c;
+                    values.append(&mut v);
+                    // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
+                    if limit <= 0 {
+                        return Ok((skip, limit, total, count, values));
+                    }
+                }
+            }
+        }
+        Ok((skip, limit, total, count, values))
     }
 }
 

@@ -335,9 +335,9 @@ mod master {
             create_view(database_name, view_name);
 
             let mut pos1: u32 = 1;
-            while pos1 <= 100000 {
+            while pos1 <= 10000 {
                 print!("{} ", pos1);
-                let user_str = Json::obj_2_string(&create_t(pos1, 100000 - pos1)).unwrap();
+                let user_str = Json::obj_2_string(&create_t(pos1, 10000 - pos1)).unwrap();
                 put(
                     database_name,
                     view_name,
@@ -359,17 +359,17 @@ mod master {
                                         {
                                             "Param":"george_db_index_sequence",
                                             "Cond":"ge",
-                                            "Value":49900
+                                            "Value":4990
                                         },
                                         {
                                             "Param":"age",
                                             "Cond":"ge",
-                                            "Value":49900
+                                            "Value":4990
                                         },
                                         {
                                             "Param":"age",
                                             "Cond":"le",
-                                            "Value":90100
+                                            "Value":9010
                                         }
                                     ],
                                     "Sort":{
@@ -392,20 +392,20 @@ mod master {
                                         {
                                             "Param":"age",
                                             "Cond":"ge",
-                                            "Value":49900
+                                            "Value":4990
                                         },
                                         {
                                             "Param":"age",
                                             "Cond":"le",
-                                            "Value":50100
+                                            "Value":5010
                                         }
                                     ],
                                     "Sort":{
                                         "Param":"height",
                                         "Asc":false
                                     },
-                                    "Skip":100,
-                                    "Limit":1000
+                                    "Skip":10,
+                                    "Limit":100
                                   }"#;
             select(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
         }
@@ -420,27 +420,112 @@ mod master {
                                         {
                                             "Param":"george_db_index_sequence",
                                             "Cond":"ge",
-                                            "Value":49900
+                                            "Value":4990
                                         },
                                         {
                                             "Param":"age",
                                             "Cond":"ge",
-                                            "Value":49900
+                                            "Value":4990
                                         },
                                         {
                                             "Param":"age",
                                             "Cond":"le",
-                                            "Value":90100
+                                            "Value":9010
                                         }
                                     ],
                                     "Sort":{
                                         "Param":"height",
                                         "Asc":true
                                     },
-                                    "Skip":100,
-                                    "Limit":1000
+                                    "Skip":10,
+                                    "Limit":100
                                   }"#;
             delete(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
+        }
+    }
+
+    #[cfg(test)]
+    mod select_disk {
+        use crate::task::master_test::*;
+        use comm::json::{Json, JsonHandler};
+
+        #[test]
+        fn select_disk_prepare() {
+            let database_name = "database_select_base_test";
+            let view_name = "view_base_test";
+            let index_name = "age";
+            create_view(database_name, view_name);
+            create_index(
+                database_name,
+                view_name,
+                index_name,
+                IndexType::Disk,
+                KeyType::I64,
+                false,
+                false,
+                false,
+            );
+
+            let mut pos1: u32 = 1;
+            while pos1 <= 10000 {
+                print!("{} ", pos1);
+                let user_str = Json::obj_2_string(&create_t(pos1, 10000 - pos1)).unwrap();
+                put(
+                    database_name,
+                    view_name,
+                    pos1.to_string().as_str(),
+                    user_str.as_str(),
+                    pos1 as usize,
+                );
+                pos1 += 1
+            }
+        }
+
+        #[test]
+        fn select_disk_get_by_index() {
+            let database_name = "database_select_base_test";
+            let view_name = "view_base_test";
+            let index_name = "age";
+            get_by_index(database_name, view_name, index_name, "1", 1);
+            get_by_index(database_name, view_name, index_name, "10", 10);
+            get_by_index(database_name, view_name, index_name, "100", 100);
+            get_by_index(database_name, view_name, index_name, "1000", 1000);
+            get_by_index(database_name, view_name, index_name, "10000", 10000);
+            get_by_index(database_name, view_name, index_name, "100000", 100000);
+        }
+
+        #[test]
+        fn select_disk1() {
+            let database_name = "database_select_base_test";
+            let view_name = "view_base_test";
+            let index_name = "age";
+            let cond_str0 = r#"
+                                  {
+                                    "Conditions":[
+                                        {
+                                            "Param":"age",
+                                            "Cond":"ge",
+                                            "Value":4990
+                                        },
+                                        {
+                                            "Param":"age",
+                                            "Cond":"le",
+                                            "Value":9010
+                                        },
+                                        {
+                                            "Param":"height",
+                                            "Cond":"le",
+                                            "Value":5000
+                                        }
+                                    ],
+                                    "Sort":{
+                                        "Param":"height",
+                                        "Asc":true
+                                    },
+                                    "Skip":0,
+                                    "Limit":20
+                                  }"#;
+            select(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
         }
     }
 }
