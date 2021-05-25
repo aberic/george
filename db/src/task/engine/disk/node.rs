@@ -183,6 +183,12 @@ impl Node {
     }
 
     fn node_write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
+        if seek < BYTES_LEN_FOR_DISK as u64 {
+            self.root_bytes
+                .write()
+                .unwrap()
+                .modify(seek as usize, content.clone())
+        }
         self.node_filer.write(seek, content)
     }
 
@@ -414,9 +420,11 @@ impl Node {
             } else {
                 // 下一结点的真实坐标
                 let next_node_seek: u64;
+                // 通过当前层真实key减去下一层的度数与间隔数的乘积获取结点所在下一层的真实key
+                let next_flexible_key = flexible_key - next_degree * distance;
                 // 下一结点字节数组起始坐标
                 let mut next_node_seek_bytes =
-                    Vector::sub_last(node_bytes, next_node_start as usize, 8)?;
+                    Vector::sub_last(node_bytes.clone(), next_node_start as usize, 8)?;
                 // 下一结点字节数组
                 let next_node_bytes: Vec<u8>;
                 // 如果存在坐标值，则继续，否则新建
@@ -450,8 +458,6 @@ impl Node {
                     let next_node_seek_real_seek = node_bytes_seek + next_node_start;
                     self.node_write(next_node_seek_real_seek, next_node_seek_bytes)?;
                 }
-                // 通过当前层真实key减去下一层的度数与间隔数的乘积获取结点所在下一层的真实key
-                let next_flexible_key = flexible_key - next_degree * distance;
                 self.put_in_node(
                     next_node_seek,
                     next_node_bytes,
@@ -929,24 +935,50 @@ impl Node {
             let (next_start_degree, rem_start) = start.div_rem(&distance);
             // 通过当前层真实`end key`除以下一层间隔数获取结点处在下一层的截至度数
             let (next_end_degree, rem_end) = end.div_rem(&distance);
+            // 相对当前结点字节数组，下一结点在字节数组中的偏移量
+            let next_node_end = (next_start_degree * 14) as usize;
+            // 如果模为0，则表示在当前层对应度节点可获取该数据
+            if rem_start == 0 {
+                // 获取当前数据指针在结点中记录的字节数组起始坐标(下一结点指针8字节 + 当前数据指针6字节)
+                let next_node_record_start = (next_node_end + 8) as usize;
+                // 记录在record中有关view数据的字节数组记录坐标，即视图文件中存放数据数组起始坐标
+                let record_seek_bytes =
+                    Vector::sub_last(node_bytes.clone(), next_node_record_start as usize, 6)?;
+                // 如果存在坐标值，则继续，否则返回无此数据
+                if Vector::is_fill(record_seek_bytes.clone()) {
+                    // 索引执行插入真实坐标
+                    let record_seek = Trans::bytes_2_u48(record_seek_bytes)?;
+                    let (s, l, t, c, mut v) = self.record_view_info_seek_valid(
+                        record_seek,
+                        conditions.clone(),
+                        skip,
+                        limit,
+                        delete,
+                    )?;
+                    skip = s;
+                    limit = l;
+                    total += t;
+                    count += c;
+                    values.append(&mut v);
+                    // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
+                    if limit <= 0 {
+                        return Ok((skip, limit, total, count, values));
+                    }
+                }
+            }
             // 如果下一层的起始度数与下一层的截至度数相同，则表示操作未分层，继续进行左查询
             if next_start_degree == next_end_degree {
-                if rem_start == 0 {
-                    // todo 优先将当前值写入返回数据集合
-                }
-                // 相对当前结点字节数组，下一结点在字节数组中的偏移量
-                let next_node_start = (next_start_degree * 6) as usize;
                 // 通过当前层真实key减去下一层的度数与间隔数的乘积获取结点所在下一层的真实key
                 let next_start_key = start - next_start_degree * distance;
                 let next_end_key = end - next_end_degree * distance;
                 // 下一结点字节数组起始坐标(下一结点指针8字节 + 下一结点数据指针6字节)
-                let next_node_seek_bytes = Vector::sub_last(node_bytes, next_node_start, 8)?;
+                let next_node_seek_bytes = Vector::sub_last(node_bytes.clone(), next_node_end, 8)?;
                 let (s, l, t, c, mut v) = self.left_query(
                     next_node_seek_bytes,
                     level + 1,
                     next_start_key,
                     next_end_key,
-                    conditions,
+                    conditions.clone(),
                     skip,
                     limit,
                     delete,
@@ -967,13 +999,10 @@ impl Node {
                 // 末次查询的终止坐标由end确定，起始坐标为0
 
                 // 首次查询开始
-                // 相对当前结点字节数组，下一结点在字节数组中的偏移量
-                let next_node_start = (next_start_degree * 8) as usize;
                 // 通过当前层真实key减去下一层的度数与间隔数的乘积获取结点所在下一层的真实key
                 let next_start_key = start - next_start_degree * distance;
                 // 下一结点字节数组起始坐标
-                let next_node_seek_bytes =
-                    Vector::sub_last(node_bytes.clone(), next_node_start, 8)?;
+                let next_node_seek_bytes = Vector::sub_last(node_bytes.clone(), next_node_end, 8)?;
                 let (s, l, t, c, mut v) = self.left_query(
                     next_node_seek_bytes,
                     level + 1,
@@ -1050,10 +1079,36 @@ impl Node {
                 total += t;
                 count += c;
                 values.append(&mut v);
+                // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
+                if limit <= 0 {
+                    return Ok((skip, limit, total, count, values));
+                }
                 // 末次查询结束
+            }
 
-                if rem_end == 0 {
-                    // todo 最后将当前值写入返回数据集合
+            // 如果下一层的起始度数与下一层的截至度数相同，则表示操作未分层，继续进行左查询
+            if rem_end == 0 {
+                // 获取当前数据指针在结点中记录的字节数组起始坐标(下一结点指针8字节 + 当前数据指针6字节)
+                let next_node_record_end = (next_node_end + 8) as usize;
+                // 记录在record中有关view数据的字节数组记录坐标，即视图文件中存放数据数组起始坐标
+                let record_seek_bytes =
+                    Vector::sub_last(node_bytes.clone(), next_node_record_end as usize, 6)?;
+                // 如果存在坐标值，则继续，否则返回无此数据
+                if Vector::is_fill(record_seek_bytes.clone()) {
+                    // 索引执行插入真实坐标
+                    let record_seek = Trans::bytes_2_u48(record_seek_bytes)?;
+                    let (s, l, t, c, mut v) = self.record_view_info_seek_valid(
+                        record_seek,
+                        conditions.clone(),
+                        skip,
+                        limit,
+                        delete,
+                    )?;
+                    skip = s;
+                    limit = l;
+                    total += t;
+                    count += c;
+                    values.append(&mut v);
                 }
             }
         }

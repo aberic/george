@@ -114,7 +114,11 @@ impl RootBytes {
         self.bytes.clone()
     }
 
-    // pub(crate) fn modify(&mut self, source: Vec<u8>, target: Vec<u8>, start: usize) {
-    //     self.bytes = Vector::modify(source, target, start)
-    // }
+    /// 修改存储根结点所属各子结点坐标顺序字节数组
+    ///
+    /// * start 从该位置起进行修改
+    /// * target 从`start`起将后续字节替换为target内容
+    pub(crate) fn modify(&mut self, start: usize, target: Vec<u8>) {
+        self.bytes = Vector::modify(self.bytes(), target, start)
+    }
 }

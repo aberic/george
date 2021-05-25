@@ -229,10 +229,34 @@ mod master {
         fn get_test() {
             let database_name = "database_disk_base_test";
             let view_name = "view_disk_base_test";
-            create_view(database_name, view_name);
             get(database_name, view_name, "hello1", 1);
             get(database_name, view_name, "hello2", 2);
             get(database_name, view_name, "hello3", 3);
+        }
+
+        #[test]
+        fn put_10000_test() {
+            let database_name = "database_disk_base_test";
+            let view_name = "view_disk_base_test";
+            let mut pos = 1;
+            while pos <= 10000 {
+                let key = format!("yes{}", pos);
+                let value = format!("no{}", pos);
+                put(database_name, view_name, key.as_str(), value.as_str(), pos);
+                pos += 1;
+            }
+        }
+
+        #[test]
+        fn get_10000_test() {
+            let database_name = "database_disk_base_test";
+            let view_name = "view_disk_base_test";
+            let mut pos = 8000;
+            while pos <= 8400 {
+                let key = format!("yes{}", pos);
+                get(database_name, view_name, key.as_str(), pos);
+                pos += 1;
+            }
         }
     }
 

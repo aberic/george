@@ -179,6 +179,12 @@ impl Node {
     }
 
     fn node_write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
+        if seek < BYTES_LEN_FOR_DOSSIER as u64 {
+            self.root_bytes
+                .write()
+                .unwrap()
+                .modify(seek as usize, content.clone())
+        }
         self.node_filer.write(seek, content)
     }
 

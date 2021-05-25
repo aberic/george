@@ -140,8 +140,8 @@ mod disk_node_test {
                 false,
             )
             .unwrap();
-            let seed = Seed::create(view, "yes".to_string(), "no".to_string().into_bytes());
-            match node.put("yes".to_string(), seed.clone(), false) {
+            let seed = Seed::create(view, "yes0".to_string(), "no".to_string().into_bytes());
+            match node.put("yes0".to_string(), seed.clone(), false) {
                 Ok(()) => {
                     let seed_w = seed.write().unwrap();
                     match seed_w.save() {
@@ -164,7 +164,7 @@ mod disk_node_test {
                 false,
             )
             .unwrap();
-            match node.get("yes".to_string()) {
+            match node.get("yes0".to_string()) {
                 Ok(v8s) => println!(
                     "res = {:#?}",
                     String::from_utf8(v8s.value()).unwrap().as_str()
@@ -220,12 +220,13 @@ mod disk_node_test {
             let mut pos = 0;
             while pos < 100 {
                 let key = format!("yes{}", pos);
-                let seed = Seed::create(view.clone(), key.clone(), "no".to_string().into_bytes());
+                let value = format!("no{}", pos);
+                let seed = Seed::create(view.clone(), key.clone(), value.into_bytes());
                 match node.put(key, seed.clone(), false) {
                     Ok(()) => {
                         let seed_w = seed.write().unwrap();
                         match seed_w.save() {
-                            Ok(()) => println!("put success!"),
+                            Ok(()) => println!("put {} success!", pos),
                             Err(err) => println!("seed save error! error is {}", err),
                         }
                     }
@@ -251,7 +252,8 @@ mod disk_node_test {
                 let key = format!("yes{}", pos);
                 match node.get(key) {
                     Ok(v8s) => println!(
-                        "res = {:#?}",
+                        "res {} = {:#?}",
+                        pos,
                         String::from_utf8(v8s.value()).unwrap().as_str()
                     ),
                     Err(err) => println!("get error! error is {}", err),
@@ -309,8 +311,8 @@ mod disk_node_test {
                 false,
             )
             .unwrap();
-            let mut pos = 0;
-            while pos < 10 {
+            let mut pos = 82000;
+            while pos < 82100 {
                 let key = format!("yes{}", pos);
                 match node.get(key) {
                     Ok(v8s) => println!(
@@ -318,6 +320,35 @@ mod disk_node_test {
                         String::from_utf8(v8s.value()).unwrap().as_str()
                     ),
                     Err(err) => println!("get error! error is {}", err),
+                }
+                pos += 1;
+            }
+        }
+
+        #[test]
+        fn del_100000_test() {
+            let view = View::mock_create_single("db".to_string(), "disk_view".to_string()).unwrap();
+            let node = create_node(
+                "db".to_string(),
+                "disk_view".to_string(),
+                "disk100000".to_string(),
+                KeyType::String,
+                false,
+            )
+            .unwrap();
+            let mut pos = 82050;
+            while pos < 82100 {
+                let key = format!("yes{}", pos);
+                let seed = Seed::create(view.clone(), key.clone(), "no".to_string().into_bytes());
+                match node.del(key, seed.clone()) {
+                    Ok(v8s) => {
+                        let seed_w = seed.write().unwrap();
+                        match seed_w.remove() {
+                            Ok(()) => println!("del success!"),
+                            Err(err) => println!("seed save error! error is {}", err),
+                        }
+                    }
+                    Err(err) => println!("del error! error is {}", err),
                 }
                 pos += 1;
             }

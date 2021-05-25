@@ -20,7 +20,7 @@ use comm::errors::entrances::{Errs, GeorgeResult};
 use comm::strings::{StringHandler, Strings};
 
 use crate::task::engine::block::node::Node as NB;
-use crate::task::engine::dossier::node::Node as ND;
+use crate::task::engine::disk::node::Node as ND;
 use crate::task::engine::sequence::node::Node as NS;
 use crate::task::engine::traits::{TIndex, TNode, TSeed};
 use crate::task::engine::DataReal;
