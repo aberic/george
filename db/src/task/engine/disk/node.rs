@@ -334,15 +334,23 @@ impl Node {
                 // 如果唯一且非强制覆盖，返回数据已存在
                 if self.unique {
                     if force {
-                        record_info_seek =
-                            self.record_view_info_seek_put(key.clone(), record_seek, force)?;
+                        record_info_seek = self.record_view_info_seek_put(
+                            key.clone(),
+                            record_seek,
+                            seed.clone(),
+                            force,
+                        )?;
                     } else {
                         return Err(GeorgeError::from(DataExistError));
                     }
                 } else {
                     // 如果非唯一，则需要判断hash碰撞，hash碰撞未发生才会继续进行强制性判断
-                    record_info_seek =
-                        self.record_view_info_seek_put(key.clone(), record_seek, force)?;
+                    record_info_seek = self.record_view_info_seek_put(
+                        key.clone(),
+                        record_seek,
+                        seed.clone(),
+                        force,
+                    )?;
                 }
             } else {
                 // 不存在下一坐标值，新建
@@ -388,15 +396,23 @@ impl Node {
                     // 如果唯一且非强制覆盖，返回数据已存在
                     if self.unique {
                         if force {
-                            record_info_seek =
-                                self.record_view_info_seek_put(key.clone(), record_seek, force)?;
+                            record_info_seek = self.record_view_info_seek_put(
+                                key.clone(),
+                                record_seek,
+                                seed.clone(),
+                                force,
+                            )?;
                         } else {
                             return Err(GeorgeError::from(DataExistError));
                         }
                     } else {
                         // 如果非唯一，则需要判断hash碰撞，hash碰撞未发生才会继续进行强制性判断
-                        record_info_seek =
-                            self.record_view_info_seek_put(key.clone(), record_seek, force)?;
+                        record_info_seek = self.record_view_info_seek_put(
+                            key.clone(),
+                            record_seek,
+                            seed.clone(),
+                            force,
+                        )?;
                     }
                 } else {
                     // 不存在下一坐标值，新建
@@ -478,6 +494,7 @@ impl Node {
         &self,
         key: String,
         record_seek: u64,
+        seed: Arc<RwLock<dyn TSeed>>,
         force: bool,
     ) -> GeorgeResult<u64> {
         // 读取record中该坐标值
@@ -501,7 +518,7 @@ impl Node {
             // 将字节数组内容转换为可读kv
             let date = DataReal::from(info)?;
             // 因为hash key指向同一碰撞，对比key是否相同
-            if date.key == key {
+            if date.key == seed.read().unwrap().key() {
                 // 如果key相同，则判断是否强制覆盖
                 if force {
                     // 如果强制覆盖，则返回当前待覆盖坐标
@@ -518,7 +535,7 @@ impl Node {
                 // 如果链式后续数据有值，则进入下一轮判定
                 if Vector::is_fill(record_next_seek_bytes.clone()) {
                     let record_next_seek = Trans::bytes_2_u64(record_next_seek_bytes)?;
-                    self.record_view_info_seek_put(key, record_next_seek, force)
+                    self.record_view_info_seek_put(key, record_next_seek, seed, force)
                     // 如果链式后续数据无值，则插入新数据
                 } else {
                     // record追加新链式子结构
@@ -934,11 +951,11 @@ impl Node {
                 }
             }
 
-            let disk_bytes: usize;
+            let disk_bytes_len: usize;
             if level == 6 {
-                disk_bytes = BYTES_LEN_FOR_DISK_LEAF;
+                disk_bytes_len = BYTES_LEN_FOR_DISK_LEAF;
             } else {
-                disk_bytes = BYTES_LEN_FOR_DISK;
+                disk_bytes_len = BYTES_LEN_FOR_DISK;
             }
 
             // 如果下一层的起始度数与下一层的截至度数相同，则表示操作未分层，继续进行左查询
@@ -949,34 +966,27 @@ impl Node {
                 // 下一结点字节数组起始坐标(下一结点指针8字节 + 下一结点数据指针6字节)
                 let next_node_seek_bytes =
                     Vector::sub_last(node_bytes.clone(), next_node_start, 8)?;
-                // 如果存在坐标值，则继续，否则新建
-                if Vector::is_fill(next_node_seek_bytes.clone()) {
-                    // 下一结点的真实坐标
-                    let next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
-                    // 下一结点字节数组
-                    let next_node_bytes = self.node_read(next_node_seek, disk_bytes)?;
-                    let (s, l, t, c, mut v) = self.left_query(
-                        next_node_bytes,
-                        level + 1,
-                        next_start_key,
-                        next_end_key,
-                        conditions.clone(),
-                        skip,
-                        limit,
-                        delete,
-                    )?;
-                    skip = s;
-                    limit = l;
-                    total += t;
-                    count += c;
-                    values.append(&mut v);
-                    // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
-                    if limit == 0 {
-                        return Ok((skip, limit, total, count, values));
-                    }
+                let (s, l, t, c, mut v) = self.next_left_query(
+                    level + 1,
+                    next_start_key,
+                    next_end_key,
+                    conditions.clone(),
+                    next_node_seek_bytes,
+                    disk_bytes_len,
+                    skip,
+                    limit,
+                    delete,
+                )?;
+                skip = s;
+                limit = l;
+                total += t;
+                count += c;
+                values.append(&mut v);
+                // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
+                if limit == 0 {
+                    return Ok((skip, limit, total, count, values));
                 }
             } else {
-                // todo
                 // 如果下一层的起始度数与下一层的截至度数不同，则表示操作已分层，需要循环左查询
                 // 需要循环左查询首尾两次为特殊查询
                 // 首次查询的起始坐标由start确定，终止坐标为0
@@ -988,31 +998,25 @@ impl Node {
                 // 下一结点字节数组起始坐标
                 let next_node_seek_bytes =
                     Vector::sub_last(node_bytes.clone(), next_node_start, 8)?;
-                // 如果存在坐标值，则继续，否则新建
-                if Vector::is_fill(next_node_seek_bytes.clone()) {
-                    // 下一结点的真实坐标
-                    let next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
-                    // 下一结点字节数组
-                    let next_node_bytes = self.node_read(next_node_seek, disk_bytes)?;
-                    let (s, l, t, c, mut v) = self.left_query(
-                        next_node_bytes,
-                        level + 1,
-                        next_start_key,
-                        0,
-                        conditions.clone(),
-                        skip,
-                        limit,
-                        delete,
-                    )?;
-                    skip = s;
-                    limit = l;
-                    total += t;
-                    count += c;
-                    values.append(&mut v);
-                    // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
-                    if limit == 0 {
-                        return Ok((skip, limit, total, count, values));
-                    }
+                let (s, l, t, c, mut v) = self.next_left_query(
+                    level + 1,
+                    next_start_key,
+                    0,
+                    conditions.clone(),
+                    next_node_seek_bytes,
+                    disk_bytes_len,
+                    skip,
+                    limit,
+                    delete,
+                )?;
+                skip = s;
+                limit = l;
+                total += t;
+                count += c;
+                values.append(&mut v);
+                // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
+                if limit == 0 {
+                    return Ok((skip, limit, total, count, values));
                 }
                 // 首次查询结束
 
@@ -1025,31 +1029,25 @@ impl Node {
                     // 下一结点字节数组起始坐标
                     let next_node_seek_bytes =
                         Vector::sub_last(node_bytes.clone(), next_node_start, 8)?;
-                    // 如果存在坐标值，则继续，否则新建
-                    if Vector::is_fill(next_node_seek_bytes.clone()) {
-                        // 下一结点的真实坐标
-                        let next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
-                        // 下一结点字节数组
-                        let next_node_bytes = self.node_read(next_node_seek, disk_bytes)?;
-                        let (s, l, t, c, mut v) = self.left_query(
-                            next_node_bytes,
-                            level + 1,
-                            next_start_key,
-                            0,
-                            conditions.clone(),
-                            skip,
-                            limit,
-                            delete,
-                        )?;
-                        skip = s;
-                        limit = l;
-                        total += t;
-                        count += c;
-                        values.append(&mut v);
-                        // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
-                        if limit == 0 {
-                            return Ok((skip, limit, total, count, values));
-                        }
+                    let (s, l, t, c, mut v) = self.next_left_query(
+                        level + 1,
+                        next_start_key,
+                        0,
+                        conditions.clone(),
+                        next_node_seek_bytes,
+                        disk_bytes_len,
+                        skip,
+                        limit,
+                        delete,
+                    )?;
+                    skip = s;
+                    limit = l;
+                    total += t;
+                    count += c;
+                    values.append(&mut v);
+                    // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
+                    if limit == 0 {
+                        return Ok((skip, limit, total, count, values));
                     }
                     // 待检查起始坐标递增1，继续下一轮循环左查询
                     check_start_degree += 1;
@@ -1063,31 +1061,25 @@ impl Node {
                 let next_end_key = end - next_end_degree * distance;
                 // 下一结点字节数组起始坐标
                 let next_node_seek_bytes = Vector::sub_last(node_bytes.clone(), next_node_end, 8)?;
-                // 如果存在坐标值，则继续，否则新建
-                if Vector::is_fill(next_node_seek_bytes.clone()) {
-                    // 下一结点的真实坐标
-                    let next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
-                    // 下一结点字节数组
-                    let next_node_bytes = self.node_read(next_node_seek, disk_bytes)?;
-                    let (s, l, t, c, mut v) = self.left_query(
-                        next_node_bytes,
-                        level + 1,
-                        0,
-                        next_end_key,
-                        conditions.clone(),
-                        skip,
-                        limit,
-                        delete,
-                    )?;
-                    skip = s;
-                    limit = l;
-                    total += t;
-                    count += c;
-                    values.append(&mut v);
-                    // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
-                    if limit <= 0 {
-                        return Ok((skip, limit, total, count, values));
-                    }
+                let (s, l, t, c, mut v) = self.next_left_query(
+                    level + 1,
+                    0,
+                    next_end_key,
+                    conditions.clone(),
+                    next_node_seek_bytes,
+                    disk_bytes_len,
+                    skip,
+                    limit,
+                    delete,
+                )?;
+                skip = s;
+                limit = l;
+                total += t;
+                count += c;
+                values.append(&mut v);
+                // 判断是否已经达到limit要求，如果达到要求，则直接返回数据，否则进入循环查询
+                if limit == 0 {
+                    return Ok((skip, limit, total, count, values));
                 }
                 // 末次查询结束
             }
@@ -1119,6 +1111,68 @@ impl Node {
                     values.append(&mut v);
                 }
             }
+        }
+        Ok((skip, limit, total, count, values))
+    }
+
+    /// 获取下一左查询结果数据集
+    ///
+    /// ###Params
+    ///
+    /// * level 下一查询树层数
+    /// * start 查询起始坐标，如为0则表示前置数据没有起始符
+    /// * end 查询终止坐标，如为0则表示后续数据没有终止符
+    /// * conditions 条件集合
+    /// * next_node_seek_bytes 下一结点字节数组起始坐标
+    /// * disk_bytes 下一结点数组长度
+    /// * skip 结果集跳过数量
+    /// * limit 结果集限制数量
+    /// * delete 是否删除检索结果
+    ///
+    /// ###Return
+    ///
+    /// * skip 结果集跳过数量
+    /// * limit 结果集限制数量
+    /// * total 检索过程中遍历的总条数（也表示文件读取次数，文件描述符次数远小于该数，一般文件描述符数为1，即共用同一文件描述符）
+    /// * count 检索结果过程中遍历的总条数
+    /// * values 检索结果集合
+    fn next_left_query(
+        &self,
+        level: u8,
+        start: u64,
+        end: u64,
+        conditions: Vec<Condition>,
+        next_node_seek_bytes: Vec<u8>,
+        disk_bytes_len: usize,
+        mut skip: u64,
+        mut limit: u64,
+        delete: bool,
+    ) -> GeorgeResult<(u64, u64, u64, u64, Vec<Vec<u8>>)> {
+        let mut total: u64 = 0;
+        let mut count: u64 = 0;
+        let mut values: Vec<Vec<u8>> = vec![];
+
+        // 如果存在坐标值，则继续，否则新建
+        if Vector::is_fill(next_node_seek_bytes.clone()) {
+            // 下一结点的真实坐标
+            let next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
+            // 下一结点字节数组
+            let next_node_bytes = self.node_read(next_node_seek, disk_bytes_len)?;
+            let (s, l, t, c, mut v) = self.left_query(
+                next_node_bytes,
+                level,
+                start,
+                end,
+                conditions,
+                skip,
+                limit,
+                delete,
+            )?;
+            skip = s;
+            limit = l;
+            total += t;
+            count += c;
+            values.append(&mut v);
         }
         Ok((skip, limit, total, count, values))
     }
@@ -1351,7 +1405,7 @@ impl Node {
                 // 下一结点字节数组起始坐标(下一结点指针8字节 + 下一结点数据指针6字节)
                 let next_node_seek_bytes =
                     Vector::sub_last(node_bytes.clone(), next_node_start, 8)?;
-                let (s, l, t, c, mut v) = self.left_query(
+                let (s, l, t, c, mut v) = self.right_query(
                     next_node_seek_bytes,
                     level + 1,
                     next_start_key,
@@ -1371,6 +1425,7 @@ impl Node {
                     return Ok((skip, limit, total, count, values));
                 }
             } else {
+                // todo
                 // 如果下一层的起始度数与下一层的截至度数不同，则表示操作已分层，需要循环左查询
                 // 需要循环左查询首尾两次为特殊查询
                 // 首次查询的起始坐标由start确定，终止坐标为0
@@ -1395,7 +1450,7 @@ impl Node {
                     let next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
                     // 下一结点字节数组
                     let next_node_bytes = self.node_read(next_node_seek, disk_bytes)?;
-                    let (s, l, t, c, mut v) = self.left_query(
+                    let (s, l, t, c, mut v) = self.right_query(
                         next_node_bytes,
                         level + 1,
                         next_start_key,
@@ -1432,7 +1487,7 @@ impl Node {
                         let next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
                         // 下一结点字节数组
                         let next_node_bytes = self.node_read(next_node_seek, disk_bytes)?;
-                        let (s, l, t, c, mut v) = self.left_query(
+                        let (s, l, t, c, mut v) = self.right_query(
                             next_node_bytes,
                             level + 1,
                             next_start_key,
@@ -1470,7 +1525,7 @@ impl Node {
                     let next_node_seek = Trans::bytes_2_u64(next_node_seek_bytes)?;
                     // 下一结点字节数组
                     let next_node_bytes = self.node_read(next_node_seek, disk_bytes)?;
-                    let (s, l, t, c, mut v) = self.left_query(
+                    let (s, l, t, c, mut v) = self.right_query(
                         next_node_bytes,
                         level + 1,
                         0,
