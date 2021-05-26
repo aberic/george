@@ -425,7 +425,7 @@ impl Master {
     /// 条件检索
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
-    pub fn select_disk(
+    pub(crate) fn select_disk(
         &self,
         database_name: String,
         view_name: String,
@@ -440,7 +440,7 @@ impl Master {
     /// 条件删除
     ///
     /// selector_json_bytes 选择器字节数组，自定义转换策略
-    pub fn delete_disk(
+    pub(crate) fn delete_disk(
         &self,
         database_name: String,
         view_name: String,

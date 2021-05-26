@@ -125,7 +125,7 @@ impl View {
             view_bak.clone(),
             INDEX_SEQUENCE.to_string(),
             IndexType::Sequence,
-            KeyType::U64,
+            KeyType::UInt,
             false,
             true,
             false,
@@ -376,24 +376,6 @@ impl View {
     pub(crate) fn remove(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
         let real = self.index(INDEX_CATALOG)?.get(key.clone())?;
         self.del(key, real.sequence, value)
-    }
-
-    /// 删除数据<p><p>
-    ///
-    /// ###Params
-    /// * key 删除`put`、`set`等插入键
-    /// * sequence 删除序列键使用
-    ///
-    /// ###Return
-    ///
-    /// GeorgeResult<()>
-    pub(crate) fn remove_enhance(
-        &self,
-        key: String,
-        sequence: u64,
-        value: Vec<u8>,
-    ) -> GeorgeResult<()> {
-        self.del(key, sequence, value)
     }
 
     /// 条件检索

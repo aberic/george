@@ -12,15 +12,18 @@
  * limitations under the License.
  */
 
-use crate::task::engine::traits::TIndex;
-use crate::utils::comm::IndexKey;
-use crate::utils::enums::{IndexType, KeyType};
-use comm::cryptos::hash::{Hash, HashCRCHandler};
-use comm::errors::entrances::{Errs, GeorgeResult};
-use serde_json::{Error, Value};
 use std::collections::HashMap;
 use std::ops::Add;
 use std::sync::{Arc, RwLock};
+
+use serde_json::{Error, Value};
+
+use comm::cryptos::hash::{Hash, HashCRCHandler};
+use comm::errors::entrances::{Errs, GeorgeResult};
+
+use crate::task::engine::traits::TIndex;
+use crate::utils::comm::IndexKey;
+use crate::utils::enums::{IndexType, KeyType};
 
 /// 比较条件 gt/ge/lt/le/eq/ne 大于/大于等于/小于/小于等于/等于/不等
 #[derive(Debug, Clone, Copy)]
@@ -54,11 +57,8 @@ pub struct Condition {
     key_type: KeyType,
     /// 比较对象为string
     value: String,
-    value_hash: u64,
-    /// 比较对象为int/float，类索引key，可通过hash转换string生成，长度为无符号32位整型，是数据存放于索引树中的坐标
-    value_hash_32: u32,
     /// 比较对象为int/float，类索引key，可通过hash转换string生成，长度为无符号64位整型，是数据存放于索引树中的坐标
-    value_hash_64: u64,
+    value_hash: u64,
     /// 比较对象为bool
     value_bool: bool,
     /// 索引
@@ -75,22 +75,8 @@ impl Condition {
         index: Option<Arc<dyn TIndex>>,
     ) -> GeorgeResult<Condition> {
         let value_hash: u64;
-        let mut value_hash_32: u32 = 0;
-        let mut value_hash_64: u64 = 0;
         let mut value_bool = false;
         match key_type {
-            KeyType::U64 => {
-                value_hash_64 = IndexKey::u64(key_type, value.clone())?;
-                value_hash = value_hash_64
-            }
-            KeyType::I64 => {
-                value_hash_64 = IndexKey::u64(key_type, value.clone())?;
-                value_hash = value_hash_64
-            }
-            KeyType::F64 => {
-                value_hash_64 = IndexKey::u64(key_type, value.clone())?;
-                value_hash = value_hash_64
-            }
             KeyType::Bool => match value.parse::<bool>() {
                 Ok(real) => {
                     value_bool = real;
@@ -98,10 +84,7 @@ impl Condition {
                 }
                 Err(err) => return Err(Errs::strings(format!("{} parse to bool", value), err)),
             },
-            _ => {
-                value_hash_32 = IndexKey::u32(key_type, value.clone())?;
-                value_hash = value_hash_32 as u64
-            }
+            _ => value_hash = IndexKey::hash(key_type, value.clone())?,
         }
         Ok(Condition {
             param,
@@ -110,8 +93,6 @@ impl Condition {
             key_type,
             value,
             value_hash,
-            value_hash_32,
-            value_hash_64,
             value_bool,
             index,
         })
@@ -133,28 +114,13 @@ impl Condition {
     }
 
     /// 比较对象值
-    fn value(&self) -> String {
-        self.value.clone()
-    }
-
-    /// 比较对象值
     fn value_hash(&self) -> u64 {
         self.value_hash
     }
 
     /// 比较对象值
-    fn value_hash_32(&self) -> u32 {
-        self.value_hash_32
-    }
-
-    /// 比较对象值
-    fn value_hash_64(&self) -> u64 {
-        self.value_hash_64
-    }
-
-    /// 比较对象值
-    fn value_bool(&self) -> bool {
-        self.value_bool
+    fn value_hash_ptr(&self) -> &u64 {
+        &self.value_hash
     }
 
     /// 约束是否有效
@@ -188,20 +154,17 @@ impl Condition {
     fn valid(&self, value: Value) -> bool {
         return match value[self.param()] {
             Value::Number(ref key) => match self.key_type() {
-                KeyType::U32 => self.compare_value_32(key.as_u64().unwrap() as u32),
-                KeyType::I32 => self.compare_value_32(Hash::crc32(key.as_i64().unwrap() as i32)),
-                KeyType::F32 => self.compare_value_32(Hash::crc32(key.as_f64().unwrap() as f32)),
-                KeyType::U64 => self.compare_value_64(key.as_u64().unwrap()),
-                KeyType::I64 => self.compare_value_64(Hash::crc64(key.as_i64().unwrap())),
-                KeyType::F64 => self.compare_value_64(Hash::crc64(key.as_f64().unwrap())),
+                KeyType::UInt => self.compare_value(key.as_u64().unwrap()),
+                KeyType::Int => self.compare_value(Hash::crc64(key.as_i64().unwrap())),
+                KeyType::Float => self.compare_value(Hash::crc64(key.as_f64().unwrap())),
                 _ => false,
             },
             Value::Bool(ref val) => match self.key_type() {
-                KeyType::Bool => self.compare_value_bool(val),
+                KeyType::Bool => self.compare_value(Hash::crc64(val.clone())),
                 _ => false,
             },
             Value::String(ref val) => match self.key_type() {
-                KeyType::String => self.compare_value_string(val),
+                KeyType::String => self.compare_value(Hash::crc64(val.clone())),
                 _ => false,
             },
             _ => false,
@@ -209,50 +172,14 @@ impl Condition {
     }
 
     /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
-    fn compare_value_bool(&self, value: &bool) -> bool {
+    fn compare_value(&self, value: u64) -> bool {
         match self.compare() {
-            Compare::EQ => self.value_bool().eq(value),
-            Compare::GT => self.value_bool().gt(value),
-            Compare::LT => self.value_bool().lt(value),
-            Compare::GE => self.value_bool().ge(value),
-            Compare::LE => self.value_bool().le(value),
-            Compare::NE => self.value_bool().ne(value),
-        }
-    }
-
-    /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
-    fn compare_value_string(&self, value: &String) -> bool {
-        match self.compare() {
-            Compare::EQ => self.value().eq(value),
-            Compare::GT => self.value().gt(value),
-            Compare::GE => self.value().ge(value),
-            Compare::LT => self.value().lt(value),
-            Compare::LE => self.value().le(value),
-            Compare::NE => self.value().ne(value),
-        }
-    }
-
-    /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
-    fn compare_value_32(&self, value_hash: u32) -> bool {
-        match self.compare() {
-            Compare::EQ => value_hash == self.value_hash_32(),
-            Compare::GT => value_hash > self.value_hash_32(),
-            Compare::GE => value_hash >= self.value_hash_32(),
-            Compare::LT => value_hash < self.value_hash_32(),
-            Compare::LE => value_hash <= self.value_hash_32(),
-            Compare::NE => value_hash != self.value_hash_32(),
-        }
-    }
-
-    /// 条件 gt/lt/eq/ne 大于/小于/等于/不等
-    fn compare_value_64(&self, value_hash: u64) -> bool {
-        match self.compare() {
-            Compare::EQ => value_hash == self.value_hash_64(),
-            Compare::GT => value_hash > self.value_hash_64(),
-            Compare::GE => value_hash >= self.value_hash_64(),
-            Compare::LT => value_hash < self.value_hash_64(),
-            Compare::LE => value_hash <= self.value_hash_64(),
-            Compare::NE => value_hash != self.value_hash_64(),
+            Compare::EQ => value.eq(self.value_hash_ptr()),
+            Compare::GT => value.gt(self.value_hash_ptr()),
+            Compare::GE => value.ge(self.value_hash_ptr()),
+            Compare::LT => value.lt(self.value_hash_ptr()),
+            Compare::LE => value.le(self.value_hash_ptr()),
+            Compare::NE => value.ne(self.value_hash_ptr()),
         }
     }
 }
@@ -269,12 +196,16 @@ pub struct Sort {
 }
 
 impl Sort {
-    pub fn param(&self) -> String {
+    pub(crate) fn param(&self) -> String {
         self.param.clone()
     }
 
-    pub fn asc(&self) -> bool {
+    pub(crate) fn asc(&self) -> bool {
         self.asc
+    }
+
+    pub(crate) fn index(&self) -> Option<Arc<dyn TIndex>> {
+        self.index.clone()
     }
 }
 
@@ -490,12 +421,12 @@ impl Constraint {
                     Value::Number(ref res) => {
                         log::debug!("value number, key_type = {:#?}", key_type);
                         match key_type {
-                            KeyType::None => key_type = KeyType::F64,
+                            KeyType::None => key_type = KeyType::Float,
                             KeyType::String => {
-                                return Err(Errs::str("fit conditions no match key type"))
+                                return Err(Errs::str("fit conditions no match key type"));
                             }
                             KeyType::Bool => {
-                                return Err(Errs::str("fit conditions no match key type"))
+                                return Err(Errs::str("fit conditions no match key type"));
                             }
                             _ => {}
                         }
@@ -522,7 +453,7 @@ impl Constraint {
                     _ => {
                         return Err(Errs::str(
                             "fit conditions value type only support bool,string and number",
-                        ))
+                        ));
                     }
                 }
                 // 追加新的条件到条件查询集合
@@ -568,7 +499,7 @@ impl IndexStatus {
             asc: true,
             asc_update: false,
             start: 0,
-            end: 0,
+            end: 18446744073709551615,
             conditions,
             level: 0,
         }

@@ -71,17 +71,11 @@ pub enum KeyType {
     /// 字符串索引
     String,
     /// 无符号64位整型
-    U64,
+    UInt,
     /// 有符号64位整型
-    I64,
-    /// 无符号64位整型
-    U32,
-    /// 有符号64位整型
-    I32,
+    Int,
     /// 有符号64位浮点类型
-    F64,
-    /// 有符号32位浮点类型
-    F32,
+    Float,
     /// bool类型
     Bool,
     /// 不支持类型
@@ -123,12 +117,9 @@ fn index_type_u8(index_type: IndexType) -> u8 {
 fn key_type_u8(key_type: KeyType) -> u8 {
     match key_type {
         KeyType::String => 0x00,
-        KeyType::U64 => 0x01,
-        KeyType::I64 => 0x02,
-        KeyType::U32 => 0x03,
-        KeyType::I32 => 0x04,
-        KeyType::F64 => 0x05,
-        KeyType::F32 => 0x06,
+        KeyType::UInt => 0x01,
+        KeyType::Int => 0x02,
+        KeyType::Float => 0x05,
         KeyType::Bool => 0x07,
         KeyType::None => 0x08,
     }
@@ -158,11 +149,9 @@ fn index_type(b: u8) -> IndexType {
 fn key_type(b: u8) -> KeyType {
     match b {
         0x00 => KeyType::String,
-        0x01 => KeyType::U64,
-        0x02 => KeyType::I64,
-        0x03 => KeyType::U32,
-        0x04 => KeyType::I32,
-        0x05 => KeyType::F64,
+        0x01 => KeyType::UInt,
+        0x02 => KeyType::Int,
+        0x05 => KeyType::Float,
         _ => KeyType::String,
     }
 }
@@ -170,12 +159,9 @@ fn key_type(b: u8) -> KeyType {
 fn key_type_str(key_type: KeyType) -> String {
     match key_type {
         KeyType::String => String::from("string"),
-        KeyType::U64 => String::from("u64"),
-        KeyType::I64 => String::from("i64"),
-        KeyType::U32 => String::from("u32"),
-        KeyType::I32 => String::from("i32"),
-        KeyType::F64 => String::from("f64"),
-        KeyType::F32 => String::from("f32"),
+        KeyType::UInt => String::from("u64"),
+        KeyType::Int => String::from("i64"),
+        KeyType::Float => String::from("f64"),
         KeyType::Bool => String::from("bool"),
         KeyType::None => String::from("none"),
     }

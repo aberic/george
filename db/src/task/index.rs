@@ -30,7 +30,7 @@ use crate::utils::enums::{Enum, EnumHandler, IndexType, KeyType};
 use crate::utils::path::Paths;
 use crate::utils::store::{ContentBytes, Metadata, HD};
 use crate::utils::writer::Filed;
-use serde_json::Value;
+use comm::json::{Json, JsonExec, JsonGet, JsonNew};
 
 /// Siam索引
 ///
@@ -225,11 +225,14 @@ impl TIndex for Index {
         constraint: Constraint,
     ) -> GeorgeResult<Expectation> {
         log::debug!(
-            "index status with left = {} & start = {} & end = {} & constraint = {:#?}",
+            "index status with left = {} & start = {} & end = {} & skip = {} & limit = {} & delete = {} & conditions = {:#?}",
             left,
             start,
             end,
-            constraint
+            constraint.skip(),
+            constraint.limit(),
+            constraint.delete(),
+            constraint.conditions()
         );
         let conditions = constraint.conditions();
         let skip = constraint.skip();
@@ -240,90 +243,185 @@ impl TIndex for Index {
             .select(left, start, end, skip, limit, delete, conditions)?;
         match constraint.sort() {
             Some(sort) => {
+                let sort_param = sort.param();
+                let param = sort_param.as_str();
                 values.sort_by(|a, b| {
-                    let value_a: Value;
-                    let value_b: Value;
-                    match String::from_utf8(a.clone()) {
-                        Ok(value_str) => match serde_json::from_str(value_str.as_ref()) {
-                            Ok(value) => value_a = value,
-                            Err(err) => panic!("an unexpected mistake a json from, {}", err),
+                    let json_a = Json::new(a.clone()).unwrap();
+                    let json_b = Json::new(b.clone()).unwrap();
+                    match sort.index() {
+                        Some(index) => match index.key_type() {
+                            KeyType::Int => {
+                                let opa = json_a.get_i64(param).unwrap();
+                                let opb = json_b.get_i64(param).unwrap();
+                                if sort.asc() {
+                                    if opa.gt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                } else {
+                                    if opa.lt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                }
+                            }
+                            KeyType::UInt => {
+                                let opa = json_a.get_u64(param).unwrap();
+                                let opb = json_b.get_u64(param).unwrap();
+                                if sort.asc() {
+                                    if opa.gt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                } else {
+                                    if opa.lt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                }
+                            }
+                            KeyType::Float => {
+                                let opa = json_a.get_f64(param).unwrap();
+                                let opb = json_b.get_f64(param).unwrap();
+                                if sort.asc() {
+                                    if opa.gt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                } else {
+                                    if opa.lt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                }
+                            }
+                            KeyType::String => {
+                                let opa = json_a.get_string(param).unwrap();
+                                let opb = json_b.get_string(param).unwrap();
+                                if sort.asc() {
+                                    if opa.gt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                } else {
+                                    if opa.lt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                }
+                            }
+                            KeyType::Bool => {
+                                let opa = json_a.get_bool(param).unwrap();
+                                let opb = json_b.get_bool(param).unwrap();
+                                if sort.asc() {
+                                    if opa.gt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                } else {
+                                    if opa.lt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                }
+                            }
+                            _ => panic!("{} can't match each other when sort", param),
                         },
-                        Err(err) => panic!("an unexpected mistake a string from, {}", err),
-                    }
-                    match String::from_utf8(b.clone()) {
-                        Ok(value_str) => match serde_json::from_str(value_str.as_ref()) {
-                            Ok(value) => value_b = value,
-                            Err(err) => panic!("an unexpected mistake b json from, {}", err),
-                        },
-                        Err(err) => panic!("an unexpected mistake b string from, {}", err),
-                    }
-                    if value_a[sort.param()].is_i64() && value_b[sort.param()].is_i64() {
-                        let opa = value_a[sort.param()].as_i64();
-                        let opb = value_b[sort.param()].as_i64();
-                        if sort.asc() {
-                            if opa.gt(&opb) {
-                                a.cmp(b)
+                        None => {
+                            if json_a.is_i64(param) && json_b.is_i64(param) {
+                                let opa = json_a.get_i64(param).unwrap();
+                                let opb = json_b.get_i64(param).unwrap();
+                                if sort.asc() {
+                                    if opa.gt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                } else {
+                                    if opa.lt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                }
+                            } else if json_a.is_u64(param) && json_b.is_u64(param) {
+                                let opa = json_a.get_i64(param).unwrap();
+                                let opb = json_b.get_i64(param).unwrap();
+                                if sort.asc() {
+                                    if opa.gt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                } else {
+                                    if opa.lt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                }
+                            } else if json_a.is_f64(param) && json_b.is_f64(param) {
+                                let opa = json_a.get_i64(param).unwrap();
+                                let opb = json_b.get_i64(param).unwrap();
+                                if sort.asc() {
+                                    if opa.gt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                } else {
+                                    if opa.lt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                }
+                            } else if json_a.is_string(param) && json_b.is_string(param) {
+                                let opa = json_a.get_i64(param).unwrap();
+                                let opb = json_b.get_i64(param).unwrap();
+                                if sort.asc() {
+                                    if opa.gt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                } else {
+                                    if opa.lt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                }
+                            } else if json_a.is_bool(param) && json_b.is_bool(param) {
+                                let opa = json_a.get_i64(param).unwrap();
+                                let opb = json_b.get_i64(param).unwrap();
+                                if sort.asc() {
+                                    if opa.gt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                } else {
+                                    if opa.lt(&opb) {
+                                        a.cmp(b)
+                                    } else {
+                                        b.cmp(a)
+                                    }
+                                }
                             } else {
-                                b.cmp(a)
-                            }
-                        } else {
-                            if opa.lt(&opb) {
-                                a.cmp(b)
-                            } else {
-                                b.cmp(a)
+                                panic!("{} can't match each other when sort", param)
                             }
                         }
-                    } else if value_a[sort.param()].is_u64() && value_b[sort.param()].is_u64() {
-                        let opa = value_a[sort.param()].as_u64();
-                        let opb = value_b[sort.param()].as_u64();
-                        if sort.asc() {
-                            if opa.gt(&opb) {
-                                a.cmp(b)
-                            } else {
-                                b.cmp(a)
-                            }
-                        } else {
-                            if opa.lt(&opb) {
-                                a.cmp(b)
-                            } else {
-                                b.cmp(a)
-                            }
-                        }
-                    } else if value_a[sort.param()].is_f64() && value_b[sort.param()].is_f64() {
-                        let opa = value_a[sort.param()].as_f64();
-                        let opb = value_b[sort.param()].as_f64();
-                        if sort.asc() {
-                            if opa.gt(&opb) {
-                                a.cmp(b)
-                            } else {
-                                b.cmp(a)
-                            }
-                        } else {
-                            if opa.lt(&opb) {
-                                a.cmp(b)
-                            } else {
-                                b.cmp(a)
-                            }
-                        }
-                    } else if value_a[sort.param()].is_string() && value_b[sort.param()].is_string()
-                    {
-                        let opa = value_a[sort.param()].as_str();
-                        let opb = value_b[sort.param()].as_str();
-                        if sort.asc() {
-                            if opa.gt(&opb) {
-                                a.cmp(b)
-                            } else {
-                                b.cmp(a)
-                            }
-                        } else {
-                            if opa.lt(&opb) {
-                                a.cmp(b)
-                            } else {
-                                b.cmp(a)
-                            }
-                        }
-                    } else {
-                        panic!("{} can't match each other when sort", sort.param())
                     }
                 });
             }

@@ -175,7 +175,7 @@ fn vector_find_last_eq_bytes(bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<u8>>
 /// 从可被`eq`整除的bytes长度的字节数组中查找所有与`eq`长度相同的不为0的字节数组集合
 fn vector_find_eq_vec_bytes(mut bytes: Vec<u8>, eq: usize) -> GeorgeResult<Vec<Vec<u8>>> {
     if bytes.len() % eq != 0 {
-        return Err(Errs::string(format!("bytes length can't % by {}", eq)));
+        return Err(Errs::string(format!("bytes length can't mod by {}", eq)));
     }
     // 此步确保能够遍历完成最后一组
     bytes.push(0x00);

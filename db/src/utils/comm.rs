@@ -138,11 +138,7 @@ impl IndexKey {
         key_fetch(index_name, value)
     }
 
-    pub fn u32(key_type: KeyType, key: String) -> GeorgeResult<u32> {
-        hash_key_32(key_type, key)
-    }
-
-    pub fn u64(key_type: KeyType, key: String) -> GeorgeResult<u64> {
+    pub fn hash(key_type: KeyType, key: String) -> GeorgeResult<u64> {
         hash_key_64(key_type, key)
     }
 }
@@ -167,24 +163,13 @@ fn key_fetch(index_name: String, value: Vec<u8>) -> GeorgeResult<String> {
     }
 }
 
-fn hash_key_32(key_type: KeyType, key: String) -> GeorgeResult<u32> {
-    match key_type {
-        KeyType::String => Hash::crc32_string(key),
-        KeyType::Bool => Hash::crc32_bool(key),
-        KeyType::U32 => Hash::crc32_u32(key),
-        KeyType::F32 => Hash::crc32_f32(key),
-        KeyType::I32 => Hash::crc32_i32(key),
-        _ => Err(Errs::str("key type not support!")),
-    }
-}
-
 fn hash_key_64(key_type: KeyType, key: String) -> GeorgeResult<u64> {
     match key_type {
         KeyType::String => Hash::crc64_string(key),
         KeyType::Bool => Hash::crc64_bool(key),
-        KeyType::U64 => Hash::crc64_u64(key),
-        KeyType::F64 => Hash::crc64_f64(key),
-        KeyType::I64 => Hash::crc64_i64(key),
+        KeyType::UInt => Hash::crc64_u64(key),
+        KeyType::Float => Hash::crc64_f64(key),
+        KeyType::Int => Hash::crc64_i64(key),
         _ => Err(Errs::str("key type not support!")),
     }
 }

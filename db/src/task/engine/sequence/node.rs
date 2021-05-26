@@ -69,7 +69,7 @@ impl Node {
             view,
             atomic_key,
             index_name,
-            key_type: KeyType::U64,
+            key_type: KeyType::UInt,
             node_filepath,
             filer,
         }))
@@ -90,7 +90,7 @@ impl Node {
             view,
             atomic_key,
             index_name,
-            key_type: KeyType::U64,
+            key_type: KeyType::UInt,
             node_filepath,
             filer,
         }))
@@ -126,7 +126,7 @@ impl TNode for Node {
     }
 
     fn get(&self, key: String) -> GeorgeResult<DataReal> {
-        let hash_key = IndexKey::u64(self.key_type(), key)?;
+        let hash_key = IndexKey::hash(self.key_type(), key)?;
         self.get_in_node(hash_key)
     }
 

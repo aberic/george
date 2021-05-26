@@ -121,18 +121,18 @@ impl Node {
 /// 封装方法函数
 impl Node {
     pub(crate) fn put(&self, key: String, value: Vec<u8>, force: bool) -> GeorgeResult<()> {
-        let flexible_key = IndexKey::u64(KeyType::String, key.clone())?;
+        let flexible_key = IndexKey::hash(KeyType::String, key.clone())?;
         let seed = Arc::new(RwLock::new(Seed::create(key, value)));
         self.put_in_node(1, flexible_key, seed, force)
     }
 
     pub(crate) fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        let flexible_key = IndexKey::u64(KeyType::String, key.clone())?;
+        let flexible_key = IndexKey::hash(KeyType::String, key.clone())?;
         self.get_in_node(1, key, flexible_key)
     }
 
     pub(crate) fn del(&self, key: String) -> GeorgeResult<()> {
-        let flexible_key = IndexKey::u64(KeyType::String, key.clone())?;
+        let flexible_key = IndexKey::hash(KeyType::String, key.clone())?;
         self.del_in_node(1, key, flexible_key)
     }
 }

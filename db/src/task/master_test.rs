@@ -460,7 +460,7 @@ mod master {
                 view_name,
                 index_name,
                 IndexType::Disk,
-                KeyType::I64,
+                KeyType::Int,
                 false,
                 false,
                 false,
@@ -495,10 +495,9 @@ mod master {
         }
 
         #[test]
-        fn select_disk1() {
+        fn select_disk_left() {
             let database_name = "database_select_base_test";
             let view_name = "view_base_test";
-            let index_name = "age";
             let cond_str0 = r#"
                                   {
                                     "Conditions":[
@@ -521,6 +520,39 @@ mod master {
                                     "Sort":{
                                         "Param":"height",
                                         "Asc":true
+                                    },
+                                    "Skip":0,
+                                    "Limit":20
+                                  }"#;
+            select(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
+        }
+
+        #[test]
+        fn select_disk_right() {
+            let database_name = "database_select_base_test";
+            let view_name = "view_base_test";
+            let cond_str0 = r#"
+                                  {
+                                    "Conditions":[
+                                        {
+                                            "Param":"age",
+                                            "Cond":"ge",
+                                            "Value":4990
+                                        },
+                                        {
+                                            "Param":"age",
+                                            "Cond":"le",
+                                            "Value":9010
+                                        },
+                                        {
+                                            "Param":"height",
+                                            "Cond":"le",
+                                            "Value":5000
+                                        }
+                                    ],
+                                    "Sort":{
+                                        "Param":"age",
+                                        "Asc":false
                                     },
                                     "Skip":0,
                                     "Limit":20

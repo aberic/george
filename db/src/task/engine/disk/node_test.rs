@@ -109,7 +109,7 @@ mod disk_node_test {
             .unwrap();
             let seed = Seed::create(view, "yes".to_string(), "no".to_string().into_bytes());
             match node.del("yes".to_string(), seed.clone()) {
-                Ok(v8s) => {
+                Ok(_v8s) => {
                     let seed_w = seed.write().unwrap();
                     match seed_w.remove() {
                         Ok(()) => println!("del success!"),
@@ -186,7 +186,7 @@ mod disk_node_test {
             .unwrap();
             let seed = Seed::create(view, "yes0".to_string(), "no".to_string().into_bytes());
             match node.del("yes0".to_string(), seed.clone()) {
-                Ok(v8s) => {
+                Ok(_v8s) => {
                     let seed_w = seed.write().unwrap();
                     match seed_w.remove() {
                         Ok(()) => println!("del success!"),
@@ -238,7 +238,8 @@ mod disk_node_test {
 
         #[test]
         fn get_100_test() {
-            let view = View::mock_create_single("db".to_string(), "disk_view".to_string()).unwrap();
+            let _view =
+                View::mock_create_single("db".to_string(), "disk_view".to_string()).unwrap();
             let node = create_node(
                 "db".to_string(),
                 "disk_view".to_string(),
@@ -302,7 +303,8 @@ mod disk_node_test {
 
         #[test]
         fn get_100000_test() {
-            let view = View::mock_create_single("db".to_string(), "disk_view".to_string()).unwrap();
+            let _view =
+                View::mock_create_single("db".to_string(), "disk_view".to_string()).unwrap();
             let node = create_node(
                 "db".to_string(),
                 "disk_view".to_string(),
@@ -341,7 +343,7 @@ mod disk_node_test {
                 let key = format!("yes{}", pos);
                 let seed = Seed::create(view.clone(), key.clone(), "no".to_string().into_bytes());
                 match node.del(key, seed.clone()) {
-                    Ok(v8s) => {
+                    Ok(_v8s) => {
                         let seed_w = seed.write().unwrap();
                         match seed_w.remove() {
                             Ok(()) => println!("del success!"),
