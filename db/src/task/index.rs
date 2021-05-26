@@ -335,7 +335,7 @@ impl TIndex for Index {
                                     }
                                 }
                             }
-                            _ => panic!("{} can't match each other when sort", param),
+                            _ => panic!("{} can not match each other when sort", param),
                         },
                         None => {
                             if json_a.is_i64(param) && json_b.is_i64(param) {
@@ -419,7 +419,7 @@ impl TIndex for Index {
                                     }
                                 }
                             } else {
-                                panic!("{} can't match each other when sort", param)
+                                panic!("{} can not match each other when sort", param)
                             }
                         }
                     }
