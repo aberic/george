@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+option go_package = "github.com/george/protocols/chain";
+option java_package = "cn.aberic.george.protocols.chain";
+option java_outer_classname = "TransactionProto";
+
+package chain;
+
+import "protos/timestamp.proto";
+import "protos/chain/contract.proto";
+import "protos/chain/rwset.proto";
+import "protos/chain/sign.proto";
+
+// 区块中每笔被提交的交易
+message Transaction {
+  // 交易data集合
+  repeated bytes transactions = 1;
+}
+
+// 交易数据信息
+message TransactionInfo {
+  // 交易hash，sm3
+  string hash = 1;
+  // 交易接收时间
+  protocols.Timestamp timestamp = 2;
+  // 交易提交时间
+  protocols.Timestamp commit = 3;
+  // 交易所依赖合约
+  ContractBase contract = 4;
+  // 交易提交的方法名
+  string function = 5;
+  // 交易提交的数据
+  bytes value = 6;
+  // 读写集
+  RWSet set = 7;
+  // 对当前交易hash进行sm2签名的信息，签名者为交易首次提交节点，如p1
+  Signer signer = 8;
+}

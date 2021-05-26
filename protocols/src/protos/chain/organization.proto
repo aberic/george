@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+option go_package = "github.com/george/protocols/chain";
+option java_package = "cn.aberic.george.protocols.chain";
+option java_outer_classname = "OrganizationProto";
+
+package chain;
+
+import "protos/chain/peer.proto";
+
+// 组织机构
+message Organization {
+  // 组织机构id
+  string id = 1;
+  // 组织机构名称
+  string name = 2;
+  // 组织机构签名公钥
+  string pk = 3;
+  // 组织机构根证书
+  string root_cert = 4;
+  // 组织下所属节点集合
+  repeated Peer peers = 5;
+  // 是否允许参与更新创世区块信息
+  bool genesis = 6;
+}
+
+// 组织机构策略
+message OrganizationPolicy {
+  // 组织机构id
+  string id = 1;
+  // 该组织是否参与共识
+  bool consensus = 2;
+  // 是否允许升级智能合约，允许升级智能合约的组织可以通过upgrade接口将旧版本合约升级到新版本
+  bool contract = 3;
+  // 是否允许参与更新账本信息
+  bool ledger = 4;
+  // 组织下所属节点集合
+  repeated PeerPolicy peers = 5;
+}

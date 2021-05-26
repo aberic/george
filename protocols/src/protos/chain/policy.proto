@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+option go_package = "github.com/george/protocols/chain";
+option java_package = "cn.aberic.george.protocols.chain";
+option java_outer_classname = "PolicyProto";
+
+package chain;
+
+// 运行依据
+message Foundation {
+  // 出块超时时间，单位秒
+  uint32 timeout = 1;
+  // 区块上限限制，单位Mb
+  uint32 block_size = 2;
+  // 区块中交易数量上限限制
+  uint32 tx_count = 3;
+  // 交易上限限制，单位Kb
+  uint32 tx_size = 4;
+}
+
+// 执行策略
+enum Policy {
+  // 任意
+  Any = 0;
+  // 半数以上
+  Majority = 1;
+  // 全数
+  All = 2;
+}
+
+// 更新策略
+message UpgradePolicy {
+  // 智能合约部署/更新/停用/删除策略
+  Policy contract = 1;
+  // 账本更新策略
+  Policy ledger = 2;
+}
+

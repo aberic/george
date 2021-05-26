@@ -12,23 +12,7 @@
  * limitations under the License.
  */
 
-#[macro_use]
-extern crate lazy_static;
-extern crate phf;
-
-pub mod cryptos;
-pub mod env;
-mod env_test;
-pub mod errors;
-pub mod io;
-pub mod json;
-mod json_test;
-pub mod merkle;
-pub mod strings;
-mod strings_test;
-pub mod trans;
-mod trans_test;
-pub mod vectors;
-mod vectors_test;
-pub mod yaml;
-mod yaml_test;
+mod child;
+mod merkle_test;
+mod node;
+pub mod tree;

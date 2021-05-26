@@ -1,0 +1,31 @@
+[package]
+name = "protocols"
+version = "0.1.0"
+authors = ["aberic <100309595@qq.com>"]
+license = "Apache-2.0"
+description = "Log secondary library"
+repository = "https://github.com/aberic/george/protocols"
+readme = "../README.md"
+keywords = ["protocols"]
+edition = "2018"
+build = "build.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["protobuf/with-serde", "serde/derive", "with-serde"]
+proto3 = []
+with-serde = []
+
+[dependencies]
+comm = { path = "../comm", version = "0.1.0" }
+logs = { path = "../logs", version = "0.1.0" }
+serde = "1.0.126"
+protobuf = "~2.18.2"
+grpc = "0.8.3"
+grpc-protobuf = "0.8.3"
+futures = "0.3.1"
+
+[build-dependencies]
+protoc-rust-grpc = "0.8.3"
+protoc-rust = "~2.18.2"

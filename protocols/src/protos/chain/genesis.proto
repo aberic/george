@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+option go_package = "github.com/george/protocols/chain";
+option java_package = "cn.aberic.george.protocols.chain";
+option java_outer_classname = "GenesisProto";
+
+package chain;
+
+import "protocols/chain/organization.proto";
+import "protocols/chain/policy.proto";
+import "protocols/chain/sign.proto";
+
+// 创世区块配置对象
+message GenesisConfig {
+  // 创世区块
+  Genesis genesis = 1;
+  // 对当前创世区块信息进行的满足当前创世区块执行策略的签名信息集合
+  Signet signet = 2;
+  // 对当前创世区块信息进行的满足前一创世区块执行策略的签名信息集合
+  Signet signet_pre = 3;
+}
+
+// 创世区块
+message Genesis {
+  // 整个平台的组织机构集合
+  repeated Organization organizations = 1;
+  // 默认账本运行依据
+  Foundation foundation = 2;
+  // 平台创世区块更新策略
+  Policy policy = 3;
+}

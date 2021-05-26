@@ -3,4 +3,5 @@ members = [
     "logs",
     "db",
     "comm",
+    "protocols",
 ]

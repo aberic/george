@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+option go_package = "github.com/george/protocols/chain";
+option java_package = "cn.aberic.george.protocols.chain";
+option java_outer_classname = "PeerProto";
+
+package chain;
+
+// 节点
+message Peer {
+  // 节点id
+  string id = 1;
+  // 节点可被访问的地址，如www.peer.com/192.168.0.1
+  string host = 2;
+  // 节点可被访问的地址监听的端口号
+  uint32 port = 3;
+  // 是否允许参与更新创世区块信息
+  bool genesis = 4;
+}
+
+// 节点策略
+message PeerPolicy {
+  // 节点id
+  string id = 1;
+  // 该节点是否为共识节点，如果组织不参与共识，则该节点必然不会成为共识节点
+  bool consensus = 2;
+  // 是否允许升级智能合约，允许升级智能合约的组织可以通过upgrade接口将旧版本合约升级到新版本
+  bool contract = 3;
+  // 是否允许参与更新账本信息
+  bool ledger = 4;
+}
