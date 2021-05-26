@@ -102,7 +102,7 @@ impl Node {
         // 叶子结点总数+1
         self.count += 1;
         // 重置当前结点hash
-        let mut hash_left = String::new();
+        let hash_left: String;
         let mut hash_right = String::new();
         let child = self.child().unwrap();
         let child_m = child.lock().unwrap();
