@@ -12,20 +12,14 @@ build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[features]
-default = ["protobuf/with-serde", "serde/derive", "with-serde"]
-proto3 = []
-with-serde = []
-
 [dependencies]
 comm = { path = "../comm", version = "0.1.0" }
 logs = { path = "../logs", version = "0.1.0" }
-serde = "1.0.126"
-protobuf = "~2.18.2"
-grpc = "0.8.3"
-grpc-protobuf = "0.8.3"
-futures = "0.3.1"
+tonic = "0.4.3"
+prost = "0.7"
+prost-types = "0.7"
 
 [build-dependencies]
-protoc-rust-grpc = "0.8.3"
-protoc-rust = "~2.18.2"
+tonic-build = "0.4.2"
+prost-build = "0.7"
+
