@@ -15,7 +15,7 @@
 use crate::task::database::Database;
 use crate::task::page::Page;
 use crate::task::rich::Expectation;
-use crate::utils::comm::{DEFAULT_COMMENT, DEFAULT_NAME, GEORGE_DB_CONFIG, INDEX_CATALOG};
+use crate::utils::comm::{DEFAULT_COMMENT, DEFAULT_NAME, GEORGE_DB_CONFIG, INDEX_DISK};
 use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::Paths;
@@ -370,7 +370,7 @@ impl Master {
         self.database(database_name)?
             .read()
             .unwrap()
-            .get(view_name, INDEX_CATALOG, key)
+            .get(view_name, INDEX_DISK, key)
     }
 
     /// 获取数据，返回存储对象<p><p>

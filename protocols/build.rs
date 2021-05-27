@@ -71,7 +71,7 @@ fn protos_chain_service() {
 
 // 先执行无依赖proto，完成后导入mod，再执行有依赖proto，完成后导入mod
 fn main() {
-    // protos_chain_single();
-    // protos_chain_depends();
+    protos_chain_single();
+    protos_chain_depends();
     protos_chain_service();
 }

@@ -21,7 +21,7 @@ use comm::strings::{StringHandler, Strings};
 
 use crate::task::engine::block::node::Node as NB;
 use crate::task::engine::disk::node::Node as ND;
-use crate::task::engine::sequence::node::Node as NS;
+use crate::task::engine::increment::node::Node as NI;
 use crate::task::engine::traits::{TIndex, TNode, TSeed};
 use crate::task::engine::DataReal;
 use crate::task::rich::{Constraint, Expectation};
@@ -130,7 +130,7 @@ impl Index {
     ) -> GeorgeResult<Arc<dyn TIndex>> {
         let root: Arc<dyn TNode>;
         match index_type {
-            IndexType::Sequence => root = NS::create(view.clone(), name.clone())?,
+            IndexType::Increment => root = NI::create(view.clone(), name.clone())?,
             IndexType::Disk => root = ND::create(view.clone(), name.clone(), key_type, unique)?,
             IndexType::Block => root = NB::create(name.clone(), key_type),
             _ => return Err(Errs::str("unsupported engine type with none")),
@@ -225,7 +225,8 @@ impl TIndex for Index {
         constraint: Constraint,
     ) -> GeorgeResult<Expectation> {
         log::debug!(
-            "index status with left = {} & start = {} & end = {} & skip = {} & limit = {} & delete = {} & conditions = {:#?}",
+            "index {} status with left = {} & start = {} & end = {} & skip = {} & limit = {} & delete = {} & conditions = {:#?}",
+            self.name(),
             left,
             start,
             end,
@@ -477,7 +478,7 @@ impl Index {
                 let filepath = Paths::index_filepath(v_r.database_name(), v_r.name(), name.clone());
                 let root: Arc<dyn TNode>;
                 match hd.index_type() {
-                    IndexType::Sequence => root = NS::recovery(view.clone(), name.clone())?,
+                    IndexType::Increment => root = NI::recovery(view.clone(), name.clone())?,
                     IndexType::Disk => {
                         root = ND::recovery(view.clone(), name.clone(), key_type, unique)?
                     }

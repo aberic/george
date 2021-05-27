@@ -494,12 +494,17 @@ pub struct IndexStatus {
 
 impl IndexStatus {
     fn new(index: Arc<dyn TIndex>, conditions: Vec<Condition>) -> IndexStatus {
+        let end: u64;
+        match index.index_type() {
+            IndexType::Increment => end = 0,
+            _ => end = 18446744073709551615,
+        }
         IndexStatus {
             index,
             asc: true,
             asc_update: false,
             start: 0,
-            end: 18446744073709551615,
+            end,
             conditions,
             level: 0,
         }
@@ -526,8 +531,10 @@ impl IndexStatus {
     }
 
     fn fit_end(&mut self, end: u64) {
-        // 如果待填充终止值小于当前，则继续更新值
-        if end < self.end {
+        if self.end == 0 {
+            self.end = end
+            // 如果待填充终止值小于当前，则继续更新值
+        } else if end < self.end {
             // 如果当前终止值大于0，则表示已经更新过至少一次，评分不再追加
             if self.end == 0 {
                 self.level = self.level.add(2);

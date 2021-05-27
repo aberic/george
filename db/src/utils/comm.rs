@@ -31,9 +31,9 @@ pub const DEFAULT_NAME: &str = "sys";
 pub const DEFAULT_COMMENT: &str = "system default";
 
 /// 默认KV存储索引
-pub const INDEX_CATALOG: &str = "george_db_index_catalog";
+pub const INDEX_DISK: &str = "george_db_index_disk";
 /// 默认自增序列ID索引，不保证连续性，只保证有序性
-pub const INDEX_SEQUENCE: &str = "george_db_index_sequence";
+pub const INDEX_INCREMENT: &str = "george_db_index_increment";
 
 /// 数据结果数据类型，正常数据类型
 pub const VALUE_TYPE_NORMAL: u8 = 0x00;

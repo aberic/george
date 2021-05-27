@@ -88,7 +88,7 @@ pub enum IndexType {
     /// 占位
     None,
     /// 卷宗存储引擎(单文件索引存储-64位)，最合适用于自增
-    Sequence,
+    Increment,
     /// 卷宗存储引擎(单文件索引存储-32位)
     Disk,
     /// 块存储引擎(区块链索引存储-32位)
@@ -108,7 +108,7 @@ fn tag_u8(tag: Tag) -> u8 {
 fn index_type_u8(index_type: IndexType) -> u8 {
     match index_type {
         IndexType::None => 0x00,
-        IndexType::Sequence => 0x01,
+        IndexType::Increment => 0x01,
         IndexType::Disk => 0x02,
         IndexType::Block => 0x04,
     }
@@ -139,7 +139,7 @@ fn tag(b: u8) -> Tag {
 fn index_type(b: u8) -> IndexType {
     match b {
         0x00 => IndexType::None,
-        0x01 => IndexType::Sequence,
+        0x01 => IndexType::Increment,
         0x02 => IndexType::Disk,
         0x04 => IndexType::Block,
         _ => IndexType::None,

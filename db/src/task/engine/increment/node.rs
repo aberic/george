@@ -179,7 +179,7 @@ impl Node {
         }
         seed.write().unwrap().modify(IndexPolicy::create(
             key,
-            IndexType::Sequence,
+            IndexType::Increment,
             self.node_filepath(),
             seek,
         ));
@@ -221,7 +221,7 @@ impl Node {
         if Vector::is_fill(res) {
             seed.write().unwrap().modify(IndexPolicy::create(
                 key,
-                IndexType::Sequence,
+                IndexType::Increment,
                 self.node_filepath(),
                 seek,
             ));

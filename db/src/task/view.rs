@@ -30,7 +30,7 @@ use crate::task::engine::traits::{TIndex, TSeed};
 use crate::task::index::Index as IndexDefault;
 use crate::task::rich::{Expectation, Selector};
 use crate::task::seed::Seed;
-use crate::utils::comm::{IndexKey, INDEX_CATALOG, INDEX_SEQUENCE};
+use crate::utils::comm::{IndexKey, INDEX_DISK, INDEX_INCREMENT};
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::Paths;
 use crate::utils::store::{ContentBytes, Metadata, HD};
@@ -118,7 +118,7 @@ impl View {
         view_bak.clone().read().unwrap().init()?;
         view_bak.read().unwrap().create_index(
             view_bak.clone(),
-            INDEX_CATALOG.to_string(),
+            INDEX_DISK.to_string(),
             IndexType::Disk,
             KeyType::String,
             true,
@@ -128,8 +128,8 @@ impl View {
         if with_sequence {
             view_bak.read().unwrap().create_index(
                 view_bak.clone(),
-                INDEX_SEQUENCE.to_string(),
-                IndexType::Sequence,
+                INDEX_INCREMENT.to_string(),
+                IndexType::Increment,
                 KeyType::UInt,
                 false,
                 true,
@@ -380,7 +380,7 @@ impl View {
     ///
     /// GeorgeResult<()>
     pub(crate) fn remove(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        let real = self.index(INDEX_CATALOG)?.get(key.clone())?;
+        let real = self.index(INDEX_DISK)?.get(key.clone())?;
         self.del(key, real.sequence, value)
     }
 
@@ -470,8 +470,8 @@ impl View {
             let value_clone = value.clone();
             let seed_clone = seed.clone();
             thread::spawn(move || match index_name_clone.as_str() {
-                INDEX_CATALOG => sender.send(index_clone.put(key_clone, seed_clone, force)),
-                INDEX_SEQUENCE => sender.send(index_clone.put(key_clone, seed_clone, force)),
+                INDEX_DISK => sender.send(index_clone.put(key_clone, seed_clone, force)),
+                INDEX_INCREMENT => sender.send(index_clone.put(key_clone, seed_clone, force)),
                 _ => match IndexKey::fetch(index_name_clone, value_clone) {
                     Ok(res) => sender.send(index_clone.put(res, seed_clone, force)),
                     Err(err) => {
@@ -520,8 +520,8 @@ impl View {
             let value_clone = value.clone();
             let seed_clone = seed.clone();
             thread::spawn(move || match index_name_clone.as_str() {
-                INDEX_CATALOG => sender.send(index_clone.del(key_clone, seed_clone)),
-                INDEX_SEQUENCE => sender.send(index_clone.del(key_clone, seed_clone)),
+                INDEX_DISK => sender.send(index_clone.del(key_clone, seed_clone)),
+                INDEX_INCREMENT => sender.send(index_clone.del(key_clone, seed_clone)),
                 _ => match IndexKey::fetch(index_name_clone, value_clone) {
                     Ok(res) => sender.send(index_clone.del(res, seed_clone)),
                     Err(err) => {
