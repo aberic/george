@@ -22,9 +22,9 @@ use std::sync::{Arc, RwLock};
 
 pub(super) mod block;
 pub(super) mod disk;
-pub(super) mod ids;
 pub(super) mod increment;
 pub(super) mod memory;
+pub(super) mod sequence;
 pub(super) mod traits;
 
 /// 检查值有效性

@@ -497,6 +497,7 @@ impl IndexStatus {
         let end: u64;
         match index.index_type() {
             IndexType::Increment => end = 0,
+            IndexType::Sequence => end = 0,
             _ => end = 18446744073709551615,
         }
         IndexStatus {

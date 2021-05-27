@@ -27,7 +27,7 @@ use crate::utils::comm::IndexKey;
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::Paths;
 use crate::utils::writer::Filed;
-use comm::errors::children::DataNoExistError;
+use comm::errors::children::{DataExistError, DataNoExistError};
 use comm::trans::Trans;
 use comm::vectors::{Vector, VectorHandler};
 
@@ -39,7 +39,6 @@ use comm::vectors::{Vector, VectorHandler};
 #[derive(Debug, Clone)]
 pub(crate) struct Node {
     view: Arc<RwLock<View>>,
-    atomic_key: Arc<AtomicU64>,
     index_name: String,
     key_type: KeyType,
     /// 索引文件路径
@@ -58,16 +57,14 @@ impl Node {
     ///
     /// 该结点没有Links，也没有preNode，是B+Tree的创世结点
     pub fn create(view: Arc<RwLock<View>>, index_name: String) -> GeorgeResult<Arc<Self>> {
-        let atomic_key = Arc::new(AtomicU64::new(1));
         let v_c = view.clone();
         let v_r = v_c.read().unwrap();
         let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
-        let node_filepath = Paths::node_filepath(index_path, String::from("increment"));
+        let node_filepath = Paths::node_filepath(index_path, String::from("sequence"));
         let filer = Filed::create(node_filepath.clone())?;
         filer.append(Vector::create_empty_bytes(12))?;
         Ok(Arc::new(Node {
             view,
-            atomic_key,
             index_name,
             key_type: KeyType::UInt,
             node_filepath,
@@ -80,15 +77,10 @@ impl Node {
         let v_c = view.clone();
         let v_r = v_c.read().unwrap();
         let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
-        let node_filepath = Paths::node_filepath(index_path, String::from("increment"));
-        let file_len = Filer::len(node_filepath.clone())?;
-        let last_key = file_len / 12;
-        // log::debug!("atomic_key_u32 = {}", atomic_key_u32);
-        let atomic_key = Arc::new(AtomicU64::new(last_key));
+        let node_filepath = Paths::node_filepath(index_path, String::from("sequence"));
         let filer = Filed::recovery(node_filepath.clone())?;
         Ok(Arc::new(Node {
             view,
-            atomic_key,
             index_name,
             key_type: KeyType::UInt,
             node_filepath,
@@ -107,6 +99,10 @@ impl Node {
     fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         self.filer.clone().read_allow_none(start, last)
     }
+
+    fn len(&self) -> GeorgeResult<u64> {
+        self.filer.clone().len()
+    }
 }
 
 /// 封装方法函数
@@ -121,7 +117,7 @@ impl TNode for Node {
     ///
     /// EngineResult<()>
     fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
-        let hash_key = self.atomic_key.fetch_add(1, Ordering::Relaxed);
+        let hash_key = IndexKey::hash(self.key_type(), key.clone())?;
         self.put_in_node(key, hash_key, seed, force)
     }
 
@@ -155,11 +151,8 @@ impl TNode for Node {
 impl Node {
     /// 存储数据真实操作
     ///
-    /// auto_increment_key 自增key
-    ///
-    /// seed value信息
-    ///
-    /// custom 是否用户自定义传入key
+    /// * hash_key u64
+    /// * seed value信息
     fn put_in_node(
         &self,
         key: String,
@@ -176,12 +169,12 @@ impl Node {
             // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
             let res = self.read(seek, 12)?;
             if Vector::is_fill(res) {
-                return Err(Errs::str("auto increment key has been used"));
+                return Err(GeorgeError::from(DataExistError));
             }
         }
         seed.write().unwrap().modify(IndexPolicy::create(
             key,
-            IndexType::Increment,
+            IndexType::Sequence,
             self.node_filepath(),
             seek,
         ));
@@ -215,7 +208,7 @@ impl Node {
         if Vector::is_fill(res) {
             seed.write().unwrap().modify(IndexPolicy::create(
                 key,
-                IndexType::Increment,
+                IndexType::Sequence,
                 self.node_filepath(),
                 seek,
             ));
@@ -260,11 +253,10 @@ impl Node {
         // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
         let mut key_start = start * 12;
         let key_end: u64;
-        if end == 0 {
-            // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
-            key_end = (self.atomic_key.load(Ordering::Relaxed) - 1) * 12;
-        } else {
+        if end > 0 {
             key_end = end * 8;
+        } else {
+            key_end = self.len()?;
         }
         loop {
             if limit <= 0 || key_start > key_end {
@@ -325,12 +317,11 @@ impl Node {
 
         // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
         let key_start = start * 12;
-        let mut key_end: u64;
-        if end == 0 {
-            // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
-            key_end = (self.atomic_key.load(Ordering::Relaxed) - 1) * 12;
-        } else {
+        let key_end: u64;
+        if end > 0 {
             key_end = end * 8;
+        } else {
+            key_end = self.len()?;
         }
         loop {
             if limit <= 0 || key_start > key_end {

@@ -33,10 +33,12 @@ impl Filed {
         }
         Filed::recovery(filepath)
     }
+
     pub fn create(filepath: String) -> GeorgeResult<Filed> {
         Filer::touch(filepath.clone())?;
         Filed::recovery(filepath)
     }
+
     pub fn recovery(filepath: String) -> GeorgeResult<Filed> {
         Ok(Filed {
             filepath: filepath.clone(),
@@ -46,24 +48,34 @@ impl Filed {
             })),
         })
     }
+
+    pub fn len(&self) -> GeorgeResult<u64> {
+        self.exec.read().unwrap().len()
+    }
+
     pub fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         self.exec.read().unwrap().read(self.filepath(), start, last)
     }
+
     pub fn read_allow_none(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         self.exec
             .read()
             .unwrap()
             .read_allow_none(self.filepath(), start, last)
     }
+
     pub fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
         self.exec.write().unwrap().write(seek, content)
     }
+
     pub fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
         self.exec.write().unwrap().append(content)
     }
+
     fn filepath(&self) -> String {
         self.filepath.clone()
     }
+
     /// 整理归档
     ///
     /// archive_file_path 归档路径
@@ -86,12 +98,19 @@ impl FiledExec {
         self.appender = Filer::appender(filepath.clone())?;
         Ok(())
     }
+
+    fn len(&self) -> GeorgeResult<u64> {
+        Filer::len(filepath)
+    }
+
     fn read(&self, filepath: String, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         Filer::read_sub(filepath, start, last)
     }
+
     fn read_allow_none(&self, filepath: String, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         Filer::read_sub_allow_none(filepath, start, last)
     }
+
     fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
         match self.writer.try_clone() {
             Ok(mut file) => match file.seek(SeekFrom::Start(seek)) {
@@ -104,6 +123,7 @@ impl FiledExec {
             Err(err) => Err(Errs::strs("filed read", err)),
         }
     }
+
     fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
         match self.appender.try_clone() {
             Ok(mut file) => match file.seek(SeekFrom::End(0)) {
