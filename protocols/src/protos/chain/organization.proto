@@ -20,7 +20,7 @@ option java_outer_classname = "OrganizationProto";
 
 package chain;
 
-import "protos/chain/peer.proto";
+import "src/protos/chain/peer.proto";
 
 // 组织机构
 message Organization {

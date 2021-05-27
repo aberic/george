@@ -189,12 +189,12 @@ impl Master {
         &self,
         database_name: String,
         view_name: String,
-        _view_comment: String,
+        with_sequence: bool,
     ) -> GeorgeResult<()> {
         match self.database_map().read().unwrap().get(&database_name) {
             Some(database_lock) => {
                 let database = database_lock.read().unwrap();
-                database.create_view(view_name)?;
+                database.create_view(view_name, with_sequence)?;
             }
             None => return Err(GeorgeError::from(DatabaseNoExistError)),
         }
@@ -625,11 +625,7 @@ impl Master {
     fn init_default(&self) -> GeorgeResult<()> {
         self.create_page(DEFAULT_NAME.to_string(), DEFAULT_COMMENT.to_string())?;
         self.create_database(DEFAULT_NAME.to_string(), DEFAULT_COMMENT.to_string())?;
-        self.create_view(
-            DEFAULT_NAME.to_string(),
-            DEFAULT_NAME.to_string(),
-            DEFAULT_COMMENT.to_string(),
-        )
+        self.create_view(DEFAULT_NAME.to_string(), DEFAULT_NAME.to_string(), true)
     }
 
     /// 恢复sky数据

@@ -108,7 +108,11 @@ fn mock_new_view(database_name: String, name: String) -> GeorgeResult<View> {
 }
 
 impl View {
-    pub(crate) fn create(database_name: String, name: String) -> GeorgeResult<Arc<RwLock<View>>> {
+    pub(crate) fn create(
+        database_name: String,
+        name: String,
+        with_sequence: bool,
+    ) -> GeorgeResult<Arc<RwLock<View>>> {
         let view = new_view(database_name, name)?;
         let view_bak = Arc::new(RwLock::new(view));
         view_bak.clone().read().unwrap().init()?;
@@ -121,15 +125,17 @@ impl View {
             true,
             false,
         )?;
-        view_bak.read().unwrap().create_index(
-            view_bak.clone(),
-            INDEX_SEQUENCE.to_string(),
-            IndexType::Sequence,
-            KeyType::UInt,
-            false,
-            true,
-            false,
-        )?;
+        if with_sequence {
+            view_bak.read().unwrap().create_index(
+                view_bak.clone(),
+                INDEX_SEQUENCE.to_string(),
+                IndexType::Sequence,
+                KeyType::UInt,
+                false,
+                true,
+                false,
+            )?;
+        }
         Ok(view_bak)
     }
 

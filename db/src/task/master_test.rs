@@ -26,8 +26,8 @@ mod master {
     #[cfg(test)]
     mod base {
         use crate::task::master_test::{
-            archive_view, create_database, create_index, create_page, create_view, database_map,
-            modify_database, modify_page, modify_view, view_metadata, view_record,
+            archive_view, create_database, create_index, create_page, create_view_with_sequence,
+            database_map, modify_database, modify_page, modify_view, view_metadata, view_record,
         };
         use crate::utils::enums::{IndexType, KeyType};
 
@@ -45,12 +45,12 @@ mod master {
             // view_create_test
             let database_name = "database_view_create_base_test";
             let view_name = "view_create_base_test";
-            create_view(database_name, view_name);
+            create_view_with_sequence(database_name, view_name);
             // view_modify_test
             let database_name = "database_view_modify_base_test";
             let view_name = "view_modify_base_test1";
             let view_new_name = "view_modify_base_test2";
-            create_view(database_name, view_name);
+            create_view_with_sequence(database_name, view_name);
             modify_view(database_name, view_name, view_new_name);
             modify_view(database_name, view_name, view_new_name);
             // page_test
@@ -95,13 +95,13 @@ mod master {
 
         #[test]
         fn view_create_test() {
-            create_view("database_view_create_test", "view_create_test");
+            create_view_with_sequence("database_view_create_test", "view_create_test");
             database_map();
         }
 
         #[test]
         fn view_modify_test() {
-            create_view("database_view_modify_test", "view_modify_test1");
+            create_view_with_sequence("database_view_modify_test", "view_modify_test1");
             modify_view(
                 "database_view_modify_test",
                 "view_modify_test1",
@@ -112,7 +112,7 @@ mod master {
 
         #[test]
         fn view_archive_test() {
-            create_view("database_view_archive_test", "view_archive_test1");
+            create_view_with_sequence("database_view_archive_test", "view_archive_test1");
             archive_view(
                 "database_view_archive_test",
                 "view_archive_test1",
@@ -134,13 +134,13 @@ mod master {
 
     #[cfg(test)]
     mod index {
-        use crate::task::master_test::{create_view, get, put};
+        use crate::task::master_test::{create_view_with_sequence, get, put};
 
         #[test]
         fn index_test_prepare() {
             let database_name = "database_index_test";
             let view_name = "view_index_test";
-            create_view(database_name, view_name);
+            create_view_with_sequence(database_name, view_name);
             let mut i = 1;
             while i < 5 {
                 // 循环体
@@ -212,13 +212,13 @@ mod master {
 
     #[cfg(test)]
     mod disk {
-        use crate::task::master_test::{create_view, get, put, set};
+        use crate::task::master_test::{create_view_with_sequence, get, put, set};
 
         #[test]
         fn put_set_test() {
             let database_name = "database_disk_base_test";
             let view_name = "view_disk_base_test";
-            create_view(database_name, view_name);
+            create_view_with_sequence(database_name, view_name);
             put(database_name, view_name, "hello1", "world1", 1);
             put(database_name, view_name, "hello2", "world2", 2);
             put(database_name, view_name, "hello3", "world3", 3);
@@ -262,14 +262,14 @@ mod master {
 
     #[cfg(test)]
     mod get_by_index {
-        use crate::task::master_test::{create_view, del, get_by_index, put};
+        use crate::task::master_test::{create_view_with_sequence, del, get_by_index, put};
         use crate::utils::comm::INDEX_SEQUENCE;
 
         #[test]
         fn sequence_test() {
             let database_name = "database_sequence_base_test";
             let view_name = "view_sequence_base_test";
-            create_view(database_name, view_name);
+            create_view_with_sequence(database_name, view_name);
             let mut i = 1;
             while i < 5 {
                 // 循环体
@@ -332,7 +332,7 @@ mod master {
         fn select_sequence_prepare() {
             let database_name = "database_select_sequence_base_test";
             let view_name = "view_select_base_test";
-            create_view(database_name, view_name);
+            create_view_with_sequence(database_name, view_name);
 
             let mut pos1: u32 = 1;
             while pos1 <= 10000 {
@@ -454,7 +454,7 @@ mod master {
             let database_name = "database_select_base_test";
             let view_name = "view_base_test";
             let index_name = "age";
-            create_view(database_name, view_name);
+            create_view_with_sequence(database_name, view_name);
             create_index(
                 database_name,
                 view_name,
@@ -692,11 +692,18 @@ fn modify_page(page_name: &str, page_new_name: &str) {
 
 fn create_view(database_name: &str, view_name: &str) {
     create_database(database_name.clone());
-    match GLOBAL_MASTER.create_view(
-        String::from(database_name),
-        String::from(view_name),
-        String::from("comment"),
-    ) {
+    match GLOBAL_MASTER.create_view(String::from(database_name), String::from(view_name), false) {
+        Ok(()) => println!("create view {} from database {}", view_name, database_name),
+        Err(err) => println!(
+            "create view {} from database {} error, {}",
+            view_name, database_name, err
+        ),
+    }
+}
+
+fn create_view_with_sequence(database_name: &str, view_name: &str) {
+    create_database(database_name.clone());
+    match GLOBAL_MASTER.create_view(String::from(database_name), String::from(view_name), true) {
         Ok(()) => println!("create view {} from database {}", view_name, database_name),
         Err(err) => println!(
             "create view {} from database {} error, {}",
@@ -765,7 +772,7 @@ fn create_index(
     unique: bool,
     null: bool,
 ) {
-    create_view(database_name.clone(), view_name.clone());
+    create_view_with_sequence(database_name.clone(), view_name.clone());
     match GLOBAL_MASTER.create_index(
         String::from(database_name),
         String::from(view_name),

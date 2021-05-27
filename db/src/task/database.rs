@@ -175,14 +175,14 @@ impl Database {
     /// 创建视图
     ///
     /// mem 是否为内存视图
-    pub(crate) fn create_view(&self, name: String) -> GeorgeResult<()> {
+    pub(crate) fn create_view(&self, name: String, with_sequence: bool) -> GeorgeResult<()> {
         if self.exist_view(name.clone()) {
             return Err(GeorgeError::from(ViewExistError));
         }
-        self.view_map()
-            .write()
-            .unwrap()
-            .insert(name.clone(), View::create(self.name(), name)?);
+        self.view_map().write().unwrap().insert(
+            name.clone(),
+            View::create(self.name(), name, with_sequence)?,
+        );
         Ok(())
     }
 

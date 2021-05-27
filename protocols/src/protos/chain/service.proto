@@ -16,30 +16,31 @@ syntax = "proto3";
 
 option go_package = "github.com/george/protocols/chain";
 option java_package = "cn.aberic.george.protocols.chain";
-option java_outer_classname = "GenesisProto";
+option java_outer_classname = "ServiceProto";
 
 package chain;
 
-import "src/protos/chain/organization.proto";
-import "src/protos/chain/policy.proto";
-import "src/protos/chain/sign.proto";
+import "src/protos/chain/block.proto";
 
-// 创世区块配置对象
-message GenesisConfig {
-  // 创世区块
-  Genesis genesis = 1;
-  // 对当前创世区块信息进行的满足当前创世区块执行策略的签名信息集合
-  Signet signet = 2;
-  // 对当前创世区块信息进行的满足前一创世区块执行策略的签名信息集合
-  Signet signet_pre = 3;
+service Blocks {
+  rpc add(Block) returns (Response);
+  rpc get(BlockGet) returns (Block);
 }
 
-// 创世区块
-message Genesis {
-  // 整个平台的组织机构集合
-  repeated Organization organizations = 1;
-  // 默认账本运行依据
-  Foundation foundation = 2;
-  // 平台创世区块更新策略
-  Policy policy = 3;
+message BlockGet {
+  oneof get {
+    uint32 height = 1;
+    string hash = 2;
+    string tx_hash = 3;
+  }
+}
+
+message Response {
+  Status status = 1;
+  string error = 2;
+}
+
+enum Status {
+  SUCCESS = 0;
+  FAIL = 1;
 }
