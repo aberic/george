@@ -19,6 +19,7 @@ use std::sync::{Arc, RwLock};
 use comm::errors::entrances::Errs;
 use comm::errors::entrances::GeorgeResult;
 use comm::io::file::{Filer, FilerExecutor, FilerHandler, FilerNormal, FilerReader};
+use std::path::Path;
 
 #[derive(Debug, Clone)]
 pub struct Filed {
@@ -28,29 +29,28 @@ pub struct Filed {
 
 impl Filed {
     pub fn mock(filepath: String) -> GeorgeResult<Filed> {
-        if !Filer::exist(filepath.clone()) {
-            Filer::touch(filepath.clone())?;
+        if !Filer::exist(&filepath) {
+            Filer::touch(&filepath)?;
         }
         Filed::recovery(filepath)
     }
 
     pub fn create(filepath: String) -> GeorgeResult<Filed> {
-        Filer::touch(filepath.clone())?;
+        Filer::touch(&filepath)?;
         Filed::recovery(filepath)
     }
 
     pub fn recovery(filepath: String) -> GeorgeResult<Filed> {
+        let writer = Filer::writer(&filepath)?;
+        let appender = Filer::appender(&filepath)?;
         Ok(Filed {
-            filepath: filepath.clone(),
-            exec: Arc::new(RwLock::new(FiledExec {
-                writer: Filer::writer(filepath.clone())?,
-                appender: Filer::appender(filepath.clone())?,
-            })),
+            filepath,
+            exec: Arc::new(RwLock::new(FiledExec { writer, appender })),
         })
     }
 
     pub fn len(&self) -> GeorgeResult<u64> {
-        self.exec.read().unwrap().len()
+        self.exec.read().unwrap().len(self.filepath())
     }
 
     pub fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
@@ -93,21 +93,26 @@ struct FiledExec {
 }
 
 impl FiledExec {
-    fn recovery(&mut self, filepath: String) -> GeorgeResult<()> {
-        self.writer = Filer::writer(filepath.clone())?;
-        self.appender = Filer::appender(filepath.clone())?;
+    fn recovery<P: AsRef<Path>>(&mut self, filepath: P) -> GeorgeResult<()> {
+        self.writer = Filer::writer(&filepath)?;
+        self.appender = Filer::appender(filepath)?;
         Ok(())
     }
 
-    fn len(&self) -> GeorgeResult<u64> {
+    fn len<P: AsRef<Path>>(&self, filepath: P) -> GeorgeResult<u64> {
         Filer::len(filepath)
     }
 
-    fn read(&self, filepath: String, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
+    fn read<P: AsRef<Path>>(&self, filepath: P, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         Filer::read_sub(filepath, start, last)
     }
 
-    fn read_allow_none(&self, filepath: String, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
+    fn read_allow_none<P: AsRef<Path>>(
+        &self,
+        filepath: P,
+        start: u64,
+        last: usize,
+    ) -> GeorgeResult<Vec<u8>> {
         Filer::read_sub_allow_none(filepath, start, last)
     }
 
@@ -139,6 +144,6 @@ impl FiledExec {
 }
 
 /// 根据文件路径获取该文件追加写入的写对象
-pub fn obtain_append_file(filepath: String) -> GeorgeResult<Arc<RwLock<File>>> {
+pub fn obtain_append_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Arc<RwLock<File>>> {
     Ok(Arc::new(RwLock::new(Filer::appender(filepath)?)))
 }

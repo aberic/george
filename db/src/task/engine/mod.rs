@@ -12,6 +12,7 @@
  * limitations under the License.
  */
 
+use crate::task::engine::traits::TForm;
 use crate::task::rich::Condition;
 use crate::task::view::View;
 use comm::errors::entrances::{Errs, GeorgeResult};

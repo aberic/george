@@ -18,7 +18,7 @@ use std::sync::{Arc, RwLock};
 use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerReader};
 
-use crate::task::engine::traits::{TNode, TSeed};
+use crate::task::engine::traits::{TForm, TNode, TSeed};
 use crate::task::engine::{check, DataReal};
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
@@ -28,7 +28,6 @@ use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::Paths;
 use crate::utils::writer::Filed;
 use comm::errors::children::DataNoExistError;
-use comm::trans::Trans;
 use comm::vectors::{Vector, VectorHandler};
 
 /// 索引B+Tree结点结构

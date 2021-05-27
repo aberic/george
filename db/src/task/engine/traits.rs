@@ -26,7 +26,22 @@ use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::store::Metadata;
 use serde::__private::fmt::Debug;
 
-/// 索引通用特性，遵循此特性创建索引可以更方便的针对icdb进行扩展
+/// 表通用特性，遵循此特性创建索引可以更方便的针对进行扩展
+///
+/// 该特性包含了索引的基本方法，理论上都需要进行实现才能使用
+pub(crate) trait TForm: Send + Sync + Debug {
+    /// 组装写入视图的内容，即持续长度+该长度的原文内容
+    ///
+    /// 将数据存入view，返回数据在view中的起始偏移量坐标
+    fn write_content(&self, value: Vec<u8>) -> GeorgeResult<u64>;
+
+    /// 读取已组装写入视图的内容，根据view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
+    ///
+    /// * view_info_index 数据索引字节数组
+    fn read_content_by_info(&self, view_info_index: Vec<u8>) -> GeorgeResult<Vec<u8>>;
+}
+
+/// 索引通用特性，遵循此特性创建索引可以更方便的针对进行扩展
 ///
 /// 该特性包含了索引的基本方法，理论上都需要进行实现才能使用
 pub(crate) trait TIndex: Send + Sync + Debug {

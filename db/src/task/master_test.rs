@@ -26,8 +26,9 @@ mod master {
     #[cfg(test)]
     mod base {
         use crate::task::master_test::{
-            archive_view, create_database, create_index, create_page, create_view_with_increment,
-            database_map, modify_database, modify_page, modify_view, view_metadata, view_record,
+            archive_view, create_database, create_index, create_page, create_view,
+            create_view_with_increment, database_map, modify_database, modify_page, modify_view,
+            view_metadata, view_record,
         };
         use crate::utils::enums::{IndexType, KeyType};
 
@@ -45,7 +46,7 @@ mod master {
             // view_create_test
             let database_name = "database_view_create_base_test";
             let view_name = "view_create_base_test";
-            create_view_with_increment(database_name, view_name);
+            create_view(database_name, view_name);
             // view_modify_test
             let database_name = "database_view_modify_base_test";
             let view_name = "view_modify_base_test1";

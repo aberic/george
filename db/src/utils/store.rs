@@ -94,6 +94,15 @@ impl Metadata {
         }
     }
 
+    pub fn from_ledger(version: [u8; 2], sequence: u8) -> Metadata {
+        Metadata {
+            tag: Tag::Ledger,
+            index_type: IndexType::None,
+            version,
+            sequence,
+        }
+    }
+
     pub fn from_index(index_type: IndexType, version: [u8; 2], sequence: u8) -> Metadata {
         Metadata {
             tag: Tag::Index,
@@ -121,9 +130,18 @@ impl Metadata {
         }
     }
 
-    pub fn view_disk() -> Metadata {
+    pub fn view() -> Metadata {
         Metadata {
             tag: Tag::View,
+            index_type: IndexType::None,
+            version: VERSION,
+            sequence: 0x00,
+        }
+    }
+
+    pub fn ledger() -> Metadata {
+        Metadata {
+            tag: Tag::Ledger,
             index_type: IndexType::None,
             version: VERSION,
             sequence: 0x00,
@@ -155,6 +173,10 @@ impl Metadata {
                     head.get(6).unwrap().clone(),
                 )),
                 Tag::View => Ok(Metadata::from_view(
+                    [head.get(4).unwrap().clone(), head.get(5).unwrap().clone()],
+                    head.get(6).unwrap().clone(),
+                )),
+                Tag::Ledger => Ok(Metadata::from_ledger(
                     [head.get(4).unwrap().clone(), head.get(5).unwrap().clone()],
                     head.get(6).unwrap().clone(),
                 )),

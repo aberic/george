@@ -63,6 +63,8 @@ pub enum Tag {
     View,
     /// 索引数据文件
     Index,
+    /// 表数据文件
+    Ledger,
 }
 
 /// 索引值类型
@@ -104,6 +106,7 @@ fn tag_u8(tag: Tag) -> u8 {
         Tag::View => 0x02,
         Tag::Index => 0x03,
         Tag::Page => 0x04,
+        Tag::Ledger => 0x05,
     }
 }
 
@@ -135,6 +138,7 @@ fn tag(b: u8) -> Tag {
         0x02 => Tag::View,
         0x03 => Tag::Index,
         0x04 => Tag::Page,
+        0x05 => Tag::Ledger,
         _ => Tag::Bootstrap,
     }
 }

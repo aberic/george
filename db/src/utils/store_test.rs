@@ -18,12 +18,14 @@ use crate::utils::store::Metadata;
 fn head_test() {
     let head1 = Metadata::from_database([0x00, 0x00], 0x00).bytes();
     let head2 = Metadata::from_view([0x00, 0x00], 0x01).bytes();
+    let head3 = Metadata::from_ledger([0x00, 0x00], 0x02).bytes();
     println!("head1 = {:#?}", head1);
     println!("head2 = {:#?}", head2);
+    println!("head3 = {:#?}", head3);
 
     assert_eq!(0x20, head1.get(0).unwrap().clone());
     assert_eq!(0x19, head1.get(1).unwrap().clone());
-    assert_eq!(0x00, head1.get(2).unwrap().clone());
+    assert_eq!(0x01, head1.get(2).unwrap().clone());
     assert_eq!(0x00, head1.get(3).unwrap().clone());
     assert_eq!(0x00, head1.get(4).unwrap().clone());
     assert_eq!(0x00, head1.get(5).unwrap().clone());
@@ -35,15 +37,27 @@ fn head_test() {
 
     assert_eq!(0x20, head2.get(0).unwrap().clone());
     assert_eq!(0x19, head2.get(1).unwrap().clone());
-    assert_eq!(0x01, head2.get(2).unwrap().clone());
-    assert_eq!(0x01, head2.get(3).unwrap().clone());
-    assert_eq!(0x01, head2.get(4).unwrap().clone());
+    assert_eq!(0x02, head2.get(2).unwrap().clone());
+    assert_eq!(0x00, head2.get(3).unwrap().clone());
+    assert_eq!(0x00, head2.get(4).unwrap().clone());
     assert_eq!(0x00, head2.get(5).unwrap().clone());
-    assert_eq!(0x00, head2.get(6).unwrap().clone());
+    assert_eq!(0x01, head2.get(6).unwrap().clone());
     assert_eq!(0x00, head2.get(7).unwrap().clone());
-    assert_eq!(0x01, head2.get(8).unwrap().clone());
+    assert_eq!(0x00, head2.get(8).unwrap().clone());
     assert_eq!(0x02, head2.get(30).unwrap().clone());
     assert_eq!(0x19, head2.get(31).unwrap().clone());
+
+    assert_eq!(0x20, head3.get(0).unwrap().clone());
+    assert_eq!(0x19, head3.get(1).unwrap().clone());
+    assert_eq!(0x05, head3.get(2).unwrap().clone());
+    assert_eq!(0x00, head3.get(3).unwrap().clone());
+    assert_eq!(0x00, head3.get(4).unwrap().clone());
+    assert_eq!(0x00, head3.get(5).unwrap().clone());
+    assert_eq!(0x02, head3.get(6).unwrap().clone());
+    assert_eq!(0x00, head3.get(7).unwrap().clone());
+    assert_eq!(0x00, head3.get(8).unwrap().clone());
+    assert_eq!(0x02, head3.get(30).unwrap().clone());
+    assert_eq!(0x19, head3.get(31).unwrap().clone());
 
     // assert_eq!(0x19, head1.pop().unwrap());
     // assert_eq!(0x02, head1.pop().unwrap());

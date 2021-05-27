@@ -12,13 +12,11 @@
  * limitations under the License.
  */
 
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 
-use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
-use comm::io::file::{Filer, FilerReader};
+use comm::errors::entrances::{GeorgeError, GeorgeResult};
 
-use crate::task::engine::traits::{TNode, TSeed};
+use crate::task::engine::traits::{TForm, TNode, TSeed};
 use crate::task::engine::{check, DataReal};
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
@@ -28,7 +26,6 @@ use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::Paths;
 use crate::utils::writer::Filed;
 use comm::errors::children::{DataExistError, DataNoExistError};
-use comm::trans::Trans;
 use comm::vectors::{Vector, VectorHandler};
 
 /// 索引B+Tree结点结构
@@ -317,7 +314,7 @@ impl Node {
 
         // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
         let key_start = start * 12;
-        let key_end: u64;
+        let mut key_end: u64;
         if end > 0 {
             key_end = end * 8;
         } else {

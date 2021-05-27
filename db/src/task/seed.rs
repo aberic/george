@@ -18,7 +18,7 @@ use comm::errors::entrances::GeorgeResult;
 use comm::io::file::{Filer, FilerWriter};
 use comm::trans::Trans;
 
-use crate::task::engine::traits::TSeed;
+use crate::task::engine::traits::{TForm, TSeed};
 use crate::task::engine::DataReal;
 use crate::task::view::View;
 use crate::utils::enums::IndexType;

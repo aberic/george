@@ -26,7 +26,7 @@ use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerReader};
 use comm::strings::{StringHandler, Strings};
 
-use crate::task::engine::traits::{TIndex, TSeed};
+use crate::task::engine::traits::{TForm, TIndex, TSeed};
 use crate::task::index::Index as IndexDefault;
 use crate::task::rich::{Expectation, Selector};
 use crate::task::seed::Seed;
@@ -70,7 +70,7 @@ fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
     let filepath = Paths::view_filepath(database_name.clone(), name.clone());
-    let metadata = Metadata::view_disk();
+    let metadata = Metadata::view();
     let view = View {
         database_name: database_name.clone(),
         name,
@@ -94,7 +94,7 @@ fn mock_new_view(database_name: String, name: String) -> GeorgeResult<View> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
     let filepath = Paths::view_filepath(database_name.clone(), name.clone());
-    let metadata = Metadata::view_disk();
+    let metadata = Metadata::view();
     let view = View {
         database_name: database_name.clone(),
         name,
@@ -322,6 +322,30 @@ impl View {
     }
 }
 
+impl TForm for View {
+    /// 组装写入视图的内容，即持续长度+该长度的原文内容
+    ///
+    /// 将数据存入view，返回数据在view中的起始偏移量坐标
+    fn write_content(&self, value: Vec<u8>) -> GeorgeResult<u64> {
+        // 将数据存入view，返回数据在view中的起始坐标
+        self.append(value)
+    }
+
+    /// 读取已组装写入视图的内容，根据view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
+    ///
+    /// * view_info_index 数据索引字节数组
+    fn read_content_by_info(&self, view_info_index: Vec<u8>) -> GeorgeResult<Vec<u8>> {
+        // 读取view版本号(2字节)
+        let version = Trans::bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
+        // 读取view持续长度(4字节)
+        let data_len = Trans::bytes_2_u32(Vector::sub(view_info_index.clone(), 2, 6)?)?;
+        // 读取view偏移量(6字节)
+        let seek = Trans::bytes_2_u48(Vector::sub(view_info_index.clone(), 6, 12)?)?;
+        let filepath = self.filepath_by_version(version)?;
+        Filer::read_sub(filepath, seek, data_len as usize)
+    }
+}
+
 /// db for disk
 impl View {
     /// 插入数据，如果存在则返回已存在<p><p>
@@ -408,14 +432,6 @@ impl View {
         self.init()
     }
 
-    /// 组装写入视图的内容，即持续长度+该长度的原文内容
-    ///
-    /// 将数据存入view，返回数据在view中的起始偏移量坐标
-    pub(crate) fn write_content(&self, value: Vec<u8>) -> GeorgeResult<u64> {
-        // 将数据存入view，返回数据在view中的起始坐标
-        self.append(value)
-    }
-
     /// 读取已组装写入视图的内容，根据view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
     ///
     /// * version view版本号
@@ -427,20 +443,6 @@ impl View {
         data_len: u32,
         seek: u64,
     ) -> GeorgeResult<Vec<u8>> {
-        let filepath = self.filepath_by_version(version)?;
-        Filer::read_sub(filepath, seek, data_len as usize)
-    }
-
-    /// 读取已组装写入视图的内容，根据view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
-    ///
-    /// * view_info_index 数据索引字节数组
-    pub(crate) fn read_content_by_info(&self, view_info_index: Vec<u8>) -> GeorgeResult<Vec<u8>> {
-        // 读取view版本号(2字节)
-        let version = Trans::bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
-        // 读取view持续长度(4字节)
-        let data_len = Trans::bytes_2_u32(Vector::sub(view_info_index.clone(), 2, 6)?)?;
-        // 读取view偏移量(6字节)
-        let seek = Trans::bytes_2_u48(Vector::sub(view_info_index.clone(), 6, 12)?)?;
         let filepath = self.filepath_by_version(version)?;
         Filer::read_sub(filepath, seek, data_len as usize)
     }
