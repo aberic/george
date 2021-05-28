@@ -14,11 +14,11 @@
 
 #[cfg(test)]
 mod env {
-    use crate::env::get;
+    use crate::Env;
 
-    # [test]
-    fn env_get_test () {
-        println!("env = {}", get("env", "hello"));
-        println!("env = {}", get("GOPATH", "hello"));
+    #[test]
+    fn env_get_test() {
+        println!("env = {}", Env::get("env", "hello"));
+        println!("env = {}", Env::get("GOPATH", "hello"));
     }
 }

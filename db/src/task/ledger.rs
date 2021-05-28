@@ -20,43 +20,26 @@
 // use chrono::{Duration, Local, NaiveDateTime};
 //
 // use comm::errors::children::IndexExistError;
-// use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
-// use comm::io::file::{Filer, FilerReader};
-// use comm::strings::{StringHandler, Strings};
+// use comm::errors::{Errs, GeorgeError, GeorgeResult};
+// use comm::io::Filer;
+// use comm::strings::StringHandler;
+// use comm::vectors::VectorHandler;
+// use comm::Strings;
+// use comm::Trans;
+// use comm::Vector;
 //
 // use crate::task::engine::traits::{Pigeonhole, TForm, TIndex, TSeed};
 // use crate::task::engine::DataReal;
-// use crate::task::index::Index as IndexDefault;
 // use crate::task::rich::{Condition, Expectation, Selector};
-// use crate::task::seed::Seed;
+// use crate::task::Index as IndexDefault;
+// use crate::task::Seed;
+// use crate::task::View;
 // use crate::utils::comm::{IndexKey, INDEX_DISK, INDEX_INCREMENT};
 // use crate::utils::enums::{IndexType, KeyType};
-// use crate::utils::path::Paths;
 // use crate::utils::store::{ContentBytes, Metadata, HD};
 // use crate::utils::writer::Filed;
-// use comm::trans::Trans;
-// use comm::vectors::{Vector, VectorHandler};
-//
-// /// 视图，类似表
-// #[derive(Debug, Clone)]
-// pub(crate) struct Ledger {
-//     /// 数据库名称
-//     database_name: String,
-//     /// 名称
-//     name: String,
-//     /// 创建时间
-//     create_time: Duration,
-//     /// 文件信息
-//     metadata: Metadata,
-//     /// 根据文件路径获取该文件追加写入的写对象
-//     ///
-//     /// 需要借助对象包裹，以便更新file，避免self为mut
-//     filer: Filed,
-//     /// 索引集合
-//     indexes: Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>,
-//     /// 当前归档版本信息
-//     pigeonhole: Pigeonhole,
-// }
+// use crate::utils::Paths;
+// use comm::io::file::FilerReader;
 //
 // /// 新建视图
 // ///
@@ -65,12 +48,12 @@
 // /// ###Params
 // ///
 // /// mem 是否为内存视图
-// fn new_view(database_name: String, name: String) -> GeorgeResult<Ledger> {
+// fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
 //     let now: NaiveDateTime = Local::now().naive_local();
 //     let create_time = Duration::nanoseconds(now.timestamp_nanos());
 //     let filepath = Paths::view_filepath(database_name.clone(), name.clone());
 //     let metadata = Metadata::view();
-//     let view = Ledger {
+//     let view = View {
 //         database_name: database_name.clone(),
 //         name,
 //         create_time,
@@ -89,12 +72,12 @@
 // /// ###Params
 // ///
 // /// mem 是否为内存视图
-// fn mock_new_view(database_name: String, name: String) -> GeorgeResult<Ledger> {
+// fn mock_new_view(database_name: String, name: String) -> GeorgeResult<View> {
 //     let now: NaiveDateTime = Local::now().naive_local();
 //     let create_time = Duration::nanoseconds(now.timestamp_nanos());
 //     let filepath = Paths::view_filepath(database_name.clone(), name.clone());
 //     let metadata = Metadata::view();
-//     let view = Ledger {
+//     let view = View {
 //         database_name: database_name.clone(),
 //         name,
 //         create_time,
@@ -106,12 +89,12 @@
 //     Ok(view)
 // }
 //
-// impl Ledger {
+// impl View {
 //     pub(crate) fn create(
 //         database_name: String,
 //         name: String,
 //         with_sequence: bool,
-//     ) -> GeorgeResult<Arc<RwLock<Ledger>>> {
+//     ) -> GeorgeResult<Arc<RwLock<View>>> {
 //         let view = new_view(database_name, name)?;
 //         let view_bak = Arc::new(RwLock::new(view));
 //         view_bak.clone().read().unwrap().init()?;
@@ -285,7 +268,7 @@
 //     /// * null 是否允许为空
 //     pub(crate) fn create_index(
 //         &self,
-//         view: Arc<RwLock<Ledger>>,
+//         view: Arc<RwLock<View>>,
 //         index_name: String,
 //         index_type: IndexType,
 //         key_type: KeyType,
@@ -325,7 +308,7 @@
 //     }
 // }
 //
-// impl TForm for Ledger {
+// impl TForm for View {
 //     fn name(&self) -> String {
 //         self.name.clone()
 //     }
@@ -394,7 +377,7 @@
 // }
 //
 // /// db for disk
-// impl Ledger {
+// impl View {
 //     /// 插入数据，如果存在则返回已存在<p><p>
 //     ///
 //     /// ###Params
@@ -470,7 +453,7 @@
 //     }
 // }
 //
-// impl Ledger {
+// impl View {
 //     /// 插入数据业务方法<p><p>
 //     ///
 //     /// ###Params
@@ -575,7 +558,7 @@
 //     }
 // }
 //
-// impl Ledger {
+// impl View {
 //     /// 生成文件描述
 //     fn description(&self) -> Vec<u8> {
 //         hex::encode(format!(
@@ -591,7 +574,7 @@
 //     pub(crate) fn recover(
 //         database_name: String,
 //         hd: HD,
-//     ) -> GeorgeResult<(String, Arc<RwLock<Ledger>>)> {
+//     ) -> GeorgeResult<(String, Arc<RwLock<View>>)> {
 //         let description_str = Strings::from_utf8(hd.description())?;
 //         match hex::decode(description_str) {
 //             Ok(vu8) => {
@@ -603,7 +586,7 @@
 //                 );
 //                 let pigeonhole = Pigeonhole::from_string(split.next().unwrap().to_string())?;
 //                 let filepath = Paths::view_filepath(database_name.clone(), name.clone());
-//                 let view = Ledger {
+//                 let view = View {
 //                     database_name: database_name.clone(),
 //                     name,
 //                     create_time,
@@ -643,7 +626,7 @@
 //     }
 //
 //     /// 恢复indexes数据
-//     fn recovery_indexes(&self, view: Arc<RwLock<Ledger>>, paths: ReadDir) -> GeorgeResult<()> {
+//     fn recovery_indexes(&self, view: Arc<RwLock<View>>, paths: ReadDir) -> GeorgeResult<()> {
 //         // 遍历view目录下文件
 //         for path in paths {
 //             match path {
@@ -663,7 +646,7 @@
 //     }
 //
 //     /// 恢复view数据
-//     fn recovery_index(&self, view: Arc<RwLock<Ledger>>, index_name: String) -> GeorgeResult<()> {
+//     fn recovery_index(&self, view: Arc<RwLock<View>>, index_name: String) -> GeorgeResult<()> {
 //         let index_file_path =
 //             Paths::index_filepath(self.database_name(), self.name(), index_name.clone());
 //         let hd = ContentBytes::recovery(index_file_path.clone())?;
@@ -690,18 +673,18 @@
 //     }
 // }
 //
-// impl Ledger {
+// impl View {
 //     pub(crate) fn mock_create(
 //         database_name: String,
 //         name: String,
-//     ) -> GeorgeResult<Arc<RwLock<Ledger>>> {
+//     ) -> GeorgeResult<Arc<RwLock<View>>> {
 //         let view = mock_new_view(database_name, name)?;
 //         let view_bak = Arc::new(RwLock::new(view));
 //         view_bak.clone().read().unwrap().init()?;
 //         Ok(view_bak)
 //     }
 //
-//     pub(crate) fn mock_create_single(database_name: String, name: String) -> GeorgeResult<Ledger> {
+//     pub(crate) fn mock_create_single(database_name: String, name: String) -> GeorgeResult<View> {
 //         let view = mock_new_view(database_name, name)?;
 //         view.init()?;
 //         Ok(view)

@@ -14,7 +14,8 @@
 
 #[cfg(test)]
 mod md5 {
-    use crate::cryptos::hash::{Hash, HashCRCHandler, HashCRCTypeHandler, HashMD5Handler};
+    use crate::cryptos::hash::{HashCRCHandler, HashCRCTypeHandler, HashMD5Handler};
+    use crate::cryptos::Hash;
 
     #[test]
     fn md5_test() {

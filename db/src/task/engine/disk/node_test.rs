@@ -17,7 +17,7 @@ mod disk_node_test {
     use crate::task::engine::disk::Node;
     use crate::task::View;
     use crate::utils::enums::KeyType;
-    use comm::errors::entrances::GeorgeResult;
+    use comm::errors::GeorgeResult;
     use std::sync::Arc;
 
     fn create_node(

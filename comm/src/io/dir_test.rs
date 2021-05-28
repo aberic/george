@@ -15,7 +15,8 @@
 #[cfg(test)]
 mod dir {
 
-    use crate::io::dir::{Dir, DirHandler};
+    use crate::io::dir::DirHandler;
+    use crate::io::Dir;
 
     #[test]
     fn create_dir_test() {

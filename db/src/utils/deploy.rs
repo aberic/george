@@ -17,13 +17,14 @@ use std::sync::RwLock;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use comm::env;
+use comm::io::file::FilerReader;
+use comm::io::Filer;
+use comm::Env;
 
 use crate::utils::comm::{
     GEORGE_DB_DATA_DIR, GEORGE_DB_LIMIT_OPEN_FILE, GEORGE_DB_LOG_DIR, GEORGE_DB_LOG_FILE_MAX_COUNT,
     GEORGE_DB_LOG_FILE_MAX_SIZE, GEORGE_DB_LOG_LEVEL, GEORGE_DB_PRODUCTION,
 };
-use comm::io::file::{Filer, FilerReader};
 
 pub const VERSION: [u8; 2] = [0x00, 0x00];
 
@@ -144,7 +145,7 @@ pub fn init_config(filepath: String) {
 }
 
 fn config_value(env_name: &str, default: &str) -> String {
-    let res = env::get(env_name, default);
+    let res = Env::get(env_name, default);
     if res.is_empty() {
         config_default(env_name)
     } else {

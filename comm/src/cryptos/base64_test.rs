@@ -14,7 +14,8 @@
 
 #[cfg(test)]
 mod base64 {
-    use crate::cryptos::base64::{Base64, Base64Encoder, Basee64Decoder};
+    use crate::cryptos::base64::{Base64Decoder, Base64Encoder};
+    use crate::cryptos::Base64;
 
     #[test]
     fn base64_test() {

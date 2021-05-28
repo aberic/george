@@ -13,27 +13,24 @@
  */
 
 use std::fs::{read, read_to_string};
+use std::path::Path;
 
+use openssl::bn::{BigNum, BigNumContext};
 use openssl::ec::{EcGroup, EcKey, EcPoint, PointConversionForm};
+use openssl::ecdsa::EcdsaSig;
 use openssl::nid::Nid;
 use openssl::pkey::{PKey, Private, Public};
 
-use crate::cryptos::base64::{Base64, Base64Encoder, Basee64Decoder};
-use crate::cryptos::hex::{Hex, HexDecoder, HexEncoder};
-use crate::errors::entrances::Errs;
-use crate::errors::entrances::GeorgeResult;
-use crate::io::file::{Filer, FilerWriter};
-use crate::strings::{StringHandler, Strings};
-use openssl::bn::{BigNum, BigNumContext};
-use openssl::ecdsa::EcdsaSig;
-use std::path::Path;
-
-pub struct ECDSA {
-    sk: PKey<Private>,
-    pk: PKey<Public>,
-    sk_ec: EcKey<Private>,
-    pk_ec: EcKey<Public>,
-}
+use crate::cryptos::base64::{Base64Decoder, Base64Encoder};
+use crate::cryptos::hex::{HexDecoder, HexEncoder};
+use crate::cryptos::Hex;
+use crate::cryptos::{Base64, ECDSA};
+use crate::errors::Errs;
+use crate::errors::GeorgeResult;
+use crate::io::file::FilerWriter;
+use crate::io::Filer;
+use crate::strings::StringHandler;
+use crate::Strings;
 
 /// base method
 impl ECDSA {

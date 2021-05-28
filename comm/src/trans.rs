@@ -16,11 +16,11 @@ use std::collections::HashMap;
 
 use phf::{phf_map, Map};
 
-use crate::errors::entrances::{Errs, GeorgeResult};
-use crate::strings::{StringHandler, Strings};
+use crate::errors::{Errs, GeorgeResult};
+use crate::strings::StringHandler;
+use crate::Strings;
+use crate::Trans;
 use std::ops::{Add, Sub};
-
-pub struct Trans;
 
 impl Trans {
     /// u64转64进制字符串<p><p>

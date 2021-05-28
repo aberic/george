@@ -17,7 +17,8 @@ mod sm4 {
 
     #[cfg(test)]
     mod sm4_1 {
-        use crate::cryptos::sm4::{SM4Crypt, SM4Handler, SM4};
+        use crate::cryptos::sm4::{SM4Crypt, SM4Handler};
+        use crate::cryptos::SM4;
 
         #[test]
         fn sm4_test1() {
@@ -31,7 +32,8 @@ mod sm4 {
 
     #[cfg(test)]
     mod sm4_2 {
-        use crate::cryptos::sm4::{SM4CryptMode, SM4Handler, SM4};
+        use crate::cryptos::sm4::{SM4CryptMode, SM4Handler};
+        use crate::cryptos::SM4;
         use libsm::sm4::cipher_mode::CipherMode;
 
         #[test]
@@ -46,7 +48,8 @@ mod sm4 {
 
     #[cfg(test)]
     mod sm4_3 {
-        use crate::cryptos::sm4::{SM4New1, SM4SelfCrypt1, SM4};
+        use crate::cryptos::sm4::{SM4New1, SM4SelfCrypt1};
+        use crate::cryptos::SM4;
 
         #[test]
         fn sm4_test1() {
@@ -59,7 +62,8 @@ mod sm4 {
 
     #[cfg(test)]
     mod sm4_4 {
-        use crate::cryptos::sm4::{SM4Handler, SM4New1, SM4SelfCrypt2, SM4};
+        use crate::cryptos::sm4::{SM4Handler, SM4New1, SM4SelfCrypt2};
+        use crate::cryptos::SM4;
 
         #[test]
         fn sm4_test1() {
@@ -73,7 +77,8 @@ mod sm4 {
 
     #[cfg(test)]
     mod sm4_5 {
-        use crate::cryptos::sm4::{SM4New2, SM4SelfCrypt1, SM4};
+        use crate::cryptos::sm4::{SM4New2, SM4SelfCrypt1};
+        use crate::cryptos::SM4;
         use libsm::sm4::cipher_mode::CipherMode;
 
         #[test]
@@ -103,7 +108,8 @@ mod sm4 {
 
     #[cfg(test)]
     mod sm4_6 {
-        use crate::cryptos::sm4::{SM4Handler, SM4New2, SM4SelfCrypt2, SM4};
+        use crate::cryptos::sm4::{SM4Handler, SM4New2, SM4SelfCrypt2};
+        use crate::cryptos::SM4;
         use libsm::sm4::cipher_mode::CipherMode;
 
         #[test]
@@ -136,7 +142,8 @@ mod sm4 {
 
     #[cfg(test)]
     mod sm4_7 {
-        use crate::cryptos::sm4::{SM4Handler, SM4New3, SM4SelfCrypt1, SM4};
+        use crate::cryptos::sm4::{SM4Handler, SM4New3, SM4SelfCrypt1};
+        use crate::cryptos::SM4;
         use libsm::sm4::cipher_mode::CipherMode;
 
         #[test]
@@ -169,7 +176,8 @@ mod sm4 {
 
     #[cfg(test)]
     mod sm4_8 {
-        use crate::cryptos::sm4::{SM4Handler, SM4New3, SM4SelfCrypt2, SM4};
+        use crate::cryptos::sm4::{SM4Handler, SM4New3, SM4SelfCrypt2};
+        use crate::cryptos::SM4;
         use libsm::sm4::cipher_mode::CipherMode;
 
         #[test]
@@ -205,7 +213,8 @@ mod sm4 {
 
     #[cfg(test)]
     mod sm4_9 {
-        use crate::cryptos::sm4::{SM4Handler, SM4New4, SM4SelfCrypt1, SM4};
+        use crate::cryptos::sm4::{SM4Handler, SM4New4, SM4SelfCrypt1};
+        use crate::cryptos::SM4;
         use libsm::sm4::cipher_mode::CipherMode;
 
         #[test]
@@ -241,7 +250,8 @@ mod sm4 {
 
     #[cfg(test)]
     mod sm4_10 {
-        use crate::cryptos::sm4::{SM4Handler, SM4New4, SM4SelfCrypt2, SM4};
+        use crate::cryptos::sm4::{SM4Handler, SM4New4, SM4SelfCrypt2};
+        use crate::cryptos::SM4;
         use libsm::sm4::cipher_mode::CipherMode;
 
         #[test]

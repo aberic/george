@@ -14,12 +14,13 @@
 
 use std::fs::File;
 use std::io::{Seek, SeekFrom, Write};
+use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use comm::errors::entrances::Errs;
-use comm::errors::entrances::GeorgeResult;
-use comm::io::file::{Filer, FilerExecutor, FilerHandler, FilerNormal, FilerReader};
-use std::path::Path;
+use comm::errors::Errs;
+use comm::errors::GeorgeResult;
+use comm::io::file::{FilerExecutor, FilerHandler, FilerNormal, FilerReader};
+use comm::io::Filer;
 
 #[derive(Debug, Clone)]
 pub struct Filed {

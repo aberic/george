@@ -14,14 +14,13 @@
 
 #[cfg(test)]
 mod merkle {
-    use crate::merkle::node::Node;
-    use crate::merkle::tree::new;
+    use crate::merkle::{Node, Tree};
     use std::rc::Rc;
     use std::sync::Mutex;
 
     #[test]
     fn tree_test() {
-        let mut tree = new("1");
+        let mut tree = Tree::new("1");
         match tree.add("2") {
             Err(err) => println!("err 2 = {}", err),
             _ => {}

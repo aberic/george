@@ -20,37 +20,7 @@ use crate::errors::children::{
     FileExistError, IndexExistError, IndexNoExistError, MethodNoSupportError, NoneError,
     PageExistError, PageNoExistError, StringError, ViewExistError, ViewNoExistError,
 };
-
-pub trait GeorgeStringErr<M, N>: Sized {
-    fn string(_: M, _: N) -> Self;
-}
-
-pub trait GeorgeString<M>: Sized {
-    fn string(_: M) -> Self;
-}
-
-/// 自定义Result类型：GeorgeResult
-pub type GeorgeResult<T> = std::result::Result<T, GeorgeError>;
-
-/// 索引触发Error,实现std::fmt::Debug的trait
-#[derive(Debug)]
-pub enum GeorgeError {
-    StringError(StringError),
-    DirExistError(DirExistError),
-    FileExistError(FileExistError),
-    DataExistError(DataExistError),
-    PageExistError(PageExistError),
-    PageNoExistError(PageNoExistError),
-    DatabaseExistError(DatabaseExistError),
-    ViewExistError(ViewExistError),
-    IndexExistError(IndexExistError),
-    DataNoExistError(DataNoExistError),
-    DatabaseNoExistError(DatabaseNoExistError),
-    ViewNoExistError(ViewNoExistError),
-    IndexNoExistError(IndexNoExistError),
-    MethodNoSupportError(MethodNoSupportError),
-    NoneError(NoneError),
-}
+use crate::errors::{Errs, GeorgeError, GeorgeString, GeorgeStringErr};
 
 impl Error for GeorgeError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
@@ -209,8 +179,6 @@ impl GeorgeString<&str> for GeorgeError {
         err_str(msg)
     }
 }
-
-pub struct Errs;
 
 impl Errs {
     pub fn string(msg: String) -> GeorgeError {

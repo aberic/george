@@ -17,7 +17,7 @@ mod rsa {
 
     #[cfg(test)]
     mod self_test {
-        use crate::cryptos::rsa::RSA;
+        use crate::cryptos::RSA;
         use openssl::hash::MessageDigest;
         use openssl::rsa::Padding;
         use openssl::sign::{Signer, Verifier};
@@ -102,8 +102,10 @@ mod rsa {
 
     #[cfg(test)]
     mod generate_pk {
-        use crate::cryptos::base64::{Base64, Base64Encoder};
-        use crate::cryptos::rsa::{RSANew, RSANewPass, RSA};
+        use crate::cryptos::base64::Base64Encoder;
+        use crate::cryptos::rsa::{RSANew, RSANewPass};
+        use crate::cryptos::Base64;
+        use crate::cryptos::RSA;
         use openssl::symm::Cipher;
 
         #[test]
@@ -184,8 +186,10 @@ mod rsa {
 
     #[cfg(test)]
     mod generate_pk_file {
-        use crate::cryptos::base64::{Base64, Base64Encoder};
-        use crate::cryptos::rsa::{RSANewPassStore, RSANewStore, RSA};
+        use crate::cryptos::base64::Base64Encoder;
+        use crate::cryptos::rsa::{RSANewPassStore, RSANewStore};
+        use crate::cryptos::Base64;
+        use crate::cryptos::RSA;
         use openssl::symm::Cipher;
 
         #[test]
@@ -263,7 +267,8 @@ mod rsa {
 
     #[cfg(test)]
     mod store {
-        use crate::cryptos::rsa::{RSANew, RSANewPass, RSAStoreKey, RSA};
+        use crate::cryptos::rsa::{RSANew, RSANewPass, RSAStoreKey};
+        use crate::cryptos::RSA;
         use openssl::symm::Cipher;
 
         #[test]

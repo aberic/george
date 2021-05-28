@@ -12,16 +12,11 @@
  * limitations under the License.
  */
 
+use crate::cryptos::SM4;
 use libsm::sm4::cipher_mode::CipherMode;
 use libsm::sm4::Cipher;
 use rand::rngs::OsRng;
 use rand::RngCore;
-
-pub struct SM4 {
-    key: [u8; 16],
-    iv: [u8; 16],
-    sm4_cipher_mode: Cipher,
-}
 
 pub trait SM4Handler {
     fn rand_block() -> [u8; 16];
@@ -45,26 +40,31 @@ pub trait SM4New4 {
 
 pub trait SM4SelfHandler {
     fn key(&self) -> [u8; 16];
+
     fn iv(&self) -> [u8; 16];
 }
 
 pub trait SM4Crypt {
     fn encrypt(key: [u8; 16], iv: [u8; 16], data: &[u8]) -> Vec<u8>;
+
     fn decrypt(key: [u8; 16], iv: [u8; 16], data: &[u8]) -> Vec<u8>;
 }
 
 pub trait SM4CryptMode {
     fn encrypt(key: [u8; 16], iv: [u8; 16], data: &[u8], mode: CipherMode) -> Vec<u8>;
+
     fn decrypt(key: [u8; 16], iv: [u8; 16], data: &[u8], mode: CipherMode) -> Vec<u8>;
 }
 
 pub trait SM4SelfCrypt1 {
     fn encrypt(&self, data: &[u8]) -> Vec<u8>;
+
     fn decrypt(&self, data: &[u8]) -> Vec<u8>;
 }
 
 pub trait SM4SelfCrypt2 {
     fn encrypt(&self, iv: &[u8; 16], data: &[u8]) -> Vec<u8>;
+
     fn decrypt(&self, iv: &[u8; 16], data: &[u8]) -> Vec<u8>;
 }
 

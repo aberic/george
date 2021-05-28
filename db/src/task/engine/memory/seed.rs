@@ -14,7 +14,7 @@
 
 use crate::task::engine::memory::Seed;
 use comm::errors::children::DataNoExistError;
-use comm::errors::entrances::{GeorgeError, GeorgeResult};
+use comm::errors::{GeorgeError, GeorgeResult};
 
 /// 封装方法函数
 impl Seed {

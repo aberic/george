@@ -19,7 +19,7 @@ use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::engine::DataReal;
 use crate::task::rich::Condition;
 use crate::utils::enums::KeyType;
-use comm::errors::entrances::GeorgeResult;
+use comm::errors::GeorgeResult;
 
 impl Node {
     /// 新建根结点

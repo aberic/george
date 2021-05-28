@@ -15,8 +15,9 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 
-use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
-use comm::io::file::{Filer, FilerReader};
+use comm::errors::{Errs, GeorgeError, GeorgeResult};
+use comm::io::file::FilerReader;
+use comm::io::Filer;
 
 use crate::task::engine::increment::Node;
 use crate::task::engine::traits::{TForm, TNode, TSeed};
@@ -28,7 +29,8 @@ use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::writer::Filed;
 use crate::utils::Paths;
 use comm::errors::children::DataNoExistError;
-use comm::vectors::{Vector, VectorHandler};
+use comm::vectors::VectorHandler;
+use comm::Vector;
 
 impl Node {
     /// 新建根结点

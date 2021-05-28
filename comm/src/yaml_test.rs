@@ -16,7 +16,8 @@
 mod yaml {
     use serde::{Deserialize, Serialize};
 
-    use crate::yaml::{Yaml, YamlArray, YamlExec, YamlGet, YamlHandler, YamlNew};
+    use crate::yaml::{Exec, Get, Handler, New};
+    use crate::{Yaml, YamlArray};
 
     #[derive(Debug, Serialize, Deserialize)]
     struct User {

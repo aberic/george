@@ -17,8 +17,9 @@ mod errors_index_test {
     use std::error::Error;
 
     use crate::errors::children::{DataExistError, DataNoExistError};
-    use crate::errors::entrances::{GeorgeError, GeorgeResult, GeorgeStringErr};
-    use crate::io::dir::{Dir, DirHandler};
+    use crate::errors::{Errs, GeorgeError, GeorgeResult};
+    use crate::io::dir::DirHandler;
+    use crate::io::Dir;
 
     fn index_ok() -> GeorgeResult<u32> {
         Ok(500)
@@ -51,7 +52,7 @@ mod errors_index_test {
         // let x = index_no_exist_err()?;
         match Dir::exist("src/cryptos/mod.rs") {
             Ok(_) => Ok(1),
-            Err(err) => Err(GeorgeError::string("test4", err)),
+            Err(err) => Err(Errs::strs("test4", err)),
         }
     }
 

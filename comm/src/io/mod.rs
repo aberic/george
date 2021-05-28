@@ -16,3 +16,7 @@ pub mod dir;
 mod dir_test;
 pub mod file;
 mod file_test;
+
+pub struct Dir;
+
+pub struct Filer;

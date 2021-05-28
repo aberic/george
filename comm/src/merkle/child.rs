@@ -15,32 +15,31 @@
 use std::rc::Rc;
 use std::sync::Mutex;
 
-use crate::merkle::node;
-use crate::merkle::node::Node;
-
-pub struct NodeChild(Option<Rc<Mutex<Node>>>, Option<Rc<Mutex<Node>>>);
-
-pub(crate) fn new(hash: String) -> NodeChild {
-    NodeChild {
-        0: Some(Rc::new(Mutex::new(node::new(hash, 0, None)))),
-        1: None,
-    }
-}
-
-pub(crate) fn new_left(node: Node) -> NodeChild {
-    NodeChild {
-        0: Some(Rc::new(Mutex::new(node))),
-        1: None,
-    }
-}
+use crate::merkle::{Node, NodeChild};
 
 impl NodeChild {
+    pub(crate) fn new(hash: String) -> NodeChild {
+        NodeChild {
+            0: Some(Rc::new(Mutex::new(Node::new(hash, 0, None)))),
+            1: None,
+        }
+    }
+
+    pub(crate) fn new_left(node: Node) -> NodeChild {
+        NodeChild {
+            0: Some(Rc::new(Mutex::new(node))),
+            1: None,
+        }
+    }
+
     pub fn left(&self) -> Option<Rc<Mutex<Node>>> {
         self.0.clone()
     }
+
     pub fn right(&self) -> Option<Rc<Mutex<Node>>> {
         self.1.clone()
     }
+
     pub(crate) fn modify_left(
         &mut self,
         hash: String,
@@ -52,9 +51,10 @@ impl NodeChild {
                 let mut n_m = n.lock().unwrap();
                 n_m.fit(hash, count, child);
             }
-            None => self.0 = Some(Rc::new(Mutex::new(node::new(hash, count, child)))),
+            None => self.0 = Some(Rc::new(Mutex::new(Node::new(hash, count, child)))),
         }
     }
+
     pub(crate) fn modify_right(
         &mut self,
         hash: String,
@@ -66,9 +66,10 @@ impl NodeChild {
                 let mut n_m = n.lock().unwrap();
                 n_m.fit(hash, count, child);
             }
-            None => self.1 = Some(Rc::new(Mutex::new(node::new(hash, count, child)))),
+            None => self.1 = Some(Rc::new(Mutex::new(Node::new(hash, count, child)))),
         }
     }
+
     pub(crate) fn none_right(&mut self) {
         self.1 = None
     }

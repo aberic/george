@@ -14,7 +14,8 @@
 
 #[cfg(test)]
 mod strings {
-    use crate::strings::{StringHandler, Strings};
+    use crate::strings::StringHandler;
+    use crate::Strings;
 
     #[test]
     fn sub_string_test() {

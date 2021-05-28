@@ -12,7 +12,8 @@
  * limitations under the License.
  */
 
-use crate::errors::entrances::{Errs, GeorgeResult};
+use crate::errors::{Errs, GeorgeResult};
+use crate::Vector;
 
 pub trait VectorHandler {
     /// 变更数组内容
@@ -50,8 +51,6 @@ pub trait VectorHandler {
     /// 检查字节数组是否为空或都不为`0x00`
     fn is_empty(bytes: Vec<u8>) -> bool;
 }
-
-pub struct Vector {}
 
 impl VectorHandler for Vector {
     fn modify<T: Clone>(source: Vec<T>, target: Vec<T>, start: usize) -> Vec<T> {

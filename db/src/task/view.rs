@@ -20,9 +20,13 @@ use std::thread;
 use chrono::{Duration, Local, NaiveDateTime};
 
 use comm::errors::children::IndexExistError;
-use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
-use comm::io::file::{Filer, FilerReader};
-use comm::strings::{StringHandler, Strings};
+use comm::errors::{Errs, GeorgeError, GeorgeResult};
+use comm::io::Filer;
+use comm::strings::StringHandler;
+use comm::vectors::VectorHandler;
+use comm::Strings;
+use comm::Trans;
+use comm::Vector;
 
 use crate::task::engine::traits::{Pigeonhole, TForm, TIndex, TSeed};
 use crate::task::engine::DataReal;
@@ -35,8 +39,8 @@ use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::store::{ContentBytes, Metadata, HD};
 use crate::utils::writer::Filed;
 use crate::utils::Paths;
-use comm::trans::Trans;
-use comm::vectors::{Vector, VectorHandler};
+use comm::io::file::FilerReader;
+
 /// 新建视图
 ///
 /// 具体传参参考如下定义：<p><p>

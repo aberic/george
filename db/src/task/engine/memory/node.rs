@@ -14,7 +14,7 @@
 
 use std::sync::{Arc, RwLock};
 
-use comm::errors::entrances::{GeorgeError, GeorgeResult};
+use comm::errors::{GeorgeError, GeorgeResult};
 
 use crate::task::engine::memory::{Node, Seed};
 use crate::utils::comm::{Distance, IndexKey};

@@ -14,8 +14,9 @@
 
 #[cfg(test)]
 mod trans {
-    use crate::strings::{StringHandler, Strings};
-    use crate::trans::Trans;
+    use crate::strings::StringHandler;
+    use crate::Strings;
+    use crate::Trans;
 
     #[test]
     fn trans_test1() {

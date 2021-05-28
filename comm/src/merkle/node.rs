@@ -15,42 +15,38 @@
 use std::rc::Rc;
 use std::sync::{Mutex, MutexGuard};
 
-use crate::cryptos::hash::{Hash, HashMD5Handler};
-use crate::errors::entrances::{Errs, GeorgeResult};
-use crate::merkle::child;
-use crate::merkle::child::NodeChild;
-
-pub struct Node {
-    /// 当前结点hash
-    hash: String,
-    /// 当前子结点数量
-    count: u32,
-    /// 子结点
-    child: Option<Rc<Mutex<NodeChild>>>,
-}
-
-pub(crate) fn new(hash: String, count: u32, child: Option<Rc<Mutex<NodeChild>>>) -> Node {
-    return Node { hash, count, child };
-}
+use crate::cryptos::hash::HashMD5Handler;
+use crate::cryptos::Hash;
+use crate::errors::{Errs, GeorgeResult};
+use crate::merkle::{Node, NodeChild};
 
 impl Node {
+    pub(crate) fn new(hash: String, count: u32, child: Option<Rc<Mutex<NodeChild>>>) -> Node {
+        return Node { hash, count, child };
+    }
+
     pub fn hash(&self) -> String {
         self.hash.clone()
     }
+
     pub fn count(&self) -> u32 {
         self.count
     }
+
     pub fn child(&self) -> Option<Rc<Mutex<NodeChild>>> {
         self.child.clone()
     }
+
     pub(crate) fn modify_child(&mut self, child: Option<Rc<Mutex<NodeChild>>>) {
         self.child = child
     }
+
     pub(crate) fn fit(&mut self, hash: String, count: u32, child: Option<Rc<Mutex<NodeChild>>>) {
         self.hash = hash;
         self.count = count;
         self.child = child;
     }
+
     /// 新增结点
     ///
     /// level 当前结点层数
@@ -85,15 +81,15 @@ impl Node {
             None => {
                 if level == 2 {
                     // 子结点如不存在，则新建左叶子节点并插入
-                    self.child = Some(Rc::new(Mutex::new(child::new(hash))))
+                    self.child = Some(Rc::new(Mutex::new(NodeChild::new(hash))))
                 } else {
                     // 如不存在，则新建左子树根结点
-                    let mut left_node = new("".to_string(), 0, None);
+                    let mut left_node = Node::new("".to_string(), 0, None);
                     match left_node.add(level - 1, hash) {
                         Err(err) => return Err(err),
                         Ok(()) => {
                             // 赋值左子树
-                            self.child = Some(Rc::new(Mutex::new(child::new_left(left_node))));
+                            self.child = Some(Rc::new(Mutex::new(NodeChild::new_left(left_node))));
                         }
                     }
                 }

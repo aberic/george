@@ -17,9 +17,12 @@ mod sm2 {
     #[cfg(test)]
     mod sm {
 
-        use crate::cryptos::base64::{Base64, Base64Encoder};
-        use crate::cryptos::hex::{Hex, HexEncoder};
-        use crate::cryptos::sm2::{SM2LoadKey, SM2Store, SM2};
+        use crate::cryptos::base64::Base64Encoder;
+        use crate::cryptos::hex::HexEncoder;
+        use crate::cryptos::sm2::{SKLoadKey, SKStore};
+        use crate::cryptos::Base64;
+        use crate::cryptos::Hex;
+        use crate::cryptos::SM2;
 
         #[test]
         fn test() {
@@ -65,8 +68,10 @@ mod sm2 {
     #[cfg(test)]
     mod generate {
 
-        use crate::cryptos::base64::{Base64, Base64Encoder};
-        use crate::cryptos::sm2::{SM2New, SM2};
+        use crate::cryptos::base64::Base64Encoder;
+        use crate::cryptos::sm2::SKNew;
+        use crate::cryptos::Base64;
+        use crate::cryptos::SM2;
 
         #[test]
         fn test() {
@@ -84,8 +89,10 @@ mod sm2 {
     #[cfg(test)]
     mod generate_sk {
 
-        use crate::cryptos::base64::{Base64, Base64Encoder};
-        use crate::cryptos::sm2::{SM2SkNew, SM2};
+        use crate::cryptos::base64::Base64Encoder;
+        use crate::cryptos::sm2::SkNew;
+        use crate::cryptos::Base64;
+        use crate::cryptos::SM2;
 
         #[test]
         fn test() {
@@ -103,8 +110,10 @@ mod sm2 {
     #[cfg(test)]
     mod generate_sk_file {
 
-        use crate::cryptos::base64::{Base64, Base64Encoder};
-        use crate::cryptos::sm2::{SM2SkNewStore, SM2};
+        use crate::cryptos::base64::Base64Encoder;
+        use crate::cryptos::sm2::SkNewStore;
+        use crate::cryptos::Base64;
+        use crate::cryptos::SM2;
 
         #[test]
         fn test() {
@@ -126,8 +135,10 @@ mod sm2 {
     #[cfg(test)]
     mod generate_file {
 
-        use crate::cryptos::base64::{Base64, Base64Encoder};
-        use crate::cryptos::sm2::{SM2NewStore, SM2};
+        use crate::cryptos::base64::Base64Encoder;
+        use crate::cryptos::sm2::SKNewStore;
+        use crate::cryptos::Base64;
+        use crate::cryptos::SM2;
 
         #[test]
         fn test1() {
@@ -165,8 +176,10 @@ mod sm2 {
     #[cfg(test)]
     mod generate_pk_v8s {
 
-        use crate::cryptos::base64::{Base64, Base64Encoder};
-        use crate::cryptos::sm2::{SM2New, SM2Pk, SM2};
+        use crate::cryptos::base64::Base64Encoder;
+        use crate::cryptos::sm2::{SKNew, SKPk};
+        use crate::cryptos::Base64;
+        use crate::cryptos::SM2;
 
         #[test]
         fn generate_pk_test() {
@@ -188,8 +201,10 @@ mod sm2 {
     #[cfg(test)]
     mod generate_pk_string {
 
-        use crate::cryptos::base64::{Base64, Base64Encoder};
-        use crate::cryptos::sm2::{SM2New, SM2Pk, SM2};
+        use crate::cryptos::base64::Base64Encoder;
+        use crate::cryptos::sm2::{SKNew, SKPk};
+        use crate::cryptos::Base64;
+        use crate::cryptos::SM2;
 
         #[test]
         fn generate_pk_test() {
@@ -211,8 +226,10 @@ mod sm2 {
     #[cfg(test)]
     mod generate_pk_v8s_path {
 
-        use crate::cryptos::base64::{Base64, Base64Encoder};
-        use crate::cryptos::sm2::{SM2NewStore, SM2Pk, SM2};
+        use crate::cryptos::base64::Base64Encoder;
+        use crate::cryptos::sm2::{SKNewStore, SKPk};
+        use crate::cryptos::Base64;
+        use crate::cryptos::SM2;
 
         #[test]
         fn generate_pk_test() {
@@ -236,8 +253,10 @@ mod sm2 {
     #[cfg(test)]
     mod generate_pk_string_path {
 
-        use crate::cryptos::base64::{Base64, Base64Encoder};
-        use crate::cryptos::sm2::{SM2NewStore, SM2Pk, SM2};
+        use crate::cryptos::base64::Base64Encoder;
+        use crate::cryptos::sm2::{SKNewStore, SKPk};
+        use crate::cryptos::Base64;
+        use crate::cryptos::SM2;
 
         #[test]
         fn generate_pk_test() {
@@ -257,8 +276,10 @@ mod sm2 {
     #[cfg(test)]
     mod sign {
 
-        use crate::cryptos::base64::{Base64, Base64Encoder};
-        use crate::cryptos::sm2::{SM2NewStore, SM2Sign, SM2Verify, SM2};
+        use crate::cryptos::base64::Base64Encoder;
+        use crate::cryptos::sm2::{SKNewStore, SKSign, SKVerify};
+        use crate::cryptos::Base64;
+        use crate::cryptos::SM2;
 
         #[test]
         fn test_u8s() {
@@ -1679,8 +1700,10 @@ mod sm2 {
     #[cfg(test)]
     mod sign_filepath {
 
-        use crate::cryptos::base64::{Base64, Base64Encoder};
-        use crate::cryptos::sm2::{SM2NewStore, SM2SignPath, SM2VerifyPath, SM2};
+        use crate::cryptos::base64::Base64Encoder;
+        use crate::cryptos::sm2::{SKNewStore, SKSignPath, SKVerifyPath};
+        use crate::cryptos::Base64;
+        use crate::cryptos::SM2;
 
         #[test]
         fn test() {

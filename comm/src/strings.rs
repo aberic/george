@@ -12,7 +12,8 @@
  * limitations under the License.
  */
 
-use crate::errors::entrances::{Errs, GeorgeResult};
+use crate::errors::{Errs, GeorgeResult};
+use crate::Strings;
 
 pub trait StringHandler {
     /// 字符串截取
@@ -69,8 +70,6 @@ pub trait StringHandler {
     fn repeaters(repeated: String, len: usize) -> String;
     fn from_utf8(data: Vec<u8>) -> GeorgeResult<String>;
 }
-
-pub struct Strings {}
 
 impl StringHandler for Strings {
     fn sub(comment: &str, begin: usize, end: usize) -> String {

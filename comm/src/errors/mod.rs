@@ -12,6 +12,44 @@
  * limitations under the License.
  */
 
+use crate::errors::children::{
+    DataExistError, DataNoExistError, DatabaseExistError, DatabaseNoExistError, DirExistError,
+    FileExistError, IndexExistError, IndexNoExistError, MethodNoSupportError, NoneError,
+    PageExistError, PageNoExistError, StringError, ViewExistError, ViewNoExistError,
+};
 pub mod children;
 pub mod entrances;
 mod entrances_test;
+
+pub trait GeorgeStringErr<M, N>: Sized {
+    fn string(_: M, _: N) -> Self;
+}
+
+pub trait GeorgeString<M>: Sized {
+    fn string(_: M) -> Self;
+}
+
+/// 自定义Result类型：GeorgeResult
+pub type GeorgeResult<T> = std::result::Result<T, GeorgeError>;
+
+/// 索引触发Error,实现std::fmt::Debug的trait
+#[derive(Debug)]
+pub enum GeorgeError {
+    StringError(StringError),
+    DirExistError(DirExistError),
+    FileExistError(FileExistError),
+    DataExistError(DataExistError),
+    PageExistError(PageExistError),
+    PageNoExistError(PageNoExistError),
+    DatabaseExistError(DatabaseExistError),
+    ViewExistError(ViewExistError),
+    IndexExistError(IndexExistError),
+    DataNoExistError(DataNoExistError),
+    DatabaseNoExistError(DatabaseNoExistError),
+    ViewNoExistError(ViewNoExistError),
+    IndexNoExistError(IndexNoExistError),
+    MethodNoSupportError(MethodNoSupportError),
+    NoneError(NoneError),
+}
+
+pub struct Errs;

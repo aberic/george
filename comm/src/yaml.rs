@@ -12,20 +12,13 @@
  * limitations under the License.
  */
 
-use crate::errors::entrances::{Errs, GeorgeResult};
+use crate::errors::{Errs, GeorgeResult};
+use crate::{Yaml, YamlArray};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_yaml::Value;
 
-pub struct Yaml {
-    value: Value,
-}
-
-pub struct YamlArray {
-    value: Value,
-}
-
-pub trait YamlHandler {
+pub trait Handler {
     fn object<Object>(object: &Object) -> GeorgeResult<Self>
     where
         Object: ?Sized + Serialize,
@@ -112,35 +105,50 @@ pub trait YamlHandler {
     }
 }
 
-pub trait YamlNew<T>: Sized {
+pub trait New<T>: Sized {
     fn new(data: T) -> GeorgeResult<Self>;
+
     fn from(&mut self, data: T) -> GeorgeResult<()>;
 }
 
-pub trait YamlExec<Param> {
+pub trait Exec<Param> {
     /// 表示yaml中不存在`param`或者`param`的值为null
     fn has(&self, param: Param) -> bool;
+
     fn is_string(&self, param: Param) -> bool;
+
     fn is_u64(&self, param: Param) -> bool;
+
     fn is_i64(&self, param: Param) -> bool;
+
     fn is_f64(&self, param: Param) -> bool;
+
     fn is_bool(&self, param: Param) -> bool;
+
     fn is_mapping(&self, param: Param) -> bool;
+
     fn is_sequence(&self, param: Param) -> bool;
 }
 
-pub trait YamlGet<Param> {
+pub trait Get<Param> {
     fn get_value(&self, param: Param) -> GeorgeResult<Value>;
+
     fn get_string(&self, param: Param) -> GeorgeResult<String>;
+
     fn get_u64(&self, param: Param) -> GeorgeResult<u64>;
+
     fn get_i64(&self, param: Param) -> GeorgeResult<i64>;
+
     fn get_f64(&self, param: Param) -> GeorgeResult<f64>;
+
     fn get_bool(&self, param: Param) -> GeorgeResult<bool>;
+
     fn get_object(&self, param: Param) -> GeorgeResult<Yaml>;
+
     fn get_array(&self, param: Param) -> GeorgeResult<YamlArray>;
 }
 
-impl YamlHandler for Yaml {
+impl Handler for Yaml {
     fn object<Object>(object: &Object) -> GeorgeResult<Self>
     where
         Object: ?Sized + Serialize,
@@ -156,7 +164,7 @@ impl YamlHandler for Yaml {
     }
 }
 
-impl YamlNew<&[u8]> for Yaml {
+impl New<&[u8]> for Yaml {
     fn new(data: &[u8]) -> GeorgeResult<Self> {
         Ok(Yaml {
             value: from_slice(data)?,
@@ -169,7 +177,7 @@ impl YamlNew<&[u8]> for Yaml {
     }
 }
 
-impl YamlNew<Vec<u8>> for Yaml {
+impl New<Vec<u8>> for Yaml {
     fn new(data: Vec<u8>) -> GeorgeResult<Self> {
         Ok(Yaml {
             value: from_slice(data.as_slice())?,
@@ -182,7 +190,7 @@ impl YamlNew<Vec<u8>> for Yaml {
     }
 }
 
-impl YamlNew<&str> for Yaml {
+impl New<&str> for Yaml {
     fn new(data: &str) -> GeorgeResult<Self> {
         Ok(Yaml {
             value: from_string(data)?,
@@ -195,7 +203,7 @@ impl YamlNew<&str> for Yaml {
     }
 }
 
-impl YamlNew<String> for Yaml {
+impl New<String> for Yaml {
     fn new(data: String) -> GeorgeResult<Self> {
         Ok(Yaml {
             value: from_string(data.as_str())?,
@@ -208,7 +216,7 @@ impl YamlNew<String> for Yaml {
     }
 }
 
-impl YamlNew<Value> for Yaml {
+impl New<Value> for Yaml {
     fn new(value: Value) -> GeorgeResult<Self> {
         Ok(Yaml { value })
     }
@@ -219,7 +227,7 @@ impl YamlNew<Value> for Yaml {
     }
 }
 
-impl YamlNew<&Value> for Yaml {
+impl New<&Value> for Yaml {
     fn new(value: &Value) -> GeorgeResult<Self> {
         Ok(Yaml {
             value: value.clone(),
@@ -232,7 +240,7 @@ impl YamlNew<&Value> for Yaml {
     }
 }
 
-impl YamlExec<&str> for Yaml {
+impl Exec<&str> for Yaml {
     fn has(&self, param: &str) -> bool {
         self.value[param] == Value::Null
     }
@@ -266,7 +274,7 @@ impl YamlExec<&str> for Yaml {
     }
 }
 
-impl YamlExec<String> for Yaml {
+impl Exec<String> for Yaml {
     fn has(&self, param: String) -> bool {
         self.value[param] != Value::Null
     }
@@ -300,7 +308,7 @@ impl YamlExec<String> for Yaml {
     }
 }
 
-impl YamlGet<&str> for Yaml {
+impl Get<&str> for Yaml {
     fn get_value(&self, param: &str) -> GeorgeResult<Value> {
         Ok(self.value[param].clone())
     }
@@ -376,7 +384,7 @@ impl YamlGet<&str> for Yaml {
     }
 }
 
-impl YamlGet<String> for Yaml {
+impl Get<String> for Yaml {
     fn get_value(&self, param: String) -> GeorgeResult<Value> {
         Ok(self.value[param].clone())
     }
@@ -452,7 +460,7 @@ impl YamlGet<String> for Yaml {
     }
 }
 
-impl YamlHandler for YamlArray {
+impl Handler for YamlArray {
     fn object<Object>(object: &Object) -> GeorgeResult<Self>
     where
         Object: ?Sized + Serialize,
@@ -468,7 +476,7 @@ impl YamlHandler for YamlArray {
     }
 }
 
-impl YamlNew<&[u8]> for YamlArray {
+impl New<&[u8]> for YamlArray {
     fn new(data: &[u8]) -> GeorgeResult<Self> {
         Ok(YamlArray {
             value: from_slice(data)?,
@@ -481,7 +489,7 @@ impl YamlNew<&[u8]> for YamlArray {
     }
 }
 
-impl YamlNew<Vec<u8>> for YamlArray {
+impl New<Vec<u8>> for YamlArray {
     fn new(data: Vec<u8>) -> GeorgeResult<Self> {
         Ok(YamlArray {
             value: from_slice(data.as_slice())?,
@@ -494,7 +502,7 @@ impl YamlNew<Vec<u8>> for YamlArray {
     }
 }
 
-impl YamlNew<&str> for YamlArray {
+impl New<&str> for YamlArray {
     fn new(data: &str) -> GeorgeResult<Self> {
         Ok(YamlArray {
             value: from_string(data)?,
@@ -507,7 +515,7 @@ impl YamlNew<&str> for YamlArray {
     }
 }
 
-impl YamlNew<String> for YamlArray {
+impl New<String> for YamlArray {
     fn new(data: String) -> GeorgeResult<Self> {
         Ok(YamlArray {
             value: from_string(data.as_str())?,
@@ -520,7 +528,7 @@ impl YamlNew<String> for YamlArray {
     }
 }
 
-impl YamlNew<Value> for YamlArray {
+impl New<Value> for YamlArray {
     fn new(value: Value) -> GeorgeResult<Self> {
         Ok(YamlArray { value })
     }
@@ -531,7 +539,7 @@ impl YamlNew<Value> for YamlArray {
     }
 }
 
-impl YamlNew<&Value> for YamlArray {
+impl New<&Value> for YamlArray {
     fn new(value: &Value) -> GeorgeResult<Self> {
         Ok(YamlArray {
             value: value.clone(),
@@ -544,7 +552,7 @@ impl YamlNew<&Value> for YamlArray {
     }
 }
 
-impl YamlGet<usize> for YamlArray {
+impl Get<usize> for YamlArray {
     fn get_value(&self, index: usize) -> GeorgeResult<Value> {
         match self.value.get(index as usize) {
             Some(res) => Ok(res.clone()),
@@ -641,7 +649,7 @@ impl YamlGet<usize> for YamlArray {
     }
 }
 
-impl YamlGet<i32> for YamlArray {
+impl Get<i32> for YamlArray {
     fn get_value(&self, index: i32) -> GeorgeResult<Value> {
         match self.value.get(index as usize) {
             Some(res) => Ok(res.clone()),
@@ -732,7 +740,7 @@ impl YamlGet<i32> for YamlArray {
     }
 }
 
-impl YamlGet<u32> for YamlArray {
+impl Get<u32> for YamlArray {
     fn get_value(&self, index: u32) -> GeorgeResult<Value> {
         match self.value.get(index as usize) {
             Some(res) => Ok(res.clone()),
@@ -823,7 +831,7 @@ impl YamlGet<u32> for YamlArray {
     }
 }
 
-impl YamlGet<u64> for YamlArray {
+impl Get<u64> for YamlArray {
     fn get_value(&self, index: u64) -> GeorgeResult<Value> {
         match self.value.get(index as usize) {
             Some(res) => Ok(res.clone()),

@@ -12,14 +12,13 @@
  * limitations under the License.
  */
 
-use crate::cryptos::hex::{Hex, HexEncoder};
-use crate::errors::entrances::{Errs, GeorgeResult};
-use crate::strings::{StringHandler, Strings};
+use crate::cryptos::hex::HexEncoder;
+use crate::cryptos::{Hash, Hex};
+use crate::errors::{Errs, GeorgeResult};
+use crate::strings::StringHandler;
+use crate::Strings;
 use openssl::hash::{Hasher, MessageDigest};
 use std::ops::Add;
-
-#[derive(Debug, Clone)]
-pub struct Hash;
 
 pub trait HashMD5Handler<T> {
     fn digest(md: MessageDigest, comment: T) -> GeorgeResult<String>;

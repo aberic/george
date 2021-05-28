@@ -14,29 +14,34 @@
 
 use std::fs;
 use std::ops::Add;
+use std::path::Path;
 
 use crate::errors::children::DirExistError;
-use crate::errors::entrances::{Errs, GeorgeError, GeorgeResult};
-use std::path::Path;
+use crate::errors::{Errs, GeorgeError, GeorgeResult};
+use crate::io::Dir;
 
 pub trait DirHandler<T>: Sized {
     fn exist(_: T) -> GeorgeResult<bool>;
+
     fn mk(_: T) -> GeorgeResult<()>;
+
     fn mk_uncheck(_: T) -> GeorgeResult<()>;
+
     fn rm(_: T) -> GeorgeResult<()>;
+
     /// 指定路径下目录文件夹名称
     fn name(_: T) -> GeorgeResult<String>;
+
     /// 拷贝`from`目录下内容至`to`目录下
     ///
     /// force 是否强制更新`to`目录为空目录
     fn cp(_: T, _: T, force: bool) -> GeorgeResult<()>;
+
     /// 移动`from`目录下内容至`to`目录下
     ///
     /// force 是否强制更新`to`目录为空目录
     fn mv(_: T, _: T, force: bool) -> GeorgeResult<()>;
 }
-
-pub struct Dir;
 
 impl DirHandler<String> for Dir {
     fn exist(path: String) -> GeorgeResult<bool> {

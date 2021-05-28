@@ -15,10 +15,12 @@
 use std::sync::{Arc, RwLock};
 
 use comm::errors::children::{DataExistError, DataNoExistError};
-use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
-use comm::io::file::{Filer, FilerHandler};
-use comm::trans::Trans;
-use comm::vectors::{Vector, VectorHandler};
+use comm::errors::{Errs, GeorgeError, GeorgeResult};
+use comm::io::file::FilerHandler;
+use comm::io::Filer;
+use comm::vectors::VectorHandler;
+use comm::Trans;
+use comm::Vector;
 
 use crate::task::engine::disk::Node;
 use crate::task::engine::traits::{TForm, TNode, TSeed};

@@ -13,6 +13,7 @@
  */
 
 use std::fs::read;
+use std::path::Path;
 
 use openssl::asn1::{Asn1Integer, Asn1Time};
 use openssl::bn::{BigNum, MsbOption};
@@ -20,25 +21,22 @@ use openssl::error::ErrorStack;
 use openssl::hash::MessageDigest;
 use openssl::nid::Nid;
 use openssl::pkey::{PKey, Private, Public};
+use openssl::stack::Stack;
 use openssl::x509::extension::{
     AuthorityKeyIdentifier, BasicConstraints, ExtendedKeyUsage, KeyUsage, SubjectAlternativeName,
     SubjectKeyIdentifier,
 };
+use openssl::x509::store::X509StoreBuilder;
 use openssl::x509::{
     X509Extension, X509Name, X509NameBuilder, X509NameRef, X509Req, X509ReqBuilder,
     X509StoreContext, X509VerifyResult, X509,
 };
 
-use crate::errors::entrances::Errs;
-use crate::errors::entrances::GeorgeResult;
-use crate::io::file::{Filer, FilerReader, FilerWriter};
-use openssl::stack::Stack;
-use openssl::x509::store::X509StoreBuilder;
-use std::path::Path;
-
-pub struct Cert {
-    pub x509: X509,
-}
+use crate::cryptos::Cert;
+use crate::errors::Errs;
+use crate::errors::GeorgeResult;
+use crate::io::file::{FilerReader, FilerWriter};
+use crate::io::Filer;
 
 /// sign
 impl Cert {
@@ -1343,7 +1341,7 @@ impl SerialNumber {
     ///
     /// ```
     ///
-    /// use comm::errors::entrances::GeorgeResult;
+    /// use comm::errors::GeorgeResult;
     /// use openssl::asn1::Asn1Integer;
     /// use openssl::bn::MsbOption;
     ///

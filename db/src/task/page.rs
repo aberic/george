@@ -16,8 +16,9 @@ use std::sync::{Arc, RwLock};
 
 use chrono::{Duration, Local, NaiveDateTime};
 
-use comm::errors::entrances::{Errs, GeorgeResult};
-use comm::strings::{StringHandler, Strings};
+use comm::errors::{Errs, GeorgeResult};
+use comm::strings::StringHandler;
+use comm::Strings;
 
 use crate::task::engine::memory::Node;
 use crate::task::Page;

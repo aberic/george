@@ -14,7 +14,7 @@
 
 use std::sync::{Arc, RwLock};
 
-use comm::errors::entrances::{GeorgeError, GeorgeResult};
+use comm::errors::{GeorgeError, GeorgeResult};
 
 use crate::task::engine::sequence::Node;
 use crate::task::engine::traits::{TForm, TNode, TSeed};
@@ -26,7 +26,8 @@ use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::writer::Filed;
 use crate::utils::Paths;
 use comm::errors::children::{DataExistError, DataNoExistError};
-use comm::vectors::{Vector, VectorHandler};
+use comm::vectors::VectorHandler;
+use comm::Vector;
 
 impl Node {
     /// 新建根结点

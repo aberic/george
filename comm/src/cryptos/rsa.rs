@@ -16,34 +16,546 @@ use std::fs::read;
 use std::fs::read_to_string;
 use std::path::Path;
 
+use openssl::hash::MessageDigest;
 use openssl::pkey::{PKey, Private, Public};
 use openssl::rsa::{Padding, Rsa};
+use openssl::sign::{Signer, Verifier};
 use openssl::symm::Cipher;
 
-use crate::cryptos::base64::{Base64, Base64Encoder, Basee64Decoder};
-use crate::cryptos::hex::{Hex, HexDecoder, HexEncoder};
-use crate::errors::entrances::Errs;
-use crate::errors::entrances::GeorgeResult;
-use crate::io::file::{Filer, FilerWriter};
-use crate::strings::{StringHandler, Strings};
-use openssl::hash::MessageDigest;
-use openssl::sign::{Signer, Verifier};
+use crate::cryptos::base64::{Base64Decoder, Base64Encoder};
+use crate::cryptos::hex::{HexDecoder, HexEncoder};
+use crate::cryptos::Hex;
+use crate::cryptos::{Base64, RSA};
+use crate::errors::Errs;
+use crate::errors::GeorgeResult;
+use crate::io::file::FilerWriter;
+use crate::io::Filer;
+use crate::strings::StringHandler;
+use crate::Strings;
 
-pub struct RSA {
-    // /// 私钥位数
-    // bits: u32,
-    // /// 指定的密码算法
-    // ///
-    // /// Cipher Represents a particular cipher algorithm.
-    // ///
-    // /// See OpenSSL doc at [`EVP_EncryptInit`] for more information on each algorithms.
-    // ///
-    // /// [`EVP_EncryptInit`]: https://www.openssl.org/docs/man1.1.0/crypto/EVP_EncryptInit.html
-    // cipher: Cipher,
-    sk: PKey<Private>,
-    pk: PKey<Public>,
-    rsa_sk: Rsa<Private>,
-    rsa_pk: Rsa<Public>,
+pub trait RSANew {
+    /// 生成非对称加密私钥，返回sk字节数组
+    ///
+    /// bits 私钥位数
+    ///
+    /// Serializes the private key to a PEM-encoded PKCS#1 RSAPrivateKey structure.
+    ///
+    /// The output will have a header of `-----BEGIN RSA PRIVATE KEY-----`.
+    ///
+    /// This corresponds to [`PEM_write_bio_RSAPrivateKey`].
+    ///
+    /// [`PEM_write_bio_RSAPrivateKey`]: https://www.openssl.org/docs/man1.1.0/crypto/PEM_write_bio_RSAPrivateKey.html
+    /// <p>
+    ///
+    /// # Return
+    /// bytes，可以通过string(bytes)的方式查阅
+    fn generate_pkcs1_pem(bits: u32) -> GeorgeResult<Vec<u8>>;
+
+    /// 生成非对称加密私钥，返回sk字节数组
+    ///
+    /// bits 私钥位数
+    ///
+    /// Serializes the private key to a PEM-encoded PKCS#8 PrivateKeyInfo structure.
+    ///
+    /// The output will have a header of `-----BEGIN PRIVATE KEY-----`.
+    ///
+    /// This corresponds to [`PEM_write_bio_PKCS8PrivateKey`].
+    ///
+    /// [`PEM_write_bio_PKCS8PrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/PEM_write_bio_PKCS8PrivateKey.html
+    /// <p>
+    ///
+    /// # Return
+    /// bytes，可以通过string(bytes)的方式查阅
+    fn generate_pkcs8_pem(bits: u32) -> GeorgeResult<Vec<u8>>;
+
+    /// 生成非对称加密私钥，返回sk字节数组
+    ///
+    /// bits 私钥位数
+    ///
+    /// Serializes the private key to a DER-encoded PKCS#1 RSAPrivateKey structure.
+    ///
+    /// This corresponds to [`i2d_RSAPrivateKey`].
+    ///
+    /// [`i2d_RSAPrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/i2d_RSAPrivateKey.html
+    /// <p>
+    ///
+    /// # Return
+    /// bytes，可以通过string(bytes)的方式查阅
+    fn generate_pkcs1_der(bits: u32) -> GeorgeResult<Vec<u8>>;
+
+    /// 生成非对称加密私钥，返回sk字节数组
+    ///
+    /// bits 私钥位数
+    ///
+    /// Serializes the private key to a DER-encoded key type specific format.
+    ///
+    /// This corresponds to [`i2d_PrivateKey`].
+    ///
+    /// [`i2d_PrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/i2d_PrivateKey.html
+    /// <p>
+    ///
+    /// # Return
+    /// bytes，可以通过string(bytes)的方式查阅
+    fn generate_pkcs8_der(bits: u32) -> GeorgeResult<Vec<u8>>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// bits 私钥位数
+    ///
+    /// Serializes the private key to a PEM-encoded PKCS#1 RSAPrivateKey structure.
+    ///
+    /// The output will have a header of `-----BEGIN RSA PRIVATE KEY-----`.
+    ///
+    /// This corresponds to [`PEM_write_bio_RSAPrivateKey`].
+    ///
+    /// [`PEM_write_bio_RSAPrivateKey`]: https://www.openssl.org/docs/man1.1.0/crypto/PEM_write_bio_RSAPrivateKey.html
+    /// <p>
+    ///
+    /// # Return
+    /// bytes，可以通过string(bytes)的方式查阅
+    fn generate_pkcs1_pem_string(bits: u32) -> GeorgeResult<String>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// bits 私钥位数
+    ///
+    /// Serializes the private key to a PEM-encoded PKCS#8 PrivateKeyInfo structure.
+    ///
+    /// The output will have a header of `-----BEGIN PRIVATE KEY-----`.
+    ///
+    /// This corresponds to [`PEM_write_bio_PKCS8PrivateKey`].
+    ///
+    /// [`PEM_write_bio_PKCS8PrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/PEM_write_bio_PKCS8PrivateKey.html
+    /// <p>
+    ///
+    /// # Return
+    /// bytes，可以通过string(bytes)的方式查阅
+    fn generate_pkcs8_pem_string(bits: u32) -> GeorgeResult<String>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// bits 私钥位数
+    ///
+    /// Serializes the private key to a DER-encoded PKCS#1 RSAPrivateKey structure.
+    ///
+    /// This corresponds to [`i2d_RSAPrivateKey`].
+    ///
+    /// [`i2d_RSAPrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/i2d_RSAPrivateKey.html
+    /// <p>
+    ///
+    /// # Return
+    /// bytes，可以通过string(bytes)的方式查阅
+    fn generate_pkcs1_der_base64(bits: u32) -> GeorgeResult<String>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// bits 私钥位数
+    ///
+    /// Serializes the private key to a DER-encoded key type specific format.
+    ///
+    /// This corresponds to [`i2d_PrivateKey`].
+    ///
+    /// [`i2d_PrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/i2d_PrivateKey.html
+    /// <p>
+    ///
+    /// # Return
+    /// bytes，可以通过string(bytes)的方式查阅
+    fn generate_pkcs8_der_base64(bits: u32) -> GeorgeResult<String>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// bits 私钥位数
+    ///
+    /// Serializes the private key to a DER-encoded PKCS#1 RSAPrivateKey structure.
+    ///
+    /// This corresponds to [`i2d_RSAPrivateKey`].
+    ///
+    /// [`i2d_RSAPrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/i2d_RSAPrivateKey.html
+    /// <p>
+    ///
+    /// # Return
+    /// bytes，可以通过string(bytes)的方式查阅
+    fn generate_pkcs1_der_hex(bits: u32) -> GeorgeResult<String>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// bits 私钥位数
+    ///
+    /// Serializes the private key to a DER-encoded key type specific format.
+    ///
+    /// This corresponds to [`i2d_PrivateKey`].
+    ///
+    /// [`i2d_PrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/i2d_PrivateKey.html
+    /// <p>
+    ///
+    /// # Return
+    /// bytes，可以通过string(bytes)的方式查阅
+    fn generate_pkcs8_der_hex(bits: u32) -> GeorgeResult<String>;
+}
+
+pub trait RSANewPass<T> {
+    /// 生成非对称加密私钥，返回sk字节数组
+    ///
+    /// bits 私钥位数
+    ///
+    /// Cipher Represents a particular cipher algorithm.
+    ///
+    /// See OpenSSL doc at [`EVP_EncryptInit`] for more information on each algorithms.
+    ///
+    /// [`EVP_EncryptInit`]: https://www.openssl.org/docs/man1.1.0/crypto/EVP_EncryptInit.html
+    ///
+    /// Serializes the private key to a PEM-encoded encrypted PKCS#1 RSAPrivateKey structure.
+    ///
+    /// The output will have a header of `-----BEGIN RSA PRIVATE KEY-----`.
+    ///
+    /// This corresponds to [`PEM_write_bio_RSAPrivateKey`].
+    ///
+    /// [`PEM_write_bio_RSAPrivateKey`]: https://www.openssl.org/docs/man1.1.0/crypto/PEM_write_bio_RSAPrivateKey.html
+    /// <p>
+    ///
+    /// # Return
+    /// bytes，可以通过string(bytes)的方式查阅
+    fn generate_pkcs1_pem_pass(
+        bits: u32,
+        cipher: openssl::symm::Cipher,
+        passphrase: T,
+    ) -> GeorgeResult<Vec<u8>>;
+
+    /// 生成非对称加密私钥，返回sk字节数组
+    ///
+    /// bits 私钥位数
+    ///
+    /// Cipher Represents a particular cipher algorithm.
+    ///
+    /// See OpenSSL doc at [`EVP_EncryptInit`] for more information on each algorithms.
+    ///
+    /// [`EVP_EncryptInit`]: https://www.openssl.org/docs/man1.1.0/crypto/EVP_EncryptInit.html
+    ///
+    /// Serializes the private key to a PEM-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+    ///
+    /// The output will have a header of `-----BEGIN ENCRYPTED PRIVATE KEY-----`.
+    ///
+    /// This corresponds to [`PEM_write_bio_PKCS8PrivateKey`].
+    ///
+    /// [`PEM_write_bio_PKCS8PrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/PEM_write_bio_PKCS8PrivateKey.html
+    /// <p>
+    ///
+    /// # Return
+    /// bytes，可以通过string(bytes)的方式查阅
+    fn generate_pkcs8_pem_pass(
+        bits: u32,
+        cipher: openssl::symm::Cipher,
+        passphrase: T,
+    ) -> GeorgeResult<Vec<u8>>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// bits 私钥位数
+    ///
+    /// Cipher Represents a particular cipher algorithm.
+    ///
+    /// See OpenSSL doc at [`EVP_EncryptInit`] for more information on each algorithms.
+    ///
+    /// [`EVP_EncryptInit`]: https://www.openssl.org/docs/man1.1.0/crypto/EVP_EncryptInit.html
+    ///
+    /// Serializes the private key to a PEM-encoded encrypted PKCS#1 RSAPrivateKey structure.
+    ///
+    /// The output will have a header of `-----BEGIN RSA PRIVATE KEY-----`.
+    ///
+    /// This corresponds to [`PEM_write_bio_RSAPrivateKey`].
+    ///
+    /// [`PEM_write_bio_RSAPrivateKey`]: https://www.openssl.org/docs/man1.1.0/crypto/PEM_write_bio_RSAPrivateKey.html
+    /// <p>
+    ///
+    /// # Return
+    /// bytes，可以通过string(bytes)的方式查阅
+    fn generate_pkcs1_pem_pass_string(
+        bits: u32,
+        cipher: openssl::symm::Cipher,
+        passphrase: T,
+    ) -> GeorgeResult<String>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// bits 私钥位数
+    ///
+    /// Cipher Represents a particular cipher algorithm.
+    ///
+    /// See OpenSSL doc at [`EVP_EncryptInit`] for more information on each algorithms.
+    ///
+    /// [`EVP_EncryptInit`]: https://www.openssl.org/docs/man1.1.0/crypto/EVP_EncryptInit.html
+    ///
+    /// Serializes the private key to a PEM-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+    ///
+    /// The output will have a header of `-----BEGIN ENCRYPTED PRIVATE KEY-----`.
+    ///
+    /// This corresponds to [`PEM_write_bio_PKCS8PrivateKey`].
+    ///
+    /// [`PEM_write_bio_PKCS8PrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/PEM_write_bio_PKCS8PrivateKey.html
+    /// <p>
+    ///
+    /// # Return
+    /// bytes，可以通过string(bytes)的方式查阅
+    fn generate_pkcs8_pem_pass_string(
+        bits: u32,
+        cipher: openssl::symm::Cipher,
+        passphrase: T,
+    ) -> GeorgeResult<String>;
+}
+
+pub trait RSANewStore {
+    /// 生成非对称加密私钥，返回sk字节数组
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_pkcs1_pem<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<Vec<u8>>;
+
+    /// 生成非对称加密私钥，返回sk字节数组
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_pkcs8_pem<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<Vec<u8>>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_pkcs1_pem_string<P: AsRef<Path>>(bits: u32, sk_filepath: P)
+        -> GeorgeResult<String>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_pkcs8_pem_string<P: AsRef<Path>>(bits: u32, sk_filepath: P)
+        -> GeorgeResult<String>;
+
+    /// 生成非对称加密私钥，返回sk字节数组
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_pkcs1_der<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<Vec<u8>>;
+
+    /// 生成非对称加密私钥，返回sk字节数组
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_pkcs8_der<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<Vec<u8>>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_pkcs1_der_base64<P: AsRef<Path>>(bits: u32, sk_filepath: P)
+        -> GeorgeResult<String>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_pkcs8_der_base64<P: AsRef<Path>>(bits: u32, sk_filepath: P)
+        -> GeorgeResult<String>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_pkcs1_der_hex<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<String>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_pkcs8_der_hex<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<String>;
+}
+
+pub trait RSANewPassStore<M> {
+    /// 生成非对称加密私钥，返回sk字节数组
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_pkcs1_pem_pass<P: AsRef<Path>>(
+        bits: u32,
+        cipher: openssl::symm::Cipher,
+        passphrase: M,
+        sk_filepath: P,
+    ) -> GeorgeResult<Vec<u8>>;
+
+    /// 生成非对称加密私钥，返回sk字节数组
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_pkcs8_pem_pass<P: AsRef<Path>>(
+        bits: u32,
+        cipher: openssl::symm::Cipher,
+        passphrase: M,
+        sk_filepath: P,
+    ) -> GeorgeResult<Vec<u8>>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_pkcs1_pem_pass_string<P: AsRef<Path>>(
+        bits: u32,
+        cipher: openssl::symm::Cipher,
+        passphrase: M,
+        sk_filepath: P,
+    ) -> GeorgeResult<String>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_pkcs8_pem_pass_string<P: AsRef<Path>>(
+        bits: u32,
+        cipher: openssl::symm::Cipher,
+        passphrase: M,
+        sk_filepath: P,
+    ) -> GeorgeResult<String>;
+}
+
+pub trait RSAPkV8s<T> {
+    /// 根据私钥生成公钥
+    fn generate_pk(sk: T) -> GeorgeResult<Vec<u8>>;
+}
+
+pub trait RSAPk2String<T> {
+    /// 根据私钥生成公钥
+    fn generate_pk(sk: T) -> GeorgeResult<String>;
+}
+
+pub trait RSAPkKey<T> {
+    /// 根据私钥生成公钥
+    fn generate_pk(sk: T) -> GeorgeResult<PKey<Public>>;
+}
+
+pub trait RSAPk<T> {
+    /// 根据私钥生成公钥
+    fn generate_pk_pkcs1(sk: T) -> GeorgeResult<Rsa<Public>>;
+
+    /// 根据私钥生成公钥
+    fn generate_pk_pkcs8(sk: T) -> GeorgeResult<Rsa<Public>>;
+}
+
+pub trait RSAPkString<T> {
+    /// 根据私钥生成公钥
+    fn generate_pk_pkcs1_pem(sk: T) -> GeorgeResult<Rsa<Public>>;
+
+    /// 根据私钥生成公钥
+    fn generate_pk_pkcs8_pem(sk: T) -> GeorgeResult<Rsa<Public>>;
+
+    /// 根据私钥生成公钥
+    fn generate_pk_pkcs1_hex(sk: T) -> GeorgeResult<Rsa<Public>>;
+
+    /// 根据私钥生成公钥
+    fn generate_pk_pkcs8_hex(sk: T) -> GeorgeResult<Rsa<Public>>;
+
+    /// 根据私钥生成公钥
+    fn generate_pk_pkcs1_base64(sk: T) -> GeorgeResult<Rsa<Public>>;
+
+    /// 根据私钥生成公钥
+    fn generate_pk_pkcs8_base64(sk: T) -> GeorgeResult<Rsa<Public>>;
+}
+
+pub trait RSAPkString2String<T> {
+    /// 根据私钥生成公钥
+    fn generate_pk_pkcs1_pem(sk: T) -> GeorgeResult<String>;
+
+    /// 根据私钥生成公钥
+    fn generate_pk_pkcs8_pem(sk: T) -> GeorgeResult<String>;
+
+    /// 根据私钥生成公钥
+    fn generate_pk_pkcs1_hex(sk: T) -> GeorgeResult<String>;
+
+    /// 根据私钥生成公钥
+    fn generate_pk_pkcs8_hex(sk: T) -> GeorgeResult<String>;
+
+    /// 根据私钥生成公钥
+    fn generate_pk_pkcs1_base64(sk: T) -> GeorgeResult<String>;
+
+    /// 根据私钥生成公钥
+    fn generate_pk_pkcs8_base64(sk: T) -> GeorgeResult<String>;
+}
+
+pub trait RSAPkKeyString2String<T> {
+    /// 根据私钥生成公钥
+    fn generate_pk_pkey_pem(sk: T) -> GeorgeResult<String>;
+
+    /// 根据私钥生成公钥
+    fn generate_pk_pkey_hex(sk: T) -> GeorgeResult<String>;
+
+    /// 根据私钥生成公钥
+    fn generate_pk_pkey_base64(sk: T) -> GeorgeResult<String>;
+}
+
+pub trait RSAPkKeyString<T> {
+    /// 根据私钥生成公钥
+    fn generate_pk_pkey_pem(sk: T) -> GeorgeResult<PKey<Public>>;
+
+    /// 根据私钥生成公钥
+    fn generate_pk_pkey_hex(sk: T) -> GeorgeResult<PKey<Public>>;
+
+    /// 根据私钥生成公钥
+    fn generate_pk_pkey_base64(sk: T) -> GeorgeResult<PKey<Public>>;
+}
+
+pub trait RSAPkKeyPath {
+    /// 根据私钥文件生成公钥
+    fn generate_pk<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<PKey<Public>>;
+}
+
+pub trait RSAPkPath {
+    /// 根据私钥文件生成公钥
+    fn generate_pk_pkcs1<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Rsa<Public>>;
+
+    /// 根据私钥文件生成公钥
+    fn generate_pk_pkcs8<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Rsa<Public>>;
+}
+
+pub trait RSAPkV8sPath {
+    /// 根据私钥文件生成公钥
+    fn generate_pk_pkcs1_pem<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>>;
+
+    /// 根据私钥文件生成公钥
+    fn generate_pk_pkcs8_pem<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>>;
+
+    /// 根据私钥文件生成公钥
+    fn generate_pk_pkcs1_der<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>>;
+
+    /// 根据私钥文件生成公钥
+    fn generate_pk_pkcs8_der<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>>;
+}
+
+pub trait RSAPkStringPath {
+    /// 根据私钥文件生成公钥
+    fn generate_pk_pkcs1_pem<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
+
+    /// 根据私钥文件生成公钥
+    fn generate_pk_pkcs8_pem<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
+
+    /// 根据私钥文件生成公钥
+    fn generate_pk_pkcs1_der_hex<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
+
+    /// 根据私钥文件生成公钥
+    fn generate_pk_pkcs8_der_hex<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
+
+    /// 根据私钥文件生成公钥
+    fn generate_pk_pkcs1_der_base64<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
+
+    /// 根据私钥文件生成公钥
+    fn generate_pk_pkcs8_der_base64<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
+}
+
+pub trait RSAStoreKey<M> {
+    /// 将公/私钥存储在指定文件中
+    fn store<P: AsRef<Path>>(key: M, key_filepath: P) -> GeorgeResult<()>;
+}
+
+pub trait RSALoadKey {
+    /// 从指定文件中读取公/私钥字节数组
+    fn load_bytes<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<Vec<u8>>;
+
+    /// 从指定文件中读取公/私钥字符串
+    fn load_string<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<String>;
+
+    /// 从指定文件中读取Pkey私钥
+    fn load_sk<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<PKey<Private>>;
+
+    /// 从指定文件中读取Pkey公钥
+    fn load_pk<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<PKey<Public>>;
+
+    /// 从指定文件中读取Rsa私钥
+    fn load_rsa_sk<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<Rsa<Private>>;
+
+    /// 从指定文件中读取Rsa公钥
+    fn load_rsa_pk<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<Rsa<Public>>;
 }
 
 /// base method
@@ -443,494 +955,6 @@ impl RSA {
             Err(err) => Err(Errs::strs("public_decrypt", err)),
         }
     }
-}
-
-pub trait RSANew {
-    /// 生成非对称加密私钥，返回sk字节数组
-    ///
-    /// bits 私钥位数
-    ///
-    /// Serializes the private key to a PEM-encoded PKCS#1 RSAPrivateKey structure.
-    ///
-    /// The output will have a header of `-----BEGIN RSA PRIVATE KEY-----`.
-    ///
-    /// This corresponds to [`PEM_write_bio_RSAPrivateKey`].
-    ///
-    /// [`PEM_write_bio_RSAPrivateKey`]: https://www.openssl.org/docs/man1.1.0/crypto/PEM_write_bio_RSAPrivateKey.html
-    /// <p>
-    ///
-    /// # Return
-    /// bytes，可以通过string(bytes)的方式查阅
-    fn generate_pkcs1_pem(bits: u32) -> GeorgeResult<Vec<u8>>;
-
-    /// 生成非对称加密私钥，返回sk字节数组
-    ///
-    /// bits 私钥位数
-    ///
-    /// Serializes the private key to a PEM-encoded PKCS#8 PrivateKeyInfo structure.
-    ///
-    /// The output will have a header of `-----BEGIN PRIVATE KEY-----`.
-    ///
-    /// This corresponds to [`PEM_write_bio_PKCS8PrivateKey`].
-    ///
-    /// [`PEM_write_bio_PKCS8PrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/PEM_write_bio_PKCS8PrivateKey.html
-    /// <p>
-    ///
-    /// # Return
-    /// bytes，可以通过string(bytes)的方式查阅
-    fn generate_pkcs8_pem(bits: u32) -> GeorgeResult<Vec<u8>>;
-
-    /// 生成非对称加密私钥，返回sk字节数组
-    ///
-    /// bits 私钥位数
-    ///
-    /// Serializes the private key to a DER-encoded PKCS#1 RSAPrivateKey structure.
-    ///
-    /// This corresponds to [`i2d_RSAPrivateKey`].
-    ///
-    /// [`i2d_RSAPrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/i2d_RSAPrivateKey.html
-    /// <p>
-    ///
-    /// # Return
-    /// bytes，可以通过string(bytes)的方式查阅
-    fn generate_pkcs1_der(bits: u32) -> GeorgeResult<Vec<u8>>;
-
-    /// 生成非对称加密私钥，返回sk字节数组
-    ///
-    /// bits 私钥位数
-    ///
-    /// Serializes the private key to a DER-encoded key type specific format.
-    ///
-    /// This corresponds to [`i2d_PrivateKey`].
-    ///
-    /// [`i2d_PrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/i2d_PrivateKey.html
-    /// <p>
-    ///
-    /// # Return
-    /// bytes，可以通过string(bytes)的方式查阅
-    fn generate_pkcs8_der(bits: u32) -> GeorgeResult<Vec<u8>>;
-
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// bits 私钥位数
-    ///
-    /// Serializes the private key to a PEM-encoded PKCS#1 RSAPrivateKey structure.
-    ///
-    /// The output will have a header of `-----BEGIN RSA PRIVATE KEY-----`.
-    ///
-    /// This corresponds to [`PEM_write_bio_RSAPrivateKey`].
-    ///
-    /// [`PEM_write_bio_RSAPrivateKey`]: https://www.openssl.org/docs/man1.1.0/crypto/PEM_write_bio_RSAPrivateKey.html
-    /// <p>
-    ///
-    /// # Return
-    /// bytes，可以通过string(bytes)的方式查阅
-    fn generate_pkcs1_pem_string(bits: u32) -> GeorgeResult<String>;
-
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// bits 私钥位数
-    ///
-    /// Serializes the private key to a PEM-encoded PKCS#8 PrivateKeyInfo structure.
-    ///
-    /// The output will have a header of `-----BEGIN PRIVATE KEY-----`.
-    ///
-    /// This corresponds to [`PEM_write_bio_PKCS8PrivateKey`].
-    ///
-    /// [`PEM_write_bio_PKCS8PrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/PEM_write_bio_PKCS8PrivateKey.html
-    /// <p>
-    ///
-    /// # Return
-    /// bytes，可以通过string(bytes)的方式查阅
-    fn generate_pkcs8_pem_string(bits: u32) -> GeorgeResult<String>;
-
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// bits 私钥位数
-    ///
-    /// Serializes the private key to a DER-encoded PKCS#1 RSAPrivateKey structure.
-    ///
-    /// This corresponds to [`i2d_RSAPrivateKey`].
-    ///
-    /// [`i2d_RSAPrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/i2d_RSAPrivateKey.html
-    /// <p>
-    ///
-    /// # Return
-    /// bytes，可以通过string(bytes)的方式查阅
-    fn generate_pkcs1_der_base64(bits: u32) -> GeorgeResult<String>;
-
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// bits 私钥位数
-    ///
-    /// Serializes the private key to a DER-encoded key type specific format.
-    ///
-    /// This corresponds to [`i2d_PrivateKey`].
-    ///
-    /// [`i2d_PrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/i2d_PrivateKey.html
-    /// <p>
-    ///
-    /// # Return
-    /// bytes，可以通过string(bytes)的方式查阅
-    fn generate_pkcs8_der_base64(bits: u32) -> GeorgeResult<String>;
-
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// bits 私钥位数
-    ///
-    /// Serializes the private key to a DER-encoded PKCS#1 RSAPrivateKey structure.
-    ///
-    /// This corresponds to [`i2d_RSAPrivateKey`].
-    ///
-    /// [`i2d_RSAPrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/i2d_RSAPrivateKey.html
-    /// <p>
-    ///
-    /// # Return
-    /// bytes，可以通过string(bytes)的方式查阅
-    fn generate_pkcs1_der_hex(bits: u32) -> GeorgeResult<String>;
-
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// bits 私钥位数
-    ///
-    /// Serializes the private key to a DER-encoded key type specific format.
-    ///
-    /// This corresponds to [`i2d_PrivateKey`].
-    ///
-    /// [`i2d_PrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/i2d_PrivateKey.html
-    /// <p>
-    ///
-    /// # Return
-    /// bytes，可以通过string(bytes)的方式查阅
-    fn generate_pkcs8_der_hex(bits: u32) -> GeorgeResult<String>;
-}
-
-pub trait RSANewPass<T> {
-    /// 生成非对称加密私钥，返回sk字节数组
-    ///
-    /// bits 私钥位数
-    ///
-    /// Cipher Represents a particular cipher algorithm.
-    ///
-    /// See OpenSSL doc at [`EVP_EncryptInit`] for more information on each algorithms.
-    ///
-    /// [`EVP_EncryptInit`]: https://www.openssl.org/docs/man1.1.0/crypto/EVP_EncryptInit.html
-    ///
-    /// Serializes the private key to a PEM-encoded encrypted PKCS#1 RSAPrivateKey structure.
-    ///
-    /// The output will have a header of `-----BEGIN RSA PRIVATE KEY-----`.
-    ///
-    /// This corresponds to [`PEM_write_bio_RSAPrivateKey`].
-    ///
-    /// [`PEM_write_bio_RSAPrivateKey`]: https://www.openssl.org/docs/man1.1.0/crypto/PEM_write_bio_RSAPrivateKey.html
-    /// <p>
-    ///
-    /// # Return
-    /// bytes，可以通过string(bytes)的方式查阅
-    fn generate_pkcs1_pem_pass(bits: u32, cipher: Cipher, passphrase: T) -> GeorgeResult<Vec<u8>>;
-
-    /// 生成非对称加密私钥，返回sk字节数组
-    ///
-    /// bits 私钥位数
-    ///
-    /// Cipher Represents a particular cipher algorithm.
-    ///
-    /// See OpenSSL doc at [`EVP_EncryptInit`] for more information on each algorithms.
-    ///
-    /// [`EVP_EncryptInit`]: https://www.openssl.org/docs/man1.1.0/crypto/EVP_EncryptInit.html
-    ///
-    /// Serializes the private key to a PEM-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
-    ///
-    /// The output will have a header of `-----BEGIN ENCRYPTED PRIVATE KEY-----`.
-    ///
-    /// This corresponds to [`PEM_write_bio_PKCS8PrivateKey`].
-    ///
-    /// [`PEM_write_bio_PKCS8PrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/PEM_write_bio_PKCS8PrivateKey.html
-    /// <p>
-    ///
-    /// # Return
-    /// bytes，可以通过string(bytes)的方式查阅
-    fn generate_pkcs8_pem_pass(bits: u32, cipher: Cipher, passphrase: T) -> GeorgeResult<Vec<u8>>;
-
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// bits 私钥位数
-    ///
-    /// Cipher Represents a particular cipher algorithm.
-    ///
-    /// See OpenSSL doc at [`EVP_EncryptInit`] for more information on each algorithms.
-    ///
-    /// [`EVP_EncryptInit`]: https://www.openssl.org/docs/man1.1.0/crypto/EVP_EncryptInit.html
-    ///
-    /// Serializes the private key to a PEM-encoded encrypted PKCS#1 RSAPrivateKey structure.
-    ///
-    /// The output will have a header of `-----BEGIN RSA PRIVATE KEY-----`.
-    ///
-    /// This corresponds to [`PEM_write_bio_RSAPrivateKey`].
-    ///
-    /// [`PEM_write_bio_RSAPrivateKey`]: https://www.openssl.org/docs/man1.1.0/crypto/PEM_write_bio_RSAPrivateKey.html
-    /// <p>
-    ///
-    /// # Return
-    /// bytes，可以通过string(bytes)的方式查阅
-    fn generate_pkcs1_pem_pass_string(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: T,
-    ) -> GeorgeResult<String>;
-
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// bits 私钥位数
-    ///
-    /// Cipher Represents a particular cipher algorithm.
-    ///
-    /// See OpenSSL doc at [`EVP_EncryptInit`] for more information on each algorithms.
-    ///
-    /// [`EVP_EncryptInit`]: https://www.openssl.org/docs/man1.1.0/crypto/EVP_EncryptInit.html
-    ///
-    /// Serializes the private key to a PEM-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
-    ///
-    /// The output will have a header of `-----BEGIN ENCRYPTED PRIVATE KEY-----`.
-    ///
-    /// This corresponds to [`PEM_write_bio_PKCS8PrivateKey`].
-    ///
-    /// [`PEM_write_bio_PKCS8PrivateKey`]: https://www.openssl.org/docs/man1.0.2/crypto/PEM_write_bio_PKCS8PrivateKey.html
-    /// <p>
-    ///
-    /// # Return
-    /// bytes，可以通过string(bytes)的方式查阅
-    fn generate_pkcs8_pem_pass_string(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: T,
-    ) -> GeorgeResult<String>;
-}
-
-pub trait RSANewStore {
-    /// 生成非对称加密私钥，返回sk字节数组
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs1_pem<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<Vec<u8>>;
-
-    /// 生成非对称加密私钥，返回sk字节数组
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs8_pem<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<Vec<u8>>;
-
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs1_pem_string<P: AsRef<Path>>(bits: u32, sk_filepath: P)
-        -> GeorgeResult<String>;
-
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs8_pem_string<P: AsRef<Path>>(bits: u32, sk_filepath: P)
-        -> GeorgeResult<String>;
-
-    /// 生成非对称加密私钥，返回sk字节数组
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs1_der<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<Vec<u8>>;
-
-    /// 生成非对称加密私钥，返回sk字节数组
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs8_der<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<Vec<u8>>;
-
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs1_der_base64<P: AsRef<Path>>(bits: u32, sk_filepath: P)
-        -> GeorgeResult<String>;
-
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs8_der_base64<P: AsRef<Path>>(bits: u32, sk_filepath: P)
-        -> GeorgeResult<String>;
-
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs1_der_hex<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<String>;
-
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs8_der_hex<P: AsRef<Path>>(bits: u32, sk_filepath: P) -> GeorgeResult<String>;
-}
-
-pub trait RSANewPassStore<M> {
-    /// 生成非对称加密私钥，返回sk字节数组
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs1_pem_pass<P: AsRef<Path>>(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: M,
-        sk_filepath: P,
-    ) -> GeorgeResult<Vec<u8>>;
-
-    /// 生成非对称加密私钥，返回sk字节数组
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs8_pem_pass<P: AsRef<Path>>(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: M,
-        sk_filepath: P,
-    ) -> GeorgeResult<Vec<u8>>;
-
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs1_pem_pass_string<P: AsRef<Path>>(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: M,
-        sk_filepath: P,
-    ) -> GeorgeResult<String>;
-
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_pkcs8_pem_pass_string<P: AsRef<Path>>(
-        bits: u32,
-        cipher: Cipher,
-        passphrase: M,
-        sk_filepath: P,
-    ) -> GeorgeResult<String>;
-}
-
-pub trait RSAPkV8s<T> {
-    /// 根据私钥生成公钥
-    fn generate_pk(sk: T) -> GeorgeResult<Vec<u8>>;
-}
-
-pub trait RSAPk2String<T> {
-    /// 根据私钥生成公钥
-    fn generate_pk(sk: T) -> GeorgeResult<String>;
-}
-
-pub trait RSAPkKey<T> {
-    /// 根据私钥生成公钥
-    fn generate_pk(sk: T) -> GeorgeResult<PKey<Public>>;
-}
-
-pub trait RSAPk<T> {
-    /// 根据私钥生成公钥
-    fn generate_pk_pkcs1(sk: T) -> GeorgeResult<Rsa<Public>>;
-    /// 根据私钥生成公钥
-    fn generate_pk_pkcs8(sk: T) -> GeorgeResult<Rsa<Public>>;
-}
-
-pub trait RSAPkString<T> {
-    /// 根据私钥生成公钥
-    fn generate_pk_pkcs1_pem(sk: T) -> GeorgeResult<Rsa<Public>>;
-    /// 根据私钥生成公钥
-    fn generate_pk_pkcs8_pem(sk: T) -> GeorgeResult<Rsa<Public>>;
-    /// 根据私钥生成公钥
-    fn generate_pk_pkcs1_hex(sk: T) -> GeorgeResult<Rsa<Public>>;
-    /// 根据私钥生成公钥
-    fn generate_pk_pkcs8_hex(sk: T) -> GeorgeResult<Rsa<Public>>;
-    /// 根据私钥生成公钥
-    fn generate_pk_pkcs1_base64(sk: T) -> GeorgeResult<Rsa<Public>>;
-    /// 根据私钥生成公钥
-    fn generate_pk_pkcs8_base64(sk: T) -> GeorgeResult<Rsa<Public>>;
-}
-
-pub trait RSAPkString2String<T> {
-    /// 根据私钥生成公钥
-    fn generate_pk_pkcs1_pem(sk: T) -> GeorgeResult<String>;
-    /// 根据私钥生成公钥
-    fn generate_pk_pkcs8_pem(sk: T) -> GeorgeResult<String>;
-    /// 根据私钥生成公钥
-    fn generate_pk_pkcs1_hex(sk: T) -> GeorgeResult<String>;
-    /// 根据私钥生成公钥
-    fn generate_pk_pkcs8_hex(sk: T) -> GeorgeResult<String>;
-    /// 根据私钥生成公钥
-    fn generate_pk_pkcs1_base64(sk: T) -> GeorgeResult<String>;
-    /// 根据私钥生成公钥
-    fn generate_pk_pkcs8_base64(sk: T) -> GeorgeResult<String>;
-}
-
-pub trait RSAPkKeyString2String<T> {
-    /// 根据私钥生成公钥
-    fn generate_pk_pkey_pem(sk: T) -> GeorgeResult<String>;
-    /// 根据私钥生成公钥
-    fn generate_pk_pkey_hex(sk: T) -> GeorgeResult<String>;
-    /// 根据私钥生成公钥
-    fn generate_pk_pkey_base64(sk: T) -> GeorgeResult<String>;
-}
-
-pub trait RSAPkKeyString<T> {
-    /// 根据私钥生成公钥
-    fn generate_pk_pkey_pem(sk: T) -> GeorgeResult<PKey<Public>>;
-    /// 根据私钥生成公钥
-    fn generate_pk_pkey_hex(sk: T) -> GeorgeResult<PKey<Public>>;
-    /// 根据私钥生成公钥
-    fn generate_pk_pkey_base64(sk: T) -> GeorgeResult<PKey<Public>>;
-}
-
-pub trait RSAPkKeyPath {
-    /// 根据私钥文件生成公钥
-    fn generate_pk<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<PKey<Public>>;
-}
-
-pub trait RSAPkPath {
-    /// 根据私钥文件生成公钥
-    fn generate_pk_pkcs1<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Rsa<Public>>;
-    /// 根据私钥文件生成公钥
-    fn generate_pk_pkcs8<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Rsa<Public>>;
-}
-
-pub trait RSAPkV8sPath {
-    /// 根据私钥文件生成公钥
-    fn generate_pk_pkcs1_pem<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>>;
-    /// 根据私钥文件生成公钥
-    fn generate_pk_pkcs8_pem<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>>;
-    /// 根据私钥文件生成公钥
-    fn generate_pk_pkcs1_der<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>>;
-    /// 根据私钥文件生成公钥
-    fn generate_pk_pkcs8_der<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>>;
-}
-
-pub trait RSAPkStringPath {
-    /// 根据私钥文件生成公钥
-    fn generate_pk_pkcs1_pem<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
-    /// 根据私钥文件生成公钥
-    fn generate_pk_pkcs8_pem<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
-    /// 根据私钥文件生成公钥
-    fn generate_pk_pkcs1_der_hex<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
-    /// 根据私钥文件生成公钥
-    fn generate_pk_pkcs8_der_hex<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
-    /// 根据私钥文件生成公钥
-    fn generate_pk_pkcs1_der_base64<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
-    /// 根据私钥文件生成公钥
-    fn generate_pk_pkcs8_der_base64<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
-}
-
-pub trait RSAStoreKey<M> {
-    /// 将公/私钥存储在指定文件中
-    fn store<P: AsRef<Path>>(key: M, key_filepath: P) -> GeorgeResult<()>;
-}
-
-pub trait RSALoadKey {
-    /// 从指定文件中读取公/私钥字节数组
-    fn load_bytes<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<Vec<u8>>;
-    /// 从指定文件中读取公/私钥字符串
-    fn load_string<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<String>;
-    /// 从指定文件中读取Pkey私钥
-    fn load_sk<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<PKey<Private>>;
-    /// 从指定文件中读取Pkey公钥
-    fn load_pk<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<PKey<Public>>;
-    /// 从指定文件中读取Rsa私钥
-    fn load_rsa_sk<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<Rsa<Private>>;
-    /// 从指定文件中读取Rsa公钥
-    fn load_rsa_pk<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<Rsa<Public>>;
 }
 
 ////////// generate pk start //////////

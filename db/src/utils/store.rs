@@ -17,10 +17,11 @@ use std::fs::File;
 
 use serde::{Deserialize, Serialize};
 
-use comm::errors::entrances::Errs;
-use comm::errors::entrances::GeorgeResult;
-use comm::io::file::{Filer, FilerReader};
-use comm::trans::Trans;
+use comm::errors::Errs;
+use comm::errors::GeorgeResult;
+use comm::io::file::FilerReader;
+use comm::io::Filer;
+use comm::Trans;
 
 use crate::utils::deploy::VERSION;
 use crate::utils::enums::{IndexType, Tag};

@@ -12,17 +12,15 @@
  * limitations under the License.
  */
 
-use crate::errors::entrances::{Errs, GeorgeResult};
+use crate::cryptos::Base64;
+use crate::errors::{Errs, GeorgeResult};
 use openssl::base64::{decode_block, encode_block};
-
-#[derive(Debug, Clone)]
-pub struct Base64;
 
 pub trait Base64Encoder<T> {
     fn encode(bytes: T) -> String;
 }
 
-pub trait Basee64Decoder<T> {
+pub trait Base64Decoder<T> {
     fn decode(src: T) -> GeorgeResult<Vec<u8>>;
 }
 
@@ -38,7 +36,7 @@ impl Base64Encoder<Vec<u8>> for Base64 {
     }
 }
 
-impl Basee64Decoder<&str> for Base64 {
+impl Base64Decoder<&str> for Base64 {
     fn decode(src: &str) -> GeorgeResult<Vec<u8>> {
         match decode_block(src) {
             Ok(res) => Ok(res),
@@ -47,7 +45,7 @@ impl Basee64Decoder<&str> for Base64 {
     }
 }
 
-impl Basee64Decoder<String> for Base64 {
+impl Base64Decoder<String> for Base64 {
     fn decode(src: String) -> GeorgeResult<Vec<u8>> {
         match decode_block(src.as_str()) {
             Ok(res) => Ok(res),

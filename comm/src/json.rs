@@ -12,18 +12,11 @@
  * limitations under the License.
  */
 
-use crate::errors::entrances::{Errs, GeorgeResult};
+use crate::errors::{Errs, GeorgeResult};
+use crate::{Json, JsonArray};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
-
-pub struct Json {
-    value: Value,
-}
-
-pub struct JsonArray {
-    value: Value,
-}
 
 pub trait JsonHandler {
     fn object<Object>(object: &Object) -> GeorgeResult<Self>

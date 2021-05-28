@@ -12,9 +12,11 @@
  * limitations under the License.
  */
 
-use comm::errors::entrances::{Errs, GeorgeResult};
-use comm::json::{Json, JsonHandler};
-use comm::vectors::{Vector, VectorHandler};
+use comm::errors::{Errs, GeorgeResult};
+use comm::json::JsonHandler;
+use comm::vectors::VectorHandler;
+use comm::Json;
+use comm::Vector;
 use serde::{Deserialize, Serialize};
 
 pub(super) mod block;

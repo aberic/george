@@ -14,7 +14,8 @@
 
 #[cfg(test)]
 mod vectors {
-    use crate::vectors::{Vector, VectorHandler};
+    use crate::vectors::VectorHandler;
+    use crate::Vector;
 
     #[test]
     fn modify_test() {

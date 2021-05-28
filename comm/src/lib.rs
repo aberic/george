@@ -32,3 +32,27 @@ pub mod vectors;
 mod vectors_test;
 pub mod yaml;
 mod yaml_test;
+
+pub struct Env;
+
+pub struct Strings;
+
+pub struct Trans;
+
+pub struct Vector;
+
+pub struct Json {
+    value: serde_json::Value,
+}
+
+pub struct JsonArray {
+    value: serde_json::Value,
+}
+
+pub struct Yaml {
+    value: serde_yaml::Value,
+}
+
+pub struct YamlArray {
+    value: serde_yaml::Value,
+}

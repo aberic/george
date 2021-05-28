@@ -17,18 +17,169 @@ use std::path::Path;
 
 use libsm::sm2::ecc::Point;
 use libsm::sm2::signature::{SigCtx, Signature};
-use num_bigint::BigUint;
 
-use crate::cryptos::base64::{Base64, Base64Encoder, Basee64Decoder};
-use crate::cryptos::hex::{Hex, HexDecoder, HexEncoder};
-use crate::errors::entrances::{Errs, GeorgeResult};
-use crate::io::file::{Filer, FilerWriter};
+use crate::cryptos::base64::{Base64Decoder, Base64Encoder};
+use crate::cryptos::hex::{HexDecoder, HexEncoder};
+use crate::cryptos::Hex;
+use crate::cryptos::{Base64, SM2};
+use crate::errors::{Errs, GeorgeResult};
+use crate::io::file::FilerWriter;
+use crate::io::Filer;
 
-/// 字节数组与字符串通过Base64转换
-pub struct SM2 {
-    ctx: SigCtx,
-    sk: BigUint,
-    pk: Point,
+pub trait SkNew {
+    /// 生成非对称加密私钥，返回sk字节数组
+    fn generate() -> Vec<u8>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    fn generate_hex() -> String;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    fn generate_base64() -> String;
+}
+
+pub trait SkNewStore {
+    /// 生成非对称加密私钥，返回sk字节数组
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_hex<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
+
+    /// 生成非对称加密私钥，返回sk字符串
+    ///
+    /// 并将生成的私钥存储在sk指定文件中
+    fn generate_base64<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
+}
+
+pub trait SKNew {
+    /// 生成非对称加密公私钥，返回sk、pk字节数组
+    fn generate() -> (Vec<u8>, Vec<u8>);
+
+    /// 生成非对称加密公私钥，返回sk、pk字符串
+    fn generate_hex() -> (String, String);
+
+    /// 生成非对称加密公私钥，返回sk、pk字符串
+    fn generate_base64() -> (String, String);
+}
+
+pub trait SKNewStore {
+    /// 生成非对称加密公私钥，返回sk、pk字节数组
+    ///
+    /// 并将生成的公私钥存储在sk、pk指定文件中
+    fn generate<P: AsRef<Path>>(sk_filepath: P, pk_filepath: P)
+        -> GeorgeResult<(Vec<u8>, Vec<u8>)>;
+
+    /// 生成非对称加密公私钥，返回sk、pk字符串
+    ///
+    /// 并将生成的公私钥存储在sk、pk指定文件中
+    fn generate_hex<P: AsRef<Path>>(
+        sk_filepath: P,
+        pk_filepath: P,
+    ) -> GeorgeResult<(String, String)>;
+
+    /// 生成非对称加密公私钥，返回sk、pk字符串
+    ///
+    /// 并将生成的公私钥存储在sk、pk指定文件中
+    fn generate_base64<P: AsRef<Path>>(
+        sk_filepath: P,
+        pk_filepath: P,
+    ) -> GeorgeResult<(String, String)>;
+}
+
+pub trait SKPk {
+    /// 根据私钥生成公钥
+    fn generate_pk(sk: Vec<u8>) -> GeorgeResult<Vec<u8>>;
+
+    /// 根据私钥hex字符串生成公钥
+    fn generate_pk_by_hex(sk: String) -> GeorgeResult<Vec<u8>>;
+
+    /// 根据私钥base64字符串生成公钥
+    fn generate_pk_by_base64(sk: String) -> GeorgeResult<Vec<u8>>;
+
+    /// 根据私钥hex字符串文件生成公钥
+    fn generate_pk_by_hex_file<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>>;
+
+    /// 根据私钥base64字符串文件生成公钥
+    fn generate_pk_by_base64_file<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>>;
+}
+
+pub trait SKStoreKey<T> {
+    /// 将公/私钥存储在指定文件中
+    fn store<P: AsRef<Path>>(key: T, key_filepath: P) -> GeorgeResult<()>;
+
+    /// 将公/私钥存储在指定文件中
+    fn store_hex<P: AsRef<Path>>(key: T, key_filepath: P) -> GeorgeResult<()>;
+
+    /// 将公/私钥存储在指定文件中
+    fn store_base64<P: AsRef<Path>>(key: T, key_filepath: P) -> GeorgeResult<()>;
+}
+
+pub trait SKStore {
+    /// 将公/私钥存储在指定文件中
+    fn store<P: AsRef<Path>>(&self, sk_filepath: P, pk_filepath: P) -> GeorgeResult<()>;
+}
+
+pub trait SKLoadKey {
+    /// 从指定文件中读取公/私钥
+    fn load<P: AsRef<Path>>(sk_filepath: P, pk_filepath: P) -> GeorgeResult<SM2>;
+
+    /// 从指定文件中读取公/私钥
+    fn load_from_file<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<Vec<u8>>;
+
+    /// 从指定文件中读取公/私钥
+    fn load_string_from_file<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<String>;
+}
+
+pub trait SKSign<M, N> {
+    /// 签名msg，返回签名结果字节数组
+    ///
+    /// msg 待签名数据
+    ///
+    /// sk、pk 签名使用公私钥
+    fn sign(msg: M, sk: N, pk: N) -> GeorgeResult<Vec<u8>>;
+
+    /// 签名msg，返回签名结果字符串
+    ///
+    /// msg 待签名数据
+    ///
+    /// sk、pk 签名使用公私钥
+    fn sign_hex(msg: M, sk: N, pk: N) -> GeorgeResult<String>;
+
+    /// 签名msg，返回签名结果字符串
+    ///
+    /// msg 待签名数据
+    ///
+    /// sk、pk 签名使用公私钥
+    fn sign_base64(msg: M, sk: N, pk: N) -> GeorgeResult<String>;
+}
+
+pub trait SKSignPath<T> {
+    /// 签名msg，返回签名结果字节数组
+    ///
+    /// msg 待签名数据
+    ///
+    /// sk、pk 签名使用公私钥文件
+    fn sign<P: AsRef<Path>>(msg: T, sk_filepath: P, pk_filepath: P) -> GeorgeResult<Vec<u8>>;
+
+    /// 签名msg，返回签名结果字符串
+    ///
+    /// msg 待签名数据
+    ///
+    /// sk、pk 签名使用公私钥文件
+    fn sign_base64<P: AsRef<Path>>(msg: T, sk_filepath: P, pk_filepath: P) -> GeorgeResult<String>;
+}
+
+pub trait SKVerify<M, N, O> {
+    /// 验签msg
+    fn verify(msg: M, pk: N, der: O) -> GeorgeResult<bool>;
+}
+
+pub trait SKVerifyPath<M, N> {
+    /// 验签msg
+    fn verify<P: AsRef<Path>>(msg: M, sk_filepath: P, der: N) -> GeorgeResult<bool>;
 }
 
 impl SM2 {
@@ -100,146 +251,9 @@ impl SM2 {
     }
 }
 
-pub trait SM2SkNew {
-    /// 生成非对称加密私钥，返回sk字节数组
-    fn generate() -> Vec<u8>;
-    /// 生成非对称加密私钥，返回sk字符串
-    fn generate_hex() -> String;
-    /// 生成非对称加密私钥，返回sk字符串
-    fn generate_base64() -> String;
-}
-
-pub trait SM2SkNewStore {
-    /// 生成非对称加密私钥，返回sk字节数组
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>>;
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_hex<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
-    /// 生成非对称加密私钥，返回sk字符串
-    ///
-    /// 并将生成的私钥存储在sk指定文件中
-    fn generate_base64<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<String>;
-}
-
-pub trait SM2New {
-    /// 生成非对称加密公私钥，返回sk、pk字节数组
-    fn generate() -> (Vec<u8>, Vec<u8>);
-    /// 生成非对称加密公私钥，返回sk、pk字符串
-    fn generate_hex() -> (String, String);
-    /// 生成非对称加密公私钥，返回sk、pk字符串
-    fn generate_base64() -> (String, String);
-}
-
-pub trait SM2NewStore {
-    /// 生成非对称加密公私钥，返回sk、pk字节数组
-    ///
-    /// 并将生成的公私钥存储在sk、pk指定文件中
-    fn generate<P: AsRef<Path>>(sk_filepath: P, pk_filepath: P)
-        -> GeorgeResult<(Vec<u8>, Vec<u8>)>;
-    /// 生成非对称加密公私钥，返回sk、pk字符串
-    ///
-    /// 并将生成的公私钥存储在sk、pk指定文件中
-    fn generate_hex<P: AsRef<Path>>(
-        sk_filepath: P,
-        pk_filepath: P,
-    ) -> GeorgeResult<(String, String)>;
-    /// 生成非对称加密公私钥，返回sk、pk字符串
-    ///
-    /// 并将生成的公私钥存储在sk、pk指定文件中
-    fn generate_base64<P: AsRef<Path>>(
-        sk_filepath: P,
-        pk_filepath: P,
-    ) -> GeorgeResult<(String, String)>;
-}
-
-pub trait SM2Pk {
-    /// 根据私钥生成公钥
-    fn generate_pk(sk: Vec<u8>) -> GeorgeResult<Vec<u8>>;
-    /// 根据私钥hex字符串生成公钥
-    fn generate_pk_by_hex(sk: String) -> GeorgeResult<Vec<u8>>;
-    /// 根据私钥base64字符串生成公钥
-    fn generate_pk_by_base64(sk: String) -> GeorgeResult<Vec<u8>>;
-    /// 根据私钥hex字符串文件生成公钥
-    fn generate_pk_by_hex_file<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>>;
-    /// 根据私钥base64字符串文件生成公钥
-    fn generate_pk_by_base64_file<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>>;
-}
-
-pub trait SM2StoreKey<T> {
-    /// 将公/私钥存储在指定文件中
-    fn store<P: AsRef<Path>>(key: T, key_filepath: P) -> GeorgeResult<()>;
-    /// 将公/私钥存储在指定文件中
-    fn store_hex<P: AsRef<Path>>(key: T, key_filepath: P) -> GeorgeResult<()>;
-    /// 将公/私钥存储在指定文件中
-    fn store_base64<P: AsRef<Path>>(key: T, key_filepath: P) -> GeorgeResult<()>;
-}
-
-pub trait SM2Store {
-    /// 将公/私钥存储在指定文件中
-    fn store<P: AsRef<Path>>(&self, sk_filepath: P, pk_filepath: P) -> GeorgeResult<()>;
-}
-
-pub trait SM2LoadKey {
-    /// 从指定文件中读取公/私钥
-    fn load<P: AsRef<Path>>(sk_filepath: P, pk_filepath: P) -> GeorgeResult<SM2>;
-    /// 从指定文件中读取公/私钥
-    fn load_from_file<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<Vec<u8>>;
-    /// 从指定文件中读取公/私钥
-    fn load_string_from_file<P: AsRef<Path>>(key_filepath: P) -> GeorgeResult<String>;
-}
-
-pub trait SM2Sign<M, N> {
-    /// 签名msg，返回签名结果字节数组
-    ///
-    /// msg 待签名数据
-    ///
-    /// sk、pk 签名使用公私钥
-    fn sign(msg: M, sk: N, pk: N) -> GeorgeResult<Vec<u8>>;
-    /// 签名msg，返回签名结果字符串
-    ///
-    /// msg 待签名数据
-    ///
-    /// sk、pk 签名使用公私钥
-    fn sign_hex(msg: M, sk: N, pk: N) -> GeorgeResult<String>;
-    /// 签名msg，返回签名结果字符串
-    ///
-    /// msg 待签名数据
-    ///
-    /// sk、pk 签名使用公私钥
-    fn sign_base64(msg: M, sk: N, pk: N) -> GeorgeResult<String>;
-}
-
-pub trait SM2SignPath<T> {
-    /// 签名msg，返回签名结果字节数组
-    ///
-    /// msg 待签名数据
-    ///
-    /// sk、pk 签名使用公私钥文件
-    fn sign<P: AsRef<Path>>(msg: T, sk_filepath: P, pk_filepath: P) -> GeorgeResult<Vec<u8>>;
-    /// 签名msg，返回签名结果字符串
-    ///
-    /// msg 待签名数据
-    ///
-    /// sk、pk 签名使用公私钥文件
-    fn sign_base64<P: AsRef<Path>>(msg: T, sk_filepath: P, pk_filepath: P) -> GeorgeResult<String>;
-}
-
-pub trait SM2Verify<M, N, O> {
-    /// 验签msg
-    fn verify(msg: M, pk: N, der: O) -> GeorgeResult<bool>;
-}
-
-pub trait SM2VerifyPath<M, N> {
-    /// 验签msg
-    fn verify<P: AsRef<Path>>(msg: M, sk_filepath: P, der: N) -> GeorgeResult<bool>;
-}
-
 ////////// sm generate start //////////
 
-impl SM2SkNew for SM2 {
+impl SkNew for SM2 {
     fn generate() -> Vec<u8> {
         generate_sk()
     }
@@ -253,7 +267,7 @@ impl SM2SkNew for SM2 {
     }
 }
 
-impl SM2SkNewStore for SM2 {
+impl SkNewStore for SM2 {
     fn generate<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<Vec<u8>> {
         generate_sk_in_file(sk_filepath)
     }
@@ -267,7 +281,7 @@ impl SM2SkNewStore for SM2 {
     }
 }
 
-impl SM2New for SM2 {
+impl SKNew for SM2 {
     fn generate() -> (Vec<u8>, Vec<u8>) {
         generate()
     }
@@ -281,7 +295,7 @@ impl SM2New for SM2 {
     }
 }
 
-impl SM2NewStore for SM2 {
+impl SKNewStore for SM2 {
     fn generate<P: AsRef<Path>>(
         sk_filepath: P,
         pk_filepath: P,
@@ -307,7 +321,7 @@ impl SM2NewStore for SM2 {
 ////////// sm generate end //////////
 
 ////////// sm generate pk from sk start //////////
-impl SM2Pk for SM2 {
+impl SKPk for SM2 {
     fn generate_pk(sk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
         generate_pk_from_sk(sk)
     }
@@ -333,7 +347,7 @@ impl SM2Pk for SM2 {
 
 ////////// sm store/load start //////////
 
-impl SM2StoreKey<&[u8]> for SM2 {
+impl SKStoreKey<&[u8]> for SM2 {
     fn store<P: AsRef<Path>>(key: &[u8], key_filepath: P) -> GeorgeResult<()> {
         stores(key, key_filepath)
     }
@@ -347,7 +361,7 @@ impl SM2StoreKey<&[u8]> for SM2 {
     }
 }
 
-impl SM2StoreKey<Vec<u8>> for SM2 {
+impl SKStoreKey<Vec<u8>> for SM2 {
     fn store<P: AsRef<Path>>(key: Vec<u8>, key_filepath: P) -> GeorgeResult<()> {
         stores(key.as_slice(), key_filepath)
     }
@@ -361,14 +375,14 @@ impl SM2StoreKey<Vec<u8>> for SM2 {
     }
 }
 
-impl SM2Store for SM2 {
+impl SKStore for SM2 {
     fn store<P: AsRef<Path>>(&self, sk_filepath: P, pk_filepath: P) -> GeorgeResult<()> {
         store_key(Base64::encode(self.sk_bytes()), sk_filepath)?;
         store_key(Base64::encode(self.pk_bytes()), pk_filepath)
     }
 }
 
-impl SM2LoadKey for SM2 {
+impl SKLoadKey for SM2 {
     fn load<P: AsRef<Path>>(sk_filepath: P, pk_filepath: P) -> GeorgeResult<SM2> {
         let sk_bytes = load_key_from_file(sk_filepath)?;
         let pk_bytes = load_key_from_file(pk_filepath)?;
@@ -395,7 +409,7 @@ impl SM2LoadKey for SM2 {
 
 ////////// sm sign start //////////
 
-impl SM2Sign<&[u8], &[u8]> for SM2 {
+impl SKSign<&[u8], &[u8]> for SM2 {
     fn sign(msg: &[u8], sk: &[u8], pk: &[u8]) -> GeorgeResult<Vec<u8>> {
         sign(msg, sk, pk)
     }
@@ -409,7 +423,7 @@ impl SM2Sign<&[u8], &[u8]> for SM2 {
     }
 }
 
-impl SM2Sign<&[u8], Vec<u8>> for SM2 {
+impl SKSign<&[u8], Vec<u8>> for SM2 {
     fn sign(msg: &[u8], sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
         sign(msg, sk.as_slice(), pk.as_slice())
     }
@@ -423,7 +437,7 @@ impl SM2Sign<&[u8], Vec<u8>> for SM2 {
     }
 }
 
-impl SM2Sign<Vec<u8>, Vec<u8>> for SM2 {
+impl SKSign<Vec<u8>, Vec<u8>> for SM2 {
     fn sign(msg: Vec<u8>, sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
         sign(msg.as_slice(), sk.as_slice(), pk.as_slice())
     }
@@ -445,7 +459,7 @@ impl SM2Sign<Vec<u8>, Vec<u8>> for SM2 {
     }
 }
 
-impl SM2Sign<String, Vec<u8>> for SM2 {
+impl SKSign<String, Vec<u8>> for SM2 {
     fn sign(msg: String, sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
         sign(msg.as_bytes(), sk.as_slice(), pk.as_slice())
     }
@@ -467,7 +481,7 @@ impl SM2Sign<String, Vec<u8>> for SM2 {
     }
 }
 
-impl SM2Sign<&str, Vec<u8>> for SM2 {
+impl SKSign<&str, Vec<u8>> for SM2 {
     fn sign(msg: &str, sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<Vec<u8>> {
         sign(msg.as_bytes(), sk.as_slice(), pk.as_slice())
     }
@@ -489,7 +503,7 @@ impl SM2Sign<&str, Vec<u8>> for SM2 {
     }
 }
 
-impl SM2Sign<Vec<u8>, &[u8]> for SM2 {
+impl SKSign<Vec<u8>, &[u8]> for SM2 {
     fn sign(msg: Vec<u8>, sk: &[u8], pk: &[u8]) -> GeorgeResult<Vec<u8>> {
         sign(msg.as_slice(), sk, pk)
     }
@@ -503,7 +517,7 @@ impl SM2Sign<Vec<u8>, &[u8]> for SM2 {
     }
 }
 
-impl SM2Sign<String, &[u8]> for SM2 {
+impl SKSign<String, &[u8]> for SM2 {
     fn sign(msg: String, sk: &[u8], pk: &[u8]) -> GeorgeResult<Vec<u8>> {
         sign(msg.as_bytes(), sk, pk)
     }
@@ -517,7 +531,7 @@ impl SM2Sign<String, &[u8]> for SM2 {
     }
 }
 
-impl SM2Sign<&str, &[u8]> for SM2 {
+impl SKSign<&str, &[u8]> for SM2 {
     fn sign(msg: &str, sk: &[u8], pk: &[u8]) -> GeorgeResult<Vec<u8>> {
         sign(msg.as_bytes(), sk, pk)
     }
@@ -531,7 +545,7 @@ impl SM2Sign<&str, &[u8]> for SM2 {
     }
 }
 
-impl SM2Sign<&[u8], String> for SM2 {
+impl SKSign<&[u8], String> for SM2 {
     fn sign(msg: &[u8], sk: String, pk: String) -> GeorgeResult<Vec<u8>> {
         sign(
             msg,
@@ -557,7 +571,7 @@ impl SM2Sign<&[u8], String> for SM2 {
     }
 }
 
-impl SM2Sign<Vec<u8>, String> for SM2 {
+impl SKSign<Vec<u8>, String> for SM2 {
     fn sign(msg: Vec<u8>, sk: String, pk: String) -> GeorgeResult<Vec<u8>> {
         sign(
             msg.as_slice(),
@@ -583,7 +597,7 @@ impl SM2Sign<Vec<u8>, String> for SM2 {
     }
 }
 
-impl SM2Sign<String, String> for SM2 {
+impl SKSign<String, String> for SM2 {
     fn sign(msg: String, sk: String, pk: String) -> GeorgeResult<Vec<u8>> {
         sign(
             msg.as_bytes(),
@@ -609,7 +623,7 @@ impl SM2Sign<String, String> for SM2 {
     }
 }
 
-impl SM2Sign<&str, String> for SM2 {
+impl SKSign<&str, String> for SM2 {
     fn sign(msg: &str, sk: String, pk: String) -> GeorgeResult<Vec<u8>> {
         sign(
             msg.as_bytes(),
@@ -635,7 +649,7 @@ impl SM2Sign<&str, String> for SM2 {
     }
 }
 
-impl SM2Sign<&[u8], &str> for SM2 {
+impl SKSign<&[u8], &str> for SM2 {
     fn sign(msg: &[u8], sk: &str, pk: &str) -> GeorgeResult<Vec<u8>> {
         sign(
             msg,
@@ -661,7 +675,7 @@ impl SM2Sign<&[u8], &str> for SM2 {
     }
 }
 
-impl SM2Sign<Vec<u8>, &str> for SM2 {
+impl SKSign<Vec<u8>, &str> for SM2 {
     fn sign(msg: Vec<u8>, sk: &str, pk: &str) -> GeorgeResult<Vec<u8>> {
         sign(
             msg.as_slice(),
@@ -687,7 +701,7 @@ impl SM2Sign<Vec<u8>, &str> for SM2 {
     }
 }
 
-impl SM2Sign<String, &str> for SM2 {
+impl SKSign<String, &str> for SM2 {
     fn sign(msg: String, sk: &str, pk: &str) -> GeorgeResult<Vec<u8>> {
         sign(
             msg.as_bytes(),
@@ -713,7 +727,7 @@ impl SM2Sign<String, &str> for SM2 {
     }
 }
 
-impl SM2Sign<&str, &str> for SM2 {
+impl SKSign<&str, &str> for SM2 {
     fn sign(msg: &str, sk: &str, pk: &str) -> GeorgeResult<Vec<u8>> {
         sign(
             msg.as_bytes(),
@@ -739,7 +753,7 @@ impl SM2Sign<&str, &str> for SM2 {
     }
 }
 
-impl SM2SignPath<&[u8]> for SM2 {
+impl SKSignPath<&[u8]> for SM2 {
     fn sign<P: AsRef<Path>>(msg: &[u8], sk_filepath: P, pk_filepath: P) -> GeorgeResult<Vec<u8>> {
         sign(
             msg,
@@ -761,7 +775,7 @@ impl SM2SignPath<&[u8]> for SM2 {
     }
 }
 
-impl SM2SignPath<Vec<u8>> for SM2 {
+impl SKSignPath<Vec<u8>> for SM2 {
     fn sign<P: AsRef<Path>>(msg: Vec<u8>, sk_filepath: P, pk_filepath: P) -> GeorgeResult<Vec<u8>> {
         sign(
             msg.as_slice(),
@@ -783,7 +797,7 @@ impl SM2SignPath<Vec<u8>> for SM2 {
     }
 }
 
-impl SM2SignPath<String> for SM2 {
+impl SKSignPath<String> for SM2 {
     fn sign<P: AsRef<Path>>(msg: String, sk_filepath: P, pk_filepath: P) -> GeorgeResult<Vec<u8>> {
         sign(
             msg.as_bytes(),
@@ -805,7 +819,7 @@ impl SM2SignPath<String> for SM2 {
     }
 }
 
-impl SM2SignPath<&str> for SM2 {
+impl SKSignPath<&str> for SM2 {
     fn sign<P: AsRef<Path>>(msg: &str, sk_filepath: P, pk_filepath: P) -> GeorgeResult<Vec<u8>> {
         sign(
             msg.as_bytes(),
@@ -831,49 +845,49 @@ impl SM2SignPath<&str> for SM2 {
 
 ////////// sm verify start //////////
 
-impl SM2Verify<&[u8], &[u8], &[u8]> for SM2 {
+impl SKVerify<&[u8], &[u8], &[u8]> for SM2 {
     fn verify(msg: &[u8], pk: &[u8], der: &[u8]) -> GeorgeResult<bool> {
         verify(msg, pk, der)
     }
 }
 
-impl SM2Verify<&[u8], &[u8], Vec<u8>> for SM2 {
+impl SKVerify<&[u8], &[u8], Vec<u8>> for SM2 {
     fn verify(msg: &[u8], pk: &[u8], der: Vec<u8>) -> GeorgeResult<bool> {
         verify(msg, pk, der.as_slice())
     }
 }
 
-impl SM2Verify<&[u8], &[u8], String> for SM2 {
+impl SKVerify<&[u8], &[u8], String> for SM2 {
     fn verify(msg: &[u8], pk: &[u8], der: String) -> GeorgeResult<bool> {
         verify(msg, pk, Base64::decode(der)?.as_slice())
     }
 }
 
-impl SM2Verify<&[u8], &[u8], &str> for SM2 {
+impl SKVerify<&[u8], &[u8], &str> for SM2 {
     fn verify(msg: &[u8], pk: &[u8], der: &str) -> GeorgeResult<bool> {
         verify(msg, pk, Base64::decode(der.to_string())?.as_slice())
     }
 }
 
-impl SM2Verify<&[u8], Vec<u8>, &[u8]> for SM2 {
+impl SKVerify<&[u8], Vec<u8>, &[u8]> for SM2 {
     fn verify(msg: &[u8], pk: Vec<u8>, der: &[u8]) -> GeorgeResult<bool> {
         verify(msg, pk.as_slice(), der)
     }
 }
 
-impl SM2Verify<&[u8], Vec<u8>, Vec<u8>> for SM2 {
+impl SKVerify<&[u8], Vec<u8>, Vec<u8>> for SM2 {
     fn verify(msg: &[u8], pk: Vec<u8>, der: Vec<u8>) -> GeorgeResult<bool> {
         verify(msg, pk.as_slice(), der.as_slice())
     }
 }
 
-impl SM2Verify<&[u8], Vec<u8>, String> for SM2 {
+impl SKVerify<&[u8], Vec<u8>, String> for SM2 {
     fn verify(msg: &[u8], pk: Vec<u8>, der: String) -> GeorgeResult<bool> {
         verify(msg, pk.as_slice(), Base64::decode(der)?.as_slice())
     }
 }
 
-impl SM2Verify<&[u8], Vec<u8>, &str> for SM2 {
+impl SKVerify<&[u8], Vec<u8>, &str> for SM2 {
     fn verify(msg: &[u8], pk: Vec<u8>, der: &str) -> GeorgeResult<bool> {
         verify(
             msg,
@@ -883,19 +897,19 @@ impl SM2Verify<&[u8], Vec<u8>, &str> for SM2 {
     }
 }
 
-impl SM2Verify<&[u8], String, &[u8]> for SM2 {
+impl SKVerify<&[u8], String, &[u8]> for SM2 {
     fn verify(msg: &[u8], pk: String, der: &[u8]) -> GeorgeResult<bool> {
         verify(msg, &Base64::decode(pk)?.as_slice(), der)
     }
 }
 
-impl SM2Verify<&[u8], String, Vec<u8>> for SM2 {
+impl SKVerify<&[u8], String, Vec<u8>> for SM2 {
     fn verify(msg: &[u8], pk: String, der: Vec<u8>) -> GeorgeResult<bool> {
         verify(msg, &Base64::decode(pk)?.as_slice(), der.as_slice())
     }
 }
 
-impl SM2Verify<&[u8], String, String> for SM2 {
+impl SKVerify<&[u8], String, String> for SM2 {
     fn verify(msg: &[u8], pk: String, der: String) -> GeorgeResult<bool> {
         verify(
             msg,
@@ -905,7 +919,7 @@ impl SM2Verify<&[u8], String, String> for SM2 {
     }
 }
 
-impl SM2Verify<&[u8], String, &str> for SM2 {
+impl SKVerify<&[u8], String, &str> for SM2 {
     fn verify(msg: &[u8], pk: String, der: &str) -> GeorgeResult<bool> {
         verify(
             msg,
@@ -915,13 +929,13 @@ impl SM2Verify<&[u8], String, &str> for SM2 {
     }
 }
 
-impl SM2Verify<&[u8], &str, &[u8]> for SM2 {
+impl SKVerify<&[u8], &str, &[u8]> for SM2 {
     fn verify(msg: &[u8], pk: &str, der: &[u8]) -> GeorgeResult<bool> {
         verify(msg, &Base64::decode(pk.to_string())?.as_slice(), der)
     }
 }
 
-impl SM2Verify<&[u8], &str, Vec<u8>> for SM2 {
+impl SKVerify<&[u8], &str, Vec<u8>> for SM2 {
     fn verify(msg: &[u8], pk: &str, der: Vec<u8>) -> GeorgeResult<bool> {
         verify(
             msg,
@@ -931,7 +945,7 @@ impl SM2Verify<&[u8], &str, Vec<u8>> for SM2 {
     }
 }
 
-impl SM2Verify<&[u8], &str, String> for SM2 {
+impl SKVerify<&[u8], &str, String> for SM2 {
     fn verify(msg: &[u8], pk: &str, der: String) -> GeorgeResult<bool> {
         verify(
             msg,
@@ -941,7 +955,7 @@ impl SM2Verify<&[u8], &str, String> for SM2 {
     }
 }
 
-impl SM2Verify<&[u8], &str, &str> for SM2 {
+impl SKVerify<&[u8], &str, &str> for SM2 {
     fn verify(msg: &[u8], pk: &str, der: &str) -> GeorgeResult<bool> {
         verify(
             msg,
@@ -951,25 +965,25 @@ impl SM2Verify<&[u8], &str, &str> for SM2 {
     }
 }
 
-impl SM2Verify<Vec<u8>, &[u8], &[u8]> for SM2 {
+impl SKVerify<Vec<u8>, &[u8], &[u8]> for SM2 {
     fn verify(msg: Vec<u8>, pk: &[u8], der: &[u8]) -> GeorgeResult<bool> {
         verify(msg.as_slice(), pk, der)
     }
 }
 
-impl SM2Verify<Vec<u8>, &[u8], Vec<u8>> for SM2 {
+impl SKVerify<Vec<u8>, &[u8], Vec<u8>> for SM2 {
     fn verify(msg: Vec<u8>, pk: &[u8], der: Vec<u8>) -> GeorgeResult<bool> {
         verify(msg.as_slice(), pk, der.as_slice())
     }
 }
 
-impl SM2Verify<Vec<u8>, &[u8], String> for SM2 {
+impl SKVerify<Vec<u8>, &[u8], String> for SM2 {
     fn verify(msg: Vec<u8>, pk: &[u8], der: String) -> GeorgeResult<bool> {
         verify(msg.as_slice(), pk, Base64::decode(der)?.as_slice())
     }
 }
 
-impl SM2Verify<Vec<u8>, &[u8], &str> for SM2 {
+impl SKVerify<Vec<u8>, &[u8], &str> for SM2 {
     fn verify(msg: Vec<u8>, pk: &[u8], der: &str) -> GeorgeResult<bool> {
         verify(
             msg.as_slice(),
@@ -979,19 +993,19 @@ impl SM2Verify<Vec<u8>, &[u8], &str> for SM2 {
     }
 }
 
-impl SM2Verify<Vec<u8>, Vec<u8>, &[u8]> for SM2 {
+impl SKVerify<Vec<u8>, Vec<u8>, &[u8]> for SM2 {
     fn verify(msg: Vec<u8>, pk: Vec<u8>, der: &[u8]) -> GeorgeResult<bool> {
         verify(msg.as_slice(), pk.as_slice(), der)
     }
 }
 
-impl SM2Verify<Vec<u8>, Vec<u8>, Vec<u8>> for SM2 {
+impl SKVerify<Vec<u8>, Vec<u8>, Vec<u8>> for SM2 {
     fn verify(msg: Vec<u8>, pk: Vec<u8>, der: Vec<u8>) -> GeorgeResult<bool> {
         verify(msg.as_slice(), pk.as_slice(), der.as_slice())
     }
 }
 
-impl SM2Verify<Vec<u8>, Vec<u8>, String> for SM2 {
+impl SKVerify<Vec<u8>, Vec<u8>, String> for SM2 {
     fn verify(msg: Vec<u8>, pk: Vec<u8>, der: String) -> GeorgeResult<bool> {
         verify(
             msg.as_slice(),
@@ -1001,7 +1015,7 @@ impl SM2Verify<Vec<u8>, Vec<u8>, String> for SM2 {
     }
 }
 
-impl SM2Verify<Vec<u8>, Vec<u8>, &str> for SM2 {
+impl SKVerify<Vec<u8>, Vec<u8>, &str> for SM2 {
     fn verify(msg: Vec<u8>, pk: Vec<u8>, der: &str) -> GeorgeResult<bool> {
         verify(
             msg.as_slice(),
@@ -1011,13 +1025,13 @@ impl SM2Verify<Vec<u8>, Vec<u8>, &str> for SM2 {
     }
 }
 
-impl SM2Verify<Vec<u8>, String, &[u8]> for SM2 {
+impl SKVerify<Vec<u8>, String, &[u8]> for SM2 {
     fn verify(msg: Vec<u8>, pk: String, der: &[u8]) -> GeorgeResult<bool> {
         verify(msg.as_slice(), &Base64::decode(pk)?.as_slice(), der)
     }
 }
 
-impl SM2Verify<Vec<u8>, String, Vec<u8>> for SM2 {
+impl SKVerify<Vec<u8>, String, Vec<u8>> for SM2 {
     fn verify(msg: Vec<u8>, pk: String, der: Vec<u8>) -> GeorgeResult<bool> {
         verify(
             msg.as_slice(),
@@ -1027,7 +1041,7 @@ impl SM2Verify<Vec<u8>, String, Vec<u8>> for SM2 {
     }
 }
 
-impl SM2Verify<Vec<u8>, String, String> for SM2 {
+impl SKVerify<Vec<u8>, String, String> for SM2 {
     fn verify(msg: Vec<u8>, pk: String, der: String) -> GeorgeResult<bool> {
         verify(
             msg.as_slice(),
@@ -1037,7 +1051,7 @@ impl SM2Verify<Vec<u8>, String, String> for SM2 {
     }
 }
 
-impl SM2Verify<Vec<u8>, String, &str> for SM2 {
+impl SKVerify<Vec<u8>, String, &str> for SM2 {
     fn verify(msg: Vec<u8>, pk: String, der: &str) -> GeorgeResult<bool> {
         verify(
             msg.as_slice(),
@@ -1047,7 +1061,7 @@ impl SM2Verify<Vec<u8>, String, &str> for SM2 {
     }
 }
 
-impl SM2Verify<Vec<u8>, &str, &[u8]> for SM2 {
+impl SKVerify<Vec<u8>, &str, &[u8]> for SM2 {
     fn verify(msg: Vec<u8>, pk: &str, der: &[u8]) -> GeorgeResult<bool> {
         verify(
             msg.as_slice(),
@@ -1057,7 +1071,7 @@ impl SM2Verify<Vec<u8>, &str, &[u8]> for SM2 {
     }
 }
 
-impl SM2Verify<Vec<u8>, &str, Vec<u8>> for SM2 {
+impl SKVerify<Vec<u8>, &str, Vec<u8>> for SM2 {
     fn verify(msg: Vec<u8>, pk: &str, der: Vec<u8>) -> GeorgeResult<bool> {
         verify(
             msg.as_slice(),
@@ -1067,7 +1081,7 @@ impl SM2Verify<Vec<u8>, &str, Vec<u8>> for SM2 {
     }
 }
 
-impl SM2Verify<Vec<u8>, &str, String> for SM2 {
+impl SKVerify<Vec<u8>, &str, String> for SM2 {
     fn verify(msg: Vec<u8>, pk: &str, der: String) -> GeorgeResult<bool> {
         verify(
             msg.as_slice(),
@@ -1077,7 +1091,7 @@ impl SM2Verify<Vec<u8>, &str, String> for SM2 {
     }
 }
 
-impl SM2Verify<Vec<u8>, &str, &str> for SM2 {
+impl SKVerify<Vec<u8>, &str, &str> for SM2 {
     fn verify(msg: Vec<u8>, pk: &str, der: &str) -> GeorgeResult<bool> {
         verify(
             msg.as_slice(),
@@ -1087,25 +1101,25 @@ impl SM2Verify<Vec<u8>, &str, &str> for SM2 {
     }
 }
 
-impl SM2Verify<String, &[u8], &[u8]> for SM2 {
+impl SKVerify<String, &[u8], &[u8]> for SM2 {
     fn verify(msg: String, pk: &[u8], der: &[u8]) -> GeorgeResult<bool> {
         verify(msg.as_bytes(), pk, der)
     }
 }
 
-impl SM2Verify<String, &[u8], Vec<u8>> for SM2 {
+impl SKVerify<String, &[u8], Vec<u8>> for SM2 {
     fn verify(msg: String, pk: &[u8], der: Vec<u8>) -> GeorgeResult<bool> {
         verify(msg.as_bytes(), pk, der.as_slice())
     }
 }
 
-impl SM2Verify<String, &[u8], String> for SM2 {
+impl SKVerify<String, &[u8], String> for SM2 {
     fn verify(msg: String, pk: &[u8], der: String) -> GeorgeResult<bool> {
         verify(msg.as_bytes(), pk, Base64::decode(der)?.as_slice())
     }
 }
 
-impl SM2Verify<String, &[u8], &str> for SM2 {
+impl SKVerify<String, &[u8], &str> for SM2 {
     fn verify(msg: String, pk: &[u8], der: &str) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1115,19 +1129,19 @@ impl SM2Verify<String, &[u8], &str> for SM2 {
     }
 }
 
-impl SM2Verify<String, Vec<u8>, &[u8]> for SM2 {
+impl SKVerify<String, Vec<u8>, &[u8]> for SM2 {
     fn verify(msg: String, pk: Vec<u8>, der: &[u8]) -> GeorgeResult<bool> {
         verify(msg.as_bytes(), pk.as_slice(), der)
     }
 }
 
-impl SM2Verify<String, Vec<u8>, Vec<u8>> for SM2 {
+impl SKVerify<String, Vec<u8>, Vec<u8>> for SM2 {
     fn verify(msg: String, pk: Vec<u8>, der: Vec<u8>) -> GeorgeResult<bool> {
         verify(msg.as_bytes(), pk.as_slice(), der.as_slice())
     }
 }
 
-impl SM2Verify<String, Vec<u8>, String> for SM2 {
+impl SKVerify<String, Vec<u8>, String> for SM2 {
     fn verify(msg: String, pk: Vec<u8>, der: String) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1137,7 +1151,7 @@ impl SM2Verify<String, Vec<u8>, String> for SM2 {
     }
 }
 
-impl SM2Verify<String, Vec<u8>, &str> for SM2 {
+impl SKVerify<String, Vec<u8>, &str> for SM2 {
     fn verify(msg: String, pk: Vec<u8>, der: &str) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1147,13 +1161,13 @@ impl SM2Verify<String, Vec<u8>, &str> for SM2 {
     }
 }
 
-impl SM2Verify<String, String, &[u8]> for SM2 {
+impl SKVerify<String, String, &[u8]> for SM2 {
     fn verify(msg: String, pk: String, der: &[u8]) -> GeorgeResult<bool> {
         verify(msg.as_bytes(), &Base64::decode(pk)?.as_slice(), der)
     }
 }
 
-impl SM2Verify<String, String, Vec<u8>> for SM2 {
+impl SKVerify<String, String, Vec<u8>> for SM2 {
     fn verify(msg: String, pk: String, der: Vec<u8>) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1163,7 +1177,7 @@ impl SM2Verify<String, String, Vec<u8>> for SM2 {
     }
 }
 
-impl SM2Verify<String, String, String> for SM2 {
+impl SKVerify<String, String, String> for SM2 {
     fn verify(msg: String, pk: String, der: String) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1173,7 +1187,7 @@ impl SM2Verify<String, String, String> for SM2 {
     }
 }
 
-impl SM2Verify<String, String, &str> for SM2 {
+impl SKVerify<String, String, &str> for SM2 {
     fn verify(msg: String, pk: String, der: &str) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1183,7 +1197,7 @@ impl SM2Verify<String, String, &str> for SM2 {
     }
 }
 
-impl SM2Verify<String, &str, &[u8]> for SM2 {
+impl SKVerify<String, &str, &[u8]> for SM2 {
     fn verify(msg: String, pk: &str, der: &[u8]) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1193,7 +1207,7 @@ impl SM2Verify<String, &str, &[u8]> for SM2 {
     }
 }
 
-impl SM2Verify<String, &str, Vec<u8>> for SM2 {
+impl SKVerify<String, &str, Vec<u8>> for SM2 {
     fn verify(msg: String, pk: &str, der: Vec<u8>) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1203,7 +1217,7 @@ impl SM2Verify<String, &str, Vec<u8>> for SM2 {
     }
 }
 
-impl SM2Verify<String, &str, String> for SM2 {
+impl SKVerify<String, &str, String> for SM2 {
     fn verify(msg: String, pk: &str, der: String) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1213,7 +1227,7 @@ impl SM2Verify<String, &str, String> for SM2 {
     }
 }
 
-impl SM2Verify<String, &str, &str> for SM2 {
+impl SKVerify<String, &str, &str> for SM2 {
     fn verify(msg: String, pk: &str, der: &str) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1223,25 +1237,25 @@ impl SM2Verify<String, &str, &str> for SM2 {
     }
 }
 
-impl SM2Verify<&str, &[u8], &[u8]> for SM2 {
+impl SKVerify<&str, &[u8], &[u8]> for SM2 {
     fn verify(msg: &str, pk: &[u8], der: &[u8]) -> GeorgeResult<bool> {
         verify(msg.as_bytes(), pk, der)
     }
 }
 
-impl SM2Verify<&str, &[u8], Vec<u8>> for SM2 {
+impl SKVerify<&str, &[u8], Vec<u8>> for SM2 {
     fn verify(msg: &str, pk: &[u8], der: Vec<u8>) -> GeorgeResult<bool> {
         verify(msg.as_bytes(), pk, der.as_slice())
     }
 }
 
-impl SM2Verify<&str, &[u8], String> for SM2 {
+impl SKVerify<&str, &[u8], String> for SM2 {
     fn verify(msg: &str, pk: &[u8], der: String) -> GeorgeResult<bool> {
         verify(msg.as_bytes(), pk, Base64::decode(der)?.as_slice())
     }
 }
 
-impl SM2Verify<&str, &[u8], &str> for SM2 {
+impl SKVerify<&str, &[u8], &str> for SM2 {
     fn verify(msg: &str, pk: &[u8], der: &str) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1251,19 +1265,19 @@ impl SM2Verify<&str, &[u8], &str> for SM2 {
     }
 }
 
-impl SM2Verify<&str, Vec<u8>, &[u8]> for SM2 {
+impl SKVerify<&str, Vec<u8>, &[u8]> for SM2 {
     fn verify(msg: &str, pk: Vec<u8>, der: &[u8]) -> GeorgeResult<bool> {
         verify(msg.as_bytes(), pk.as_slice(), der)
     }
 }
 
-impl SM2Verify<&str, Vec<u8>, Vec<u8>> for SM2 {
+impl SKVerify<&str, Vec<u8>, Vec<u8>> for SM2 {
     fn verify(msg: &str, pk: Vec<u8>, der: Vec<u8>) -> GeorgeResult<bool> {
         verify(msg.as_bytes(), pk.as_slice(), der.as_slice())
     }
 }
 
-impl SM2Verify<&str, Vec<u8>, String> for SM2 {
+impl SKVerify<&str, Vec<u8>, String> for SM2 {
     fn verify(msg: &str, pk: Vec<u8>, der: String) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1273,7 +1287,7 @@ impl SM2Verify<&str, Vec<u8>, String> for SM2 {
     }
 }
 
-impl SM2Verify<&str, Vec<u8>, &str> for SM2 {
+impl SKVerify<&str, Vec<u8>, &str> for SM2 {
     fn verify(msg: &str, pk: Vec<u8>, der: &str) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1283,13 +1297,13 @@ impl SM2Verify<&str, Vec<u8>, &str> for SM2 {
     }
 }
 
-impl SM2Verify<&str, String, &[u8]> for SM2 {
+impl SKVerify<&str, String, &[u8]> for SM2 {
     fn verify(msg: &str, pk: String, der: &[u8]) -> GeorgeResult<bool> {
         verify(msg.as_bytes(), &Base64::decode(pk)?.as_slice(), der)
     }
 }
 
-impl SM2Verify<&str, String, Vec<u8>> for SM2 {
+impl SKVerify<&str, String, Vec<u8>> for SM2 {
     fn verify(msg: &str, pk: String, der: Vec<u8>) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1299,7 +1313,7 @@ impl SM2Verify<&str, String, Vec<u8>> for SM2 {
     }
 }
 
-impl SM2Verify<&str, String, String> for SM2 {
+impl SKVerify<&str, String, String> for SM2 {
     fn verify(msg: &str, pk: String, der: String) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1309,7 +1323,7 @@ impl SM2Verify<&str, String, String> for SM2 {
     }
 }
 
-impl SM2Verify<&str, String, &str> for SM2 {
+impl SKVerify<&str, String, &str> for SM2 {
     fn verify(msg: &str, pk: String, der: &str) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1319,7 +1333,7 @@ impl SM2Verify<&str, String, &str> for SM2 {
     }
 }
 
-impl SM2Verify<&str, &str, &[u8]> for SM2 {
+impl SKVerify<&str, &str, &[u8]> for SM2 {
     fn verify(msg: &str, pk: &str, der: &[u8]) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1329,7 +1343,7 @@ impl SM2Verify<&str, &str, &[u8]> for SM2 {
     }
 }
 
-impl SM2Verify<&str, &str, Vec<u8>> for SM2 {
+impl SKVerify<&str, &str, Vec<u8>> for SM2 {
     fn verify(msg: &str, pk: &str, der: Vec<u8>) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1339,7 +1353,7 @@ impl SM2Verify<&str, &str, Vec<u8>> for SM2 {
     }
 }
 
-impl SM2Verify<&str, &str, String> for SM2 {
+impl SKVerify<&str, &str, String> for SM2 {
     fn verify(msg: &str, pk: &str, der: String) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1349,7 +1363,7 @@ impl SM2Verify<&str, &str, String> for SM2 {
     }
 }
 
-impl SM2Verify<&str, &str, &str> for SM2 {
+impl SKVerify<&str, &str, &str> for SM2 {
     fn verify(msg: &str, pk: &str, der: &str) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1359,13 +1373,13 @@ impl SM2Verify<&str, &str, &str> for SM2 {
     }
 }
 
-impl SM2VerifyPath<&[u8], &[u8]> for SM2 {
+impl SKVerifyPath<&[u8], &[u8]> for SM2 {
     fn verify<P: AsRef<Path>>(msg: &[u8], pk_filepath: P, der: &[u8]) -> GeorgeResult<bool> {
         verify(msg, load_key_from_file(pk_filepath)?.as_slice(), der)
     }
 }
 
-impl SM2VerifyPath<&[u8], Vec<u8>> for SM2 {
+impl SKVerifyPath<&[u8], Vec<u8>> for SM2 {
     fn verify<P: AsRef<Path>>(msg: &[u8], pk_filepath: P, der: Vec<u8>) -> GeorgeResult<bool> {
         verify(
             msg,
@@ -1375,7 +1389,7 @@ impl SM2VerifyPath<&[u8], Vec<u8>> for SM2 {
     }
 }
 
-impl SM2VerifyPath<&[u8], String> for SM2 {
+impl SKVerifyPath<&[u8], String> for SM2 {
     fn verify<P: AsRef<Path>>(msg: &[u8], pk_filepath: P, der: String) -> GeorgeResult<bool> {
         verify(
             msg,
@@ -1385,7 +1399,7 @@ impl SM2VerifyPath<&[u8], String> for SM2 {
     }
 }
 
-impl SM2VerifyPath<&[u8], &str> for SM2 {
+impl SKVerifyPath<&[u8], &str> for SM2 {
     fn verify<P: AsRef<Path>>(msg: &[u8], pk_filepath: P, der: &str) -> GeorgeResult<bool> {
         verify(
             msg,
@@ -1395,7 +1409,7 @@ impl SM2VerifyPath<&[u8], &str> for SM2 {
     }
 }
 
-impl SM2VerifyPath<Vec<u8>, &[u8]> for SM2 {
+impl SKVerifyPath<Vec<u8>, &[u8]> for SM2 {
     fn verify<P: AsRef<Path>>(msg: Vec<u8>, pk_filepath: P, der: &[u8]) -> GeorgeResult<bool> {
         verify(
             msg.as_slice(),
@@ -1405,7 +1419,7 @@ impl SM2VerifyPath<Vec<u8>, &[u8]> for SM2 {
     }
 }
 
-impl SM2VerifyPath<Vec<u8>, Vec<u8>> for SM2 {
+impl SKVerifyPath<Vec<u8>, Vec<u8>> for SM2 {
     fn verify<P: AsRef<Path>>(msg: Vec<u8>, pk_filepath: P, der: Vec<u8>) -> GeorgeResult<bool> {
         verify(
             msg.as_slice(),
@@ -1415,7 +1429,7 @@ impl SM2VerifyPath<Vec<u8>, Vec<u8>> for SM2 {
     }
 }
 
-impl SM2VerifyPath<Vec<u8>, String> for SM2 {
+impl SKVerifyPath<Vec<u8>, String> for SM2 {
     fn verify<P: AsRef<Path>>(msg: Vec<u8>, pk_filepath: P, der: String) -> GeorgeResult<bool> {
         verify(
             msg.as_slice(),
@@ -1425,7 +1439,7 @@ impl SM2VerifyPath<Vec<u8>, String> for SM2 {
     }
 }
 
-impl SM2VerifyPath<Vec<u8>, &str> for SM2 {
+impl SKVerifyPath<Vec<u8>, &str> for SM2 {
     fn verify<P: AsRef<Path>>(msg: Vec<u8>, pk_filepath: P, der: &str) -> GeorgeResult<bool> {
         verify(
             msg.as_slice(),
@@ -1435,7 +1449,7 @@ impl SM2VerifyPath<Vec<u8>, &str> for SM2 {
     }
 }
 
-impl SM2VerifyPath<String, &[u8]> for SM2 {
+impl SKVerifyPath<String, &[u8]> for SM2 {
     fn verify<P: AsRef<Path>>(msg: String, pk_filepath: P, der: &[u8]) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1445,7 +1459,7 @@ impl SM2VerifyPath<String, &[u8]> for SM2 {
     }
 }
 
-impl SM2VerifyPath<String, Vec<u8>> for SM2 {
+impl SKVerifyPath<String, Vec<u8>> for SM2 {
     fn verify<P: AsRef<Path>>(msg: String, pk_filepath: P, der: Vec<u8>) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1455,7 +1469,7 @@ impl SM2VerifyPath<String, Vec<u8>> for SM2 {
     }
 }
 
-impl SM2VerifyPath<String, String> for SM2 {
+impl SKVerifyPath<String, String> for SM2 {
     fn verify<P: AsRef<Path>>(msg: String, pk_filepath: P, der: String) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1465,7 +1479,7 @@ impl SM2VerifyPath<String, String> for SM2 {
     }
 }
 
-impl SM2VerifyPath<String, &str> for SM2 {
+impl SKVerifyPath<String, &str> for SM2 {
     fn verify<P: AsRef<Path>>(msg: String, pk_filepath: P, der: &str) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1475,7 +1489,7 @@ impl SM2VerifyPath<String, &str> for SM2 {
     }
 }
 
-impl SM2VerifyPath<&str, &[u8]> for SM2 {
+impl SKVerifyPath<&str, &[u8]> for SM2 {
     fn verify<P: AsRef<Path>>(msg: &str, pk_filepath: P, der: &[u8]) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1485,7 +1499,7 @@ impl SM2VerifyPath<&str, &[u8]> for SM2 {
     }
 }
 
-impl SM2VerifyPath<&str, Vec<u8>> for SM2 {
+impl SKVerifyPath<&str, Vec<u8>> for SM2 {
     fn verify<P: AsRef<Path>>(msg: &str, pk_filepath: P, der: Vec<u8>) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1495,7 +1509,7 @@ impl SM2VerifyPath<&str, Vec<u8>> for SM2 {
     }
 }
 
-impl SM2VerifyPath<&str, String> for SM2 {
+impl SKVerifyPath<&str, String> for SM2 {
     fn verify<P: AsRef<Path>>(msg: &str, pk_filepath: P, der: String) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),
@@ -1505,7 +1519,7 @@ impl SM2VerifyPath<&str, String> for SM2 {
     }
 }
 
-impl SM2VerifyPath<&str, &str> for SM2 {
+impl SKVerifyPath<&str, &str> for SM2 {
     fn verify<P: AsRef<Path>>(msg: &str, pk_filepath: P, der: &str) -> GeorgeResult<bool> {
         verify(
             msg.as_bytes(),

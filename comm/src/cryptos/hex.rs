@@ -12,10 +12,8 @@
  * limitations under the License.
  */
 
-use crate::errors::entrances::{Errs, GeorgeResult};
-
-#[derive(Debug, Clone)]
-pub struct Hex;
+use crate::cryptos::Hex;
+use crate::errors::{Errs, GeorgeResult};
 
 pub trait HexEncoder<T> {
     fn encode(bytes: T) -> String;

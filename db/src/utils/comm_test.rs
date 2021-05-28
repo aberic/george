@@ -14,8 +14,10 @@
 
 use serde::{Deserialize, Serialize};
 
+use comm::json::JsonHandler;
+use comm::Json;
+
 use crate::utils::comm::IndexKey;
-use comm::json::{Json, JsonHandler};
 
 #[derive(Serialize, Deserialize)]
 struct User {

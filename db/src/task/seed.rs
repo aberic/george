@@ -12,17 +12,20 @@
  * limitations under the License.
  */
 
+use std::sync::{Arc, RwLock};
+
 use serde::{Deserialize, Serialize};
 
-use comm::errors::entrances::GeorgeResult;
-use comm::io::file::{Filer, FilerWriter};
+use comm::errors::GeorgeResult;
+use comm::io::file::FilerWriter;
+use comm::io::Filer;
+use comm::vectors::VectorHandler;
+use comm::Vector;
 
 use crate::task::engine::traits::{TForm, TSeed};
 use crate::task::engine::DataReal;
 use crate::task::{Seed, View};
 use crate::utils::enums::IndexType;
-use comm::vectors::{Vector, VectorHandler};
-use std::sync::{Arc, RwLock};
 
 /// 待处理索引操作策略
 #[derive(Debug, Clone, Serialize, Deserialize)]

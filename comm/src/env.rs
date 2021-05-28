@@ -12,6 +12,7 @@
  * limitations under the License.
  */
 
+use crate::Env;
 use std::env::var;
 
 pub const GEORGE_PORT: &str = "GEORGE_PORT";
@@ -33,9 +34,11 @@ pub const GEORGE_PRODUCTION: &str = "GEORGE_PRODUCTION";
 pub const GEORGE_GENESIS_BLOCK_FILE: &str = "GEORGE_GENESIS_BLOCK_FILE";
 pub const GEORGE_BLOCK_DIR_PATH: &str = "GEORGE_BLOCK_DIR_PATH";
 
-pub fn get(name: &str, default: &str) -> String {
-    match var(name) {
-        Ok(res) => res,
-        _ => default.to_string(),
+impl Env {
+    pub fn get(name: &str, default: &str) -> String {
+        match var(name) {
+            Ok(res) => res,
+            _ => default.to_string(),
+        }
     }
 }

@@ -14,9 +14,10 @@
 
 #[cfg(test)]
 mod ca {
-    use crate::cryptos::ca::{Cert, MsbOptionCA, X509NameInfo, CSR, SAN};
-    use crate::cryptos::ecdsa::ECDSA;
-    use crate::cryptos::rsa::RSA;
+    use crate::cryptos::ca::{MsbOptionCA, X509NameInfo, CSR, SAN};
+    use crate::cryptos::Cert;
+    use crate::cryptos::ECDSA;
+    use crate::cryptos::RSA;
     use openssl::hash::MessageDigest;
 
     #[test]

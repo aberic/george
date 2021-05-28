@@ -14,7 +14,8 @@
 
 #[cfg(test)]
 mod hex {
-    use crate::cryptos::hex::{Hex, HexDecoder, HexEncoder};
+    use crate::cryptos::hex::{HexDecoder, HexEncoder};
+    use crate::cryptos::Hex;
 
     #[test]
     fn hex_test() {

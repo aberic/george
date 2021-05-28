@@ -16,7 +16,8 @@
 mod json {
     use serde::{Deserialize, Serialize};
 
-    use crate::json::{Json, JsonArray, JsonExec, JsonGet, JsonHandler, JsonNew};
+    use crate::json::{JsonExec, JsonGet, JsonHandler, JsonNew};
+    use crate::{Json, JsonArray};
 
     #[derive(Debug, Serialize, Deserialize)]
     struct User {

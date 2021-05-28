@@ -13,23 +13,29 @@
  */
 
 use std::fs;
-use std::path::Path;
-
-use crate::errors::entrances::{Errs, GeorgeResult};
-use crate::io::dir::{Dir, DirHandler};
-use crate::vectors::{Vector, VectorHandler};
 use std::fs::{read, read_to_string, File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
+use std::path::Path;
+
+use crate::errors::{Errs, GeorgeResult};
+use crate::io::dir::DirHandler;
+use crate::io::{Dir, Filer};
+use crate::vectors::VectorHandler;
+use crate::Vector;
 
 pub trait FilerNormal {
     /// 获取读`File`
     fn reader<P: AsRef<Path>>(filepath: P) -> GeorgeResult<File>;
+
     /// 获取写`File`
     fn writer<P: AsRef<Path>>(filepath: P) -> GeorgeResult<File>;
+
     /// 获取追加写`File`
     fn appender<P: AsRef<Path>>(filepath: P) -> GeorgeResult<File>;
+
     /// 获取读写`File`
     fn reader_writer<P: AsRef<Path>>(filepath: P) -> GeorgeResult<File>;
+
     /// 获取读和追加写`File`
     fn reader_appender<P: AsRef<Path>>(filepath: P) -> GeorgeResult<File>;
 }
@@ -37,18 +43,25 @@ pub trait FilerNormal {
 pub trait FilerHandler: Sized {
     /// 判断文件是否存在
     fn exist<P: AsRef<Path>>(filepath: P) -> bool;
+
     /// 创建新文件
     fn touch<P: AsRef<Path>>(filepath: P) -> GeorgeResult<()>;
+
     /// 尝试创建新文件，如果存在则返回成功，如果不存在则新建
     fn try_touch<P: AsRef<Path>>(filepath: P) -> GeorgeResult<()>;
+
     /// 删除文件，如果不存在该文件则直接返回成功
     fn rm<P: AsRef<Path>>(filepath: P) -> GeorgeResult<()>;
+
     /// 指定路径下文件夹名称
     fn name<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String>;
+
     /// 拷贝`from`文件至`to`目录下
     fn cp<P: AsRef<Path>>(file_from_path: P, file_to_path: P) -> GeorgeResult<()>;
+
     /// 移动`from`文件至`to`目录下
     fn mv<P: AsRef<Path>>(file_from_path: P, file_to_path: P) -> GeorgeResult<()>;
+
     /// 获取path目录的绝对路径
     ///
     /// 如果存在且为文件夹则报错
@@ -58,6 +71,7 @@ pub trait FilerHandler: Sized {
 pub trait FilerExecutor<T>: Sized {
     /// 向`File`中追加`content`
     fn appends(file: File, content: T) -> GeorgeResult<()>;
+
     /// 将`content`在指定`seek`处写入
     fn write_seeks(file: File, seek: u64, content: T) -> GeorgeResult<()>;
 }
@@ -65,44 +79,58 @@ pub trait FilerExecutor<T>: Sized {
 pub trait FilerWriter<T>: Sized {
     /// 向file_obj(filepath/file)中写入content，如果file_obj不存在则报错
     fn write<P: AsRef<Path>>(filepath: P, content: T) -> GeorgeResult<usize>;
+
     /// 向file_obj(filepath/file)中写入content，如果file_obj不存在则新建
     fn write_force<P: AsRef<Path>>(filepath: P, content: T) -> GeorgeResult<usize>;
+
     /// 向file_obj(filepath/file)中追加写content，如果file_obj不存在则报错
     fn append<P: AsRef<Path>>(filepath: P, content: T) -> GeorgeResult<()>;
+
     /// 向file_obj(filepath/file)中追加写content，如果file_obj不存在则新建
     fn append_force<P: AsRef<Path>>(filepath: P, content: T) -> GeorgeResult<()>;
+
     fn write_seek<P: AsRef<Path>>(filepath: P, seek: u64, content: T) -> GeorgeResult<()>;
+
     /// 向file_obj(filepath/file)中写入content，如果file_obj不存在则报错
     fn write_file(file: File, content: T) -> GeorgeResult<usize>;
+
     /// 向file_obj(filepath/file)中写入content，如果file_obj不存在则新建
     fn write_file_force(file: File, content: T) -> GeorgeResult<usize>;
+
     /// 向file_obj(filepath/file)中追加写content，如果file_obj不存在则报错
     fn append_file(file: File, content: T) -> GeorgeResult<()>;
+
     /// 向file_obj(filepath/file)中追加写content，如果file_obj不存在则新建
     fn append_file_force(file: File, content: T) -> GeorgeResult<()>;
+
     fn write_file_seek(file: File, seek: u64, content: T) -> GeorgeResult<()>;
 }
 
-pub trait FilerWriterPath<T>: Sized {}
-
 pub trait FilerReader: Sized {
     fn read<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String>;
+
     fn read_bytes<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>>;
+
     fn read_sub<P: AsRef<Path>>(filepath: P, start: u64, last: usize) -> GeorgeResult<Vec<u8>>;
+
     fn read_sub_allow_none<P: AsRef<Path>>(
         filepath: P,
         start: u64,
         last: usize,
     ) -> GeorgeResult<Vec<u8>>;
+
     fn len<P: AsRef<Path>>(filepath: P) -> GeorgeResult<u64>;
+
     fn read_file(file: File) -> GeorgeResult<String>;
+
     fn read_file_bytes(file: File) -> GeorgeResult<Vec<u8>>;
+
     fn read_file_sub(file: File, start: u64, last: usize) -> GeorgeResult<Vec<u8>>;
+
     fn read_file_sub_allow_none(file: File, start: u64, last: usize) -> GeorgeResult<Vec<u8>>;
+
     fn len_file(file: File) -> GeorgeResult<u64>;
 }
-
-pub struct Filer;
 
 impl FilerNormal for Filer {
     fn reader<P: AsRef<Path>>(filepath: P) -> GeorgeResult<File> {

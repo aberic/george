@@ -61,9 +61,11 @@ mod ecdsa {
 
     #[cfg(test)]
     mod generate {
-        use crate::cryptos::base64::{Base64, Basee64Decoder};
-        use crate::cryptos::ecdsa::ECDSA;
-        use crate::cryptos::hex::{Hex, HexDecoder};
+        use crate::cryptos::base64::Base64Decoder;
+        use crate::cryptos::hex::HexDecoder;
+        use crate::cryptos::Base64;
+        use crate::cryptos::Hex;
+        use crate::cryptos::ECDSA;
 
         #[test]
         fn test() {

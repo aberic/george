@@ -14,8 +14,10 @@
 
 #[cfg(test)]
 mod file {
-    use crate::io::file::{Filer, FilerHandler, FilerNormal, FilerReader, FilerWriter};
-    use crate::vectors::{Vector, VectorHandler};
+    use crate::io::file::{FilerHandler, FilerNormal, FilerReader, FilerWriter};
+    use crate::io::Filer;
+    use crate::vectors::VectorHandler;
+    use crate::Vector;
 
     #[test]
     fn create_file_test() {
@@ -220,9 +222,9 @@ mod file {
 
     #[test]
     fn reader_test3() {
-        let s1 = Filer::read("src/examples/conf.yaml").unwrap();
+        let s1 = Filer::read("src/cryptos/mod.rs").unwrap();
         println!("s = {}", s1);
-        let file = Filer::reader("src/examples/conf.yaml").unwrap();
+        let file = Filer::reader("src/cryptos/mod.rs").unwrap();
         let s2 = Filer::read_file(file).unwrap();
         println!("s = {}", s2);
         assert_eq!(s1, s2);
@@ -232,11 +234,11 @@ mod file {
     fn read_sub_bytes_test1() {
         println!(
             "res1 = {:#?}",
-            Filer::read_sub("src/examples/29f459a44fee58c7.ge".to_string(), 448, 8,).unwrap()
+            Filer::read_sub("src/cryptos/mod.rs".to_string(), 448, 8,).unwrap()
         );
         println!(
             "res2 = {:#?}",
-            Filer::read_sub("src/examples/29f459a44fee58c7.ge".to_string(), 0, 2048,).unwrap()
+            Filer::read_sub("src/cryptos/mod.rs".to_string(), 0, 2048,).unwrap()
         );
     }
 
@@ -244,19 +246,16 @@ mod file {
     fn read_sub_bytes_test2() {
         println!(
             "res1 = {:#?}",
-            Filer::read_sub("src/examples/conf.yaml", 448, 8).unwrap()
+            Filer::read_sub("src/cryptos/mod.rs", 448, 8).unwrap()
         );
-        let file = Filer::reader("src/examples/conf.yaml").unwrap();
+        let file = Filer::reader("src/cryptos/mod.rs").unwrap();
         println!("res2 = {:#?}", Filer::read_file_sub(file, 448, 8).unwrap());
     }
 
     #[test]
     fn file_len_test() {
-        println!(
-            "len1 = {:#?}",
-            Filer::len("src/examples/conf.yaml").unwrap()
-        );
-        let file = Filer::reader("src/examples/conf.yaml").unwrap();
+        println!("len1 = {:#?}", Filer::len("src/cryptos/mod.rs").unwrap());
+        let file = Filer::reader("src/cryptos/mod.rs").unwrap();
         println!("len2 = {:#?}", Filer::len_file(file).unwrap());
     }
 }

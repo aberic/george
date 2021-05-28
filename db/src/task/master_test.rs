@@ -12,14 +12,17 @@
  * limitations under the License.
  */
 
+use std::error::Error;
+
 use chrono::{Duration, NaiveDateTime};
 use serde::{Deserialize, Serialize};
+
+use comm::strings::StringHandler;
+use comm::Strings;
 
 use crate::task::engine::traits::TForm;
 use crate::task::master::GLOBAL_MASTER;
 use crate::utils::enums::{IndexType, KeyType};
-use comm::strings::{StringHandler, Strings};
-use std::error::Error;
 
 #[cfg(test)]
 mod master {
@@ -327,8 +330,10 @@ mod master {
 
     #[cfg(test)]
     mod select_disk {
+        use comm::json::JsonHandler;
+        use comm::Json;
+
         use crate::task::master_test::*;
-        use comm::json::{Json, JsonHandler};
 
         #[test]
         fn select_disk_prepare() {
