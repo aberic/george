@@ -151,10 +151,6 @@ impl Node {
         }))
     }
 
-    fn form(&self) -> Arc<RwLock<dyn TForm>> {
-        self.form.clone()
-    }
-
     fn key_type(&self) -> KeyType {
         self.key_type.clone()
     }
@@ -363,7 +359,7 @@ impl Node {
                 // 将record新追加链式子结构坐标字节数组写入record起始链式结构在node文件中真实坐标
                 self.node_write(record_seek, record_info_seek_bytes)?;
             }
-            seed.write().unwrap().modify(IndexPolicy::create(
+            seed.write().unwrap().modify_4_put(IndexPolicy::create(
                 key,
                 IndexType::Disk,
                 self.record_filepath(),
@@ -428,7 +424,7 @@ impl Node {
                     // 将record新追加链式子结构坐标字节数组写入record起始链式结构在node文件中真实坐标
                     self.node_write(record_seek, content)?;
                 }
-                seed.write().unwrap().modify(IndexPolicy::create(
+                seed.write().unwrap().modify_4_put(IndexPolicy::create(
                     key,
                     IndexType::Disk,
                     self.record_filepath(),
@@ -692,7 +688,7 @@ impl Node {
             let next_node_start = flexible_key * 6;
             // 如果唯一，直接删除
             if self.unique {
-                seed.write().unwrap().modify(IndexPolicy::create(
+                seed.write().unwrap().modify_4_del(IndexPolicy::create(
                     key,
                     IndexType::Disk,
                     self.node_filepath(),
@@ -806,7 +802,7 @@ impl Node {
                 let next_record_seek_bytes = Vector::sub_last(res, 12, 8)?;
                 // 如果后续坐标内容为空，则不存在后续数据，直接将待删除内容替换为空字节数组即可
                 if Vector::is_empty(next_record_seek_bytes.clone()) {
-                    seed.write().unwrap().modify(IndexPolicy::create(
+                    seed.write().unwrap().modify_4_del(IndexPolicy::create(
                         key,
                         IndexType::Disk,
                         self.record_filepath(),
@@ -819,12 +815,14 @@ impl Node {
                     // 获取下一个record存储固定长度的数据，长度为20，即view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
                     let next_record_bytes = self.record_read(next_record_seek, 20)?;
                     // 将下一个record记录写入当前记录，以此实现删除
-                    seed.write().unwrap().modify(IndexPolicy::create_custom(
-                        key,
-                        self.record_filepath(),
-                        record_seek,
-                        next_record_bytes,
-                    ));
+                    seed.write()
+                        .unwrap()
+                        .modify_4_del(IndexPolicy::create_custom(
+                            key,
+                            self.record_filepath(),
+                            record_seek,
+                            next_record_bytes,
+                        ));
                 }
                 Ok(())
             } else {

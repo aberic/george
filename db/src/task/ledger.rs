@@ -26,9 +26,10 @@
 // use comm::io::file::{Filer, FilerReader};
 // use comm::strings::{StringHandler, Strings};
 //
-// use crate::task::engine::traits::{TIndex, TSeed};
+// use crate::task::engine::traits::{Pigeonhole, Record, TForm, TIndex, TSeed};
+// use crate::task::engine::DataReal;
 // use crate::task::index::Index as IndexDefault;
-// use crate::task::rich::{Expectation, Selector};
+// use crate::task::rich::{Condition, Expectation, Selector};
 // use crate::task::seed::Seed;
 // use crate::utils::comm::{IndexKey, INDEX_DISK, INDEX_INCREMENT};
 // use crate::utils::enums::{IndexType, KeyType};
@@ -38,7 +39,7 @@
 // use comm::trans::Trans;
 // use comm::vectors::{Vector, VectorHandler};
 //
-// /// 账本
+// /// 视图，类似表
 // #[derive(Debug, Clone)]
 // pub(crate) struct Ledger {
 //     /// 数据库名称
@@ -55,8 +56,6 @@
 //     filer: Filed,
 //     /// 索引集合
 //     indexes: Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>,
-//     /// 当前归档版本信息
-//     pigeonhole: Pigeonhole,
 // }
 //
 // /// 新建视图
@@ -78,7 +77,6 @@
 //         metadata,
 //         filer: Filed::create(filepath.clone())?,
 //         indexes: Default::default(),
-//         pigeonhole: Pigeonhole::create(0, filepath, create_time),
 //     };
 //     Ok(view)
 // }
@@ -102,7 +100,6 @@
 //         metadata,
 //         filer: Filed::mock(filepath.clone())?,
 //         indexes: Default::default(),
-//         pigeonhole: Pigeonhole::create(0, filepath, create_time),
 //     };
 //     Ok(view)
 // }
@@ -150,61 +147,13 @@
 //         Ok(())
 //     }
 //
-//     /// 数据库名称
-//     pub(crate) fn database_name(&self) -> String {
-//         self.database_name.clone()
-//     }
-//
-//     /// 名称
-//     pub(crate) fn name(&self) -> String {
-//         self.name.clone()
-//     }
-//
-//     /// 创建时间
-//     pub(crate) fn create_time(&self) -> Duration {
-//         self.create_time.clone()
-//     }
-//
-//     /// 文件信息
-//     pub(crate) fn metadata(&self) -> Metadata {
-//         self.metadata.clone()
-//     }
-//
 //     /// 文件字节信息
-//     pub(crate) fn metadata_bytes(&self) -> Vec<u8> {
+//     fn metadata_bytes(&self) -> Vec<u8> {
 //         self.metadata.bytes()
 //     }
 //
-//     /// 索引集合
-//     pub(crate) fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>> {
-//         self.indexes.clone()
-//     }
-//
-//     /// 获取索引
-//     pub(crate) fn index(&self, index_name: &str) -> GeorgeResult<Arc<dyn TIndex>> {
-//         match self.index_map().read().unwrap().get(index_name) {
-//             Some(idx) => Ok(idx.clone()),
-//             None => Err(Errs::string(format!("index {} doesn't found", index_name))),
-//         }
-//     }
-//
-//     /// 当前归档版本信息
-//     pub(crate) fn pigeonhole(&self) -> Pigeonhole {
-//         self.pigeonhole.clone()
-//     }
-//
-//     /// 当前视图版本号
-//     pub(crate) fn version(&self) -> u16 {
-//         self.pigeonhole().now().version()
-//     }
-//
 //     /// 当前视图文件地址
-//     pub(crate) fn filepath(&self) -> String {
-//         self.pigeonhole().now().filepath()
-//     }
-//
-//     /// 当前视图文件地址
-//     pub(crate) fn filepath_by_version(&self, version: u16) -> GeorgeResult<String> {
+//     fn filepath_by_version(&self, version: u16) -> GeorgeResult<String> {
 //         if version == self.version() {
 //             Ok(self.filepath())
 //         } else {
@@ -217,20 +166,11 @@
 //         }
 //     }
 //
-//     /// 指定归档版本信息
-//     ///
-//     /// version 版本号
-//     pub(crate) fn record(&self, version: u16) -> GeorgeResult<Record> {
-//         if self.pigeonhole().now().version.eq(&version) {
-//             Ok(self.pigeonhole().now())
-//         } else {
-//             for (ver, record) in self.pigeonhole().history().iter() {
-//                 if version.eq(ver) {
-//                     return Ok(record.clone());
-//                 }
-//             }
-//             Err(Errs::str("no view version found"))
-//         }
+//     fn exist_index(&self, index_name: String) -> bool {
+//         return match self.index_map().read().unwrap().get(index_name.as_str()) {
+//             Some(_) => true,
+//             None => false,
+//         };
 //     }
 //
 //     /// 根据文件路径获取该文件追加写入的写对象
@@ -251,9 +191,115 @@
 //     fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
 //         self.filer.write(seek, content)
 //     }
+// }
+//
+// impl TForm for Ledger {
+//     /// 名称
+//     fn name(&self) -> String {
+//         self.name.clone()
+//     }
+//
+//     /// 数据库名称
+//     fn database_name(&self) -> String {
+//         self.database_name.clone()
+//     }
+//
+//     /// 创建时间
+//     fn create_time(&self) -> Duration {
+//         self.create_time.clone()
+//     }
+//
+//     /// 文件信息
+//     fn metadata(&self) -> Metadata {
+//         self.metadata.clone()
+//     }
+//
+//     /// 索引集合
+//     fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>> {
+//         self.indexes.clone()
+//     }
+//
+//     /// 获取索引
+//     fn index(&self, index_name: &str) -> GeorgeResult<Arc<dyn TIndex>> {
+//         match self.index_map().read().unwrap().get(index_name) {
+//             Some(idx) => Ok(idx.clone()),
+//             None => Err(Errs::string(format!("index {} doesn't found", index_name))),
+//         }
+//     }
+//
+//     /// 当前归档版本信息
+//     fn pigeonhole(&self) -> Pigeonhole {
+//         self.pigeonhole.clone()
+//     }
+//
+//     /// 当前视图版本号
+//     fn version(&self) -> u16 {
+//         self.pigeonhole().now().version()
+//     }
+//
+//     /// 当前视图文件地址
+//     fn filepath(&self) -> String {
+//         self.pigeonhole().now().filepath()
+//     }
+//
+//     /// 指定归档版本信息
+//     ///
+//     /// version 版本号
+//     fn record(&self, version: u16) -> GeorgeResult<Record> {
+//         if self.pigeonhole().now().version.eq(&version) {
+//             Ok(self.pigeonhole().now())
+//         } else {
+//             for (ver, record) in self.pigeonhole().history().iter() {
+//                 if version.eq(ver) {
+//                     return Ok(record.clone());
+//                 }
+//             }
+//             Err(Errs::str("no view version found"))
+//         }
+//     }
+//
+//     /// 整理归档
+//     ///
+//     /// archive_file_path 归档路径
+//     fn archive(&self, archive_file_path: String) -> GeorgeResult<()> {
+//         self.filer.clone().archive(archive_file_path)?;
+//         self.init()
+//     }
+//
+//     /// 组装写入视图的内容，即持续长度+该长度的原文内容
+//     ///
+//     /// 将数据存入view，返回数据在view中的起始偏移量坐标
+//     fn write_content(&self, value: Vec<u8>) -> GeorgeResult<u64> {
+//         // 将数据存入view，返回数据在view中的起始坐标
+//         self.append(value)
+//     }
+//
+//     /// 读取已组装写入视图的内容，根据view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
+//     ///
+//     /// * version view版本号
+//     /// * data_len view数据持续长度
+//     /// * seek view数据偏移量
+//     fn read_content(&self, version: u16, data_len: u32, seek: u64) -> GeorgeResult<Vec<u8>> {
+//         let filepath = self.filepath_by_version(version)?;
+//         Filer::read_sub(filepath, seek, data_len as usize)
+//     }
+//
+//     /// 读取已组装写入视图的内容，根据view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
+//     ///
+//     /// * view_info_index 数据索引字节数组
+//     fn read_content_by_info(&self, view_info_index: Vec<u8>) -> GeorgeResult<Vec<u8>> {
+//         // 读取view版本号(2字节)
+//         let version = Trans::bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
+//         // 读取view持续长度(4字节)
+//         let data_len = Trans::bytes_2_u32(Vector::sub(view_info_index.clone(), 2, 6)?)?;
+//         // 读取view偏移量(6字节)
+//         let seek = Trans::bytes_2_u48(Vector::sub(view_info_index.clone(), 6, 12)?)?;
+//         let filepath = self.filepath_by_version(version)?;
+//         Filer::read_sub(filepath, seek, data_len as usize)
+//     }
 //
 //     /// 视图变更
-//     pub(crate) fn modify(&mut self, database_name: String, name: String) -> GeorgeResult<()> {
+//     fn modify(&mut self, database_name: String, name: String) -> GeorgeResult<()> {
 //         let old_db_name = self.database_name();
 //         let old_view_name = self.name();
 //         let content_old = self.read(0, 44)?;
@@ -282,13 +328,6 @@
 //         }
 //     }
 //
-//     fn exist_index(&self, index_name: String) -> bool {
-//         return match self.index_map().read().unwrap().get(index_name.as_str()) {
-//             Some(_) => true,
-//             None => false,
-//         };
-//     }
-//
 //     /// 创建索引
 //     ///
 //     /// ###Params
@@ -299,7 +338,7 @@
 //     /// * primary 是否主键，主键也是唯一索引，即默认列表依赖索引
 //     /// * unique 是否唯一索引
 //     /// * null 是否允许为空
-//     pub(crate) fn create_index(
+//     fn create_index(
 //         &self,
 //         view: Arc<RwLock<Ledger>>,
 //         index_name: String,
@@ -319,6 +358,29 @@
 //             )?,
 //         );
 //         Ok(())
+//     }
+//
+//     /// 检查值有效性
+//     fn check(
+//         &self,
+//         conditions: Vec<Condition>,
+//         delete: bool,
+//         view_info_index: Vec<u8>,
+//     ) -> GeorgeResult<(bool, Vec<u8>)> {
+//         if Vector::is_empty(view_info_index.clone()) {
+//             Ok((false, vec![]))
+//         } else {
+//             let real = DataReal::from(self.read_content_by_info(view_info_index)?)?;
+//             let value_bytes = real.value();
+//             if Condition::validate(conditions.clone(), value_bytes.clone()) {
+//                 if delete {
+//                     self.remove(real.key(), real.value())?;
+//                 }
+//                 Ok((true, value_bytes))
+//             } else {
+//                 Ok((false, vec![]))
+//             }
+//         }
 //     }
 // }
 //
@@ -400,51 +462,6 @@
 // }
 //
 // impl Ledger {
-//     /// 整理归档
-//     ///
-//     /// archive_file_path 归档路径
-//     pub(crate) fn archive(&self, archive_file_path: String) -> GeorgeResult<()> {
-//         self.filer.clone().archive(archive_file_path)?;
-//         self.init()
-//     }
-//
-//     /// 组装写入视图的内容，即持续长度+该长度的原文内容
-//     ///
-//     /// 将数据存入view，返回数据在view中的起始偏移量坐标
-//     pub(crate) fn write_content(&self, value: Vec<u8>) -> GeorgeResult<u64> {
-//         // 将数据存入view，返回数据在view中的起始坐标
-//         self.append(value)
-//     }
-//
-//     /// 读取已组装写入视图的内容，根据view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
-//     ///
-//     /// * version view版本号
-//     /// * data_len view数据持续长度
-//     /// * seek view数据偏移量
-//     pub(crate) fn read_content(
-//         &self,
-//         version: u16,
-//         data_len: u32,
-//         seek: u64,
-//     ) -> GeorgeResult<Vec<u8>> {
-//         let filepath = self.filepath_by_version(version)?;
-//         Filer::read_sub(filepath, seek, data_len as usize)
-//     }
-//
-//     /// 读取已组装写入视图的内容，根据view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
-//     ///
-//     /// * view_info_index 数据索引字节数组
-//     pub(crate) fn read_content_by_info(&self, view_info_index: Vec<u8>) -> GeorgeResult<Vec<u8>> {
-//         // 读取view版本号(2字节)
-//         let version = Trans::bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
-//         // 读取view持续长度(4字节)
-//         let data_len = Trans::bytes_2_u32(Vector::sub(view_info_index.clone(), 2, 6)?)?;
-//         // 读取view偏移量(6字节)
-//         let seek = Trans::bytes_2_u48(Vector::sub(view_info_index.clone(), 6, 12)?)?;
-//         let filepath = self.filepath_by_version(version)?;
-//         Filer::read_sub(filepath, seek, data_len as usize)
-//     }
-//
 //     /// 插入数据业务方法<p><p>
 //     ///
 //     /// ###Params
@@ -665,176 +682,5 @@
 //         let view = mock_new_view(database_name, name)?;
 //         view.init()?;
 //         Ok(view)
-//     }
-// }
-//
-// /// 归档服务
-// #[derive(Clone)]
-// pub(crate) struct Pigeonhole {
-//     now: Record,
-//     history: HashMap<u16, Record>,
-// }
-//
-// impl fmt::Debug for Pigeonhole {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         let mut histories = String::from("");
-//         for (_, his) in self.history.iter() {
-//             histories = histories.add(his.to_string().as_str());
-//         }
-//         write!(f, "[now = {:#?}, histories = {:#?}]", self.now, histories)
-//     }
-// }
-//
-// impl Pigeonhole {
-//     fn create(version: u16, filepath: String, create_time: Duration) -> Pigeonhole {
-//         Pigeonhole {
-//             now: Record {
-//                 version,
-//                 filepath,
-//                 create_time,
-//             },
-//             history: Default::default(),
-//         }
-//     }
-//
-//     /// 当前归档版本
-//     pub(crate) fn now(&self) -> Record {
-//         self.now.clone()
-//     }
-//
-//     /// 历史归档版本
-//     pub(crate) fn history(&self) -> HashMap<u16, Record> {
-//         self.history.clone()
-//     }
-//
-//     fn history_to_string(&self) -> String {
-//         let mut res = String::from("");
-//         for (_, record) in self.history.iter() {
-//             if res.is_empty() {
-//                 res = res.add(&record.to_string());
-//             } else {
-//                 res = res.add("@_@!");
-//                 res = res.add(&record.to_string());
-//             }
-//         }
-//         res
-//     }
-//
-//     fn history_from_string(history_desc: String) -> GeorgeResult<HashMap<u16, Record>> {
-//         let mut history: HashMap<u16, Record> = Default::default();
-//         if !history_desc.is_empty() {
-//             let split = history_desc.split("$_$!");
-//             for record_desc in split.into_iter() {
-//                 let record = Record::from_string(String::from(record_desc))?;
-//                 history.insert(record.version, record);
-//             }
-//         }
-//         Ok(history)
-//     }
-//
-//     /// 生成文件描述
-//     fn to_string(&self) -> String {
-//         hex::encode(format!(
-//             "{}$_$!{}",
-//             self.now().to_string(),
-//             self.history_to_string()
-//         ))
-//     }
-//
-//     /// 通过文件描述恢复结构信息
-//     pub(crate) fn from_string(pigeonhole_desc: String) -> GeorgeResult<Pigeonhole> {
-//         match hex::decode(pigeonhole_desc) {
-//             Ok(vu8) => {
-//                 let real = Strings::from_utf8(vu8)?;
-//                 let mut split = real.split("$_$!");
-//                 let now = Record::from_string(split.next().unwrap().to_string())?;
-//                 let history = Pigeonhole::history_from_string(split.next().unwrap().to_string())?;
-//                 Ok(Pigeonhole { now, history })
-//             }
-//             Err(err) => Err(Errs::string(format!(
-//                 "recovery pigeonhole from utf8 1 failed! error is {}",
-//                 err
-//             ))),
-//         }
-//     }
-// }
-//
-// /// 归档记录
-// #[derive(Clone)]
-// pub(crate) struct Record {
-//     /// 归档版本，默认新建为[0x00,0x00]，版本每次归档操作递增，最多归档65536次
-//     version: u16,
-//     /// 当前归档版本文件所处路径
-//     filepath: String,
-//     /// 归档时间
-//     create_time: Duration,
-// }
-//
-// impl fmt::Debug for Record {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         let time_from_stamp = NaiveDateTime::from_timestamp(self.create_time().num_seconds(), 0);
-//         let time_format = time_from_stamp.format("%Y-%m-%d %H:%M:%S");
-//         write!(
-//             f,
-//             "[version = {:#?}, filepath = {}, create_time = {}]",
-//             self.version(),
-//             self.filepath(),
-//             time_format
-//         )
-//     }
-// }
-//
-// impl Record {
-//     fn create(version: u16, filepath: String, create_time: Duration) -> Record {
-//         Record {
-//             version,
-//             filepath,
-//             create_time,
-//         }
-//     }
-//
-//     /// 归档版本，默认新建为[0x00,0x00]，版本每次归档操作递增，最多归档65536次
-//     pub(crate) fn version(&self) -> u16 {
-//         self.version
-//     }
-//
-//     /// 当前归档版本文件所处路径
-//     pub(crate) fn filepath(&self) -> String {
-//         self.filepath.clone()
-//     }
-//
-//     /// 归档时间
-//     pub(crate) fn create_time(&self) -> Duration {
-//         self.create_time.clone()
-//     }
-//
-//     /// 生成文件描述
-//     fn to_string(&self) -> String {
-//         hex::encode(format!(
-//             "{}|{}|{}",
-//             self.version(),
-//             self.filepath(),
-//             self.create_time().num_nanoseconds().unwrap().to_string()
-//         ))
-//     }
-//
-//     /// 通过文件描述恢复结构信息
-//     pub(crate) fn from_string(record_desc: String) -> GeorgeResult<Record> {
-//         match hex::decode(record_desc) {
-//             Ok(vu8) => {
-//                 let real = Strings::from_utf8(vu8)?;
-//                 let mut split = real.split("|");
-//                 let version = split.next().unwrap().to_string().parse::<u16>().unwrap();
-//                 let filepath = split.next().unwrap().to_string();
-//                 let create_time = Duration::nanoseconds(
-//                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
-//                 );
-//                 Ok(Record::create(version, filepath, create_time))
-//             }
-//             Err(err) => Err(Errs::string(format!(
-//                 "recovery pigeonhole from utf8 1 failed! error is {}",
-//                 err
-//             ))),
-//         }
 //     }
 // }

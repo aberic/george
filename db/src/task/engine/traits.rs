@@ -21,7 +21,6 @@ use comm::errors::entrances::{Errs, GeorgeResult};
 use crate::task::engine::DataReal;
 use crate::task::rich::{Condition, Constraint, Expectation};
 use crate::task::seed::IndexPolicy;
-use crate::task::view::View;
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::store::Metadata;
 use comm::strings::{StringHandler, Strings};
@@ -40,41 +39,15 @@ pub(crate) trait TForm: Send + Sync + Debug {
     /// 数据库名称
     fn database_name(&self) -> String;
 
-    /// 创建时间
-    fn create_time(&self) -> Duration;
-
-    /// 文件信息
-    fn metadata(&self) -> Metadata;
-
-    /// 索引集合
-    fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>;
-
-    /// 获取索引
-    fn index(&self, index_name: &str) -> GeorgeResult<Arc<dyn TIndex>>;
-
-    /// 当前归档版本信息
-    fn pigeonhole(&self) -> Pigeonhole;
-
-    /// 当前视图版本号
-    fn version(&self) -> u16;
-
-    /// 当前视图文件地址
-    fn filepath(&self) -> String;
-
-    /// 指定归档版本信息
-    ///
-    /// version 版本号
-    fn record(&self, version: u16) -> GeorgeResult<Record>;
-
-    /// 整理归档
-    ///
-    /// archive_file_path 归档路径
-    fn archive(&self, archive_file_path: String) -> GeorgeResult<()>;
-
     /// 组装写入视图的内容，即持续长度+该长度的原文内容
     ///
     /// 将数据存入view，返回数据在view中的起始偏移量坐标
-    fn write_content(&self, value: Vec<u8>) -> GeorgeResult<u64>;
+    ///
+    /// #param
+    /// * value 待写入view中字节数组
+    /// #return
+    /// * view_info_index view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
+    fn write_content(&self, value: Vec<u8>) -> GeorgeResult<Vec<u8>>;
 
     /// 读取已组装写入视图的内容，根据view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
     ///
@@ -87,30 +60,6 @@ pub(crate) trait TForm: Send + Sync + Debug {
     ///
     /// * view_info_index 数据索引字节数组
     fn read_content_by_info(&self, view_info_index: Vec<u8>) -> GeorgeResult<Vec<u8>>;
-
-    /// 视图变更
-    fn modify(&mut self, database_name: String, name: String) -> GeorgeResult<()>;
-
-    /// 创建索引
-    ///
-    /// ###Params
-    /// * view 视图
-    /// * index_name 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
-    /// * index_type 存储引擎类型
-    /// * key_type 索引值类型
-    /// * primary 是否主键，主键也是唯一索引，即默认列表依赖索引
-    /// * unique 是否唯一索引
-    /// * null 是否允许为空
-    fn create_index(
-        &self,
-        view: Arc<RwLock<View>>,
-        index_name: String,
-        index_type: IndexType,
-        key_type: KeyType,
-        primary: bool,
-        unique: bool,
-        null: bool,
-    ) -> GeorgeResult<()>;
 
     /// 检查值有效性
     fn check(
@@ -269,9 +218,11 @@ pub(crate) trait TSeed: Send + Sync + Debug {
     /// value最终存储在文件中的内容
     fn value(&self) -> Vec<u8>;
     /// value最终存储在文件中的内容
-    fn sequence(&self) -> u64;
+    fn increment(&self) -> u64;
     /// 修改value值
-    fn modify(&mut self, index_policy: IndexPolicy);
+    fn modify_4_put(&mut self, index_policy: IndexPolicy);
+    /// 修改value值
+    fn modify_4_del(&mut self, index_policy: IndexPolicy);
     /// 存储操作
     fn save(&self) -> GeorgeResult<()>;
     /// 删除操作

@@ -22,7 +22,6 @@ use comm::errors::children::{ViewExistError, ViewNoExistError};
 use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
 use comm::strings::{StringHandler, Strings};
 
-use crate::task::engine::traits::TForm;
 use crate::task::rich::Expectation;
 use crate::task::view::View;
 use crate::utils::path::Paths;
@@ -240,8 +239,7 @@ impl Database {
         view_name: String,
         version: u16,
     ) -> GeorgeResult<(String, Duration)> {
-        let record = self.view(view_name)?.read().unwrap().record(version)?;
-        Ok((record.filepath(), record.create_time()))
+        self.view(view_name)?.read().unwrap().record(version)
     }
 
     /// 视图文件信息
@@ -427,20 +425,10 @@ impl Database {
     fn recovery_view(&self, view_name: String) -> GeorgeResult<()> {
         let view_file_path = Paths::view_filepath(self.name(), view_name);
         let hd = ContentBytes::recovery(view_file_path.clone())?;
-        let view = View::recover(self.name(), hd.clone())?;
-        let view_c = view.clone();
-        let view_r = view_c.read().unwrap();
-        log::debug!(
-            "view [db={}, name={}, create_time={}, pigeonhole={:#?}, {:#?}]",
-            self.name(),
-            view_r.name(),
-            view_r.create_time().num_nanoseconds().unwrap().to_string(),
-            view_r.pigeonhole(),
-            hd.metadata()
-        );
+        let (view_name, view) = View::recover(self.name(), hd.clone())?;
         // 如果已存在该view，则不处理
-        if !self.exist_view(view_r.name()) {
-            self.view_map().write().unwrap().insert(view_r.name(), view);
+        if !self.exist_view(view_name.clone()) {
+            self.view_map().write().unwrap().insert(view_name, view);
         }
         Ok(())
     }

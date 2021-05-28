@@ -20,7 +20,6 @@ use crate::task::engine::traits::{TForm, TNode, TSeed};
 use crate::task::engine::DataReal;
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
-use crate::task::view::View;
 use crate::utils::comm::IndexKey;
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::path::Paths;
@@ -124,7 +123,7 @@ impl TNode for Node {
     }
 
     fn del(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
-        self.del_in_node(key, seed.clone().read().unwrap().sequence(), seed)
+        self.del_in_node(key, seed.clone().read().unwrap().increment(), seed)
     }
 
     fn select(
@@ -169,7 +168,7 @@ impl Node {
                 return Err(GeorgeError::from(DataExistError));
             }
         }
-        seed.write().unwrap().modify(IndexPolicy::create(
+        seed.write().unwrap().modify_4_put(IndexPolicy::create(
             key,
             IndexType::Sequence,
             self.node_filepath(),
@@ -203,7 +202,7 @@ impl Node {
         // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
         let res = self.read(seek, 12)?;
         if Vector::is_fill(res) {
-            seed.write().unwrap().modify(IndexPolicy::create(
+            seed.write().unwrap().modify_4_del(IndexPolicy::create(
                 key,
                 IndexType::Sequence,
                 self.node_filepath(),

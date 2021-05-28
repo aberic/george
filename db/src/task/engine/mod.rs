@@ -12,14 +12,10 @@
  * limitations under the License.
  */
 
-use crate::task::engine::traits::TForm;
-use crate::task::rich::Condition;
-use crate::task::view::View;
 use comm::errors::entrances::{Errs, GeorgeResult};
 use comm::json::{Json, JsonHandler};
 use comm::vectors::{Vector, VectorHandler};
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, RwLock};
 
 pub(super) mod block;
 pub(super) mod disk;
@@ -33,7 +29,8 @@ pub(super) mod traits;
 /// 执行`put`、`set`及`insert`等方法插入数据时，存入文件中的真实数据为[序列号 + key + value]组合
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DataReal {
-    pub(crate) sequence: u64,
+    /// 自增ID
+    pub(crate) increment: u64,
     pub(crate) key: String,
     pub(crate) value: Vec<u8>,
 }
@@ -52,7 +49,7 @@ impl DataReal {
     }
 
     pub(crate) fn set_seq(&mut self, sequence: u64) {
-        self.sequence = sequence
+        self.increment = sequence
     }
 
     pub(crate) fn from(real_bytes: Vec<u8>) -> GeorgeResult<DataReal> {

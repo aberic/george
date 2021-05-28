@@ -13,9 +13,7 @@
  */
 
 use std::collections::HashMap;
-use std::fmt;
 use std::fs::{read_dir, ReadDir};
-use std::ops::Add;
 use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
 
@@ -26,7 +24,7 @@ use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerReader};
 use comm::strings::{StringHandler, Strings};
 
-use crate::task::engine::traits::{Pigeonhole, Record, TForm, TIndex, TSeed};
+use crate::task::engine::traits::{Pigeonhole, TForm, TIndex, TSeed};
 use crate::task::engine::DataReal;
 use crate::task::index::Index as IndexDefault;
 use crate::task::rich::{Condition, Expectation, Selector};
@@ -151,9 +149,47 @@ impl View {
         Ok(())
     }
 
+    /// 创建时间
+    pub(crate) fn create_time(&self) -> Duration {
+        self.create_time.clone()
+    }
+
+    /// 文件信息
+    pub(crate) fn metadata(&self) -> Metadata {
+        self.metadata.clone()
+    }
+
+    /// 索引集合
+    pub(crate) fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>> {
+        self.indexes.clone()
+    }
+
+    /// 获取索引
+    fn index(&self, index_name: &str) -> GeorgeResult<Arc<dyn TIndex>> {
+        match self.index_map().read().unwrap().get(index_name) {
+            Some(idx) => Ok(idx.clone()),
+            None => Err(Errs::string(format!("index {} doesn't found", index_name))),
+        }
+    }
+
+    /// 当前视图版本号
+    fn version(&self) -> u16 {
+        self.pigeonhole().now().version()
+    }
+
+    /// 当前视图文件地址
+    fn filepath(&self) -> String {
+        self.pigeonhole().now().filepath()
+    }
+
     /// 文件字节信息
     fn metadata_bytes(&self) -> Vec<u8> {
         self.metadata.bytes()
+    }
+
+    /// 当前归档版本信息
+    fn pigeonhole(&self) -> Pigeonhole {
+        self.pigeonhole.clone()
     }
 
     /// 当前视图文件地址
@@ -177,85 +213,22 @@ impl View {
         };
     }
 
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
-    /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
-    ///
-    /// #Return
-    ///
-    /// seek_end_before 写之前文件字节数据长度
-    fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.filer.append(content)
-    }
-
-    fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
-        self.filer.read(start, last)
-    }
-
-    fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
-        self.filer.write(seek, content)
-    }
-}
-
-impl TForm for View {
-    /// 名称
-    fn name(&self) -> String {
-        self.name.clone()
-    }
-
-    /// 数据库名称
-    fn database_name(&self) -> String {
-        self.database_name.clone()
-    }
-
-    /// 创建时间
-    fn create_time(&self) -> Duration {
-        self.create_time.clone()
-    }
-
-    /// 文件信息
-    fn metadata(&self) -> Metadata {
-        self.metadata.clone()
-    }
-
-    /// 索引集合
-    fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>> {
-        self.indexes.clone()
-    }
-
-    /// 获取索引
-    fn index(&self, index_name: &str) -> GeorgeResult<Arc<dyn TIndex>> {
-        match self.index_map().read().unwrap().get(index_name) {
-            Some(idx) => Ok(idx.clone()),
-            None => Err(Errs::string(format!("index {} doesn't found", index_name))),
-        }
-    }
-
-    /// 当前归档版本信息
-    fn pigeonhole(&self) -> Pigeonhole {
-        self.pigeonhole.clone()
-    }
-
-    /// 当前视图版本号
-    fn version(&self) -> u16 {
-        self.pigeonhole().now().version()
-    }
-
-    /// 当前视图文件地址
-    fn filepath(&self) -> String {
-        self.pigeonhole().now().filepath()
-    }
-
     /// 指定归档版本信息
     ///
-    /// version 版本号
-    fn record(&self, version: u16) -> GeorgeResult<Record> {
+    /// #param
+    /// * version 版本号
+    ///
+    /// #return
+    /// * filepath 当前归档版本文件所处路径
+    /// * create_time 归档时间
+    pub(crate) fn record(&self, version: u16) -> GeorgeResult<(String, Duration)> {
         if self.pigeonhole().now().version.eq(&version) {
-            Ok(self.pigeonhole().now())
+            let record = self.pigeonhole().now();
+            Ok((record.filepath(), record.create_time()))
         } else {
             for (ver, record) in self.pigeonhole().history().iter() {
                 if version.eq(ver) {
-                    return Ok(record.clone());
+                    return Ok((record.filepath(), record.create_time()));
                 }
             }
             Err(Errs::str("no view version found"))
@@ -265,45 +238,13 @@ impl TForm for View {
     /// 整理归档
     ///
     /// archive_file_path 归档路径
-    fn archive(&self, archive_file_path: String) -> GeorgeResult<()> {
+    pub(crate) fn archive(&self, archive_file_path: String) -> GeorgeResult<()> {
         self.filer.clone().archive(archive_file_path)?;
         self.init()
     }
 
-    /// 组装写入视图的内容，即持续长度+该长度的原文内容
-    ///
-    /// 将数据存入view，返回数据在view中的起始偏移量坐标
-    fn write_content(&self, value: Vec<u8>) -> GeorgeResult<u64> {
-        // 将数据存入view，返回数据在view中的起始坐标
-        self.append(value)
-    }
-
-    /// 读取已组装写入视图的内容，根据view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
-    ///
-    /// * version view版本号
-    /// * data_len view数据持续长度
-    /// * seek view数据偏移量
-    fn read_content(&self, version: u16, data_len: u32, seek: u64) -> GeorgeResult<Vec<u8>> {
-        let filepath = self.filepath_by_version(version)?;
-        Filer::read_sub(filepath, seek, data_len as usize)
-    }
-
-    /// 读取已组装写入视图的内容，根据view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
-    ///
-    /// * view_info_index 数据索引字节数组
-    fn read_content_by_info(&self, view_info_index: Vec<u8>) -> GeorgeResult<Vec<u8>> {
-        // 读取view版本号(2字节)
-        let version = Trans::bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
-        // 读取view持续长度(4字节)
-        let data_len = Trans::bytes_2_u32(Vector::sub(view_info_index.clone(), 2, 6)?)?;
-        // 读取view偏移量(6字节)
-        let seek = Trans::bytes_2_u48(Vector::sub(view_info_index.clone(), 6, 12)?)?;
-        let filepath = self.filepath_by_version(version)?;
-        Filer::read_sub(filepath, seek, data_len as usize)
-    }
-
     /// 视图变更
-    fn modify(&mut self, database_name: String, name: String) -> GeorgeResult<()> {
+    pub(crate) fn modify(&mut self, database_name: String, name: String) -> GeorgeResult<()> {
         let old_db_name = self.database_name();
         let old_view_name = self.name();
         let content_old = self.read(0, 44)?;
@@ -342,7 +283,7 @@ impl TForm for View {
     /// * primary 是否主键，主键也是唯一索引，即默认列表依赖索引
     /// * unique 是否唯一索引
     /// * null 是否允许为空
-    fn create_index(
+    pub(crate) fn create_index(
         &self,
         view: Arc<RwLock<View>>,
         index_name: String,
@@ -362,6 +303,70 @@ impl TForm for View {
             )?,
         );
         Ok(())
+    }
+
+    /// 根据文件路径获取该文件追加写入的写对象
+    ///
+    /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
+    ///
+    /// #Return
+    ///
+    /// seek_end_before 写之前文件字节数据长度
+    fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
+        self.filer.append(content)
+    }
+
+    fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
+        self.filer.read(start, last)
+    }
+
+    fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
+        self.filer.write(seek, content)
+    }
+}
+
+impl TForm for View {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn database_name(&self) -> String {
+        self.database_name.clone()
+    }
+
+    fn write_content(&self, value: Vec<u8>) -> GeorgeResult<Vec<u8>> {
+        // 内容持续长度(4字节)
+        let mut seed_bytes_len_bytes = Trans::u32_2_bytes(value.len() as u32);
+        // 将数据存入view，返回数据在view中的起始坐标
+        let view_seek_start = self.append(value)?;
+        // 记录视图文件属性(版本号/数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
+        // 数据在视图文件中起始偏移量p(6字节)
+        let mut view_seek_start_bytes = Trans::u48_2_bytes(view_seek_start);
+        // 生成视图文件属性，版本号(2字节)
+        let view_version_bytes = Trans::u16_2_bytes(self.version());
+        // 循环定位记录使用文件属性
+        let mut view_info_index = view_version_bytes.clone();
+        // 记录表文件属性(版本/数据归档/定位文件用2字节)+数据持续长度+数据在表文件中起始偏移量p(6字节)
+        // view_info_index = view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
+        view_info_index.append(&mut seed_bytes_len_bytes);
+        view_info_index.append(&mut view_seek_start_bytes);
+        Ok(view_info_index)
+    }
+
+    fn read_content(&self, version: u16, data_len: u32, seek: u64) -> GeorgeResult<Vec<u8>> {
+        let filepath = self.filepath_by_version(version)?;
+        Filer::read_sub(filepath, seek, data_len as usize)
+    }
+
+    fn read_content_by_info(&self, view_info_index: Vec<u8>) -> GeorgeResult<Vec<u8>> {
+        // 读取view版本号(2字节)
+        let version = Trans::bytes_2_u16(Vector::sub(view_info_index.clone(), 0, 2)?)?;
+        // 读取view持续长度(4字节)
+        let data_len = Trans::bytes_2_u32(Vector::sub(view_info_index.clone(), 2, 6)?)?;
+        // 读取view偏移量(6字节)
+        let seek = Trans::bytes_2_u48(Vector::sub(view_info_index.clone(), 6, 12)?)?;
+        let filepath = self.filepath_by_version(version)?;
+        Filer::read_sub(filepath, seek, data_len as usize)
     }
 
     /// 检查值有效性
@@ -447,7 +452,7 @@ impl View {
     /// GeorgeResult<()>
     pub(crate) fn remove(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
         let real = self.index(INDEX_DISK)?.get(key.clone())?;
-        self.del(key, real.sequence, value)
+        self.del(key, real.increment, value)
     }
 
     /// 条件检索
@@ -529,8 +534,8 @@ impl View {
     /// ###Return
     ///
     /// IndexResult<()>
-    fn del(&self, key: String, sequence: u64, value: Vec<u8>) -> GeorgeResult<()> {
-        let seed = Seed::create_cus(self.clone(), key.clone(), sequence, value.clone());
+    fn del(&self, key: String, increment: u64, value: Vec<u8>) -> GeorgeResult<()> {
+        let seed = Seed::create_cus(self.clone(), key.clone(), increment, value.clone());
         let mut receives = Vec::new();
         for (index_name, index) in self.index_map().read().unwrap().iter() {
             let (sender, receive) = mpsc::channel();
@@ -540,16 +545,19 @@ impl View {
             let key_clone = key.clone();
             let value_clone = value.clone();
             let seed_clone = seed.clone();
-            thread::spawn(move || match index_name_clone.as_str() {
-                INDEX_DISK => sender.send(index_clone.del(key_clone, seed_clone)),
-                INDEX_INCREMENT => sender.send(index_clone.del(key_clone, seed_clone)),
-                _ => match IndexKey::fetch(index_name_clone, value_clone) {
-                    Ok(res) => sender.send(index_clone.del(res, seed_clone)),
-                    Err(err) => {
-                        log::debug!("key fetch error: {}", err);
-                        sender.send(Ok(()))
-                    }
-                },
+            thread::spawn(move || {
+                log::debug!("thread del index {}", index_name_clone);
+                match index_name_clone.as_str() {
+                    INDEX_DISK => sender.send(index_clone.del(key_clone, seed_clone)),
+                    INDEX_INCREMENT => sender.send(index_clone.del(key_clone, seed_clone)),
+                    _ => match IndexKey::fetch(index_name_clone, value_clone) {
+                        Ok(res) => sender.send(index_clone.del(res, seed_clone)),
+                        Err(err) => {
+                            log::debug!("key fetch error: {}", err);
+                            sender.send(Ok(()))
+                        }
+                    },
+                }
             });
         }
         for receive in receives.iter() {
@@ -580,7 +588,10 @@ impl View {
     }
 
     /// 通过文件描述恢复结构信息
-    pub(crate) fn recover(database_name: String, hd: HD) -> GeorgeResult<Arc<RwLock<View>>> {
+    pub(crate) fn recover(
+        database_name: String,
+        hd: HD,
+    ) -> GeorgeResult<(String, Arc<RwLock<View>>)> {
         let description_str = Strings::from_utf8(hd.description())?;
         match hex::decode(description_str) {
             Ok(vu8) => {
@@ -614,7 +625,15 @@ impl View {
                             .read()
                             .unwrap()
                             .recovery_indexes(view_bak.clone(), paths)?;
-                        Ok(view_bak)
+                        log::debug!(
+                            "view [db={}, name={}, create_time={}, pigeonhole={:#?}, {:#?}]",
+                            view.name(),
+                            view.name(),
+                            view.create_time().num_nanoseconds().unwrap().to_string(),
+                            view.pigeonhole(),
+                            hd.metadata()
+                        );
+                        Ok((view.name(), view_bak))
                     }
                     Err(err) => Err(Errs::strs("recovery view read dir", err)),
                 }

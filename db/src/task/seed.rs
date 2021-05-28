@@ -16,7 +16,6 @@ use serde::{Deserialize, Serialize};
 
 use comm::errors::entrances::GeorgeResult;
 use comm::io::file::{Filer, FilerWriter};
-use comm::trans::Trans;
 
 use crate::task::engine::traits::{TForm, TSeed};
 use crate::task::engine::DataReal;
@@ -46,6 +45,12 @@ impl IndexPolicy {
         node_filepath: String,
         seek: u64,
     ) -> IndexPolicy {
+        log::debug!(
+            "IndexPolicy create key {}, seek {}, node_filepath {}",
+            key,
+            seek,
+            node_filepath
+        );
         IndexPolicy {
             index_type,
             original_key: key,
@@ -94,7 +99,7 @@ impl Seed {
     pub fn create(view: View, key: String, value: Vec<u8>) -> Arc<RwLock<Seed>> {
         Arc::new(RwLock::new(Seed {
             real: DataReal {
-                sequence: 0,
+                increment: 0,
                 key,
                 value,
             },
@@ -104,10 +109,15 @@ impl Seed {
     }
 
     /// 新建seed
-    pub fn create_cus(view: View, key: String, sequence: u64, value: Vec<u8>) -> Arc<RwLock<Seed>> {
+    pub fn create_cus(
+        view: View,
+        key: String,
+        increment: u64,
+        value: Vec<u8>,
+    ) -> Arc<RwLock<Seed>> {
         Arc::new(RwLock::new(Seed {
             real: DataReal {
-                sequence,
+                increment,
                 key,
                 value,
             },
@@ -131,16 +141,19 @@ impl TSeed for Seed {
         self.real.value()
     }
 
-    fn sequence(&self) -> u64 {
-        self.real.sequence
+    fn increment(&self) -> u64 {
+        self.real.increment
     }
 
-    fn modify(&mut self, index_policy: IndexPolicy) {
+    fn modify_4_put(&mut self, index_policy: IndexPolicy) {
         match index_policy.index_type {
             IndexType::Increment => self.real.set_seq(index_policy.seek / 8),
-            IndexType::Sequence => self.real.set_seq(index_policy.seek / 8),
             _ => {}
         }
+        self.policies.push(index_policy)
+    }
+
+    fn modify_4_del(&mut self, index_policy: IndexPolicy) {
         self.policies.push(index_policy)
     }
 
@@ -149,21 +162,8 @@ impl TSeed for Seed {
             return Ok(());
         }
         let value = self.values()?;
-        // 内容持续长度(4字节)
-        let mut seed_bytes_len_bytes = Trans::u32_2_bytes(value.len() as u32);
-        // 执行真实存储操作，即索引将seed存入后，允许检索到该结果，但该结果值不存在，仅当所有索引存入都成功，才会执行本方法完成真实存储操作
-        let view_seek_start = self.view.write_content(value)?;
-        // 记录视图文件属性(版本号/数据归档/定位文件用2字节)+数据在表文件中起始偏移量p(6字节)
-        // 数据在视图文件中起始偏移量p(6字节)
-        let mut view_seek_start_bytes = Trans::u48_2_bytes(view_seek_start);
-        // 生成视图文件属性，版本号(2字节)
-        let view_version_bytes = Trans::u16_2_bytes(self.view.version());
-        // 循环定位记录使用文件属性
-        let mut view_info_index = view_version_bytes.clone();
-        // 记录表文件属性(版本/数据归档/定位文件用2字节)+数据持续长度+数据在表文件中起始偏移量p(6字节)
-        // view_info_index = view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
-        view_info_index.append(&mut seed_bytes_len_bytes);
-        view_info_index.append(&mut view_seek_start_bytes);
+        // view_info_index view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
+        let view_info_index = self.view.write_content(value)?;
 
         // 将在数据在view中的坐标存入各个index
         for policy in self.policies.to_vec() {
