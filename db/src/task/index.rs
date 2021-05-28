@@ -26,42 +26,13 @@ use crate::task::engine::sequence::Node as NS;
 use crate::task::engine::traits::{TForm, TIndex, TNode, TSeed};
 use crate::task::engine::DataReal;
 use crate::task::rich::{Constraint, Expectation};
-use crate::task::View;
-use crate::utils::enums::{Enum, EnumHandler, IndexType, KeyType};
-use crate::utils::path::Paths;
+use crate::task::{Index, View};
+use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::store::{ContentBytes, Metadata, HD};
 use crate::utils::writer::Filed;
+use crate::utils::Paths;
+use crate::utils::{Enum, EnumHandler};
 use comm::json::{Json, JsonExec, JsonGet, JsonNew};
-
-/// Siam索引
-///
-/// 5位key及16位md5后key及5位起始seek和4位持续seek
-#[derive(Debug)]
-pub(crate) struct Index {
-    form: Arc<RwLock<dyn TForm>>,
-    /// 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
-    name: String,
-    /// 存储引擎类型
-    index_type: IndexType,
-    /// 是否主键，主键也是唯一索引，即默认列表依赖索引
-    primary: bool,
-    /// 是否唯一索引
-    unique: bool,
-    /// 是否允许为空
-    null: bool,
-    /// 索引值类型
-    key_type: KeyType,
-    /// 结点
-    root: Arc<dyn TNode>,
-    /// 文件信息
-    metadata: Metadata,
-    /// 创建时间
-    create_time: Duration,
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
-    /// 需要借助对象包裹，以便更新file，避免self为mut
-    filer: Filed,
-}
 
 /// 新建索引
 ///

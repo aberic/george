@@ -12,14 +12,14 @@
  * limitations under the License.
  */
 
-use crate::task::database::Database;
-use crate::task::page::Page;
 use crate::task::rich::Expectation;
+use crate::task::Page;
+use crate::task::{Database, Master};
 use crate::utils::comm::{DEFAULT_COMMENT, DEFAULT_NAME, GEORGE_DB_CONFIG, INDEX_DISK};
 use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
 use crate::utils::enums::{IndexType, KeyType};
-use crate::utils::path::Paths;
 use crate::utils::store::ContentBytes;
+use crate::utils::Paths;
 use chrono::{Duration, Local, NaiveDateTime};
 use comm::env;
 use comm::errors::children::{
@@ -34,18 +34,6 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::fs::{read_dir, read_to_string, ReadDir};
 use std::sync::{Arc, RwLock};
-
-/// 数据库
-pub(super) struct Master {
-    /// 默认缓存页名称
-    default_page_name: String,
-    /// 缓存页集合
-    pages: Arc<RwLock<HashMap<String, Arc<RwLock<Page>>>>>,
-    /// 库集合
-    databases: Arc<RwLock<HashMap<String, Arc<RwLock<Database>>>>>,
-    /// 创建时间
-    create_time: Duration,
-}
 
 impl Master {
     pub(super) fn page_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Page>>>>> {

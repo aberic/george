@@ -19,7 +19,7 @@ use comm::io::file::{Filer, FilerWriter};
 
 use crate::task::engine::traits::{TForm, TSeed};
 use crate::task::engine::DataReal;
-use crate::task::View;
+use crate::task::{Seed, View};
 use crate::utils::enums::IndexType;
 use comm::vectors::{Vector, VectorHandler};
 use std::sync::{Arc, RwLock};
@@ -78,19 +78,6 @@ impl IndexPolicy {
     fn node_file_path(&self) -> String {
         self.node_filepath.clone()
     }
-}
-
-/// B+Tree索引叶子结点内防hash碰撞数组结构中单体结构
-///
-/// 搭配Index使用
-///
-/// 叶子节点下真实存储数据的集合单体结构
-#[derive(Debug)]
-pub(crate) struct Seed {
-    real: DataReal,
-    /// 除主键索引外的其它索引操作策略集合
-    policies: Vec<IndexPolicy>,
-    view: View,
 }
 
 /// 封装方法函数

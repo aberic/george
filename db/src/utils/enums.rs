@@ -12,39 +12,34 @@
  * limitations under the License.
  */
 
+use crate::utils::{Enum, EnumHandler};
 use serde::{Deserialize, Serialize};
-
-pub trait EnumHandler {
-    fn tag_u8(tag: Tag) -> u8;
-    fn index_type_u8(index_type: IndexType) -> u8;
-    fn key_type_u8(key_type: KeyType) -> u8;
-    fn tag(b: u8) -> Tag;
-    fn index_type(b: u8) -> IndexType;
-    fn key_type(b: u8) -> KeyType;
-    fn key_type_str(key_type: KeyType) -> String;
-}
-
-pub struct Enum {}
 
 impl EnumHandler for Enum {
     fn tag_u8(tag: Tag) -> u8 {
         tag_u8(tag)
     }
+
     fn index_type_u8(index_type: IndexType) -> u8 {
         index_type_u8(index_type)
     }
+
     fn key_type_u8(key_type: KeyType) -> u8 {
         key_type_u8(key_type)
     }
+
     fn tag(b: u8) -> Tag {
         tag(b)
     }
+
     fn index_type(b: u8) -> IndexType {
         index_type(b)
     }
+
     fn key_type(b: u8) -> KeyType {
         key_type(b)
     }
+
     fn key_type_str(key_type: KeyType) -> String {
         key_type_str(key_type)
     }

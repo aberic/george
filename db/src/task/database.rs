@@ -23,29 +23,11 @@ use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
 use comm::strings::{StringHandler, Strings};
 
 use crate::task::rich::Expectation;
-use crate::task::View;
-use crate::utils::path::Paths;
+use crate::task::{Database, View};
 use crate::utils::store::{ContentBytes, Metadata, HD};
 use crate::utils::writer::Filed;
+use crate::utils::Paths;
 use comm::json::{Json, JsonHandler};
-
-#[derive(Debug, Clone)]
-pub(crate) struct Database {
-    /// 名称
-    name: String,
-    /// 描述
-    comment: String,
-    /// 创建时间
-    create_time: Duration,
-    /// 文件信息
-    metadata: Metadata,
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
-    /// 需要借助对象包裹，以便更新file，避免self为mut
-    filer: Filed,
-    /// 视图集合
-    views: Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>>,
-}
 
 /// 新建数据库
 ///

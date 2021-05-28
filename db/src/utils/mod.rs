@@ -12,6 +12,8 @@
  * limitations under the License.
  */
 
+use crate::utils::enums::{IndexType, KeyType, Tag};
+
 pub mod comm;
 mod comm_test;
 pub mod deploy;
@@ -22,3 +24,17 @@ mod path_test;
 pub mod store;
 mod store_test;
 pub mod writer;
+
+pub struct Enum {}
+
+pub trait EnumHandler {
+    fn tag_u8(tag: Tag) -> u8;
+    fn index_type_u8(index_type: IndexType) -> u8;
+    fn key_type_u8(key_type: KeyType) -> u8;
+    fn tag(b: u8) -> Tag;
+    fn index_type(b: u8) -> IndexType;
+    fn key_type(b: u8) -> KeyType;
+    fn key_type_str(key_type: KeyType) -> String;
+}
+
+pub struct Paths;

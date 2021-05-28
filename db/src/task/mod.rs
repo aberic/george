@@ -22,14 +22,46 @@ mod rich;
 mod seed;
 mod view;
 
-use crate::task::engine::traits::{Pigeonhole, TIndex};
-use crate::utils::path::Paths;
+use crate::task::engine::memory::Node;
+use crate::task::engine::traits::{Pigeonhole, TForm, TIndex, TNode};
+use crate::task::engine::DataReal;
+use crate::task::seed::IndexPolicy;
+use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::store::Metadata;
 use crate::utils::writer::Filed;
-use chrono::{Duration, Local, NaiveDateTime};
-use comm::errors::entrances::GeorgeResult;
+use chrono::Duration;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
+
+/// 数据库
+pub(super) struct Master {
+    /// 默认缓存页名称
+    default_page_name: String,
+    /// 缓存页集合
+    pages: Arc<RwLock<HashMap<String, Arc<RwLock<Page>>>>>,
+    /// 库集合
+    databases: Arc<RwLock<HashMap<String, Arc<RwLock<Database>>>>>,
+    /// 创建时间
+    create_time: Duration,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct Database {
+    /// 名称
+    name: String,
+    /// 描述
+    comment: String,
+    /// 创建时间
+    create_time: Duration,
+    /// 文件信息
+    metadata: Metadata,
+    /// 根据文件路径获取该文件追加写入的写对象
+    ///
+    /// 需要借助对象包裹，以便更新file，避免self为mut
+    filer: Filed,
+    /// 视图集合
+    views: Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>>,
+}
 
 /// 视图，类似表
 #[derive(Debug, Clone)]
@@ -52,56 +84,67 @@ pub(crate) struct View {
     pub(crate) pigeonhole: Pigeonhole,
 }
 
-/// 表数据元
 #[derive(Debug, Clone)]
-pub(crate) struct Form;
+pub(crate) struct Page {
+    /// 名称
+    name: String,
+    /// 描述
+    comment: String,
+    /// 可使用内存大小(单位：Mb，0：不限制大小)
+    size: u64,
+    /// 默认有效期(单位：秒)，如无设置，默认维300(0：永久有效)
+    period: u32,
+    /// 创建时间
+    create_time: Duration,
+    /// 文件信息
+    metadata: Metadata,
+    /// 根据文件路径获取该文件追加写入的写对象
+    ///
+    /// 需要借助对象包裹，以便更新file，避免self为mut
+    filer: Filed,
+    /// 默认缓存页
+    node: Arc<RwLock<Node>>,
+}
 
-impl Form {
-    /// 新建视图
+/// Siam索引
+///
+/// 5位key及16位md5后key及5位起始seek和4位持续seek
+#[derive(Debug)]
+pub(crate) struct Index {
+    form: Arc<RwLock<dyn TForm>>,
+    /// 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
+    name: String,
+    /// 存储引擎类型
+    index_type: IndexType,
+    /// 是否主键，主键也是唯一索引，即默认列表依赖索引
+    primary: bool,
+    /// 是否唯一索引
+    unique: bool,
+    /// 是否允许为空
+    null: bool,
+    /// 索引值类型
+    key_type: KeyType,
+    /// 结点
+    root: Arc<dyn TNode>,
+    /// 文件信息
+    metadata: Metadata,
+    /// 创建时间
+    create_time: Duration,
+    /// 根据文件路径获取该文件追加写入的写对象
     ///
-    /// 具体传参参考如下定义：<p><p>
-    ///
-    /// ###Params
-    ///
-    /// mem 是否为内存视图
-    pub(crate) fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
-        let now: NaiveDateTime = Local::now().naive_local();
-        let create_time = Duration::nanoseconds(now.timestamp_nanos());
-        let filepath = Paths::view_filepath(database_name.clone(), name.clone());
-        let metadata = Metadata::view();
-        let view = View {
-            database_name: database_name.clone(),
-            name,
-            create_time,
-            metadata,
-            filer: Filed::create(filepath.clone())?,
-            indexes: Default::default(),
-            pigeonhole: Pigeonhole::create(0, filepath, create_time),
-        };
-        Ok(view)
-    }
+    /// 需要借助对象包裹，以便更新file，避免self为mut
+    filer: Filed,
+}
 
-    /// 新建视图
-    ///
-    /// 具体传参参考如下定义：<p><p>
-    ///
-    /// ###Params
-    ///
-    /// mem 是否为内存视图
-    pub(crate) fn mock_new_view(database_name: String, name: String) -> GeorgeResult<View> {
-        let now: NaiveDateTime = Local::now().naive_local();
-        let create_time = Duration::nanoseconds(now.timestamp_nanos());
-        let filepath = Paths::view_filepath(database_name.clone(), name.clone());
-        let metadata = Metadata::view();
-        let view = View {
-            database_name: database_name.clone(),
-            name,
-            create_time,
-            metadata,
-            filer: Filed::mock(filepath.clone())?,
-            indexes: Default::default(),
-            pigeonhole: Pigeonhole::create(0, filepath, create_time),
-        };
-        Ok(view)
-    }
+/// B+Tree索引叶子结点内防hash碰撞数组结构中单体结构
+///
+/// 搭配Index使用
+///
+/// 叶子节点下真实存储数据的集合单体结构
+#[derive(Debug)]
+pub(crate) struct Seed {
+    real: DataReal,
+    /// 除主键索引外的其它索引操作策略集合
+    policies: Vec<IndexPolicy>,
+    view: View,
 }

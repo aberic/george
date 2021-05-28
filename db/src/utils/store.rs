@@ -23,7 +23,8 @@ use comm::io::file::{Filer, FilerReader};
 use comm::trans::Trans;
 
 use crate::utils::deploy::VERSION;
-use crate::utils::enums::{Enum, EnumHandler, IndexType, Tag};
+use crate::utils::enums::{IndexType, Tag};
+use crate::utils::{Enum, EnumHandler};
 
 /// 起始符
 const FRONT: [u8; 2] = [0x20, 0x19];

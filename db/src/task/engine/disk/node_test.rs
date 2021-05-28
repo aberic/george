@@ -48,7 +48,7 @@ mod disk_node_test {
     mod unique_test {
         use crate::task::engine::disk::node_test::disk_node_test::create_node;
         use crate::task::engine::traits::{TNode, TSeed};
-        use crate::task::seed::Seed;
+        use crate::task::Seed;
         use crate::task::View;
         use crate::utils::enums::KeyType;
 
@@ -125,7 +125,7 @@ mod disk_node_test {
     mod un_unique_test {
         use crate::task::engine::disk::node_test::disk_node_test::create_node;
         use crate::task::engine::traits::{TNode, TSeed};
-        use crate::task::seed::Seed;
+        use crate::task::Seed;
         use crate::task::View;
         use crate::utils::enums::KeyType;
 
@@ -202,7 +202,7 @@ mod disk_node_test {
     mod data_100_test {
         use crate::task::engine::disk::node_test::disk_node_test::create_node;
         use crate::task::engine::traits::{TNode, TSeed};
-        use crate::task::seed::Seed;
+        use crate::task::Seed;
         use crate::task::View;
         use crate::utils::enums::KeyType;
 
@@ -268,7 +268,7 @@ mod disk_node_test {
     mod data_100000_test {
         use crate::task::engine::disk::node_test::disk_node_test::create_node;
         use crate::task::engine::traits::{TNode, TSeed};
-        use crate::task::seed::Seed;
+        use crate::task::Seed;
         use crate::task::View;
         use crate::utils::enums::KeyType;
 

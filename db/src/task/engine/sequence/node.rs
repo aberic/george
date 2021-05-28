@@ -23,8 +23,8 @@ use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::utils::comm::IndexKey;
 use crate::utils::enums::{IndexType, KeyType};
-use crate::utils::path::Paths;
 use crate::utils::writer::Filed;
+use crate::utils::Paths;
 use comm::errors::children::{DataExistError, DataNoExistError};
 use comm::vectors::{Vector, VectorHandler};
 

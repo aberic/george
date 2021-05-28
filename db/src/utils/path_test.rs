@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-use crate::utils::path::Paths;
+use crate::utils::Paths;
 
 #[test]
 fn path_test() {

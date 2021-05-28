@@ -17,7 +17,7 @@ use std::fs::{read_dir, ReadDir};
 use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
 
-use chrono::Duration;
+use chrono::{Duration, Local, NaiveDateTime};
 
 use comm::errors::children::IndexExistError;
 use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
@@ -26,18 +26,64 @@ use comm::strings::{StringHandler, Strings};
 
 use crate::task::engine::traits::{Pigeonhole, TForm, TIndex, TSeed};
 use crate::task::engine::DataReal;
-use crate::task::index::Index as IndexDefault;
 use crate::task::rich::{Condition, Expectation, Selector};
-use crate::task::seed::Seed;
-use crate::task::Form;
+use crate::task::Index as IndexDefault;
+use crate::task::Seed;
 use crate::task::View;
 use crate::utils::comm::{IndexKey, INDEX_DISK, INDEX_INCREMENT};
 use crate::utils::enums::{IndexType, KeyType};
-use crate::utils::path::Paths;
 use crate::utils::store::{ContentBytes, Metadata, HD};
 use crate::utils::writer::Filed;
+use crate::utils::Paths;
 use comm::trans::Trans;
 use comm::vectors::{Vector, VectorHandler};
+/// 新建视图
+///
+/// 具体传参参考如下定义：<p><p>
+///
+/// ###Params
+///
+/// mem 是否为内存视图
+fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
+    let now: NaiveDateTime = Local::now().naive_local();
+    let create_time = Duration::nanoseconds(now.timestamp_nanos());
+    let filepath = Paths::view_filepath(database_name.clone(), name.clone());
+    let metadata = Metadata::view();
+    let view = View {
+        database_name: database_name.clone(),
+        name,
+        create_time,
+        metadata,
+        filer: Filed::create(filepath.clone())?,
+        indexes: Default::default(),
+        pigeonhole: Pigeonhole::create(0, filepath, create_time),
+    };
+    Ok(view)
+}
+
+/// 新建视图
+///
+/// 具体传参参考如下定义：<p><p>
+///
+/// ###Params
+///
+/// mem 是否为内存视图
+fn mock_new_view(database_name: String, name: String) -> GeorgeResult<View> {
+    let now: NaiveDateTime = Local::now().naive_local();
+    let create_time = Duration::nanoseconds(now.timestamp_nanos());
+    let filepath = Paths::view_filepath(database_name.clone(), name.clone());
+    let metadata = Metadata::view();
+    let view = View {
+        database_name: database_name.clone(),
+        name,
+        create_time,
+        metadata,
+        filer: Filed::mock(filepath.clone())?,
+        indexes: Default::default(),
+        pigeonhole: Pigeonhole::create(0, filepath, create_time),
+    };
+    Ok(view)
+}
 
 impl View {
     pub(crate) fn create(
@@ -45,7 +91,7 @@ impl View {
         name: String,
         with_sequence: bool,
     ) -> GeorgeResult<Arc<RwLock<View>>> {
-        let view = Form::new_view(database_name, name)?;
+        let view = new_view(database_name, name)?;
         let view_bak = Arc::new(RwLock::new(view));
         view_bak.clone().read().unwrap().init()?;
         view_bak.read().unwrap().create_index(
@@ -628,14 +674,14 @@ impl View {
         database_name: String,
         name: String,
     ) -> GeorgeResult<Arc<RwLock<View>>> {
-        let view = Form::mock_new_view(database_name, name)?;
+        let view = mock_new_view(database_name, name)?;
         let view_bak = Arc::new(RwLock::new(view));
         view_bak.clone().read().unwrap().init()?;
         Ok(view_bak)
     }
 
     pub(crate) fn mock_create_single(database_name: String, name: String) -> GeorgeResult<View> {
-        let view = Form::mock_new_view(database_name, name)?;
+        let view = mock_new_view(database_name, name)?;
         view.init()?;
         Ok(view)
     }

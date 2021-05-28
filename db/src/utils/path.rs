@@ -13,8 +13,7 @@
  */
 
 use crate::utils::deploy::GLOBAL_CONFIG;
-
-pub struct Paths;
+use crate::utils::Paths;
 
 impl Paths {
     /// 数据根目录 /var/lib/georgedb/data

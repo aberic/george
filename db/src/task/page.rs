@@ -20,31 +20,10 @@ use comm::errors::entrances::{Errs, GeorgeResult};
 use comm::strings::{StringHandler, Strings};
 
 use crate::task::engine::memory::Node;
-use crate::utils::path::Paths;
+use crate::task::Page;
 use crate::utils::store::{ContentBytes, Metadata, HD};
 use crate::utils::writer::Filed;
-
-#[derive(Debug, Clone)]
-pub(crate) struct Page {
-    /// 名称
-    name: String,
-    /// 描述
-    comment: String,
-    /// 可使用内存大小(单位：Mb，0：不限制大小)
-    size: u64,
-    /// 默认有效期(单位：秒)，如无设置，默认维300(0：永久有效)
-    period: u32,
-    /// 创建时间
-    create_time: Duration,
-    /// 文件信息
-    metadata: Metadata,
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
-    /// 需要借助对象包裹，以便更新file，避免self为mut
-    filer: Filed,
-    /// 默认缓存页
-    node: Arc<RwLock<Node>>,
-}
+use crate::utils::Paths;
 
 /// 新建缓存页
 ///

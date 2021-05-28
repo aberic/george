@@ -28,8 +28,8 @@ use crate::task::seed::IndexPolicy;
 use crate::task::View;
 use crate::utils::comm::{Distance, IndexKey};
 use crate::utils::enums::{IndexType, KeyType};
-use crate::utils::path::Paths;
 use crate::utils::writer::Filed;
+use crate::utils::Paths;
 use num_integer::Integer;
 
 const BYTES_LEN_FOR_DISK: usize = 16380;
