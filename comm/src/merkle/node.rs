@@ -12,8 +12,7 @@
  * limitations under the License.
  */
 
-use std::rc::Rc;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Arc, RwLock, RwLockWriteGuard};
 
 use crate::cryptos::hash::HashMD5Handler;
 use crate::cryptos::Hash;
@@ -21,7 +20,7 @@ use crate::errors::{Errs, GeorgeResult};
 use crate::merkle::{Node, NodeChild};
 
 impl Node {
-    pub(crate) fn new(hash: String, count: u32, child: Option<Rc<Mutex<NodeChild>>>) -> Node {
+    pub(crate) fn new(hash: String, count: u32, child: Option<Arc<RwLock<NodeChild>>>) -> Node {
         return Node { hash, count, child };
     }
 
@@ -33,15 +32,15 @@ impl Node {
         self.count
     }
 
-    pub fn child(&self) -> Option<Rc<Mutex<NodeChild>>> {
+    pub fn child(&self) -> Option<Arc<RwLock<NodeChild>>> {
         self.child.clone()
     }
 
-    pub(crate) fn modify_child(&mut self, child: Option<Rc<Mutex<NodeChild>>>) {
+    pub(crate) fn modify_child(&mut self, child: Option<Arc<RwLock<NodeChild>>>) {
         self.child = child
     }
 
-    pub(crate) fn fit(&mut self, hash: String, count: u32, child: Option<Rc<Mutex<NodeChild>>>) {
+    pub(crate) fn fit(&mut self, hash: String, count: u32, child: Option<Arc<RwLock<NodeChild>>>) {
         self.hash = hash;
         self.count = count;
         self.child = child;
@@ -57,7 +56,7 @@ impl Node {
         match self.child() {
             // 子结点如果存在，则继续判断子结点信息
             Some(nc) => {
-                let mut child = nc.lock().unwrap();
+                let mut child = nc.write().unwrap();
                 if level == 2 {
                     match child.left() {
                         // 如果存在，则继续判断右叶子结点
@@ -81,7 +80,7 @@ impl Node {
             None => {
                 if level == 2 {
                     // 子结点如不存在，则新建左叶子节点并插入
-                    self.child = Some(Rc::new(Mutex::new(NodeChild::new(hash))))
+                    self.child = Some(Arc::new(RwLock::new(NodeChild::new(hash))))
                 } else {
                     // 如不存在，则新建左子树根结点
                     let mut left_node = Node::new("".to_string(), 0, None);
@@ -89,7 +88,8 @@ impl Node {
                         Err(err) => return Err(err),
                         Ok(()) => {
                             // 赋值左子树
-                            self.child = Some(Rc::new(Mutex::new(NodeChild::new_left(left_node))));
+                            self.child =
+                                Some(Arc::new(RwLock::new(NodeChild::new_left(left_node))));
                         }
                     }
                 }
@@ -101,13 +101,13 @@ impl Node {
         let hash_left: String;
         let mut hash_right = String::new();
         let child = self.child().unwrap();
-        let child_m = child.lock().unwrap();
+        let child_m = child.write().unwrap();
         match child_m.left() {
-            Some(left) => hash_left = left.lock().unwrap().hash(),
+            Some(left) => hash_left = left.write().unwrap().hash(),
             None => return Err(Errs::str("node left hash is none")),
         }
         match child_m.right() {
-            Some(right) => hash_right = right.lock().unwrap().hash(),
+            Some(right) => hash_right = right.write().unwrap().hash(),
             _ => {}
         }
         match hash_result(hash_left, hash_right) {
@@ -120,13 +120,13 @@ impl Node {
     }
 }
 
-fn left_add(level: u32, hash: String, child: MutexGuard<NodeChild>) -> GeorgeResult<()> {
+fn left_add(level: u32, hash: String, child: RwLockWriteGuard<NodeChild>) -> GeorgeResult<()> {
     // 判断左子树根结点是否存在
     match child.left() {
         // 如存在，则判断是否满载
         Some(left_node) => {
             let ln = left_node.clone();
-            let mut ln_m = ln.lock().unwrap();
+            let mut ln_m = ln.write().unwrap();
             // 当前子树可容纳叶子结点总数
             let leaf_count = 2_u32.pow(level - 1);
             // 如果不满载
@@ -150,13 +150,13 @@ fn left_add(level: u32, hash: String, child: MutexGuard<NodeChild>) -> GeorgeRes
     }
 }
 
-fn right_add(level: u32, hash: String, mut child: MutexGuard<NodeChild>) -> GeorgeResult<()> {
+fn right_add(level: u32, hash: String, mut child: RwLockWriteGuard<NodeChild>) -> GeorgeResult<()> {
     // 判断右子树根结点是否存在
     match child.right() {
         // 如存在，则判断是否满载
         Some(right_node) => {
             let rn = right_node.clone();
-            let mut rn_m = rn.lock().unwrap();
+            let mut rn_m = rn.write().unwrap();
             // 当前子树可容纳叶子结点总数
             let leaf_count = 2_u32.pow(level - 1);
             // 如果不满载
@@ -175,7 +175,7 @@ fn right_add(level: u32, hash: String, mut child: MutexGuard<NodeChild>) -> Geor
             // 新建右子树根结点
             child.modify_right("".to_string(), 0, None);
             // 右子树新增结点
-            child.right().unwrap().lock().unwrap().add(level, hash)
+            child.right().unwrap().write().unwrap().add(level, hash)
         }
     }
 }

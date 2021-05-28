@@ -12,31 +12,30 @@
  * limitations under the License.
  */
 
-use std::rc::Rc;
-use std::sync::Mutex;
+use std::sync::{Arc, RwLock};
 
 use crate::merkle::{Node, NodeChild};
 
 impl NodeChild {
     pub(crate) fn new(hash: String) -> NodeChild {
         NodeChild {
-            0: Some(Rc::new(Mutex::new(Node::new(hash, 0, None)))),
+            0: Some(Arc::new(RwLock::new(Node::new(hash, 0, None)))),
             1: None,
         }
     }
 
     pub(crate) fn new_left(node: Node) -> NodeChild {
         NodeChild {
-            0: Some(Rc::new(Mutex::new(node))),
+            0: Some(Arc::new(RwLock::new(node))),
             1: None,
         }
     }
 
-    pub fn left(&self) -> Option<Rc<Mutex<Node>>> {
+    pub fn left(&self) -> Option<Arc<RwLock<Node>>> {
         self.0.clone()
     }
 
-    pub fn right(&self) -> Option<Rc<Mutex<Node>>> {
+    pub fn right(&self) -> Option<Arc<RwLock<Node>>> {
         self.1.clone()
     }
 
@@ -44,14 +43,14 @@ impl NodeChild {
         &mut self,
         hash: String,
         count: u32,
-        child: Option<Rc<Mutex<NodeChild>>>,
+        child: Option<Arc<RwLock<NodeChild>>>,
     ) {
         match self.left() {
             Some(n) => {
-                let mut n_m = n.lock().unwrap();
+                let mut n_m = n.write().unwrap();
                 n_m.fit(hash, count, child);
             }
-            None => self.0 = Some(Rc::new(Mutex::new(Node::new(hash, count, child)))),
+            None => self.0 = Some(Arc::new(RwLock::new(Node::new(hash, count, child)))),
         }
     }
 
@@ -59,14 +58,14 @@ impl NodeChild {
         &mut self,
         hash: String,
         count: u32,
-        child: Option<Rc<Mutex<NodeChild>>>,
+        child: Option<Arc<RwLock<NodeChild>>>,
     ) {
         match self.right() {
             Some(n) => {
-                let mut n_m = n.lock().unwrap();
+                let mut n_m = n.write().unwrap();
                 n_m.fit(hash, count, child);
             }
-            None => self.1 = Some(Rc::new(Mutex::new(Node::new(hash, count, child)))),
+            None => self.1 = Some(Arc::new(RwLock::new(Node::new(hash, count, child)))),
         }
     }
 

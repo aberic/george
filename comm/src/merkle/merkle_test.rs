@@ -14,9 +14,9 @@
 
 #[cfg(test)]
 mod merkle {
+    use crate::merkle::tree::TreeNew;
     use crate::merkle::{Node, Tree};
-    use std::rc::Rc;
-    use std::sync::Mutex;
+    use std::sync::{Arc, RwLock};
 
     #[test]
     fn tree_test() {
@@ -45,8 +45,8 @@ mod merkle {
         tree_println(tree.level(), tree.root());
     }
 
-    fn tree_println(level: u32, node: Rc<Mutex<Node>>) {
-        let n_m = node.lock().unwrap();
+    fn tree_println(level: u32, node: Arc<RwLock<Node>>) {
+        let n_m = node.write().unwrap();
         println!(
             "level = {}, count = {}, hash = {}",
             level,
@@ -55,7 +55,7 @@ mod merkle {
         );
         match n_m.child() {
             Some(child) => {
-                let c_m = child.lock().unwrap();
+                let c_m = child.write().unwrap();
                 match c_m.left() {
                     Some(left_node) => {
                         tree_println(level - 1, left_node);

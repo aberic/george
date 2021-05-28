@@ -12,52 +12,74 @@
  * limitations under the License.
  */
 
-use std::rc::Rc;
-use std::sync::Mutex;
+use std::sync::{Arc, RwLock};
 
 use crate::errors::{Errs, GeorgeResult};
 use crate::merkle::{Node, NodeChild, Tree};
 
 /// 新建默克尔树
 fn new_string(hash: String) -> Tree {
+    let node = Node::new(
+        hash.clone(),
+        1,
+        Some(Arc::new(RwLock::new(NodeChild::new(hash)))),
+    );
     return Tree {
         level: 2,
-        root: Rc::new(Mutex::new(Node::new(
-            hash.clone(),
-            1,
-            Some(Rc::new(Mutex::new(NodeChild::new(hash)))),
-        ))),
+        root: Arc::new(RwLock::new(node)),
     };
 }
 
-impl Tree {
+pub trait TreeNew<Hash> {
     /// 新建默克尔树
-    pub fn new(hash: &str) -> Tree {
+    fn new(hash: Hash) -> Tree;
+    /// 新增结点
+    fn add(&mut self, hash: Hash) -> GeorgeResult<()>;
+}
+
+impl TreeNew<String> for Tree {
+    fn new(hash: String) -> Tree {
+        new_string(hash)
+    }
+
+    fn add(&mut self, hash: String) -> GeorgeResult<()> {
+        self.add_string(hash)
+    }
+}
+
+impl TreeNew<&str> for Tree {
+    fn new(hash: &str) -> Tree {
         new_string(hash.to_string())
     }
 
-    /// 新建默克尔树
-    pub fn new_string(hash: String) -> Tree {
-        new_string(hash)
+    fn add(&mut self, hash: &str) -> GeorgeResult<()> {
+        self.add_string(hash.to_string())
     }
+}
+
+impl Tree {
     pub fn level(&self) -> u32 {
         self.level
     }
-    pub fn root(&self) -> Rc<Mutex<Node>> {
+
+    pub fn root(&self) -> Arc<RwLock<Node>> {
         self.root.clone()
     }
+
     pub fn hash(&self) -> String {
-        self.root.lock().unwrap().hash()
+        self.root.read().unwrap().hash()
     }
+
     /// 新增结点
     pub fn add(&mut self, hash: &str) -> GeorgeResult<()> {
         self.add_string(hash.to_string())
     }
+
     /// 新增结点
     fn add_string(&mut self, hash: String) -> GeorgeResult<()> {
         // 当前默克尔树可容纳叶子结点总数
         let root_count = 2_u32.pow(self.level - 1);
-        let mut root = self.root.lock().unwrap();
+        let mut root = self.root.write().unwrap();
         // 如果默克尔树可容纳叶子结点总数大于当前叶子结点数，则说明当前树未满载，允许新结点右插入
         if root_count > root.count() {
             // 新结点右插入
@@ -72,7 +94,7 @@ impl Tree {
                     child_new.modify_left(root.hash(), root.count(), Some(nc));
                     // 变更根结点右子树
                     child_new.none_right();
-                    root.modify_child(Some(Rc::new(Mutex::new(child_new))));
+                    root.modify_child(Some(Arc::new(RwLock::new(child_new))));
                 }
                 None => {
                     return Err(Errs::str(

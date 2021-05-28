@@ -12,12 +12,11 @@
  * limitations under the License.
  */
 
+use crate::task::engine::traits::TForm;
+use crate::task::engine::RootBytes;
+use crate::utils::enums::KeyType;
+use crate::utils::writer::Filed;
 use std::sync::{Arc, RwLock};
-
-mod child;
-mod merkle_test;
-mod node;
-pub mod tree;
 
 /// 默克尔树
 ///
@@ -44,23 +43,27 @@ pub mod tree;
 /// 默克尔树的左子树永远是满载的，即新增结点时总会向右子树进行寻道，并且是递归寻道，寻道最底层，即L=1时，优先放置在左叶子节点
 ///
 /// 当新增结点发现当前默克尔树已经满载，则整棵树除了根结点外整体下沉并成为根结点的左子树，新增结点从根结点右子树中寻找空叶子结点位
-pub struct Tree {
-    /// 默克尔树当前层高
-    level: u32,
-    /// 默克尔树当前根节点
-    root: Arc<RwLock<Node>>,
-}
-
 pub struct Node {
+    form: Arc<RwLock<dyn TForm>>,
+    index_name: String,
+    key_type: KeyType,
+    index_path: String,
+    /// 当前层高
+    level: u32,
     /// 当前结点hash
-    pub(crate) hash: String,
+    hash: String,
     /// 当前子结点数量
-    pub(crate) count: u32,
-    /// 子结点
-    pub(crate) child: Option<Arc<RwLock<NodeChild>>>,
+    count: u32,
+    /// 索引文件路径
+    ///
+    /// 当有新的数据加入时，新数据存储地址在`node_file`中记录8字节
+    node_filepath: String,
+    /// 根据文件路径获取该文件追加写入的写对象
+    ///
+    /// 需要借助对象包裹，以便更新file，避免self为mut
+    node_filer: Filed,
+    /// 存储根结点所属各子结点坐标顺序字节数组
+    ///
+    /// 子项是64位node集合，在node集合中每一个node的默认字节长度是14(下一结点指针8字节 + 当前数据指针6字节)，数量是1170，即一次性读取16380个字节
+    root_bytes: Arc<RwLock<RootBytes>>,
 }
-
-pub struct NodeChild(
-    pub(crate) Option<Arc<RwLock<Node>>>,
-    pub(crate) Option<Arc<RwLock<Node>>>,
-);

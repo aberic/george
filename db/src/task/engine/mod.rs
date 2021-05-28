@@ -23,6 +23,7 @@ pub(super) mod block;
 pub(super) mod disk;
 pub(super) mod increment;
 pub(super) mod memory;
+pub(super) mod merkle;
 pub(super) mod sequence;
 pub(super) mod traits;
 
@@ -63,8 +64,6 @@ impl DataReal {
 #[derive(Debug, Clone)]
 pub struct RootBytes {
     /// 存储根结点所属各子结点坐标顺序字节数组
-    ///
-    /// 如果子项是32位node集合，在node集合中每一个node的默认字节长度是8，数量是256，即一次性读取2048个字节
     pub(crate) bytes: Vec<u8>,
 }
 
