@@ -54,7 +54,7 @@ fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
     let filepath = Paths::view_filepath(database_name.clone(), name.clone());
     let metadata = Metadata::view();
     let view = View {
-        database_name: database_name.clone(),
+        database_name,
         name,
         create_time,
         metadata,
@@ -78,7 +78,7 @@ fn mock_new_view(database_name: String, name: String) -> GeorgeResult<View> {
     let filepath = Paths::view_filepath(database_name.clone(), name.clone());
     let metadata = Metadata::view();
     let view = View {
-        database_name: database_name.clone(),
+        database_name,
         name,
         create_time,
         metadata,
@@ -95,11 +95,11 @@ impl View {
         name: String,
         with_sequence: bool,
     ) -> GeorgeResult<Arc<RwLock<View>>> {
-        let view = new_view(database_name, name)?;
-        let view_bak = Arc::new(RwLock::new(view));
-        view_bak.clone().read().unwrap().init()?;
-        view_bak.read().unwrap().create_index(
-            view_bak.clone(),
+        let view_new = new_view(database_name, name)?;
+        let view = Arc::new(RwLock::new(view_new));
+        view.clone().read().unwrap().init()?;
+        view.read().unwrap().create_index(
+            view.clone(),
             INDEX_DISK.to_string(),
             IndexType::Disk,
             KeyType::String,
@@ -108,8 +108,8 @@ impl View {
             false,
         )?;
         if with_sequence {
-            view_bak.read().unwrap().create_index(
-                view_bak.clone(),
+            view.read().unwrap().create_index(
+                view.clone(),
                 INDEX_INCREMENT.to_string(),
                 IndexType::Increment,
                 KeyType::UInt,
@@ -118,7 +118,7 @@ impl View {
                 false,
             )?;
         }
-        Ok(view_bak)
+        Ok(view)
     }
 
     fn init(&self) -> GeorgeResult<()> {
@@ -468,7 +468,7 @@ impl View {
     ///
     /// IndexResult<()>
     fn save(&self, key: String, value: Vec<u8>, force: bool) -> GeorgeResult<()> {
-        let seed = Seed::create(self.clone(), key.clone(), value.clone());
+        let seed = Seed::create(Arc::new(self.clone()), key.clone(), value.clone());
         let mut receives = Vec::new();
         for (index_name, index) in self.index_map().read().unwrap().iter() {
             let (sender, receive) = mpsc::channel();
@@ -518,7 +518,12 @@ impl View {
     ///
     /// IndexResult<()>
     fn del(&self, key: String, increment: u64, value: Vec<u8>) -> GeorgeResult<()> {
-        let seed = Seed::create_cus(self.clone(), key.clone(), increment, value.clone());
+        let seed = Seed::create_cus(
+            Arc::new(self.clone()),
+            key.clone(),
+            increment,
+            value.clone(),
+        );
         let mut receives = Vec::new();
         for (index_name, index) in self.index_map().read().unwrap().iter() {
             let (sender, receive) = mpsc::channel();

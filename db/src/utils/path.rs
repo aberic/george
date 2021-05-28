@@ -66,6 +66,21 @@ impl Paths {
         view_filepath(database_name, view_name)
     }
 
+    /// 视图根目录 /var/lib/georgedb/data/database/database_name/ledger_name/ledger.ge
+    pub fn ledger_filepath(database_name: String, ledger_name: String) -> String {
+        ledger_filepath(database_name, ledger_name)
+    }
+
+    /// 视图根目录 /var/lib/georgedb/data/database/database_name/ledger_name/ledger_light.ge
+    pub fn ledger_light_filepath(database_name: String, ledger_name: String) -> String {
+        ledger_light_filepath(database_name, ledger_name)
+    }
+
+    /// 视图根目录 /var/lib/georgedb/data/database/database_name/ledger_name/ledger_merkle_light.ge
+    pub fn ledger_merkle_light_filepath(database_name: String, ledger_name: String) -> String {
+        ledger_merkle_light_filepath(database_name, ledger_name)
+    }
+
     /// 视图根目录 /var/lib/georgedb/data/database/database_name/view_name/index_name
     pub fn index_path(database_name: String, view_name: String, index_name: String) -> String {
         index_path(database_name, view_name, index_name)
@@ -181,6 +196,36 @@ fn view_filepath(database_name: String, view_name: String) -> String {
         GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
         database_name,
         view_name
+    )
+}
+
+/// 视图根目录 /var/lib/georgedb/data/database/database_name/ledger_name/ledger.ge
+fn ledger_filepath(database_name: String, ledger_name: String) -> String {
+    format!(
+        "{}/data/database/{}/{}/ledger.ge",
+        GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
+        database_name,
+        ledger_name
+    )
+}
+
+/// 视图根目录 /var/lib/georgedb/data/database/database_name/ledger_name/ledger_light.ge
+fn ledger_light_filepath(database_name: String, ledger_name: String) -> String {
+    format!(
+        "{}/data/database/{}/{}/ledger_light.ge",
+        GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
+        database_name,
+        ledger_name
+    )
+}
+
+/// 视图根目录 /var/lib/georgedb/data/database/database_name/ledger_name/ledger_merkle_light.ge
+fn ledger_merkle_light_filepath(database_name: String, ledger_name: String) -> String {
+    format!(
+        "{}/data/database/{}/{}/ledger_merkle_light.ge",
+        GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
+        database_name,
+        ledger_name
     )
 }
 

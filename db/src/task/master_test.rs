@@ -142,7 +142,7 @@ mod master {
         use crate::task::master_test::{create_view_with_increment, get, put};
 
         #[test]
-        fn index_test_prepare() {
+        fn index_with_increment() {
             let database_name = "database_index_test";
             let view_name = "view_index_test";
             create_view_with_increment(database_name, view_name);
@@ -152,13 +152,8 @@ mod master {
                 put(database_name, view_name, i.to_string().as_str(), "world", i);
                 i += 1;
             }
-        }
 
-        #[test]
-        fn index_test() {
-            let database_name = "database_index_test";
-            let view_name = "view_index_test";
-            let mut i = 1;
+            i = 1;
             while i < 5 {
                 // 循环体
                 get(database_name, view_name, i.to_string().as_str(), i);

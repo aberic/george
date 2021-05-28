@@ -24,7 +24,7 @@ use comm::Vector;
 
 use crate::task::engine::traits::{TForm, TSeed};
 use crate::task::engine::DataReal;
-use crate::task::{Seed, View};
+use crate::task::Seed;
 use crate::utils::enums::IndexType;
 
 /// 待处理索引操作策略
@@ -80,7 +80,7 @@ impl IndexPolicy {
 /// 封装方法函数
 impl Seed {
     /// 新建seed
-    pub fn create(view: View, key: String, value: Vec<u8>) -> Arc<RwLock<Seed>> {
+    pub fn create(form: Arc<dyn TForm>, key: String, value: Vec<u8>) -> Arc<RwLock<Seed>> {
         Arc::new(RwLock::new(Seed {
             real: DataReal {
                 increment: 0,
@@ -88,13 +88,13 @@ impl Seed {
                 value,
             },
             policies: Vec::new(),
-            view,
+            form,
         }))
     }
 
     /// 新建seed
     pub fn create_cus(
-        view: View,
+        form: Arc<dyn TForm>,
         key: String,
         increment: u64,
         value: Vec<u8>,
@@ -106,7 +106,7 @@ impl Seed {
                 value,
             },
             policies: Vec::new(),
-            view,
+            form,
         }))
     }
 
@@ -147,7 +147,7 @@ impl TSeed for Seed {
         }
         let value = self.values()?;
         // view_info_index view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
-        let view_info_index = self.view.write_content(value)?;
+        let view_info_index = self.form.write_content(value)?;
 
         // 将在数据在view中的坐标存入各个index
         for policy in self.policies.to_vec() {

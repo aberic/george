@@ -51,6 +51,7 @@ mod disk_node_test {
         use crate::task::Seed;
         use crate::task::View;
         use crate::utils::enums::KeyType;
+        use std::sync::Arc;
 
         #[test]
         fn put_test() {
@@ -63,7 +64,11 @@ mod disk_node_test {
                 true,
             )
             .unwrap();
-            let seed = Seed::create(view, "yes".to_string(), "no".to_string().into_bytes());
+            let seed = Seed::create(
+                Arc::new(view),
+                "yes".to_string(),
+                "no".to_string().into_bytes(),
+            );
             match node.put("yes".to_string(), seed.clone(), false) {
                 Ok(()) => {
                     let seed_w = seed.write().unwrap();
@@ -107,7 +112,11 @@ mod disk_node_test {
                 true,
             )
             .unwrap();
-            let seed = Seed::create(view, "yes".to_string(), "no".to_string().into_bytes());
+            let seed = Seed::create(
+                Arc::new(view),
+                "yes".to_string(),
+                "no".to_string().into_bytes(),
+            );
             match node.del("yes".to_string(), seed.clone()) {
                 Ok(_v8s) => {
                     let seed_w = seed.write().unwrap();
@@ -128,6 +137,7 @@ mod disk_node_test {
         use crate::task::Seed;
         use crate::task::View;
         use crate::utils::enums::KeyType;
+        use std::sync::Arc;
 
         #[test]
         fn put_test() {
@@ -140,7 +150,11 @@ mod disk_node_test {
                 false,
             )
             .unwrap();
-            let seed = Seed::create(view, "yes0".to_string(), "no".to_string().into_bytes());
+            let seed = Seed::create(
+                Arc::new(view),
+                "yes0".to_string(),
+                "no".to_string().into_bytes(),
+            );
             match node.put("yes0".to_string(), seed.clone(), false) {
                 Ok(()) => {
                     let seed_w = seed.write().unwrap();
@@ -184,7 +198,11 @@ mod disk_node_test {
                 false,
             )
             .unwrap();
-            let seed = Seed::create(view, "yes0".to_string(), "no".to_string().into_bytes());
+            let seed = Seed::create(
+                Arc::new(view),
+                "yes0".to_string(),
+                "no".to_string().into_bytes(),
+            );
             match node.del("yes0".to_string(), seed.clone()) {
                 Ok(_v8s) => {
                     let seed_w = seed.write().unwrap();
@@ -205,6 +223,7 @@ mod disk_node_test {
         use crate::task::Seed;
         use crate::task::View;
         use crate::utils::enums::KeyType;
+        use std::sync::Arc;
 
         #[test]
         fn put_100_test() {
@@ -221,7 +240,7 @@ mod disk_node_test {
             while pos < 100 {
                 let key = format!("yes{}", pos);
                 let value = format!("no{}", pos);
-                let seed = Seed::create(view.clone(), key.clone(), value.into_bytes());
+                let seed = Seed::create(Arc::new(view.clone()), key.clone(), value.into_bytes());
                 match node.put(key, seed.clone(), false) {
                     Ok(()) => {
                         let seed_w = seed.write().unwrap();
@@ -271,6 +290,7 @@ mod disk_node_test {
         use crate::task::Seed;
         use crate::task::View;
         use crate::utils::enums::KeyType;
+        use std::sync::Arc;
 
         #[test]
         fn put_100000_test() {
@@ -286,7 +306,11 @@ mod disk_node_test {
             let mut pos = 0;
             while pos < 100000 {
                 let key = format!("yes{}", pos);
-                let seed = Seed::create(view.clone(), key.clone(), "no".to_string().into_bytes());
+                let seed = Seed::create(
+                    Arc::new(view.clone()),
+                    key.clone(),
+                    "no".to_string().into_bytes(),
+                );
                 match node.put(key, seed.clone(), false) {
                     Ok(()) => {
                         let seed_w = seed.write().unwrap();
@@ -341,7 +365,11 @@ mod disk_node_test {
             let mut pos = 82050;
             while pos < 82100 {
                 let key = format!("yes{}", pos);
-                let seed = Seed::create(view.clone(), key.clone(), "no".to_string().into_bytes());
+                let seed = Seed::create(
+                    Arc::new(view.clone()),
+                    key.clone(),
+                    "no".to_string().into_bytes(),
+                );
                 match node.del(key, seed.clone()) {
                     Ok(_v8s) => {
                         let seed_w = seed.write().unwrap();

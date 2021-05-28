@@ -106,6 +106,42 @@ pub(crate) struct Page {
     node: Arc<RwLock<Node>>,
 }
 
+/// 账本
+#[derive(Debug, Clone)]
+pub(crate) struct Ledger {
+    /// 数据库名称
+    pub(crate) database_name: String,
+    /// 名称
+    pub(crate) name: String,
+    /// 创建时间
+    pub(crate) create_time: Duration,
+    /// 文件信息
+    pub(crate) metadata: Metadata,
+    pub(crate) filepath: String,
+    pub(crate) filepath_light: String,
+    pub(crate) filepath_merkle_light: String,
+    /// 区块全数据记录文件
+    ///
+    /// 根据文件路径获取该文件追加写入的写对象
+    ///
+    /// 需要借助对象包裹，以便更新file，避免self为mut
+    pub(crate) filer: Filed,
+    /// 区块Header数据记录文件
+    ///
+    /// 根据文件路径获取该文件追加写入的写对象
+    ///
+    /// 需要借助对象包裹，以便更新file，避免self为mut
+    pub(crate) filer_light: Filed,
+    /// 区块Header数据以merkle形式进行存储的记录文件
+    ///
+    /// 根据文件路径获取该文件追加写入的写对象
+    ///
+    /// 需要借助对象包裹，以便更新file，避免self为mut
+    pub(crate) filer_merkle_light: Filed,
+    /// 索引集合
+    pub(crate) indexes: Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>,
+}
+
 /// Siam索引
 ///
 /// 5位key及16位md5后key及5位起始seek和4位持续seek
@@ -146,5 +182,5 @@ pub(crate) struct Seed {
     real: DataReal,
     /// 除主键索引外的其它索引操作策略集合
     policies: Vec<IndexPolicy>,
-    view: View,
+    form: Arc<dyn TForm>,
 }
