@@ -29,7 +29,7 @@ use comm::io::file::{FilerHandler, FilerWriter};
 use comm::io::Dir;
 use comm::io::Filer;
 use comm::Env;
-use logs::{log_level, set_log, LogModule};
+use logs::LogModule;
 
 use crate::task::rich::Expectation;
 use crate::task::Page;
@@ -769,7 +769,7 @@ fn init_log() {
         file_max_size: module_main.file_max_size,
         file_max_count: module_main.file_max_count,
     };
-    set_log(module_main, vec![module_record]);
+    module_main.set_log(vec![module_record]);
 }
 
 fn log_module_main() -> LogModule {
@@ -782,5 +782,16 @@ fn log_module_main() -> LogModule {
         dir: config.log_dir(),
         file_max_size: config.log_file_max_size(),
         file_max_count: config.log_file_max_count(),
+    }
+}
+
+pub fn log_level(level: String) -> LevelFilter {
+    match level.to_lowercase().as_str() {
+        "trace" => LevelFilter::Trace,
+        "debug" => LevelFilter::Debug,
+        "info" => LevelFilter::Info,
+        "warn" => LevelFilter::Warn,
+        "error" => LevelFilter::Error,
+        _ => LevelFilter::Off,
     }
 }

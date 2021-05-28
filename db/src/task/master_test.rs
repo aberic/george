@@ -220,44 +220,36 @@ mod master {
         use crate::task::master_test::{create_view_with_increment, get, put, set};
 
         #[test]
-        fn put_set_test() {
+        fn put_set_get_test() {
             let database_name = "database_disk_base_test";
             let view_name = "view_disk_base_test";
             create_view_with_increment(database_name, view_name);
             put(database_name, view_name, "hello1", "world1", 1);
             put(database_name, view_name, "hello2", "world2", 2);
             put(database_name, view_name, "hello3", "world3", 3);
+            get(database_name, view_name, "hello1", 1);
+            get(database_name, view_name, "hello2", 2);
+            get(database_name, view_name, "hello3", 3);
             set(database_name, view_name, "hello1", "world4", 4);
-        }
-
-        #[test]
-        fn get_test() {
-            let database_name = "database_disk_base_test";
-            let view_name = "view_disk_base_test";
             get(database_name, view_name, "hello1", 1);
             get(database_name, view_name, "hello2", 2);
             get(database_name, view_name, "hello3", 3);
         }
 
         #[test]
-        fn put_10000_test() {
+        fn put_get_1000_test() {
             let database_name = "database_disk_base_test";
             let view_name = "view_disk_base_test";
             let mut pos = 1;
-            while pos <= 10000 {
+            while pos <= 1000 {
                 let key = format!("yes{}", pos);
                 let value = format!("no{}", pos);
                 put(database_name, view_name, key.as_str(), value.as_str(), pos);
                 pos += 1;
             }
-        }
 
-        #[test]
-        fn get_10000_test() {
-            let database_name = "database_disk_base_test";
-            let view_name = "view_disk_base_test";
-            let mut pos = 8000;
-            while pos <= 8400 {
+            pos = 800;
+            while pos <= 840 {
                 let key = format!("yes{}", pos);
                 get(database_name, view_name, key.as_str(), pos);
                 pos += 1;
@@ -279,6 +271,12 @@ mod master {
             while i < 5 {
                 // 循环体
                 put(database_name, view_name, i.to_string().as_str(), "world", i);
+                i += 1;
+            }
+
+            i = 1;
+            while i < 5 {
+                // 循环体
                 get_by_index(
                     database_name,
                     view_name,
@@ -415,8 +413,8 @@ mod master {
 
         #[test]
         fn select_delete_increment() {
-            let database_name = "database_select_increment_base_test";
-            let view_name = "view_select_base_test";
+            let database_name = "database_select_base_test";
+            let view_name = "view_base_test";
             let cond_str0 = r#"
                                   {
                                     "Conditions":[

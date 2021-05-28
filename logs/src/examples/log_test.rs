@@ -16,7 +16,7 @@
 mod log_test {
     use crate::examples::log_test::log_test_mod1::logs_mod1;
     use crate::examples::log_test::log_test_mod2::logs_mod2;
-    use crate::{set_log, LogModule};
+    use crate::LogModule;
     use log::LevelFilter;
 
     #[test]
@@ -30,29 +30,26 @@ mod log_test {
             file_max_size: 1024,
             file_max_count: 7,
         };
-        set_log(
-            module,
-            vec![
-                LogModule {
-                    name: "mod1".to_string(),
-                    pkg: "logs::examples::log_test::log_test_mod1".to_string(),
-                    level: LevelFilter::Trace,
-                    additive: true,
-                    dir: String::from("src/test"),
-                    file_max_size: 1024,
-                    file_max_count: 7,
-                },
-                LogModule {
-                    name: "mod2".to_string(),
-                    pkg: "logs::examples::log_test::log_test_mod2".to_string(),
-                    level: LevelFilter::Debug,
-                    additive: true,
-                    dir: String::from(""),
-                    file_max_size: 0,
-                    file_max_count: 0,
-                },
-            ],
-        );
+        module.set_log(vec![
+            LogModule {
+                name: "mod1".to_string(),
+                pkg: "logs::examples::log_test::log_test_mod1".to_string(),
+                level: LevelFilter::Trace,
+                additive: true,
+                dir: String::from("src/test"),
+                file_max_size: 1024,
+                file_max_count: 7,
+            },
+            LogModule {
+                name: "mod2".to_string(),
+                pkg: "logs::examples::log_test::log_test_mod2".to_string(),
+                level: LevelFilter::Debug,
+                additive: true,
+                dir: String::from(""),
+                file_max_size: 0,
+                file_max_count: 0,
+            },
+        ]);
         log::debug!("Hello, world!");
         log::info!("Hello, world!");
         log::warn!("Hello, world!");

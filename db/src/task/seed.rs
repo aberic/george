@@ -48,12 +48,6 @@ impl IndexPolicy {
         node_filepath: String,
         seek: u64,
     ) -> IndexPolicy {
-        log::debug!(
-            "IndexPolicy create key {}, seek {}, node_filepath {}",
-            key,
-            seek,
-            node_filepath
-        );
         IndexPolicy {
             index_type,
             original_key: key,

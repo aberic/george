@@ -14,7 +14,7 @@
 
 #[cfg(test)]
 mod log_test {
-    use crate::{set_log, LogModule};
+    use crate::LogModule;
     use log::LevelFilter;
 
     #[test]
@@ -28,18 +28,15 @@ mod log_test {
             file_max_size: 1024,
             file_max_count: 7,
         };
-        set_log(
-            module,
-            vec![LogModule {
-                name: "mod1".to_string(),
-                pkg: "logs::examples::log_test::log_test_mod".to_string(),
-                level: LevelFilter::Trace,
-                additive: true,
-                dir: String::from("src/test"),
-                file_max_size: 1024,
-                file_max_count: 7,
-            }],
-        );
+        module.set_log(vec![LogModule {
+            name: "mod1".to_string(),
+            pkg: "logs::examples::log_test::log_test_mod".to_string(),
+            level: LevelFilter::Trace,
+            additive: true,
+            dir: String::from("src/test"),
+            file_max_size: 1024,
+            file_max_count: 7,
+        }]);
         trace!("Hello, macros!");
         debug!("Hello, macros!");
         info!("Hello, macros!");

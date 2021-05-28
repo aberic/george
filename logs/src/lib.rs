@@ -53,14 +53,101 @@ impl LogModule {
     fn name(&self) -> String {
         self.name.clone()
     }
+
     fn pkg(&self) -> String {
         self.pkg.clone()
     }
+
     fn level(&self) -> LevelFilter {
         self.level.clone()
     }
+
     fn dir(&self) -> String {
         self.dir.clone()
+    }
+
+    /// 获取日志空配置信息
+    fn config_default(&self) -> Config {
+        self.config(vec![])
+    }
+
+    /// 获取日志配置信息
+    fn config(&self, modules: Vec<LogModule>) -> Config {
+        let stdout_name = "stdout";
+        let stdout = ConsoleAppender::builder()
+            .encoder(Box::new(PatternEncoder::new(
+                "{d(%+)(local)} {l} {t} {m}{n}",
+            )))
+            .build();
+
+        let server = rolling_appender(
+            self.dir(),
+            self.name(),
+            self.file_max_size,
+            self.file_max_count,
+        );
+
+        let config = Config::builder()
+            .appender(Appender::builder().build(stdout_name, Box::new(stdout)))
+            .appender(Appender::builder().build(self.name(), Box::new(server)));
+        let root = Root::builder().appender(stdout_name).appender(self.name());
+        let mut appenders: Vec<Appender> = vec![];
+        let mut loggers: Vec<Logger> = vec![];
+
+        for mdl in modules {
+            let dir: String;
+            let file_max_size: u64;
+            let file_max_count: u32;
+            if mdl.dir().is_empty() {
+                dir = self.dir();
+            } else {
+                dir = mdl.dir();
+            }
+            if mdl.file_max_size <= 0 {
+                file_max_size = self.file_max_size;
+            } else {
+                file_max_size = mdl.file_max_size;
+            }
+            if mdl.file_max_count <= 0 {
+                file_max_count = self.file_max_count;
+            } else {
+                file_max_count = mdl.file_max_count;
+            }
+            let rolling_module = rolling_appender(dir, mdl.name(), file_max_size, file_max_count);
+            appenders.push(Appender::builder().build(mdl.name(), Box::new(rolling_module)));
+            loggers.push(
+                Logger::builder()
+                    .appender(mdl.name())
+                    .additive(mdl.additive)
+                    .build(mdl.pkg(), mdl.level()),
+            );
+            root.clone().appender(mdl.name());
+        }
+        return config
+            .appenders(appenders)
+            .loggers(loggers)
+            .build(root.build(self.level()))
+            .unwrap();
+    }
+
+    /// 初始化日志
+    ///
+    /// service_name 日志所服务的服务名称
+    ///
+    /// log_dir 日志文件目录
+    ///
+    /// log_file_max_size 每个日志文件保存的最大尺寸 单位：M
+    ///
+    /// file_max_count 文件最多保存多少个
+    ///
+    /// log_level 日志级别(debug/info/warn/Error/panic/fatal)
+    pub fn set_log(&self, modules: Vec<LogModule>) {
+        // log4rs::init_file("src/log4rs.yaml", Default::default()).unwrap();
+        GLOBAL_LOG
+            .write()
+            .unwrap()
+            .handle
+            .set_config(self.config(modules))
     }
 }
 
@@ -81,7 +168,7 @@ pub static GLOBAL_LOG: Lazy<RwLock<LogHandle>> = Lazy::new(|| {
         file_max_count: 0,
     };
     let handle = LogHandle {
-        handle: log4rs::init_config(log_config(module)).unwrap(),
+        handle: log4rs::init_config(module.config_default()).unwrap(),
         // production: false,
     };
     fs::remove_dir_all("./wonder_log_test_rm").unwrap();
@@ -102,113 +189,7 @@ pub fn set_log_test() {
         .write()
         .unwrap()
         .handle
-        .set_config(log_configs(module, vec![]))
-}
-
-/// 初始化日志
-///
-/// service_name 日志所服务的服务名称
-///
-/// log_dir 日志文件目录
-///
-/// log_file_max_size 每个日志文件保存的最大尺寸 单位：M
-///
-/// file_max_count 文件最多保存多少个
-///
-/// log_level 日志级别(debug/info/warn/Error/panic/fatal)
-pub fn set_log(module: LogModule, modules: Vec<LogModule>) {
-    // log4rs::init_file("src/log4rs.yaml", Default::default()).unwrap();
-    GLOBAL_LOG
-        .write()
-        .unwrap()
-        .handle
-        .set_config(log_configs(module, modules))
-}
-
-/// 初始化日志
-///
-/// service_name 日志所服务的服务名称
-///
-/// log_dir 日志文件目录
-///
-/// log_file_max_size 每个日志文件保存的最大尺寸 单位：M
-///
-/// file_max_count 文件最多保存多少个
-///
-/// log_level 日志级别(debug/info/warn/Error/panic/fatal)
-fn log_config(module: LogModule) -> Config {
-    log_configs(module, vec![])
-}
-
-/// 初始化日志
-///
-/// service_name 日志所服务的服务名称
-///
-/// log_dir 日志文件目录
-///
-/// log_file_max_size 每个日志文件保存的最大尺寸 单位：M
-///
-/// file_max_count 文件最多保存多少个
-///
-/// log_level 日志级别(debug/info/warn/Error/panic/fatal)
-fn log_configs(module: LogModule, modules: Vec<LogModule>) -> Config {
-    let stdout_name = "stdout";
-    let stdout = ConsoleAppender::builder()
-        .encoder(Box::new(PatternEncoder::new(
-            "{d(%+)(local)} {l} {t} {m}{n}",
-        )))
-        .build();
-
-    let server = rolling_appender(
-        module.dir(),
-        module.name(),
-        module.file_max_size,
-        module.file_max_count,
-    );
-
-    let config = Config::builder()
-        .appender(Appender::builder().build(stdout_name, Box::new(stdout)))
-        .appender(Appender::builder().build(module.name(), Box::new(server)));
-    let root = Root::builder()
-        .appender(stdout_name)
-        .appender(module.name());
-    let mut appenders: Vec<Appender> = vec![];
-    let mut loggers: Vec<Logger> = vec![];
-
-    for mdl in modules {
-        let dir: String;
-        let file_max_size: u64;
-        let file_max_count: u32;
-        if mdl.dir().is_empty() {
-            dir = module.dir();
-        } else {
-            dir = mdl.dir();
-        }
-        if mdl.file_max_size <= 0 {
-            file_max_size = module.file_max_size;
-        } else {
-            file_max_size = mdl.file_max_size;
-        }
-        if mdl.file_max_count <= 0 {
-            file_max_count = module.file_max_count;
-        } else {
-            file_max_count = mdl.file_max_count;
-        }
-        let rolling_module = rolling_appender(dir, mdl.name(), file_max_size, file_max_count);
-        appenders.push(Appender::builder().build(mdl.name(), Box::new(rolling_module)));
-        loggers.push(
-            Logger::builder()
-                .appender(mdl.name())
-                .additive(mdl.additive)
-                .build(mdl.pkg(), mdl.level()),
-        );
-        root.clone().appender(mdl.name());
-    }
-    return config
-        .appenders(appenders)
-        .loggers(loggers)
-        .build(root.build(module.level()))
-        .unwrap();
+        .set_config(module.config(vec![]))
 }
 
 fn rolling_appender(
@@ -236,15 +217,4 @@ fn rolling_appender(
             )),
         )
         .unwrap()
-}
-
-pub fn log_level(level: String) -> LevelFilter {
-    match level.to_lowercase().as_str() {
-        "trace" => LevelFilter::Trace,
-        "debug" => LevelFilter::Debug,
-        "info" => LevelFilter::Info,
-        "warn" => LevelFilter::Warn,
-        "error" => LevelFilter::Error,
-        _ => LevelFilter::Off,
-    }
 }
