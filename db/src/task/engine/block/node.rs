@@ -14,22 +14,12 @@
 
 use std::sync::{Arc, RwLock};
 
+use crate::task::engine::block::Node;
 use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::engine::DataReal;
 use crate::task::rich::Condition;
 use crate::utils::enums::KeyType;
 use comm::errors::entrances::GeorgeResult;
-
-/// 索引B+Tree结点结构
-///
-/// 包含了索引的根结点、子结点以及叶子结点
-///
-/// 叶子结点中才会存在Link，其余结点Link为None
-#[derive(Debug, Clone)]
-pub(crate) struct Node {
-    index_name: String,
-    key_type: KeyType,
-}
 
 impl Node {
     /// 新建根结点

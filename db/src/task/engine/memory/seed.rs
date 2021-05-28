@@ -12,21 +12,9 @@
  * limitations under the License.
  */
 
+use crate::task::engine::memory::Seed;
 use comm::errors::children::DataNoExistError;
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
-
-/// B+Tree索引叶子结点内防hash碰撞数组结构中单体结构
-///
-/// 搭配Index使用
-///
-/// 叶子节点下真实存储数据的集合单体结构
-#[derive(Debug)]
-pub(crate) struct Seed {
-    /// 当前结果原始key信息
-    key: String,
-    value: Option<Vec<u8>>,
-    old_value: Option<Vec<u8>>,
-}
 
 /// 封装方法函数
 impl Seed {

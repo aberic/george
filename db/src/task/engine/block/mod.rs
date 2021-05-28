@@ -12,4 +12,17 @@
  * limitations under the License.
  */
 
+use crate::utils::enums::KeyType;
+
 pub(crate) mod node;
+
+/// 索引B+Tree结点结构
+///
+/// 包含了索引的根结点、子结点以及叶子结点
+///
+/// 叶子结点中才会存在Link，其余结点Link为None
+#[derive(Debug, Clone)]
+pub(crate) struct Node {
+    index_name: String,
+    key_type: KeyType,
+}

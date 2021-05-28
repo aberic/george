@@ -14,7 +14,7 @@
 
 #[cfg(test)]
 mod node_test {
-    use crate::task::engine::memory::node::Node;
+    use crate::task::engine::memory::Node;
 
     #[test]
     fn put_get_test() {

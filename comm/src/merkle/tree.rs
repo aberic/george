@@ -69,21 +69,21 @@ pub fn new_string(hash: String) -> Tree {
 }
 
 impl Tree {
-    pub(super) fn level(&self) -> u32 {
+    pub fn level(&self) -> u32 {
         self.level
     }
-    pub(super) fn root(&self) -> Rc<Mutex<Node>> {
+    pub fn root(&self) -> Rc<Mutex<Node>> {
         self.root.clone()
     }
-    pub(crate) fn hash(&self) -> String {
+    pub fn hash(&self) -> String {
         self.root.lock().unwrap().hash()
     }
     /// 新增结点
-    pub(crate) fn add(&mut self, hash: &str) -> GeorgeResult<()> {
+    pub fn add(&mut self, hash: &str) -> GeorgeResult<()> {
         self.add_string(hash.to_string())
     }
     /// 新增结点
-    pub(crate) fn add_string(&mut self, hash: String) -> GeorgeResult<()> {
+    fn add_string(&mut self, hash: String) -> GeorgeResult<()> {
         // 当前默克尔树可容纳叶子结点总数
         let root_count = 2_u32.pow(self.level - 1);
         let mut root = self.root.lock().unwrap();

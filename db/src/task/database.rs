@@ -23,7 +23,7 @@ use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
 use comm::strings::{StringHandler, Strings};
 
 use crate::task::rich::Expectation;
-use crate::task::view::View;
+use crate::task::View;
 use crate::utils::path::Paths;
 use crate::utils::store::{ContentBytes, Metadata, HD};
 use crate::utils::writer::Filed;

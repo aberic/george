@@ -12,33 +12,14 @@
  * limitations under the License.
  */
 
-use std::fmt::Debug;
 use std::sync::{Arc, RwLock};
 
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
 
-use crate::task::engine::memory::seed::Seed;
+use crate::task::engine::memory::{Node, Seed};
 use crate::utils::comm::{Distance, IndexKey};
 use crate::utils::enums::KeyType;
 use comm::errors::children::{DataExistError, DataNoExistError, NoneError};
-
-/// 索引B+Tree结点结构
-///
-/// 包含了索引的根结点、子结点以及叶子结点
-///
-/// 叶子结点中才会存在Link，其余结点Link为None
-///
-/// 持久化存储格式 {dataDir}/database/{dataName}/{formName}.form...
-#[derive(Debug)]
-pub(crate) struct Node {
-    /// 当前结点所在集合中的索引下标，该坐标不一定在数组中的正确位置，但一定是逻辑正确的
-    degree_index: u16,
-    /// 子结点集合Vec，允许为空Option，多线程共享数据Arc，支持并发操作RWLock，集合内存储指针Box，指针类型为Node
-    nodes: Option<Arc<RwLock<Vec<Arc<Node>>>>>,
-    /// 叶子结点下真实存储数据的集合，该集合主要目的在于解决Hash碰撞，允许为空Option，多线程共享数据Arc，
-    /// 支持并发操作RWLock，集合内存储指针Box，指针类型为Link
-    seeds: Option<Arc<RwLock<Vec<Arc<RwLock<Seed>>>>>>,
-}
 
 /// 新建根结点
 ///

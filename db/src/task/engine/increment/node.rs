@@ -18,6 +18,7 @@ use std::sync::{Arc, RwLock};
 use comm::errors::entrances::{Errs, GeorgeError, GeorgeResult};
 use comm::io::file::{Filer, FilerReader};
 
+use crate::task::engine::increment::Node;
 use crate::task::engine::traits::{TForm, TNode, TSeed};
 use crate::task::engine::DataReal;
 use crate::task::rich::Condition;
@@ -28,28 +29,6 @@ use crate::utils::path::Paths;
 use crate::utils::writer::Filed;
 use comm::errors::children::DataNoExistError;
 use comm::vectors::{Vector, VectorHandler};
-
-/// 索引B+Tree结点结构
-///
-/// 包含了索引的根结点、子结点以及叶子结点
-///
-/// 叶子结点中才会存在Link，其余结点Link为None
-#[derive(Debug, Clone)]
-pub(crate) struct Node {
-    form: Arc<RwLock<dyn TForm>>,
-    atomic_key: Arc<AtomicU64>,
-    index_name: String,
-    key_type: KeyType,
-    /// 索引文件路径
-    ///
-    /// * 当有新的数据加入时，新数据存储地址在`node_file`中记录12字节。
-    /// 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
-    node_filepath: String,
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
-    /// 需要借助对象包裹，以便更新file，避免self为mut
-    filer: Filed,
-}
 
 impl Node {
     /// 新建根结点

@@ -20,7 +20,7 @@ use crate::errors::entrances::{Errs, GeorgeResult};
 use crate::merkle::child;
 use crate::merkle::child::NodeChild;
 
-pub(super) struct Node {
+pub struct Node {
     /// 当前结点hash
     hash: String,
     /// 当前子结点数量
@@ -29,24 +29,24 @@ pub(super) struct Node {
     child: Option<Rc<Mutex<NodeChild>>>,
 }
 
-pub(super) fn new(hash: String, count: u32, child: Option<Rc<Mutex<NodeChild>>>) -> Node {
+pub(crate) fn new(hash: String, count: u32, child: Option<Rc<Mutex<NodeChild>>>) -> Node {
     return Node { hash, count, child };
 }
 
 impl Node {
-    pub(super) fn hash(&self) -> String {
+    pub fn hash(&self) -> String {
         self.hash.clone()
     }
-    pub(super) fn count(&self) -> u32 {
+    pub fn count(&self) -> u32 {
         self.count
     }
-    pub(super) fn child(&self) -> Option<Rc<Mutex<NodeChild>>> {
+    pub fn child(&self) -> Option<Rc<Mutex<NodeChild>>> {
         self.child.clone()
     }
-    pub(super) fn modify_child(&mut self, child: Option<Rc<Mutex<NodeChild>>>) {
+    pub(crate) fn modify_child(&mut self, child: Option<Rc<Mutex<NodeChild>>>) {
         self.child = child
     }
-    pub(super) fn fit(&mut self, hash: String, count: u32, child: Option<Rc<Mutex<NodeChild>>>) {
+    pub(crate) fn fit(&mut self, hash: String, count: u32, child: Option<Rc<Mutex<NodeChild>>>) {
         self.hash = hash;
         self.count = count;
         self.child = child;
@@ -56,7 +56,7 @@ impl Node {
     /// level 当前结点层数
     ///
     /// hash 新增结点hash
-    pub(super) fn add(&mut self, level: u32, hash: String) -> GeorgeResult<()> {
+    pub(crate) fn add(&mut self, level: u32, hash: String) -> GeorgeResult<()> {
         // 判断当前结点子节点是否存在
         match self.child() {
             // 子结点如果存在，则继续判断子结点信息

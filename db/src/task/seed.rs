@@ -19,7 +19,7 @@ use comm::io::file::{Filer, FilerWriter};
 
 use crate::task::engine::traits::{TForm, TSeed};
 use crate::task::engine::DataReal;
-use crate::task::view::View;
+use crate::task::View;
 use crate::utils::enums::IndexType;
 use comm::vectors::{Vector, VectorHandler};
 use std::sync::{Arc, RwLock};

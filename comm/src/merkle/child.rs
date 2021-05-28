@@ -18,16 +18,16 @@ use std::sync::Mutex;
 use crate::merkle::node;
 use crate::merkle::node::Node;
 
-pub(super) struct NodeChild(Option<Rc<Mutex<Node>>>, Option<Rc<Mutex<Node>>>);
+pub struct NodeChild(Option<Rc<Mutex<Node>>>, Option<Rc<Mutex<Node>>>);
 
-pub(super) fn new(hash: String) -> NodeChild {
+pub(crate) fn new(hash: String) -> NodeChild {
     NodeChild {
         0: Some(Rc::new(Mutex::new(node::new(hash, 0, None)))),
         1: None,
     }
 }
 
-pub(super) fn new_left(node: Node) -> NodeChild {
+pub(crate) fn new_left(node: Node) -> NodeChild {
     NodeChild {
         0: Some(Rc::new(Mutex::new(node))),
         1: None,
@@ -35,13 +35,13 @@ pub(super) fn new_left(node: Node) -> NodeChild {
 }
 
 impl NodeChild {
-    pub(super) fn left(&self) -> Option<Rc<Mutex<Node>>> {
+    pub fn left(&self) -> Option<Rc<Mutex<Node>>> {
         self.0.clone()
     }
-    pub(super) fn right(&self) -> Option<Rc<Mutex<Node>>> {
+    pub fn right(&self) -> Option<Rc<Mutex<Node>>> {
         self.1.clone()
     }
-    pub(super) fn modify_left(
+    pub(crate) fn modify_left(
         &mut self,
         hash: String,
         count: u32,
@@ -55,7 +55,7 @@ impl NodeChild {
             None => self.0 = Some(Rc::new(Mutex::new(node::new(hash, count, child)))),
         }
     }
-    pub(super) fn modify_right(
+    pub(crate) fn modify_right(
         &mut self,
         hash: String,
         count: u32,
@@ -69,7 +69,7 @@ impl NodeChild {
             None => self.1 = Some(Rc::new(Mutex::new(node::new(hash, count, child)))),
         }
     }
-    pub(super) fn none_right(&mut self) {
+    pub(crate) fn none_right(&mut self) {
         self.1 = None
     }
 }

@@ -14,8 +14,8 @@
 
 #[cfg(test)]
 mod disk_node_test {
-    use crate::task::engine::disk::node::Node;
-    use crate::task::view::View;
+    use crate::task::engine::disk::Node;
+    use crate::task::View;
     use crate::utils::enums::KeyType;
     use comm::errors::entrances::GeorgeResult;
     use std::sync::Arc;
@@ -49,7 +49,7 @@ mod disk_node_test {
         use crate::task::engine::disk::node_test::disk_node_test::create_node;
         use crate::task::engine::traits::{TNode, TSeed};
         use crate::task::seed::Seed;
-        use crate::task::view::View;
+        use crate::task::View;
         use crate::utils::enums::KeyType;
 
         #[test]
@@ -126,7 +126,7 @@ mod disk_node_test {
         use crate::task::engine::disk::node_test::disk_node_test::create_node;
         use crate::task::engine::traits::{TNode, TSeed};
         use crate::task::seed::Seed;
-        use crate::task::view::View;
+        use crate::task::View;
         use crate::utils::enums::KeyType;
 
         #[test]
@@ -203,7 +203,7 @@ mod disk_node_test {
         use crate::task::engine::disk::node_test::disk_node_test::create_node;
         use crate::task::engine::traits::{TNode, TSeed};
         use crate::task::seed::Seed;
-        use crate::task::view::View;
+        use crate::task::View;
         use crate::utils::enums::KeyType;
 
         #[test]
@@ -269,7 +269,7 @@ mod disk_node_test {
         use crate::task::engine::disk::node_test::disk_node_test::create_node;
         use crate::task::engine::traits::{TNode, TSeed};
         use crate::task::seed::Seed;
-        use crate::task::view::View;
+        use crate::task::View;
         use crate::utils::enums::KeyType;
 
         #[test]
