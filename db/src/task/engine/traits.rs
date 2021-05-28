@@ -14,9 +14,9 @@
 
 use std::sync::{Arc, RwLock};
 
-use chrono::Duration;
+use chrono::{Duration, NaiveDateTime};
 
-use comm::errors::entrances::GeorgeResult;
+use comm::errors::entrances::{Errs, GeorgeResult};
 
 use crate::task::engine::DataReal;
 use crate::task::rich::{Condition, Constraint, Expectation};
@@ -24,12 +24,53 @@ use crate::task::seed::IndexPolicy;
 use crate::task::view::View;
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::store::Metadata;
+use comm::strings::{StringHandler, Strings};
 use serde::__private::fmt::Debug;
+use std::collections::HashMap;
+use std::fmt;
+use std::ops::Add;
 
 /// 表通用特性，遵循此特性创建索引可以更方便的针对进行扩展
 ///
 /// 该特性包含了索引的基本方法，理论上都需要进行实现才能使用
 pub(crate) trait TForm: Send + Sync + Debug {
+    /// 名称
+    fn name(&self) -> String;
+
+    /// 数据库名称
+    fn database_name(&self) -> String;
+
+    /// 创建时间
+    fn create_time(&self) -> Duration;
+
+    /// 文件信息
+    fn metadata(&self) -> Metadata;
+
+    /// 索引集合
+    fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>;
+
+    /// 获取索引
+    fn index(&self, index_name: &str) -> GeorgeResult<Arc<dyn TIndex>>;
+
+    /// 当前归档版本信息
+    fn pigeonhole(&self) -> Pigeonhole;
+
+    /// 当前视图版本号
+    fn version(&self) -> u16;
+
+    /// 当前视图文件地址
+    fn filepath(&self) -> String;
+
+    /// 指定归档版本信息
+    ///
+    /// version 版本号
+    fn record(&self, version: u16) -> GeorgeResult<Record>;
+
+    /// 整理归档
+    ///
+    /// archive_file_path 归档路径
+    fn archive(&self, archive_file_path: String) -> GeorgeResult<()>;
+
     /// 组装写入视图的内容，即持续长度+该长度的原文内容
     ///
     /// 将数据存入view，返回数据在view中的起始偏移量坐标
@@ -37,15 +78,54 @@ pub(crate) trait TForm: Send + Sync + Debug {
 
     /// 读取已组装写入视图的内容，根据view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
     ///
+    /// * version view版本号
+    /// * data_len view数据持续长度
+    /// * seek view数据偏移量
+    fn read_content(&self, version: u16, data_len: u32, seek: u64) -> GeorgeResult<Vec<u8>>;
+
+    /// 读取已组装写入视图的内容，根据view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
+    ///
     /// * view_info_index 数据索引字节数组
     fn read_content_by_info(&self, view_info_index: Vec<u8>) -> GeorgeResult<Vec<u8>>;
+
+    /// 视图变更
+    fn modify(&mut self, database_name: String, name: String) -> GeorgeResult<()>;
+
+    /// 创建索引
+    ///
+    /// ###Params
+    /// * view 视图
+    /// * index_name 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
+    /// * index_type 存储引擎类型
+    /// * key_type 索引值类型
+    /// * primary 是否主键，主键也是唯一索引，即默认列表依赖索引
+    /// * unique 是否唯一索引
+    /// * null 是否允许为空
+    fn create_index(
+        &self,
+        view: Arc<RwLock<View>>,
+        index_name: String,
+        index_type: IndexType,
+        key_type: KeyType,
+        primary: bool,
+        unique: bool,
+        null: bool,
+    ) -> GeorgeResult<()>;
+
+    /// 检查值有效性
+    fn check(
+        &self,
+        conditions: Vec<Condition>,
+        delete: bool,
+        view_info_index: Vec<u8>,
+    ) -> GeorgeResult<(bool, Vec<u8>)>;
 }
 
 /// 索引通用特性，遵循此特性创建索引可以更方便的针对进行扩展
 ///
 /// 该特性包含了索引的基本方法，理论上都需要进行实现才能使用
 pub(crate) trait TIndex: Send + Sync + Debug {
-    fn view(&self) -> Arc<RwLock<View>>;
+    fn form(&self) -> Arc<RwLock<dyn TForm>>;
     fn database_name(&self) -> String;
     fn view_name(&self) -> String;
     /// 索引名称，可以自定义；<p>
@@ -196,4 +276,175 @@ pub(crate) trait TSeed: Send + Sync + Debug {
     fn save(&self) -> GeorgeResult<()>;
     /// 删除操作
     fn remove(&self) -> GeorgeResult<()>;
+}
+
+/// 归档服务
+#[derive(Clone)]
+pub(crate) struct Pigeonhole {
+    now: Record,
+    pub(crate) history: HashMap<u16, Record>,
+}
+
+impl fmt::Debug for Pigeonhole {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut histories = String::from("");
+        for (_, his) in self.history.iter() {
+            histories = histories.add(his.to_string().as_str());
+        }
+        write!(f, "[now = {:#?}, histories = {:#?}]", self.now, histories)
+    }
+}
+
+impl Pigeonhole {
+    pub(crate) fn create(version: u16, filepath: String, create_time: Duration) -> Pigeonhole {
+        Pigeonhole {
+            now: Record {
+                version,
+                filepath,
+                create_time,
+            },
+            history: Default::default(),
+        }
+    }
+
+    /// 当前归档版本
+    pub(crate) fn now(&self) -> Record {
+        self.now.clone()
+    }
+
+    /// 历史归档版本
+    pub(crate) fn history(&self) -> HashMap<u16, Record> {
+        self.history.clone()
+    }
+
+    fn history_to_string(&self) -> String {
+        let mut res = String::from("");
+        for (_, record) in self.history.iter() {
+            if res.is_empty() {
+                res = res.add(&record.to_string());
+            } else {
+                res = res.add("@_@!");
+                res = res.add(&record.to_string());
+            }
+        }
+        res
+    }
+
+    fn history_from_string(history_desc: String) -> GeorgeResult<HashMap<u16, Record>> {
+        let mut history: HashMap<u16, Record> = Default::default();
+        if !history_desc.is_empty() {
+            let split = history_desc.split("$_$!");
+            for record_desc in split.into_iter() {
+                let record = Record::from_string(String::from(record_desc))?;
+                history.insert(record.version, record);
+            }
+        }
+        Ok(history)
+    }
+
+    /// 生成文件描述
+    pub(crate) fn to_string(&self) -> String {
+        hex::encode(format!(
+            "{}$_$!{}",
+            self.now().to_string(),
+            self.history_to_string()
+        ))
+    }
+
+    /// 通过文件描述恢复结构信息
+    pub(crate) fn from_string(pigeonhole_desc: String) -> GeorgeResult<Pigeonhole> {
+        match hex::decode(pigeonhole_desc) {
+            Ok(vu8) => {
+                let real = Strings::from_utf8(vu8)?;
+                let mut split = real.split("$_$!");
+                let now = Record::from_string(split.next().unwrap().to_string())?;
+                let history = Pigeonhole::history_from_string(split.next().unwrap().to_string())?;
+                Ok(Pigeonhole { now, history })
+            }
+            Err(err) => Err(Errs::string(format!(
+                "recovery pigeonhole from utf8 1 failed! error is {}",
+                err
+            ))),
+        }
+    }
+}
+
+/// 归档记录
+#[derive(Clone)]
+pub(crate) struct Record {
+    /// 归档版本，默认新建为[0x00,0x00]，版本每次归档操作递增，最多归档65536次
+    pub(crate) version: u16,
+    /// 当前归档版本文件所处路径
+    filepath: String,
+    /// 归档时间
+    create_time: Duration,
+}
+
+impl fmt::Debug for Record {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let time_from_stamp = NaiveDateTime::from_timestamp(self.create_time().num_seconds(), 0);
+        let time_format = time_from_stamp.format("%Y-%m-%d %H:%M:%S");
+        write!(
+            f,
+            "[version = {:#?}, filepath = {}, create_time = {}]",
+            self.version(),
+            self.filepath(),
+            time_format
+        )
+    }
+}
+
+impl Record {
+    fn create(version: u16, filepath: String, create_time: Duration) -> Record {
+        Record {
+            version,
+            filepath,
+            create_time,
+        }
+    }
+
+    /// 归档版本，默认新建为[0x00,0x00]，版本每次归档操作递增，最多归档65536次
+    pub(crate) fn version(&self) -> u16 {
+        self.version
+    }
+
+    /// 当前归档版本文件所处路径
+    pub(crate) fn filepath(&self) -> String {
+        self.filepath.clone()
+    }
+
+    /// 归档时间
+    pub(crate) fn create_time(&self) -> Duration {
+        self.create_time.clone()
+    }
+
+    /// 生成文件描述
+    pub(crate) fn to_string(&self) -> String {
+        hex::encode(format!(
+            "{}|{}|{}",
+            self.version(),
+            self.filepath(),
+            self.create_time().num_nanoseconds().unwrap().to_string()
+        ))
+    }
+
+    /// 通过文件描述恢复结构信息
+    pub(crate) fn from_string(record_desc: String) -> GeorgeResult<Record> {
+        match hex::decode(record_desc) {
+            Ok(vu8) => {
+                let real = Strings::from_utf8(vu8)?;
+                let mut split = real.split("|");
+                let version = split.next().unwrap().to_string().parse::<u16>().unwrap();
+                let filepath = split.next().unwrap().to_string();
+                let create_time = Duration::nanoseconds(
+                    split.next().unwrap().to_string().parse::<i64>().unwrap(),
+                );
+                Ok(Record::create(version, filepath, create_time))
+            }
+            Err(err) => Err(Errs::string(format!(
+                "recovery pigeonhole from utf8 1 failed! error is {}",
+                err
+            ))),
+        }
+    }
 }

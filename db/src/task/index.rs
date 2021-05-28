@@ -23,7 +23,7 @@ use crate::task::engine::block::node::Node as NB;
 use crate::task::engine::disk::node::Node as ND;
 use crate::task::engine::increment::node::Node as NI;
 use crate::task::engine::sequence::node::Node as NS;
-use crate::task::engine::traits::{TIndex, TNode, TSeed};
+use crate::task::engine::traits::{TForm, TIndex, TNode, TSeed};
 use crate::task::engine::DataReal;
 use crate::task::rich::{Constraint, Expectation};
 use crate::task::view::View;
@@ -38,7 +38,7 @@ use comm::json::{Json, JsonExec, JsonGet, JsonNew};
 /// 5位key及16位md5后key及5位起始seek和4位持续seek
 #[derive(Debug)]
 pub(crate) struct Index {
-    view: Arc<RwLock<View>>,
+    form: Arc<RwLock<dyn TForm>>,
     /// 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
     name: String,
     /// 存储引擎类型
@@ -78,7 +78,7 @@ pub(crate) struct Index {
 /// * root 根结点
 /// * metadata 索引文件信息
 fn new_index(
-    view: Arc<RwLock<View>>,
+    form: Arc<RwLock<dyn TForm>>,
     name: String,
     index_type: IndexType,
     primary: bool,
@@ -90,11 +90,11 @@ fn new_index(
 ) -> GeorgeResult<Index> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
-    let v_c = view.clone();
+    let v_c = form.clone();
     let v_r = v_c.read().unwrap();
     let filepath = Paths::index_filepath(v_r.database_name(), v_r.name(), name.clone());
     let index = Index {
-        view,
+        form,
         primary,
         name,
         root,
@@ -121,7 +121,7 @@ impl Index {
     /// * null 是否允许为空
     /// * key_type 索引值类型
     pub(crate) fn create(
-        view: Arc<RwLock<View>>,
+        form: Arc<RwLock<dyn TForm>>,
         name: String,
         index_type: IndexType,
         primary: bool,
@@ -131,14 +131,14 @@ impl Index {
     ) -> GeorgeResult<Arc<dyn TIndex>> {
         let root: Arc<dyn TNode>;
         match index_type {
-            IndexType::Increment => root = NI::create(view.clone(), name.clone())?,
-            IndexType::Sequence => root = NS::create(view.clone(), name.clone())?,
-            IndexType::Disk => root = ND::create(view.clone(), name.clone(), key_type, unique)?,
+            IndexType::Increment => root = NI::create(form.clone(), name.clone())?,
+            IndexType::Sequence => root = NS::create(form.clone(), name.clone())?,
+            IndexType::Disk => root = ND::create(form.clone(), name.clone(), key_type, unique)?,
             IndexType::Block => root = NB::create(name.clone(), key_type),
             _ => return Err(Errs::str("unsupported engine type with none")),
         }
         let index = new_index(
-            view,
+            form,
             name,
             index_type.clone(),
             primary,
@@ -171,16 +171,16 @@ impl Index {
 
 /// 封装方法函数w
 impl TIndex for Index {
-    fn view(&self) -> Arc<RwLock<View>> {
-        self.view.clone()
+    fn form(&self) -> Arc<RwLock<dyn TForm>> {
+        self.form.clone()
     }
 
     fn database_name(&self) -> String {
-        self.view().read().unwrap().database_name()
+        self.form().read().unwrap().database_name()
     }
 
     fn view_name(&self) -> String {
-        self.view().read().unwrap().name()
+        self.form().read().unwrap().name()
     }
 
     fn name(&self) -> String {
@@ -495,7 +495,7 @@ impl Index {
                     v_r.name()
                 );
                 let index = Index {
-                    view,
+                    form: view,
                     name,
                     index_type,
                     primary,

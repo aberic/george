@@ -17,7 +17,7 @@ use std::sync::{Arc, RwLock};
 use comm::errors::entrances::{GeorgeError, GeorgeResult};
 
 use crate::task::engine::traits::{TForm, TNode, TSeed};
-use crate::task::engine::{check, DataReal};
+use crate::task::engine::DataReal;
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::task::view::View;
@@ -35,7 +35,7 @@ use comm::vectors::{Vector, VectorHandler};
 /// 叶子结点中才会存在Link，其余结点Link为None
 #[derive(Debug, Clone)]
 pub(crate) struct Node {
-    view: Arc<RwLock<View>>,
+    form: Arc<RwLock<dyn TForm>>,
     index_name: String,
     key_type: KeyType,
     /// 索引文件路径
@@ -53,15 +53,15 @@ impl Node {
     /// 新建根结点
     ///
     /// 该结点没有Links，也没有preNode，是B+Tree的创世结点
-    pub fn create(view: Arc<RwLock<View>>, index_name: String) -> GeorgeResult<Arc<Self>> {
-        let v_c = view.clone();
+    pub fn create(form: Arc<RwLock<dyn TForm>>, index_name: String) -> GeorgeResult<Arc<Self>> {
+        let v_c = form.clone();
         let v_r = v_c.read().unwrap();
         let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
         let node_filepath = Paths::node_filepath(index_path, String::from("sequence"));
         let filer = Filed::create(node_filepath.clone())?;
         filer.append(Vector::create_empty_bytes(12))?;
         Ok(Arc::new(Node {
-            view,
+            form,
             index_name,
             key_type: KeyType::UInt,
             node_filepath,
@@ -70,14 +70,14 @@ impl Node {
     }
 
     /// 恢复根结点
-    pub fn recovery(view: Arc<RwLock<View>>, index_name: String) -> GeorgeResult<Arc<Self>> {
-        let v_c = view.clone();
+    pub fn recovery(form: Arc<RwLock<dyn TForm>>, index_name: String) -> GeorgeResult<Arc<Self>> {
+        let v_c = form.clone();
         let v_r = v_c.read().unwrap();
         let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
         let node_filepath = Paths::node_filepath(index_path, String::from("sequence"));
         let filer = Filed::recovery(node_filepath.clone())?;
         Ok(Arc::new(Node {
-            view,
+            form,
             index_name,
             key_type: KeyType::UInt,
             node_filepath,
@@ -185,7 +185,7 @@ impl Node {
         let res = self.read(seek, 12)?;
         return if Vector::is_fill(res.clone()) {
             // 从view视图中读取真实数据内容
-            let info = self.view.read().unwrap().read_content_by_info(res)?;
+            let info = self.form.read().unwrap().read_content_by_info(res)?;
             Ok(DataReal::from(info)?)
         } else {
             Err(GeorgeError::from(DataNoExistError))
@@ -261,7 +261,11 @@ impl Node {
             }
             // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
             let res = self.read(key_start, 12)?;
-            let (valid, value_bytes) = check(self.view.clone(), conditions.clone(), delete, res)?;
+            let (valid, value_bytes) =
+                self.form
+                    .read()
+                    .unwrap()
+                    .check(conditions.clone(), delete, res)?;
             if valid {
                 if skip <= 0 {
                     limit -= 1;
@@ -326,7 +330,11 @@ impl Node {
             }
             // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
             let res = self.read(key_end, 12)?;
-            let (valid, value_bytes) = check(self.view.clone(), conditions.clone(), delete, res)?;
+            let (valid, value_bytes) =
+                self.form
+                    .read()
+                    .unwrap()
+                    .check(conditions.clone(), delete, res)?;
             if valid {
                 if skip <= 0 {
                     limit -= 1;

@@ -20,8 +20,8 @@ use comm::io::file::{Filer, FilerHandler};
 use comm::trans::Trans;
 use comm::vectors::{Vector, VectorHandler};
 
-use crate::task::engine::traits::{TNode, TSeed};
-use crate::task::engine::{check, DataReal, RootBytes};
+use crate::task::engine::traits::{TForm, TNode, TSeed};
+use crate::task::engine::{DataReal, RootBytes};
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::task::view::View;
@@ -49,7 +49,7 @@ const BYTES_LEN_FOR_DISK_LEAF: usize = 7020;
 /// record存储固定长度的数据，长度为20，即view视图真实数据12+链式后续数据8，总计可存(2^64)/20条数据
 #[derive(Debug, Clone)]
 pub(crate) struct Node {
-    view: Arc<RwLock<View>>,
+    form: Arc<RwLock<dyn TForm>>,
     index_name: String,
     key_type: KeyType,
     index_path: String,
@@ -91,12 +91,12 @@ impl Node {
     ///
     /// 该结点没有Links，也没有preNode，是B+Tree的创世结点
     pub fn create(
-        view: Arc<RwLock<View>>,
+        form: Arc<RwLock<dyn TForm>>,
         index_name: String,
         key_type: KeyType,
         unique: bool,
     ) -> GeorgeResult<Arc<Self>> {
-        let v_c = view.clone();
+        let v_c = form.clone();
         let v_r = v_c.read().unwrap();
         let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
         let node_filepath = Paths::node_filepath(index_path.clone(), String::from("disk"));
@@ -108,7 +108,7 @@ impl Node {
         node_filer.append(rb.bytes())?;
         let root_bytes = Arc::new(RwLock::new(rb));
         Ok(Arc::new(Node {
-            view,
+            form,
             index_name,
             key_type,
             index_path,
@@ -123,12 +123,12 @@ impl Node {
 
     /// 恢复根结点
     pub fn recovery(
-        view: Arc<RwLock<View>>,
+        form: Arc<RwLock<dyn TForm>>,
         index_name: String,
         key_type: KeyType,
         unique: bool,
     ) -> GeorgeResult<Arc<Self>> {
-        let v_c = view.clone();
+        let v_c = form.clone();
         let v_r = v_c.read().unwrap();
         let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
         let node_filepath = Paths::node_filepath(index_path.clone(), String::from("disk"));
@@ -138,7 +138,7 @@ impl Node {
         let rb = node_filer.read(0, BYTES_LEN_FOR_DISK)?;
         let root_bytes = Arc::new(RwLock::new(RootBytes::recovery(rb, BYTES_LEN_FOR_DISK)?));
         Ok(Arc::new(Node {
-            view,
+            form,
             index_name,
             key_type,
             index_path,
@@ -151,8 +151,8 @@ impl Node {
         }))
     }
 
-    fn view(&self) -> Arc<RwLock<View>> {
-        self.view.clone()
+    fn form(&self) -> Arc<RwLock<dyn TForm>> {
+        self.form.clone()
     }
 
     fn key_type(&self) -> KeyType {
@@ -510,7 +510,7 @@ impl Node {
         // 处理因断点、宕机等意外导致后续索引数据写入成功而视图数据写入失败的问题
         if view_data_seek > 0 {
             // 从view视图中读取真实数据内容
-            let info = self.view.read().unwrap().read_content(
+            let info = self.form.read().unwrap().read_content(
                 view_version,
                 view_data_len,
                 view_data_seek,
@@ -646,7 +646,7 @@ impl Node {
         // 处理因断点、宕机等意外导致后续索引数据写入成功而视图数据写入失败的问题
         if view_data_seek > 0 {
             // 从view视图中读取真实数据内容
-            let info = self.view.read().unwrap().read_content(
+            let info = self.form.read().unwrap().read_content(
                 view_version,
                 view_data_len,
                 view_data_seek,
@@ -793,7 +793,7 @@ impl Node {
         // 处理因断点、宕机等意外导致后续索引数据写入成功而视图数据写入失败的问题
         if view_data_seek > 0 {
             // 从view视图中读取真实数据内容
-            let info = self.view.read().unwrap().read_content(
+            let info = self.form.read().unwrap().read_content(
                 view_version,
                 view_data_len,
                 view_data_seek,
@@ -1202,7 +1202,11 @@ impl Node {
         // record存储固定长度的数据，长度为20，即view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
         let res = self.record_read(record_seek, 20)?;
         let view_info_index = Vector::sub(res.clone(), 0, 12)?;
-        let (valid, value_bytes) = check(self.view(), conditions.clone(), delete, view_info_index)?;
+        let (valid, value_bytes) =
+            self.form
+                .read()
+                .unwrap()
+                .check(conditions.clone(), delete, view_info_index)?;
         if valid {
             if skip <= 0 {
                 limit -= 1;
@@ -1675,7 +1679,7 @@ impl Node {
             }
         }
         Ok(Arc::new(Node {
-            view,
+            form: view,
             index_name,
             key_type,
             index_path,

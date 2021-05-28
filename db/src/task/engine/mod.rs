@@ -28,30 +28,6 @@ pub(super) mod memory;
 pub(super) mod sequence;
 pub(super) mod traits;
 
-/// 检查值有效性
-fn check(
-    view: Arc<RwLock<View>>,
-    conditions: Vec<Condition>,
-    delete: bool,
-    view_info_index: Vec<u8>,
-) -> GeorgeResult<(bool, Vec<u8>)> {
-    if Vector::is_empty(view_info_index.clone()) {
-        Ok((false, vec![]))
-    } else {
-        let v_r = view.read().unwrap();
-        let real = DataReal::from(v_r.read_content_by_info(view_info_index)?)?;
-        let value_bytes = real.value();
-        if Condition::validate(conditions.clone(), value_bytes.clone()) {
-            if delete {
-                v_r.remove(real.key(), real.value())?;
-            }
-            Ok((true, value_bytes))
-        } else {
-            Ok((false, vec![]))
-        }
-    }
-}
-
 /// 真实存储数据
 ///
 /// 执行`put`、`set`及`insert`等方法插入数据时，存入文件中的真实数据为[序列号 + key + value]组合
@@ -79,7 +55,7 @@ impl DataReal {
         self.sequence = sequence
     }
 
-    fn from(real_bytes: Vec<u8>) -> GeorgeResult<DataReal> {
+    pub(crate) fn from(real_bytes: Vec<u8>) -> GeorgeResult<DataReal> {
         Json::bytes_2_obj(real_bytes.as_slice())
     }
 }
