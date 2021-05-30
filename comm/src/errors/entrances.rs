@@ -17,8 +17,9 @@ use std::fmt::{Display, Formatter, Result};
 
 use crate::errors::children::{
     DataExistError, DataNoExistError, DatabaseExistError, DatabaseNoExistError, DirExistError,
-    FileExistError, IndexExistError, IndexNoExistError, MethodNoSupportError, NoneError,
-    PageExistError, PageNoExistError, StringError, ViewExistError, ViewNoExistError,
+    DirNoExistError, FileExistError, FileNoExistError, IndexExistError, IndexNoExistError,
+    MethodNoSupportError, NoneError, PageExistError, PageNoExistError, StringError, ViewExistError,
+    ViewNoExistError,
 };
 use crate::errors::{Errs, GeorgeError, GeorgeString, GeorgeStringErr};
 
@@ -34,6 +35,8 @@ impl Error for GeorgeError {
             GeorgeError::DatabaseExistError(ref e) => Some(e),
             GeorgeError::ViewExistError(ref e) => Some(e),
             GeorgeError::IndexExistError(ref e) => Some(e),
+            GeorgeError::DirNoExistError(ref e) => Some(e),
+            GeorgeError::FileNoExistError(ref e) => Some(e),
             GeorgeError::DataNoExistError(ref e) => Some(e),
             GeorgeError::DatabaseNoExistError(ref e) => Some(e),
             GeorgeError::ViewNoExistError(ref e) => Some(e),
@@ -56,6 +59,8 @@ impl Display for GeorgeError {
             GeorgeError::DatabaseExistError(ref e) => e.fmt(f),
             GeorgeError::ViewExistError(ref e) => e.fmt(f),
             GeorgeError::IndexExistError(ref e) => e.fmt(f),
+            GeorgeError::DirNoExistError(ref e) => e.fmt(f),
+            GeorgeError::FileNoExistError(ref e) => e.fmt(f),
             GeorgeError::DataNoExistError(ref e) => e.fmt(f),
             GeorgeError::DatabaseNoExistError(ref e) => e.fmt(f),
             GeorgeError::ViewNoExistError(ref e) => e.fmt(f),
@@ -81,6 +86,18 @@ impl From<DirExistError> for GeorgeError {
 impl From<FileExistError> for GeorgeError {
     fn from(s: FileExistError) -> Self {
         GeorgeError::FileExistError(s)
+    }
+}
+
+impl From<DirNoExistError> for GeorgeError {
+    fn from(s: DirNoExistError) -> Self {
+        GeorgeError::DirNoExistError(s)
+    }
+}
+
+impl From<FileNoExistError> for GeorgeError {
+    fn from(s: FileNoExistError) -> Self {
+        GeorgeError::FileNoExistError(s)
     }
 }
 
@@ -195,6 +212,66 @@ impl Errs {
 
     pub fn strings<Err: ToString>(msg: String, err: Err) -> GeorgeError {
         err_strings(msg, err)
+    }
+
+    pub fn dir_exist_error() -> GeorgeError {
+        GeorgeError::from(DirExistError)
+    }
+
+    pub fn file_exist_error() -> GeorgeError {
+        GeorgeError::from(FileExistError)
+    }
+
+    pub fn data_exist_error() -> GeorgeError {
+        GeorgeError::from(DataExistError)
+    }
+
+    pub fn page_exist_error() -> GeorgeError {
+        GeorgeError::from(PageExistError)
+    }
+
+    pub fn database_exist_error() -> GeorgeError {
+        GeorgeError::from(DatabaseExistError)
+    }
+
+    pub fn view_exist_error() -> GeorgeError {
+        GeorgeError::from(ViewExistError)
+    }
+
+    pub fn index_exist_error() -> GeorgeError {
+        GeorgeError::from(IndexExistError)
+    }
+
+    pub fn none_error() -> GeorgeError {
+        GeorgeError::from(NoneError)
+    }
+
+    pub fn dir_no_exist_error() -> GeorgeError {
+        GeorgeError::from(DirNoExistError)
+    }
+
+    pub fn file_no_exist_error() -> GeorgeError {
+        GeorgeError::from(FileNoExistError)
+    }
+
+    pub fn data_no_exist_error() -> GeorgeError {
+        GeorgeError::from(DataNoExistError)
+    }
+
+    pub fn page_no_exist_error() -> GeorgeError {
+        GeorgeError::from(PageNoExistError)
+    }
+
+    pub fn database_no_exist_error() -> GeorgeError {
+        GeorgeError::from(DatabaseNoExistError)
+    }
+
+    pub fn view_no_exist_error() -> GeorgeError {
+        GeorgeError::from(ViewNoExistError)
+    }
+
+    pub fn index_no_exist_error() -> GeorgeError {
+        GeorgeError::from(IndexNoExistError)
     }
 }
 

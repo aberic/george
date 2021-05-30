@@ -14,9 +14,11 @@
 
 use crate::errors::children::{
     DataExistError, DataNoExistError, DatabaseExistError, DatabaseNoExistError, DirExistError,
-    FileExistError, IndexExistError, IndexNoExistError, MethodNoSupportError, NoneError,
-    PageExistError, PageNoExistError, StringError, ViewExistError, ViewNoExistError,
+    DirNoExistError, FileExistError, FileNoExistError, IndexExistError, IndexNoExistError,
+    MethodNoSupportError, NoneError, PageExistError, PageNoExistError, StringError, ViewExistError,
+    ViewNoExistError,
 };
+
 pub mod children;
 pub mod entrances;
 mod entrances_test;
@@ -44,6 +46,8 @@ pub enum GeorgeError {
     DatabaseExistError(DatabaseExistError),
     ViewExistError(ViewExistError),
     IndexExistError(IndexExistError),
+    DirNoExistError(DirNoExistError),
+    FileNoExistError(FileNoExistError),
     DataNoExistError(DataNoExistError),
     DatabaseNoExistError(DatabaseNoExistError),
     ViewNoExistError(ViewNoExistError),

@@ -19,8 +19,8 @@ use std::thread;
 
 use chrono::{Duration, Local, NaiveDateTime};
 
-use comm::errors::children::IndexExistError;
-use comm::errors::{Errs, GeorgeError, GeorgeResult};
+use comm::errors::{Errs, GeorgeResult};
+use comm::io::file::FilerReader;
 use comm::io::Filer;
 use comm::strings::StringHandler;
 use comm::vectors::VectorHandler;
@@ -39,7 +39,6 @@ use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::store::{ContentBytes, Metadata, HD};
 use crate::utils::writer::Filed;
 use crate::utils::Paths;
-use comm::io::file::FilerReader;
 
 /// 新建视图
 ///
@@ -277,7 +276,7 @@ impl View {
         null: bool,
     ) -> GeorgeResult<()> {
         if self.exist_index(index_name.clone()) {
-            return Err(GeorgeError::from(IndexExistError));
+            return Err(Errs::index_exist_error());
         }
         self.index_map().write().unwrap().insert(
             index_name.clone(),

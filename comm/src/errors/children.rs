@@ -113,6 +113,28 @@ impl Display for IndexExistError {
 impl Error for IndexExistError {}
 
 #[derive(Debug)]
+pub struct DirNoExistError;
+
+impl Display for DirNoExistError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "dir is not exist!")
+    }
+}
+
+impl Error for DirNoExistError {}
+
+#[derive(Debug)]
+pub struct FileNoExistError;
+
+impl Display for FileNoExistError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "file is not exist!")
+    }
+}
+
+impl Error for FileNoExistError {}
+
+#[derive(Debug)]
 pub struct DataNoExistError;
 
 impl Display for DataNoExistError {

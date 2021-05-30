@@ -14,7 +14,9 @@
 
 use std::sync::{Arc, RwLock};
 
-use comm::errors::{GeorgeError, GeorgeResult};
+use comm::errors::{Errs, GeorgeResult};
+use comm::vectors::VectorHandler;
+use comm::Vector;
 
 use crate::task::engine::sequence::Node;
 use crate::task::engine::traits::{TForm, TNode, TSeed};
@@ -25,9 +27,6 @@ use crate::utils::comm::IndexKey;
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::writer::Filed;
 use crate::utils::Paths;
-use comm::errors::children::{DataExistError, DataNoExistError};
-use comm::vectors::VectorHandler;
-use comm::Vector;
 
 impl Node {
     /// 新建根结点
@@ -146,7 +145,7 @@ impl Node {
             // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
             let res = self.read(seek, 12)?;
             if Vector::is_fill(res) {
-                return Err(GeorgeError::from(DataExistError));
+                return Err(Errs::data_exist_error());
             }
         }
         seed.write().unwrap().modify_4_put(IndexPolicy::create(
@@ -168,7 +167,7 @@ impl Node {
             let info = self.form.read().unwrap().read_content_by_info(res)?;
             Ok(DataReal::from(info)?)
         } else {
-            Err(GeorgeError::from(DataNoExistError))
+            Err(Errs::data_no_exist_error())
         };
     }
 

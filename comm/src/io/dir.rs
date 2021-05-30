@@ -16,8 +16,7 @@ use std::fs;
 use std::ops::Add;
 use std::path::Path;
 
-use crate::errors::children::DirExistError;
-use crate::errors::{Errs, GeorgeError, GeorgeResult};
+use crate::errors::{Errs, GeorgeResult};
 use crate::io::Dir;
 
 pub trait DirHandler<T>: Sized {
@@ -128,7 +127,7 @@ fn dir_exist(path: String) -> GeorgeResult<bool> {
 /// 创建目录
 fn dir_create(path: String) -> GeorgeResult<()> {
     if dir_exist(path.clone())? {
-        Err(GeorgeError::from(DirExistError))
+        Err(Errs::dir_exist_error())
     } else {
         match fs::create_dir_all(path.clone()) {
             Ok(_) => Ok(()),

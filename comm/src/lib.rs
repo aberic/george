@@ -24,6 +24,7 @@ pub mod io;
 pub mod json;
 mod json_test;
 pub mod merkle;
+pub mod pool;
 pub mod strings;
 mod strings_test;
 pub mod trans;

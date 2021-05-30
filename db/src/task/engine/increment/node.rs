@@ -15,9 +15,11 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 
-use comm::errors::{Errs, GeorgeError, GeorgeResult};
+use comm::errors::{Errs, GeorgeResult};
 use comm::io::file::FilerReader;
 use comm::io::Filer;
+use comm::vectors::VectorHandler;
+use comm::Vector;
 
 use crate::task::engine::increment::Node;
 use crate::task::engine::traits::{TForm, TNode, TSeed};
@@ -28,9 +30,6 @@ use crate::utils::comm::IndexKey;
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::writer::Filed;
 use crate::utils::Paths;
-use comm::errors::children::DataNoExistError;
-use comm::vectors::VectorHandler;
-use comm::Vector;
 
 impl Node {
     /// 新建根结点
@@ -178,7 +177,7 @@ impl Node {
             let info = self.form.read().unwrap().read_content_by_info(res)?;
             Ok(DataReal::from(info)?)
         } else {
-            Err(GeorgeError::from(DataNoExistError))
+            Err(Errs::data_no_exist_error())
         };
     }
 

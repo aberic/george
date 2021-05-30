@@ -16,8 +16,7 @@
 mod errors_index_test {
     use std::error::Error;
 
-    use crate::errors::children::{DataExistError, DataNoExistError};
-    use crate::errors::{Errs, GeorgeError, GeorgeResult};
+    use crate::errors::{Errs, GeorgeResult};
     use crate::io::dir::DirHandler;
     use crate::io::Dir;
 
@@ -26,11 +25,11 @@ mod errors_index_test {
     }
 
     fn index_exist_err() -> GeorgeResult<u32> {
-        Err(GeorgeError::from(DataExistError))
+        Err(Errs::data_exist_error())
     }
 
     fn index_no_exist_err() -> GeorgeResult<u32> {
-        Err(GeorgeError::from(DataNoExistError))
+        Err(Errs::data_no_exist_error())
     }
 
     fn index_test1() -> GeorgeResult<u32> {

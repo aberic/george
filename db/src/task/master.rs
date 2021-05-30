@@ -20,10 +20,7 @@ use chrono::{Duration, Local, NaiveDateTime};
 use log::LevelFilter;
 use once_cell::sync::Lazy;
 
-use comm::errors::children::{
-    DatabaseExistError, DatabaseNoExistError, PageExistError, PageNoExistError,
-};
-use comm::errors::{Errs, GeorgeError, GeorgeResult};
+use comm::errors::{Errs, GeorgeResult};
 use comm::io::dir::DirHandler;
 use comm::io::file::{FilerHandler, FilerWriter};
 use comm::io::Dir;
@@ -56,7 +53,7 @@ impl Master {
     /// 创建缓存页
     pub(super) fn create_page(&self, name: String, comment: String) -> GeorgeResult<()> {
         if self.exist_page(name.clone()) {
-            return Err(GeorgeError::from(PageExistError));
+            return Err(Errs::page_exist_error());
         }
         let page = Page::create(name.clone(), comment)?;
         self.page_map().write().unwrap().insert(name.clone(), page);
@@ -67,7 +64,7 @@ impl Master {
     /// 删除缓存页
     pub(super) fn remove_page(&self, page_name: String) -> GeorgeResult<()> {
         if !self.exist_page(page_name.clone()) {
-            Err(GeorgeError::from(PageExistError))
+            Err(Errs::page_exist_error())
         } else {
             self.page_map().write().unwrap().remove(&page_name);
             Ok(())
@@ -77,10 +74,10 @@ impl Master {
     /// 修改缓存页
     pub(super) fn modify_page(&self, page_name: String, page_new_name: String) -> GeorgeResult<()> {
         if !self.exist_page(page_name.clone()) {
-            return Err(GeorgeError::from(PageNoExistError));
+            return Err(Errs::page_no_exist_error());
         }
         if self.exist_page(page_new_name.clone()) {
-            return Err(GeorgeError::from(PageExistError));
+            return Err(Errs::page_exist_error());
         }
         let page = self.page(page_name.clone())?;
         self.page_map()
@@ -94,7 +91,7 @@ impl Master {
     pub(super) fn page(&self, page_name: String) -> GeorgeResult<Arc<RwLock<Page>>> {
         match self.page_map().read().unwrap().get(&page_name) {
             Some(page) => Ok(page.clone()),
-            None => Err(GeorgeError::from(PageNoExistError)),
+            None => Err(Errs::page_no_exist_error()),
         }
     }
 
@@ -116,7 +113,7 @@ impl Master {
         database_comment: String,
     ) -> GeorgeResult<()> {
         if self.exist_database(database_name.clone()) {
-            return Err(GeorgeError::from(DatabaseExistError));
+            return Err(Errs::database_exist_error());
         }
         let db = Database::create(database_name.clone(), database_comment.clone())?;
         self.database_map()
@@ -130,7 +127,7 @@ impl Master {
     /// 删除数据库
     pub(super) fn remove_database(&self, database_name: String) -> GeorgeResult<()> {
         if !self.exist_database(database_name.clone()) {
-            Err(GeorgeError::from(DatabaseExistError))
+            Err(Errs::database_exist_error())
         } else {
             self.database_map().write().unwrap().remove(&database_name);
             Ok(())
@@ -145,10 +142,10 @@ impl Master {
         database_comment: String,
     ) -> GeorgeResult<()> {
         if !self.exist_database(database_name.clone()) {
-            return Err(GeorgeError::from(DatabaseNoExistError));
+            return Err(Errs::database_no_exist_error());
         }
         if self.exist_database(database_new_name.clone()) {
-            return Err(GeorgeError::from(DatabaseExistError));
+            return Err(Errs::database_exist_error());
         }
         let database = self.database(database_name.clone())?;
         database
@@ -164,7 +161,7 @@ impl Master {
     pub(super) fn database(&self, database_name: String) -> GeorgeResult<Arc<RwLock<Database>>> {
         match self.database_map().read().unwrap().get(&database_name) {
             Some(database) => Ok(database.clone()),
-            None => Err(GeorgeError::from(DatabaseNoExistError)),
+            None => Err(Errs::database_no_exist_error()),
         }
     }
 
@@ -189,7 +186,7 @@ impl Master {
                 let database = database_lock.read().unwrap();
                 database.create_view(view_name, with_sequence)?;
             }
-            None => return Err(GeorgeError::from(DatabaseNoExistError)),
+            None => return Err(Errs::database_no_exist_error()),
         }
         Ok(())
     }
@@ -206,7 +203,7 @@ impl Master {
                 let database = database_lock.write().unwrap();
                 database.modify_view(view_name, view_new_name)
             }
-            None => return Err(GeorgeError::from(DatabaseNoExistError)),
+            None => return Err(Errs::database_no_exist_error()),
         }
     }
 

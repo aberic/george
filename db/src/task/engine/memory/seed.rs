@@ -12,9 +12,9 @@
  * limitations under the License.
  */
 
+use comm::errors::{Errs, GeorgeResult};
+
 use crate::task::engine::memory::Seed;
-use comm::errors::children::DataNoExistError;
-use comm::errors::{GeorgeError, GeorgeResult};
 
 /// 封装方法函数
 impl Seed {
@@ -36,7 +36,7 @@ impl Seed {
     pub(crate) fn value(&self) -> GeorgeResult<Vec<u8>> {
         match self.value.clone() {
             Some(v) => Ok(v),
-            None => Err(GeorgeError::from(DataNoExistError)),
+            None => Err(Errs::data_no_exist_error()),
         }
     }
     pub(crate) fn is_none(&self) -> bool {

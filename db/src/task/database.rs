@@ -18,8 +18,7 @@ use std::sync::{Arc, RwLock};
 
 use chrono::{Duration, Local, NaiveDateTime};
 
-use comm::errors::children::{ViewExistError, ViewNoExistError};
-use comm::errors::{Errs, GeorgeError, GeorgeResult};
+use comm::errors::{Errs, GeorgeResult};
 use comm::json::JsonHandler;
 use comm::strings::StringHandler;
 use comm::{Json, Strings};
@@ -144,7 +143,7 @@ impl Database {
     pub(super) fn view(&self, view_name: String) -> GeorgeResult<Arc<RwLock<View>>> {
         match self.view_map().read().unwrap().get(&view_name) {
             Some(view) => Ok(view.clone()),
-            None => Err(GeorgeError::from(ViewNoExistError)),
+            None => Err(Errs::view_no_exist_error()),
         }
     }
 
@@ -160,7 +159,7 @@ impl Database {
     /// mem 是否为内存视图
     pub(crate) fn create_view(&self, name: String, with_sequence: bool) -> GeorgeResult<()> {
         if self.exist_view(name.clone()) {
-            return Err(GeorgeError::from(ViewExistError));
+            return Err(Errs::view_exist_error());
         }
         self.view_map().write().unwrap().insert(
             name.clone(),
@@ -172,7 +171,7 @@ impl Database {
     /// 删除视图
     pub(super) fn remove_view(&self, view_name: String) -> GeorgeResult<()> {
         if !self.exist_view(view_name.clone()) {
-            Err(GeorgeError::from(ViewExistError))
+            Err(Errs::view_exist_error())
         } else {
             self.view_map().write().unwrap().remove(&view_name);
             Ok(())
@@ -182,10 +181,10 @@ impl Database {
     /// 修改视图
     pub(crate) fn modify_view(&self, view_name: String, view_new_name: String) -> GeorgeResult<()> {
         if !self.exist_view(view_name.clone()) {
-            return Err(GeorgeError::from(ViewNoExistError));
+            return Err(Errs::view_no_exist_error());
         }
         if self.exist_view(view_new_name.clone()) {
-            return Err(GeorgeError::from(ViewNoExistError));
+            return Err(Errs::view_no_exist_error());
         }
         let view = self.view(view_name.clone())?;
         view.clone()
@@ -314,7 +313,7 @@ impl Database {
     ) -> GeorgeResult<Expectation> {
         return match self.views.clone().read().unwrap().get(&view_name) {
             Some(view) => view.read().unwrap().select(constraint_json_bytes),
-            _ => Err(GeorgeError::ViewNoExistError(ViewNoExistError)),
+            _ => Err(Errs::view_no_exist_error()),
         };
     }
 
@@ -328,7 +327,7 @@ impl Database {
     ) -> GeorgeResult<Expectation> {
         return match self.views.clone().read().unwrap().get(&view_name) {
             Some(view) => view.read().unwrap().delete(constraint_json_bytes),
-            _ => Err(GeorgeError::ViewNoExistError(ViewNoExistError)),
+            _ => Err(Errs::view_no_exist_error()),
         };
     }
 }

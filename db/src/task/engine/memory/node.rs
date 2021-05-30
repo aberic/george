@@ -14,12 +14,11 @@
 
 use std::sync::{Arc, RwLock};
 
-use comm::errors::{GeorgeError, GeorgeResult};
+use comm::errors::{Errs, GeorgeResult};
 
 use crate::task::engine::memory::{Node, Seed};
 use crate::utils::comm::{Distance, IndexKey};
 use crate::utils::enums::KeyType;
-use comm::errors::children::{DataExistError, DataNoExistError, NoneError};
 
 /// 新建根结点
 ///
@@ -240,10 +239,10 @@ impl Node {
                 if arc_nodes.clone().read().unwrap().clone().len() > 0 {
                     self.binary_match_data(arc_nodes.clone(), match_index)
                 } else {
-                    Err(GeorgeError::from(DataNoExistError))
+                    Err(Errs::data_no_exist_error())
                 }
             }
-            None => Err(GeorgeError::from(NoneError)),
+            None => Err(Errs::none_error()),
         };
     }
 
@@ -275,7 +274,7 @@ impl Node {
                 if middle_index > 0 {
                     right_index = middle_index - 1
                 } else {
-                    return Err(GeorgeError::from(DataNoExistError));
+                    return Err(Errs::data_no_exist_error());
                 }
             } else if nodes[middle_index].degree_index() < match_index {
                 // 在arr数组的右边找
@@ -284,7 +283,7 @@ impl Node {
                 return Ok(nodes.get(middle_index).unwrap().clone());
             }
         }
-        Err(GeorgeError::from(DataNoExistError))
+        Err(Errs::data_no_exist_error())
     }
 
     fn put_seed(&self, seed: Arc<RwLock<Seed>>, force: bool) -> GeorgeResult<()> {
@@ -295,7 +294,7 @@ impl Node {
             Ok(())
         } else {
             if self.exist_seed(seed.read().unwrap().key()) {
-                Err(GeorgeError::from(DataExistError))
+                Err(Errs::data_exist_error())
             } else {
                 self.seeds().unwrap().write().unwrap().push(seed.clone());
                 Ok(())
@@ -420,7 +419,7 @@ impl Node {
         if exist {
             Ok(vu8)
         } else {
-            Err(GeorgeError::from(DataNoExistError))
+            Err(Errs::data_no_exist_error())
         }
     }
 

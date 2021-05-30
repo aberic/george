@@ -14,8 +14,9 @@
 
 use std::sync::{Arc, RwLock};
 
-use comm::errors::children::{DataExistError, DataNoExistError};
-use comm::errors::{Errs, GeorgeError, GeorgeResult};
+use num_integer::Integer;
+
+use comm::errors::{Errs, GeorgeResult};
 use comm::io::file::FilerHandler;
 use comm::io::Filer;
 use comm::vectors::VectorHandler;
@@ -32,7 +33,6 @@ use crate::utils::comm::{Distance, IndexKey};
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::writer::Filed;
 use crate::utils::Paths;
-use num_integer::Integer;
 
 const BYTES_LEN_FOR_DISK: usize = 16380;
 const BYTES_LEN_FOR_DISK_LEAF: usize = 7020;
@@ -288,7 +288,7 @@ impl Node {
                             force,
                         )?;
                     } else {
-                        return Err(GeorgeError::from(DataExistError));
+                        return Err(Errs::data_exist_error());
                     }
                 } else {
                     // 如果非唯一，则需要判断hash碰撞，hash碰撞未发生才会继续进行强制性判断
@@ -350,7 +350,7 @@ impl Node {
                                 force,
                             )?;
                         } else {
-                            return Err(GeorgeError::from(DataExistError));
+                            return Err(Errs::data_exist_error());
                         }
                     } else {
                         // 如果非唯一，则需要判断hash碰撞，hash碰撞未发生才会继续进行强制性判断
@@ -472,7 +472,7 @@ impl Node {
                     Ok(record_seek)
                 } else {
                     // 如果不能覆盖，则返回数据已存在
-                    Err(GeorgeError::from(DataExistError))
+                    Err(Errs::data_exist_error())
                 }
                 // 如果key不同，则发生hash碰撞，开启索引链式结构循环坐标定位
             } else {
@@ -557,7 +557,7 @@ impl Node {
                     self.get_in_node(next_node_bytes, key, level + 1, next_flexible_key)
                 } else {
                     // 如果为空，则返回无此数据
-                    Err(GeorgeError::from(DataNoExistError))
+                    Err(Errs::data_no_exist_error())
                 }
             }
         }
@@ -574,7 +574,7 @@ impl Node {
             self.record_view_info_seek_get(key, record_seek)
         } else {
             // 如果为空，则返回无此数据
-            Err(GeorgeError::from(DataNoExistError))
+            Err(Errs::data_no_exist_error())
         }
     }
 
@@ -607,7 +607,7 @@ impl Node {
                 // 如果key不同，则需要进一步判断是否唯一
                 // 如果唯一，则不存在hash碰撞
                 if self.unique {
-                    Err(GeorgeError::from(DataNoExistError))
+                    Err(Errs::data_no_exist_error())
                 } else {
                     // 不唯一则可能发生hash碰撞，开启索引链式结构循环坐标定位
                     // record存储固定长度的数据，长度为20，即view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
