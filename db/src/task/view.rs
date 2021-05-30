@@ -390,8 +390,15 @@ impl View {
     ///
     /// IndexResult<()>
     pub(crate) fn put(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        self.save(key, value, false)
-        // GLOBAL_THREAD_POOL.task_block_on(self.saves(key, value, false))
+        log::debug!(
+            "database {} view {} put key {} value {}",
+            self.database_name(),
+            self.name(),
+            key.clone(),
+            Strings::from_utf8(value.clone()).unwrap()
+        );
+        // self.save(key, value, false)
+        GLOBAL_THREAD_POOL.task_block_on(self.save(key, value, false))
     }
 
     /// 插入数据，无论存在与否都会插入或更新数据<p><p>
@@ -406,8 +413,15 @@ impl View {
     ///
     /// IndexResult<()>
     pub(crate) fn set(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        self.save(key, value, true)
-        // GLOBAL_THREAD_POOL.task_block_on(self.saves(key, value, true))
+        log::debug!(
+            "database {} view {} set key {} value {}",
+            self.database_name(),
+            self.name(),
+            key.clone(),
+            Strings::from_utf8(value.clone()).unwrap()
+        );
+        // self.save(key, value, true)
+        GLOBAL_THREAD_POOL.task_block_on(self.save(key, value, true))
     }
 
     /// 获取数据，返回存储对象<p><p>
@@ -422,6 +436,12 @@ impl View {
     ///
     /// Seed value信息
     pub(crate) fn get(&self, index_name: &str, key: String) -> GeorgeResult<Vec<u8>> {
+        log::debug!(
+            "database {} view {} get key {}",
+            self.database_name(),
+            self.name(),
+            key.clone(),
+        );
         let index = self.index(index_name)?;
         Ok(index.get(key.clone())?.value())
     }
@@ -436,6 +456,12 @@ impl View {
     ///
     /// GeorgeResult<()>
     pub(crate) fn remove(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
+        log::debug!(
+            "database {} view {} remove key {}",
+            self.database_name(),
+            self.name(),
+            key.clone(),
+        );
         let real = self.index(INDEX_DISK)?.get(key.clone())?;
         self.del(key, real.increment, value)
     }
@@ -469,10 +495,12 @@ impl View {
     /// ###Return
     ///
     /// IndexResult<()>
-    async fn saves(&self, key: String, value: Vec<u8>, force: bool) -> GeorgeResult<()> {
-        let (sender, mut receive) = tokio::sync::mpsc::channel(32);
+    async fn save(&self, key: String, value: Vec<u8>, force: bool) -> GeorgeResult<()> {
         let seed = Seed::create(Arc::new(self.clone()), key.clone(), value.clone());
+        let mut receives = Vec::new();
         for (index_name, index) in self.index_map().read().unwrap().iter() {
+            let (sender, receive) = tokio::sync::mpsc::channel(32);
+            receives.push(receive);
             GLOBAL_THREAD_POOL.spawn(self.clone().index_exec(
                 index_name.clone(),
                 index.clone(),
@@ -480,13 +508,17 @@ impl View {
                 value.clone(),
                 seed.clone(),
                 force,
-                sender.clone(),
+                sender,
             ));
         }
-        while let Some(res) = receive.recv().await {
-            match res {
-                Ok(_) => {}
-                Err(err) => return Err(Errs::string(err.to_string())),
+        for receive in receives.iter_mut() {
+            let message = receive.recv().await;
+            match message {
+                Some(res) => match res {
+                    Err(err) => return Err(err),
+                    _ => {}
+                },
+                _ => {}
             }
         }
         let seed_w = seed.write().unwrap();
@@ -504,67 +536,73 @@ impl View {
         sender: Sender<GeorgeResult<()>>,
     ) {
         match index_name.as_str() {
-            INDEX_DISK => sender.send(index.put(key, seed, force)).await.unwrap(),
-            INDEX_INCREMENT => sender.send(index.put(key, seed, force)).await.unwrap(),
+            INDEX_DISK => {
+                sender.send(index.put(key, seed, force)).await;
+            }
+            INDEX_INCREMENT => {
+                sender.send(index.put(key, seed, force)).await;
+            }
             _ => match IndexKey::fetch(index_name, value) {
-                Ok(res) => sender.send(index.put(res, seed, force)).await.unwrap(),
+                Ok(res) => {
+                    sender.send(index.put(res, seed, force)).await;
+                }
                 Err(err) => {
                     log::debug!("key fetch error: {}", err);
-                    // sender.send(Ok(()))
+                    sender.send(Ok(())).await;
                 }
             },
         }
     }
 
-    /// 插入数据业务方法<p><p>
-    ///
-    /// ###Params
-    ///
-    /// key string
-    ///
-    /// value 当前结果value信息<p><p>
-    ///
-    /// force 如果存在原值，是否覆盖原结果<p><p>
-    ///
-    /// ###Return
-    ///
-    /// IndexResult<()>
-    fn save(&self, key: String, value: Vec<u8>, force: bool) -> GeorgeResult<()> {
-        let seed = Seed::create(Arc::new(self.clone()), key.clone(), value.clone());
-        let mut receives = Vec::new();
-        for (index_name, index) in self.index_map().read().unwrap().iter() {
-            let (sender, receive) = mpsc::channel();
-            receives.push(receive);
-            let index_name_clone = index_name.clone();
-            let index_clone = index.clone();
-            let key_clone = key.clone();
-            let value_clone = value.clone();
-            let seed_clone = seed.clone();
-            thread::spawn(move || match index_name_clone.as_str() {
-                INDEX_DISK => sender.send(index_clone.put(key_clone, seed_clone, force)),
-                INDEX_INCREMENT => sender.send(index_clone.put(key_clone, seed_clone, force)),
-                _ => match IndexKey::fetch(index_name_clone, value_clone) {
-                    Ok(res) => sender.send(index_clone.put(res, seed_clone, force)),
-                    Err(err) => {
-                        log::debug!("key fetch error: {}", err);
-                        sender.send(Ok(()))
-                    }
-                },
-            });
-        }
-        for receive in receives.iter() {
-            let res = receive.recv();
-            match res {
-                Ok(gr) => match gr {
-                    Err(err) => return Err(err),
-                    _ => {}
-                },
-                Err(err) => return Err(Errs::string(err.to_string())),
-            }
-        }
-        let seed_w = seed.write().unwrap();
-        seed_w.save()
-    }
+    // /// 插入数据业务方法<p><p>
+    // ///
+    // /// ###Params
+    // ///
+    // /// key string
+    // ///
+    // /// value 当前结果value信息<p><p>
+    // ///
+    // /// force 如果存在原值，是否覆盖原结果<p><p>
+    // ///
+    // /// ###Return
+    // ///
+    // /// IndexResult<()>
+    // fn save(&self, key: String, value: Vec<u8>, force: bool) -> GeorgeResult<()> {
+    //     let seed = Seed::create(Arc::new(self.clone()), key.clone(), value.clone());
+    //     let mut receives = Vec::new();
+    //     for (index_name, index) in self.index_map().read().unwrap().iter() {
+    //         let (sender, receive) = mpsc::channel();
+    //         receives.push(receive);
+    //         let index_name_clone = index_name.clone();
+    //         let index_clone = index.clone();
+    //         let key_clone = key.clone();
+    //         let value_clone = value.clone();
+    //         let seed_clone = seed.clone();
+    //         thread::spawn(move || match index_name_clone.as_str() {
+    //             INDEX_DISK => sender.send(index_clone.put(key_clone, seed_clone, force)),
+    //             INDEX_INCREMENT => sender.send(index_clone.put(key_clone, seed_clone, force)),
+    //             _ => match IndexKey::fetch(index_name_clone, value_clone) {
+    //                 Ok(res) => sender.send(index_clone.put(res, seed_clone, force)),
+    //                 Err(err) => {
+    //                     log::debug!("key fetch error: {}", err);
+    //                     sender.send(Ok(()))
+    //                 }
+    //             },
+    //         });
+    //     }
+    //     for receive in receives.iter() {
+    //         let res = receive.recv();
+    //         match res {
+    //             Ok(gr) => match gr {
+    //                 Err(err) => return Err(err),
+    //                 _ => {}
+    //             },
+    //             Err(err) => return Err(Errs::string(err.to_string())),
+    //         }
+    //     }
+    //     let seed_w = seed.write().unwrap();
+    //     seed_w.save()
+    // }
 
     /// 插入数据业务方法<p><p>
     ///

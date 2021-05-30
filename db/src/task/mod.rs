@@ -52,9 +52,8 @@ pub static GLOBAL_MASTER: Lazy<Arc<Master>> = Lazy::new(|| {
     init_config(Env::get(GEORGE_DB_CONFIG, "src/examples/conf.yaml"));
     init_log();
     log::info!("config & log init success!");
-    // todo thread pool
-    // GLOBAL_THREAD_POOL.init();
-    // log::info!("thread pool init success!");
+    GLOBAL_THREAD_POOL.init();
+    log::info!("thread pool init success!");
     let master = Master {
         default_page_name: DEFAULT_NAME.to_string(),
         pages: Arc::new(Default::default()),
@@ -79,11 +78,11 @@ pub static GLOBAL_MASTER: Lazy<Arc<Master>> = Lazy::new(|| {
     master_arc
 });
 
-pub(super) static GLOBAL_THREAD_POOL: Lazy<Arc<ThreadPool>> = Lazy::new(|| {
+pub(super) static GLOBAL_THREAD_POOL: Lazy<ThreadPool> = Lazy::new(|| {
     let config = GLOBAL_CONFIG.read().unwrap();
     let worker_threads = config.thread_count;
     log::info!("thread pool intent to start {} threads", worker_threads);
-    Arc::new(ThreadPool::new(worker_threads).unwrap())
+    ThreadPool::new(worker_threads).unwrap()
 });
 
 /// 数据库
