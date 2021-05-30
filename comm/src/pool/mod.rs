@@ -12,12 +12,13 @@
  * limitations under the License.
  */
 
+use std::sync::Arc;
 use tokio::runtime::Runtime;
 
 pub mod thread_pool;
 mod thread_pool_test;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ThreadPool {
-    runtime: Runtime,
+    runtime: Arc<Runtime>,
 }

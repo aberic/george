@@ -24,7 +24,7 @@ use crate::utils::enums::KeyType;
 
 pub const GEORGE_DB_CONFIG: &str = "GEORGE_DB_CONFIG";
 pub const GEORGE_DB_DATA_DIR: &str = "GEORGE_DB_DATA_DIR";
-pub const GEORGE_DB_LIMIT_OPEN_FILE: &str = "GEORGE_DB_LIMIT_OPEN_FILE";
+pub const GEORGE_DB_THREAD_COUNT: &str = "GEORGE_DB_THREAD_COUNT";
 pub const GEORGE_DB_LOG_DIR: &str = "GEORGE_DB_LOG_DIR";
 pub const GEORGE_DB_LOG_FILE_MAX_SIZE: &str = "GEORGE_DB_LOG_FILE_MAX_SIZE";
 pub const GEORGE_DB_LOG_FILE_MAX_COUNT: &str = "GEORGE_DB_LOG_FILE_MAX_COUNT";

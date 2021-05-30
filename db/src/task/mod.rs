@@ -11,6 +11,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
+
+use chrono::{Duration, Local, NaiveDateTime};
+use once_cell::sync::Lazy;
+
+use comm::io::dir::DirHandler;
+use comm::io::file::FilerHandler;
+use comm::io::{Dir, Filer};
+use comm::Env;
+
+use crate::task::engine::memory::Node;
+use crate::task::engine::traits::{Pigeonhole, TForm, TIndex, TNode};
+use crate::task::engine::DataReal;
+use crate::task::master::init_log;
+use crate::task::seed::IndexPolicy;
+use crate::utils::comm::{DEFAULT_NAME, GEORGE_DB_CONFIG};
+use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
+use crate::utils::enums::{IndexType, KeyType};
+use crate::utils::store::Metadata;
+use crate::utils::writer::Filed;
+use crate::utils::Paths;
+use comm::pool::ThreadPool;
+
 mod database;
 pub mod engine;
 mod index;
@@ -22,19 +46,48 @@ mod rich;
 mod seed;
 mod view;
 
-use crate::task::engine::memory::Node;
-use crate::task::engine::traits::{Pigeonhole, TForm, TIndex, TNode};
-use crate::task::engine::DataReal;
-use crate::task::seed::IndexPolicy;
-use crate::utils::enums::{IndexType, KeyType};
-use crate::utils::store::Metadata;
-use crate::utils::writer::Filed;
-use chrono::Duration;
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+pub static GLOBAL_MASTER: Lazy<Arc<Master>> = Lazy::new(|| {
+    let now: NaiveDateTime = Local::now().naive_local();
+    let create_time = Duration::nanoseconds(now.timestamp_nanos());
+    init_config(Env::get(GEORGE_DB_CONFIG, "src/examples/conf.yaml"));
+    init_log();
+    log::info!("config & log init success!");
+    // todo thread pool
+    // GLOBAL_THREAD_POOL.init();
+    // log::info!("thread pool init success!");
+    let master = Master {
+        default_page_name: DEFAULT_NAME.to_string(),
+        pages: Arc::new(Default::default()),
+        databases: Default::default(),
+        create_time,
+    };
+    let master_arc = Arc::new(master);
+    // 创建数据根目录
+    match Dir::mk_uncheck(Paths::data_path()) {
+        Ok(_file) => log::info!("load data path success!"),
+        Err(err) => panic!("create data path failed! error is {}", err),
+    }
+    let bootstrap_file_path = Paths::bootstrap_filepath();
+    if !Filer::exist(bootstrap_file_path.clone()) {
+        // 创建引导文件
+        match Filer::touch(bootstrap_file_path) {
+            Err(err) => panic!("create bootstrap file failed! error is {}", err),
+            _ => {}
+        }
+    }
+    master_arc.clone().init_or_recovery().unwrap();
+    master_arc
+});
+
+pub(super) static GLOBAL_THREAD_POOL: Lazy<Arc<ThreadPool>> = Lazy::new(|| {
+    let config = GLOBAL_CONFIG.read().unwrap();
+    let worker_threads = config.thread_count;
+    log::info!("thread pool intent to start {} threads", worker_threads);
+    Arc::new(ThreadPool::new(worker_threads).unwrap())
+});
 
 /// 数据库
-pub(super) struct Master {
+pub struct Master {
     /// 默认缓存页名称
     default_page_name: String,
     /// 缓存页集合

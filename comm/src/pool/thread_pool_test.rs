@@ -31,7 +31,7 @@ mod thread_pools {
         async fn spawn1(tx: Sender<&str>) -> GeorgeResult<()> {
             thread::sleep(Duration::from_secs(1));
             match tx.send("sending from first handle").await {
-                Err(err) => Err(Errs::strs("send 1", err)),
+                Err(err) => Err(Errs::strs("send first", err)),
                 _ => Ok(()),
             }
         }
@@ -39,7 +39,7 @@ mod thread_pools {
         async fn spawn2(tx: Sender<&str>) -> GeorgeResult<()> {
             thread::sleep(Duration::from_secs(1));
             match tx.send("sending from second handle").await {
-                Err(err) => Err(Errs::strs("send 2", err)),
+                Err(err) => Err(Errs::strs("send second", err)),
                 _ => Ok(()),
             }
         }
@@ -62,7 +62,7 @@ mod thread_pools {
         fn test_1() {
             let thread_pool = ThreadPool::new(10).unwrap();
             let test = Test { thread_pool };
-            let f = test.thread_pool.task_block_on(test.exec());
+            let f = test.thread_pool.clone().task_block_on(test.exec());
             println!("return is {}", f);
         }
     }

@@ -16,23 +16,19 @@ use std::collections::HashMap;
 use std::fs::{read_dir, read_to_string, ReadDir};
 use std::sync::{Arc, RwLock};
 
-use chrono::{Duration, Local, NaiveDateTime};
+use chrono::Duration;
 use log::LevelFilter;
-use once_cell::sync::Lazy;
 
 use comm::errors::{Errs, GeorgeResult};
-use comm::io::dir::DirHandler;
-use comm::io::file::{FilerHandler, FilerWriter};
-use comm::io::Dir;
+use comm::io::file::FilerWriter;
 use comm::io::Filer;
-use comm::Env;
 use logs::LogModule;
 
 use crate::task::rich::Expectation;
 use crate::task::Page;
 use crate::task::{Database, Master};
-use crate::utils::comm::{DEFAULT_COMMENT, DEFAULT_NAME, GEORGE_DB_CONFIG, INDEX_DISK};
-use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
+use crate::utils::comm::{DEFAULT_COMMENT, DEFAULT_NAME, INDEX_DISK};
+use crate::utils::deploy::GLOBAL_CONFIG;
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::store::ContentBytes;
 use crate::utils::Paths;
@@ -585,7 +581,7 @@ impl Master {
 
 impl Master {
     /// 初始化或恢复数据
-    fn init_or_recovery(&self) -> GeorgeResult<()> {
+    pub(crate) fn init_or_recovery(&self) -> GeorgeResult<()> {
         let bootstrap_file = Paths::bootstrap_filepath();
         match read_to_string(bootstrap_file.clone()) {
             Ok(text) => {
@@ -721,41 +717,7 @@ impl Master {
     }
 }
 
-pub(super) static GLOBAL_MASTER: Lazy<Arc<Master>> = Lazy::new(|| {
-    let now: NaiveDateTime = Local::now().naive_local();
-    let create_time = Duration::nanoseconds(now.timestamp_nanos());
-    init_config(config_path());
-    init_log();
-    log::info!("config & log init success!");
-    let master = Master {
-        default_page_name: DEFAULT_NAME.to_string(),
-        pages: Arc::new(Default::default()),
-        databases: Default::default(),
-        create_time,
-    };
-    let master_arc = Arc::new(master);
-    // 创建数据根目录
-    match Dir::mk_uncheck(Paths::data_path()) {
-        Ok(_file) => log::info!("load data path success!"),
-        Err(err) => panic!("create data path failed! error is {}", err),
-    }
-    let bootstrap_file_path = Paths::bootstrap_filepath();
-    if !Filer::exist(bootstrap_file_path.clone()) {
-        // 创建引导文件
-        match Filer::touch(bootstrap_file_path) {
-            Err(err) => panic!("create bootstrap file failed! error is {}", err),
-            _ => {}
-        }
-    }
-    master_arc.clone().init_or_recovery().unwrap();
-    master_arc
-});
-
-fn config_path() -> String {
-    Env::get(GEORGE_DB_CONFIG, "src/examples/conf.yaml")
-}
-
-fn init_log() {
+pub(crate) fn init_log() {
     let module_main = log_module_main();
     let module_record = LogModule {
         name: "exec".to_string(),

@@ -21,12 +21,11 @@ use comm::strings::StringHandler;
 use comm::Strings;
 
 use crate::task::engine::traits::TForm;
-use crate::task::master::GLOBAL_MASTER;
+use crate::task::GLOBAL_MASTER;
 use crate::utils::enums::{IndexType, KeyType};
 
 #[cfg(test)]
 mod master {
-
     #[cfg(test)]
     mod base {
         use crate::task::master_test::{

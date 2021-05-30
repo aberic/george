@@ -22,8 +22,8 @@ use comm::io::Filer;
 use comm::Env;
 
 use crate::utils::comm::{
-    GEORGE_DB_DATA_DIR, GEORGE_DB_LIMIT_OPEN_FILE, GEORGE_DB_LOG_DIR, GEORGE_DB_LOG_FILE_MAX_COUNT,
-    GEORGE_DB_LOG_FILE_MAX_SIZE, GEORGE_DB_LOG_LEVEL, GEORGE_DB_PRODUCTION,
+    GEORGE_DB_DATA_DIR, GEORGE_DB_LOG_DIR, GEORGE_DB_LOG_FILE_MAX_COUNT,
+    GEORGE_DB_LOG_FILE_MAX_SIZE, GEORGE_DB_LOG_LEVEL, GEORGE_DB_PRODUCTION, GEORGE_DB_THREAD_COUNT,
 };
 
 pub const VERSION: [u8; 2] = [0x00, 0x00];
@@ -41,7 +41,7 @@ pub struct Config {
     /// 服务数据存储路径
     pub data_dir: String,
     /// 限制打开文件描述符次数
-    pub limit_open_file: u16,
+    pub thread_count: usize,
     /// 日志文件目录
     pub log_dir: String,
     /// 日志级别(debug/info/warn/Error/panic/fatal)
@@ -60,8 +60,8 @@ impl Config {
         self.data_dir.clone()
     }
     /// 限制打开文件描述符次数
-    pub fn limit_open_file(&self) -> u16 {
-        self.limit_open_file
+    pub fn limit_open_file(&self) -> usize {
+        self.thread_count
     }
     /// 日志文件目录
     pub fn log_dir(&self) -> String {
@@ -88,7 +88,7 @@ impl Config {
 pub static GLOBAL_CONFIG: Lazy<RwLock<Config>> = Lazy::new(|| {
     let config = Config {
         data_dir: "db/src/test/george".to_string(),
-        limit_open_file: 100,
+        thread_count: 100,
         log_dir: "src/test".to_string(),
         log_level: "debug".to_string(),
         log_file_max_size: 1024,
@@ -98,7 +98,7 @@ pub static GLOBAL_CONFIG: Lazy<RwLock<Config>> = Lazy::new(|| {
     RwLock::new(config)
 });
 
-pub fn init_config(filepath: String) {
+pub(crate) fn init_config(filepath: String) {
     match Filer::read(filepath.clone()) {
         Ok(config_yaml_str_res) => {
             let conf: Conf;
@@ -113,12 +113,10 @@ pub fn init_config(filepath: String) {
             }
             let mut config = GLOBAL_CONFIG.write().unwrap();
             config.data_dir = config_value(GEORGE_DB_DATA_DIR, &conf.conf.data_dir);
-            config.limit_open_file = config_value(
-                GEORGE_DB_LIMIT_OPEN_FILE,
-                &conf.conf.limit_open_file.to_string(),
-            )
-            .parse::<u16>()
-            .expect("config GEORGE_DB_LIMIT_OPEN_FILE type error");
+            config.thread_count =
+                config_value(GEORGE_DB_THREAD_COUNT, &conf.conf.thread_count.to_string())
+                    .parse::<usize>()
+                    .expect("config GEORGE_DB_THREAD_COUNT type error");
             config.log_dir = config_value(GEORGE_DB_LOG_DIR, &conf.conf.log_dir);
             config.log_file_max_size = config_value(
                 GEORGE_DB_LOG_FILE_MAX_SIZE,
@@ -156,7 +154,7 @@ fn config_value(env_name: &str, default: &str) -> String {
 fn config_default(env_name: &str) -> String {
     if env_name.eq(GEORGE_DB_DATA_DIR) {
         String::from("/var/lib/db")
-    } else if env_name.eq(GEORGE_DB_LIMIT_OPEN_FILE) {
+    } else if env_name.eq(GEORGE_DB_THREAD_COUNT) {
         String::from("100")
     } else if env_name.eq(GEORGE_DB_LOG_DIR) {
         String::from("/var/lib/db/log")

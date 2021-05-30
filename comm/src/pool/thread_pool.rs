@@ -12,21 +12,31 @@
  * limitations under the License.
  */
 
-use crate::errors::{Errs, GeorgeResult};
-use crate::pool::ThreadPool;
 use std::future::Future;
+use std::sync::Arc;
+
 use tokio::task::JoinHandle;
 
+use crate::errors::{Errs, GeorgeResult};
+use crate::pool::ThreadPool;
+
 impl ThreadPool {
-    pub fn new(worker_threads: usize) -> GeorgeResult<ThreadPool> {
+    pub fn new(mut worker_threads: usize) -> GeorgeResult<ThreadPool> {
+        if worker_threads > 1000 {
+            worker_threads = 1000;
+        }
         let mut build = tokio::runtime::Builder::new_multi_thread();
         build.worker_threads(worker_threads);
         build.enable_all();
         match build.build() {
-            Ok(runtime) => Ok(ThreadPool { runtime }),
+            Ok(runtime) => Ok(ThreadPool {
+                runtime: Arc::new(runtime),
+            }),
             Err(err) => Err(Errs::strs("runtime new", err)),
         }
     }
+
+    pub fn init(&self) {}
 
     pub fn spawn<T>(&self, task: T) -> JoinHandle<T::Output>
     where
