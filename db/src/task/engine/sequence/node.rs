@@ -18,6 +18,7 @@ use comm::errors::{Errs, GeorgeResult};
 use comm::vectors::VectorHandler;
 use comm::Vector;
 
+use crate::task::engine;
 use crate::task::engine::sequence::Node;
 use crate::task::engine::traits::{TForm, TNode, TSeed};
 use crate::task::engine::DataReal;
@@ -241,10 +242,7 @@ impl Node {
             // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
             let res = self.read(key_start, 12)?;
             let (valid, value_bytes) =
-                self.form
-                    .read()
-                    .unwrap()
-                    .check(conditions.clone(), delete, res)?;
+                engine::check(self.form.clone(), conditions.clone(), delete, res)?;
             if valid {
                 if skip <= 0 {
                     limit -= 1;
@@ -310,10 +308,7 @@ impl Node {
             // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
             let res = self.read(key_end, 12)?;
             let (valid, value_bytes) =
-                self.form
-                    .read()
-                    .unwrap()
-                    .check(conditions.clone(), delete, res)?;
+                engine::check(self.form.clone(), conditions.clone(), delete, res)?;
             if valid {
                 if skip <= 0 {
                     limit -= 1;

@@ -73,7 +73,7 @@ impl Filed {
         self.exec.write().unwrap().append(content)
     }
 
-    fn filepath(&self) -> String {
+    pub fn filepath(&self) -> String {
         self.filepath.clone()
     }
 

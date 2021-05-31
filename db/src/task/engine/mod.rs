@@ -12,12 +12,15 @@
  * limitations under the License.
  */
 
+use crate::task::engine::traits::TForm;
+use crate::task::rich::Condition;
 use comm::errors::{Errs, GeorgeResult};
 use comm::json::JsonHandler;
 use comm::vectors::VectorHandler;
 use comm::Json;
 use comm::Vector;
 use serde::{Deserialize, Serialize};
+use std::sync::{Arc, RwLock};
 
 pub(super) mod block;
 pub(super) mod disk;
@@ -26,6 +29,30 @@ pub(super) mod memory;
 pub(super) mod merkle;
 pub(super) mod sequence;
 pub(super) mod traits;
+
+/// 检查值有效性
+fn check(
+    form: Arc<RwLock<dyn TForm>>,
+    conditions: Vec<Condition>,
+    delete: bool,
+    ledger_info_index: Vec<u8>,
+) -> GeorgeResult<(bool, Vec<u8>)> {
+    if Vector::is_empty(ledger_info_index.clone()) {
+        Ok((false, vec![]))
+    } else {
+        let form_r = form.read().unwrap();
+        let real = DataReal::from(form_r.read_content_by_info(ledger_info_index)?)?;
+        let value_bytes = real.value();
+        if Condition::validate(conditions.clone(), value_bytes.clone()) {
+            if delete {
+                form_r.rm(real.key(), real.value())?;
+            }
+            Ok((true, value_bytes))
+        } else {
+            Ok((false, vec![]))
+        }
+    }
+}
 
 /// 真实存储数据
 ///

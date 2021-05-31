@@ -169,27 +169,24 @@ pub(crate) struct Ledger {
     pub(crate) create_time: Duration,
     /// 文件信息
     pub(crate) metadata: Metadata,
-    pub(crate) filepath: String,
-    pub(crate) filepath_light: String,
-    pub(crate) filepath_merkle_light: String,
     /// 区块全数据记录文件
-    ///
-    /// 根据文件路径获取该文件追加写入的写对象
     ///
     /// 需要借助对象包裹，以便更新file，避免self为mut
     pub(crate) filer: Filed,
     /// 区块Header数据记录文件
     ///
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
     /// 需要借助对象包裹，以便更新file，避免self为mut
     pub(crate) filer_light: Filed,
     /// 区块Header数据以merkle形式进行存储的记录文件
     ///
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
     /// 需要借助对象包裹，以便更新file，避免self为mut
     pub(crate) filer_merkle_light: Filed,
+    /// 区块高度存储索引，根据块高查询区块
+    pub(crate) index_block_height: Arc<dyn TIndex>,
+    /// 区块hash存储索引，根据块hash查询区块
+    pub(crate) index_block_hash: Arc<dyn TIndex>,
+    /// 交易hash存储索引，根据交易hash查询区块、查询交易
+    pub(crate) index_tx_hash: Arc<dyn TIndex>,
     /// 索引集合
     pub(crate) indexes: Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>,
 }

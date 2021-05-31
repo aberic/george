@@ -28,7 +28,7 @@ use crate::task::engine::traits::{TForm, TNode, TSeed};
 use crate::task::engine::{DataReal, RootBytes};
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
-use crate::task::View;
+use crate::task::{engine, View};
 use crate::utils::comm::{Distance, IndexKey};
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::writer::Filed;
@@ -1151,11 +1151,12 @@ impl Node {
         // record存储固定长度的数据，长度为20，即view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
         let res = self.record_read(record_seek, 20)?;
         let view_info_index = Vector::sub(res.clone(), 0, 12)?;
-        let (valid, value_bytes) =
-            self.form
-                .read()
-                .unwrap()
-                .check(conditions.clone(), delete, view_info_index)?;
+        let (valid, value_bytes) = engine::check(
+            self.form.clone(),
+            conditions.clone(),
+            delete,
+            view_info_index,
+        )?;
         if valid {
             if skip <= 0 {
                 limit -= 1;

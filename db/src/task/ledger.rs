@@ -14,13 +14,12 @@
 //
 // use std::collections::HashMap;
 // use std::fs::{read_dir, ReadDir};
-// use std::sync::{mpsc, Arc, RwLock};
-// use std::thread;
+// use std::sync::{Arc, RwLock};
 //
 // use chrono::{Duration, Local, NaiveDateTime};
+// use tokio::sync::mpsc::Sender;
 //
-// use comm::errors::children::IndexExistError;
-// use comm::errors::{Errs, GeorgeError, GeorgeResult};
+// use comm::errors::{Errs, GeorgeResult};
 // use comm::io::file::FilerReader;
 // use comm::io::Filer;
 // use comm::strings::StringHandler;
@@ -28,15 +27,16 @@
 // use comm::Strings;
 // use comm::Trans;
 // use comm::Vector;
+// use protocols::impls::chain::block::Block;
 //
 // use crate::task::engine::traits::{Pigeonhole, TForm, TIndex, TSeed};
 // use crate::task::engine::DataReal;
 // use crate::task::rich::{Condition, Expectation, Selector};
-// use crate::task::Index as IndexDefault;
 // use crate::task::Ledger;
 // use crate::task::Seed;
+// use crate::task::{Index as IndexDefault, GLOBAL_THREAD_POOL};
 // use crate::utils::comm::{
-//     IndexKey, INDEX_BLOCK_HASH, INDEX_BLOCK_HEIGHT, INDEX_BLOCK_TX_HASH, INDEX_DISK, INDEX_TX_HASH,
+//     IndexKey, INDEX_BLOCK_HASH, INDEX_BLOCK_HEIGHT, INDEX_DISK, INDEX_INCREMENT, INDEX_TX_HASH,
 // };
 // use crate::utils::enums::{IndexType, KeyType};
 // use crate::utils::store::{ContentBytes, Metadata, HD};
@@ -44,12 +44,6 @@
 // use crate::utils::Paths;
 //
 // /// 新建视图
-// ///
-// /// 具体传参参考如下定义：<p><p>
-// ///
-// /// ###Params
-// ///
-// /// mem 是否为内存视图
 // fn new_ledger(database_name: String, name: String) -> GeorgeResult<Ledger> {
 //     let now: NaiveDateTime = Local::now().naive_local();
 //     let create_time = Duration::nanoseconds(now.timestamp_nanos());
@@ -57,33 +51,23 @@
 //     let filepath_light = Paths::ledger_light_filepath(database_name.clone(), name.clone());
 //     let filepath_merkle_light =
 //         Paths::ledger_merkle_light_filepath(database_name.clone(), name.clone());
-//     let filer = Filed::create(filepath.clone())?;
-//     let filer_light = Filed::create(filepath_light.clone())?;
-//     let filer_merkle_light = Filed::create(filepath_merkle_light.clone())?;
 //     let metadata = Metadata::ledger();
-//     let ledger = Ledger {
+//     Ok(Ledger {
 //         database_name,
 //         name,
 //         create_time,
 //         metadata,
-//         filepath,
-//         filepath_light,
-//         filepath_merkle_light,
-//         filer,
-//         filer_light,
-//         filer_merkle_light,
+//         filer: Filed::create(filepath)?,
+//         filer_light: Filed::create(filepath_light)?,
+//         filer_merkle_light: Filed::create(filepath_merkle_light)?,
+//         index_block_height: Arc::new(()),
+//         index_block_hash: Arc::new(()),
+//         index_tx_hash: Arc::new(()),
 //         indexes: Default::default(),
-//     };
-//     Ok(ledger)
+//     })
 // }
 //
 // /// 新建视图
-// ///
-// /// 具体传参参考如下定义：<p><p>
-// ///
-// /// ###Params
-// ///
-// /// mem 是否为内存视图
 // fn mock_new_ledger(database_name: String, name: String) -> GeorgeResult<Ledger> {
 //     let now: NaiveDateTime = Local::now().naive_local();
 //     let create_time = Duration::nanoseconds(now.timestamp_nanos());
@@ -91,24 +75,20 @@
 //     let filepath_light = Paths::ledger_light_filepath(database_name.clone(), name.clone());
 //     let filepath_merkle_light =
 //         Paths::ledger_merkle_light_filepath(database_name.clone(), name.clone());
-//     let filer = Filed::create(filepath.clone())?;
-//     let filer_light = Filed::create(filepath_light.clone())?;
-//     let filer_merkle_light = Filed::create(filepath_merkle_light.clone())?;
 //     let metadata = Metadata::ledger();
-//     let ledger = Ledger {
+//     Ok(Ledger {
 //         database_name,
 //         name,
 //         create_time,
 //         metadata,
-//         filepath,
-//         filepath_light,
-//         filepath_merkle_light,
-//         filer,
-//         filer_light,
-//         filer_merkle_light,
+//         filer: Filed::create(filepath)?,
+//         filer_light: Filed::create(filepath_light)?,
+//         filer_merkle_light: Filed::create(filepath_merkle_light)?,
+//         index_block_height: Arc::new(()),
+//         index_block_hash: Arc::new(()),
+//         index_tx_hash: Arc::new(()),
 //         indexes: Default::default(),
-//     };
-//     Ok(ledger)
+//     })
 // }
 //
 // impl Ledger {
@@ -116,40 +96,38 @@
 //         let ledger_new = new_ledger(database_name, name)?;
 //         let ledger = Arc::new(RwLock::new(ledger_new));
 //         ledger.clone().read().unwrap().init()?;
-//         // 区块世界状态存储索引
-//         ledger.read().unwrap().create_index(
-//             ledger.clone(),
-//             INDEX_DISK.to_string(),
-//             IndexType::Disk,
-//             KeyType::String,
-//             true,
-//             true,
-//             false,
-//         )?;
-//         // 区块高度存储索引，根据块高查询区块
-//         ledger.read().unwrap().create_index(
+//         let mut ledger_w = ledger.write().unwrap();
+//         ledger_w.set_index_block_height(IndexDefault::create(
 //             ledger.clone(),
 //             INDEX_BLOCK_HEIGHT.to_string(),
 //             IndexType::Sequence,
-//             KeyType::UInt,
 //             false,
 //             true,
 //             false,
-//         )?;
-//         // 区块hash存储索引，根据块hash查询区块
-//         ledger.read().unwrap().create_index(
+//             KeyType::UInt,
+//         )?);
+//         ledger_w.set_index_block_hash(IndexDefault::create(
 //             ledger.clone(),
 //             INDEX_BLOCK_HASH.to_string(),
 //             IndexType::Disk,
-//             KeyType::String,
-//             true,
+//             false,
 //             true,
 //             false,
-//         )?;
-//         // 交易hash存储索引，根据交易hash查询区块、查询交易
-//         ledger.read().unwrap().create_index(
+//             KeyType::String,
+//         )?);
+//         ledger_w.set_index_tx_hash(IndexDefault::create(
 //             ledger.clone(),
 //             INDEX_TX_HASH.to_string(),
+//             IndexType::Disk,
+//             false,
+//             true,
+//             false,
+//             KeyType::String,
+//         )?);
+//         // 区块世界状态存储索引
+//         ledger_w.create_index(
+//             ledger.clone(),
+//             INDEX_DISK.to_string(),
 //             IndexType::Disk,
 //             KeyType::String,
 //             true,
@@ -181,18 +159,6 @@
 //         self.metadata.clone()
 //     }
 //
-//     fn filepath(&self) -> String {
-//         self.filepath.clone()
-//     }
-//
-//     fn filepath_light(&self) -> String {
-//         self.filepath_light.clone()
-//     }
-//
-//     fn filepath_merkle_light(&self) -> String {
-//         self.filepath_merkle_light.clone()
-//     }
-//
 //     /// 索引集合
 //     fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>> {
 //         self.indexes.clone()
@@ -209,6 +175,18 @@
 //     /// 文件字节信息
 //     fn metadata_bytes(&self) -> Vec<u8> {
 //         self.metadata.bytes()
+//     }
+//
+//     fn set_index_block_height(&mut self, index_block_height: Arc<dyn TIndex>) {
+//         self.index_block_height = index_block_height
+//     }
+//
+//     fn set_index_block_hash(&mut self, index_block_hash: Arc<dyn TIndex>) {
+//         self.index_block_hash = index_block_hash
+//     }
+//
+//     fn set_index_tx_hash(&mut self, index_tx_hash: Arc<dyn TIndex>) {
+//         self.index_tx_hash = index_tx_hash
 //     }
 //
 //     /// 创建索引
@@ -232,7 +210,7 @@
 //         null: bool,
 //     ) -> GeorgeResult<()> {
 //         if self.exist_index(index_name.clone()) {
-//             return Err(GeorgeError::from(IndexExistError));
+//             return Err(Errs::index_exist_error());
 //         }
 //         self.index_map().write().unwrap().insert(
 //             index_name.clone(),
@@ -243,7 +221,7 @@
 //         Ok(())
 //     }
 //
-//     /// 根据文件路径获取该文件追加写入的写对象
+//     /// 追加写入的写对象
 //     ///
 //     /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
 //     ///
@@ -254,12 +232,62 @@
 //         self.filer.append(content)
 //     }
 //
+//     /// 读取`start`起始且持续`last`长度的数据
 //     fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
 //         self.filer.read(start, last)
 //     }
 //
+//     /// 写入的写对象到指定坐标
+//     ///
+//     /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
 //     fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
 //         self.filer.write(seek, content)
+//     }
+//
+//     /// 追加写入的写对象
+//     ///
+//     /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
+//     ///
+//     /// #Return
+//     ///
+//     /// seek_end_before 写之前文件字节数据长度
+//     fn append_light(&self, content: Vec<u8>) -> GeorgeResult<u64> {
+//         self.filer_light.append(content)
+//     }
+//
+//     /// 读取`start`起始且持续`last`长度的数据
+//     fn read_light(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
+//         self.filer_light.read(start, last)
+//     }
+//
+//     /// 写入的写对象到指定坐标
+//     ///
+//     /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
+//     fn write_light(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
+//         self.filer_light.write(seek, content)
+//     }
+//
+//     /// 追加写入的写对象
+//     ///
+//     /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
+//     ///
+//     /// #Return
+//     ///
+//     /// seek_end_before 写之前文件字节数据长度
+//     fn append_merkle_light(&self, content: Vec<u8>) -> GeorgeResult<u64> {
+//         self.filer_merkle_light.append(content)
+//     }
+//
+//     /// 读取`start`起始且持续`last`长度的数据
+//     fn read_merkle_light(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
+//         self.filer_merkle_light.read(start, last)
+//     }
+//
+//     /// 写入的写对象到指定坐标
+//     ///
+//     /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
+//     fn write_merkle_light(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
+//         self.filer_merkle_light.write(seek, content)
 //     }
 // }
 //
@@ -286,7 +314,7 @@
 //         Ok(ledger_info_index)
 //     }
 //
-//     fn read_content(&self, version: u16, data_len: u32, seek: u64) -> GeorgeResult<Vec<u8>> {
+//     fn read_content(&self, _version: u16, data_len: u32, seek: u64) -> GeorgeResult<Vec<u8>> {
 //         Filer::read_sub(filepath, seek, data_len as usize)
 //     }
 //
@@ -295,30 +323,29 @@
 //         let data_len = Trans::bytes_2_u32(Vector::sub(ledger_info_index.clone(), 2, 6)?)?;
 //         // 读取ledger偏移量(6字节)
 //         let seek = Trans::bytes_2_u48(Vector::sub(ledger_info_index.clone(), 6, 12)?)?;
-//         Filer::read_sub(self.filepath(), seek, data_len as usize)
+//         Filer::read_sub(self.filer.filepath(), seek, data_len as usize)
 //     }
 //
-//     /// 检查值有效性
-//     fn check(
-//         &self,
-//         conditions: Vec<Condition>,
-//         delete: bool,
-//         ledger_info_index: Vec<u8>,
-//     ) -> GeorgeResult<(bool, Vec<u8>)> {
-//         if Vector::is_empty(ledger_info_index.clone()) {
-//             Ok((false, vec![]))
-//         } else {
-//             let real = DataReal::from(self.read_content_by_info(ledger_info_index)?)?;
-//             let value_bytes = real.value();
-//             if Condition::validate(conditions.clone(), value_bytes.clone()) {
-//                 if delete {
-//                     self.remove(real.key(), real.value())?;
-//                 }
-//                 Ok((true, value_bytes))
-//             } else {
-//                 Ok((false, vec![]))
-//             }
-//         }
+//     fn rm(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
+//         self.remove(key, value)
+//     }
+// }
+//
+// /// db for block
+// impl Ledger {
+//     /// 插入数据，如果存在则返回已存在<p><p>
+//     ///
+//     /// ###Params
+//     ///
+//     /// key string
+//     ///
+//     /// value 当前结果value信息<p><p>
+//     ///
+//     /// ###Return
+//     ///
+//     /// IndexResult<()>
+//     pub(crate) fn put(&self, block: Block) -> GeorgeResult<()> {
+//         GLOBAL_THREAD_POOL.task_block_on(self.save(key, value, false))
 //     }
 // }
 //
@@ -336,7 +363,7 @@
 //     ///
 //     /// IndexResult<()>
 //     pub(crate) fn put(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-//         self.save(key, value, false)
+//         GLOBAL_THREAD_POOL.task_block_on(self.save(key, value, false))
 //     }
 //
 //     /// 插入数据，无论存在与否都会插入或更新数据<p><p>
@@ -351,7 +378,7 @@
 //     ///
 //     /// IndexResult<()>
 //     pub(crate) fn set(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-//         self.save(key, value, true)
+//         GLOBAL_THREAD_POOL.task_block_on(self.save(key, value, true))
 //     }
 //
 //     /// 获取数据，返回存储对象<p><p>
@@ -381,7 +408,7 @@
 //     /// GeorgeResult<()>
 //     pub(crate) fn remove(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
 //         let real = self.index(INDEX_DISK)?.get(key.clone())?;
-//         self.del(key, real.increment, value)
+//         GLOBAL_THREAD_POOL.task_block_on(self.del(key, real.increment, value))
 //     }
 //
 //     /// 条件检索
@@ -413,43 +440,102 @@
 //     /// ###Return
 //     ///
 //     /// IndexResult<()>
-//     fn save(&self, key: String, value: Vec<u8>, force: bool) -> GeorgeResult<()> {
+//     async fn save(&self, key: String, value: Vec<u8>, force: bool) -> GeorgeResult<()> {
 //         let seed = Seed::create(Arc::new(self.clone()), key.clone(), value.clone());
 //         let mut receives = Vec::new();
 //         for (index_name, index) in self.index_map().read().unwrap().iter() {
-//             let (sender, receive) = mpsc::channel();
+//             let (sender, receive) = tokio::sync::mpsc::channel(32);
 //             receives.push(receive);
-//             let index_name_clone = index_name.clone();
-//             let index_clone = index.clone();
-//             let key_clone = key.clone();
-//             let value_clone = value.clone();
-//             let seed_clone = seed.clone();
-//             thread::spawn(move || match index_name_clone.as_str() {
-//                 INDEX_DISK => sender.send(index_clone.put(key_clone, seed_clone, force)),
-//                 INDEX_BLOCK_HASH => sender.send(index_clone.put(key_clone, seed_clone, force)),
-//                 INDEX_BLOCK_HEIGHT => sender.send(index_clone.put(key_clone, seed_clone, force)),
-//                 INDEX_TX_HASH => sender.send(index_clone.put(key_clone, seed_clone, force)),
-//                 _ => match IndexKey::fetch(index_name_clone, value_clone) {
-//                     Ok(res) => sender.send(index_clone.put(res, seed_clone, force)),
-//                     Err(err) => {
-//                         log::debug!("key fetch error: {}", err);
-//                         sender.send(Ok(()))
-//                     }
-//                 },
-//             });
+//             GLOBAL_THREAD_POOL.spawn(self.clone().index_put_exec(
+//                 index_name.clone(),
+//                 index.clone(),
+//                 key.clone(),
+//                 value.clone(),
+//                 seed.clone(),
+//                 force,
+//                 sender,
+//             ));
 //         }
-//         for receive in receives.iter() {
-//             let res = receive.recv();
-//             match res {
-//                 Ok(gr) => match gr {
+//         for receive in receives.iter_mut() {
+//             let message = receive.recv().await;
+//             match message {
+//                 Some(res) => match res {
 //                     Err(err) => return Err(err),
 //                     _ => {}
 //                 },
-//                 Err(err) => return Err(Errs::string(err.to_string())),
+//                 _ => {}
 //             }
 //         }
 //         let seed_w = seed.write().unwrap();
 //         seed_w.save()
+//     }
+//
+//     async fn index_put_exec(
+//         self,
+//         index_name: String,
+//         index: Arc<dyn TIndex>,
+//         key: String,
+//         value: Vec<u8>,
+//         seed: Arc<RwLock<Seed>>,
+//         force: bool,
+//         sender: Sender<GeorgeResult<()>>,
+//     ) {
+//         match index_name.as_str() {
+//             INDEX_DISK => {
+//                 self.send_put(index_name, index, key, seed, force, sender)
+//                     .await
+//             }
+//             INDEX_INCREMENT => {
+//                 self.send_put(index_name, index, key, seed, force, sender)
+//                     .await
+//             }
+//             _ => match IndexKey::fetch(index_name.clone(), value) {
+//                 Ok(res) => {
+//                     self.send_put(index_name, index, res, seed, force, sender)
+//                         .await
+//                 }
+//                 Err(err) => {
+//                     log::warn!("key fetch error: {}", err);
+//                     match sender.send(Ok(())).await {
+//                         Err(err) => {
+//                             log::error!(
+//                                 "sender send put error in database {} ledger {} index {} while exec key {} {}",
+//                                 self.database_name(),
+//                                 self.name(),
+//                                 index_name,
+//                                 key,
+//                                 err
+//                             );
+//                         }
+//                         _ => {}
+//                     }
+//                 }
+//             },
+//         }
+//     }
+//
+//     async fn send_put(
+//         self,
+//         index_name: String,
+//         index: Arc<dyn TIndex>,
+//         key: String,
+//         seed: Arc<RwLock<Seed>>,
+//         force: bool,
+//         sender: Sender<GeorgeResult<()>>,
+//     ) {
+//         match sender.send(index.put(key.clone(), seed, force)).await {
+//             Err(err) => {
+//                 log::error!(
+//                     "sender send put error in database {} ledger {} index {} while exec key {} {}",
+//                     self.database_name(),
+//                     self.name(),
+//                     index_name,
+//                     key,
+//                     err
+//                 );
+//             }
+//             _ => {}
+//         }
 //     }
 //
 //     /// 插入数据业务方法<p><p>
@@ -465,44 +551,95 @@
 //     /// ###Return
 //     ///
 //     /// IndexResult<()>
-//     fn del(&self, key: String, increment: u64, value: Vec<u8>) -> GeorgeResult<()> {
-//         let seed = Seed::create_cus(Arc::new(self.clone()), key.clone(), increment, value.clone());
+//     async fn del(&self, key: String, increment: u64, value: Vec<u8>) -> GeorgeResult<()> {
+//         let seed = Seed::create_cus(
+//             Arc::new(self.clone()),
+//             key.clone(),
+//             increment,
+//             value.clone(),
+//         );
 //         let mut receives = Vec::new();
 //         for (index_name, index) in self.index_map().read().unwrap().iter() {
-//             let (sender, receive) = mpsc::channel();
+//             let (sender, receive) = tokio::sync::mpsc::channel(32);
 //             receives.push(receive);
-//             let index_name_clone = index_name.clone();
-//             let index_clone = index.clone();
-//             let key_clone = key.clone();
-//             let value_clone = value.clone();
-//             let seed_clone = seed.clone();
-//             thread::spawn(move || {
-//                 log::debug!("thread del index {}", index_name_clone);
-//                 match index_name_clone.as_str() {
-//                     INDEX_DISK => sender.send(index_clone.del(key_clone, seed_clone)),
-//                     INDEX_INCREMENT => sender.send(index_clone.del(key_clone, seed_clone)),
-//                     _ => match IndexKey::fetch(index_name_clone, value_clone) {
-//                         Ok(res) => sender.send(index_clone.del(res, seed_clone)),
-//                         Err(err) => {
-//                             log::debug!("key fetch error: {}", err);
-//                             sender.send(Ok(()))
-//                         }
-//                     },
-//                 }
-//             });
+//             GLOBAL_THREAD_POOL.spawn(self.clone().index_del_exec(
+//                 index_name.clone(),
+//                 index.clone(),
+//                 key.clone(),
+//                 value.clone(),
+//                 seed.clone(),
+//                 sender,
+//             ));
 //         }
-//         for receive in receives.iter() {
-//             let res = receive.recv();
-//             match res {
-//                 Ok(gr) => match gr {
+//         for receive in receives.iter_mut() {
+//             let message = receive.recv().await;
+//             match message {
+//                 Some(res) => match res {
 //                     Err(err) => return Err(err),
 //                     _ => {}
 //                 },
-//                 Err(err) => return Err(Errs::string(err.to_string())),
+//                 _ => {}
 //             }
 //         }
 //         let seed_w = seed.write().unwrap();
 //         seed_w.remove()
+//     }
+//
+//     async fn index_del_exec(
+//         self,
+//         index_name: String,
+//         index: Arc<dyn TIndex>,
+//         key: String,
+//         value: Vec<u8>,
+//         seed: Arc<RwLock<Seed>>,
+//         sender: Sender<GeorgeResult<()>>,
+//     ) {
+//         match index_name.as_str() {
+//             INDEX_DISK => self.send_del(index_name, index, key, seed, sender).await,
+//             INDEX_INCREMENT => self.send_del(index_name, index, key, seed, sender).await,
+//             _ => match IndexKey::fetch(index_name.clone(), value) {
+//                 Ok(res) => self.send_del(index_name, index, res, seed, sender).await,
+//                 Err(err) => {
+//                     log::warn!("key fetch error: {}", err);
+//                     match sender.send(Ok(())).await {
+//                         Err(err) => {
+//                             log::error!(
+//                                 "sender send del error in database {} ledger {} index {} while exec key {} {}",
+//                                 self.database_name(),
+//                                 self.name(),
+//                                 index_name,
+//                                 key,
+//                                 err
+//                             );
+//                         }
+//                         _ => {}
+//                     }
+//                 }
+//             },
+//         }
+//     }
+//
+//     async fn send_del(
+//         self,
+//         index_name: String,
+//         index: Arc<dyn TIndex>,
+//         key: String,
+//         seed: Arc<RwLock<Seed>>,
+//         sender: Sender<GeorgeResult<()>>,
+//     ) {
+//         match sender.send(index.del(key.clone(), seed)).await {
+//             Err(err) => {
+//                 log::error!(
+//                     "sender send del error in database {} ledger {} index {} while exec key {} {}",
+//                     self.database_name(),
+//                     self.name(),
+//                     index_name,
+//                     key,
+//                     err
+//                 );
+//             }
+//             _ => {}
+//         }
 //     }
 // }
 //
@@ -510,10 +647,9 @@
 //     /// 生成文件描述
 //     fn description(&self) -> Vec<u8> {
 //         hex::encode(format!(
-//             "{}:#?{}:#?{}",
+//             "{}:#?{}",
 //             self.name(),
 //             self.create_time().num_nanoseconds().unwrap().to_string(),
-//             self.pigeonhole().to_string()
 //         ))
 //         .into_bytes()
 //     }
@@ -532,39 +668,50 @@
 //                 let create_time = Duration::nanoseconds(
 //                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
 //                 );
-//                 let pigeonhole = Pigeonhole::from_string(split.next().unwrap().to_string())?;
 //                 let filepath = Paths::ledger_filepath(database_name.clone(), name.clone());
-//                 let ledger = Ledger {
+//                 let filepath_light =
+//                     Paths::ledger_light_filepath(database_name.clone(), name.clone());
+//                 let filepath_merkle_light =
+//                     Paths::ledger_merkle_light_filepath(database_name.clone(), name.clone());
+//                 let ledger_new = Ledger {
 //                     database_name: database_name.clone(),
 //                     name,
 //                     create_time,
 //                     metadata: hd.metadata(),
 //                     filer: Filed::recovery(filepath)?,
+//                     filer_light: Filed::recovery(filepath_light)?,
+//                     filer_merkle_light: Filed::recovery(filepath_merkle_light)?,
+//                     index_block_height: Arc::new(()),
+//                     index_block_hash: Arc::new(()),
+//                     index_tx_hash: Arc::new(()),
 //                     indexes: Arc::new(Default::default()),
-//                     pigeonhole,
 //                 };
 //                 log::info!(
 //                     "recovery ledger {} from database {}",
-//                     ledger.name(),
+//                     ledger_new.name(),
 //                     database_name,
 //                 );
-//                 let ledger_bak = Arc::new(RwLock::new(ledger.clone()));
-//                 match read_dir(Paths::ledger_path(database_name, ledger.name())) {
+//                 let ledger = Arc::new(RwLock::new(ledger_new.clone()));
+//                 match read_dir(Paths::ledger_path(database_name, ledger_new.name())) {
 //                     // 恢复indexes数据
 //                     Ok(paths) => {
-//                         ledger_bak
+//                         // todo 先恢复默认索引
+//                         ledger
 //                             .read()
 //                             .unwrap()
-//                             .recovery_indexes(ledger_bak.clone(), paths)?;
+//                             .recovery_indexes(ledger.clone(), paths)?;
 //                         log::debug!(
-//                             "ledger [db={}, name={}, create_time={}, pigeonhole={:#?}, {:#?}]",
-//                             ledger.name(),
-//                             ledger.name(),
-//                             ledger.create_time().num_nanoseconds().unwrap().to_string(),
-//                             ledger.pigeonhole(),
+//                             "ledger [db={}, name={}, create_time={}, {:#?}]",
+//                             ledger_new.database_name(),
+//                             ledger_new.name(),
+//                             ledger_new
+//                                 .create_time()
+//                                 .num_nanoseconds()
+//                                 .unwrap()
+//                                 .to_string(),
 //                             hd.metadata()
 //                         );
-//                         Ok((ledger.name(), ledger_bak))
+//                         Ok((ledger_new.name(), ledger))
 //                     }
 //                     Err(err) => Err(Errs::strs("recovery ledger read dir", err)),
 //                 }
@@ -575,7 +722,7 @@
 //
 //     /// 恢复indexes数据
 //     fn recovery_indexes(&self, ledger: Arc<RwLock<Ledger>>, paths: ReadDir) -> GeorgeResult<()> {
-//         // 遍历ledger目录下文件
+//         // 遍历ledger目录下文件 todo 过滤默认索引
 //         for path in paths {
 //             match path {
 //                 // 所有目录文件被默认为index根目录

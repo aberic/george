@@ -29,8 +29,7 @@ use comm::Trans;
 use comm::Vector;
 
 use crate::task::engine::traits::{Pigeonhole, TForm, TIndex, TSeed};
-use crate::task::engine::DataReal;
-use crate::task::rich::{Condition, Expectation, Selector};
+use crate::task::rich::{Expectation, Selector};
 use crate::task::Seed;
 use crate::task::View;
 use crate::task::{Index as IndexDefault, GLOBAL_THREAD_POOL};
@@ -41,12 +40,6 @@ use crate::utils::writer::Filed;
 use crate::utils::Paths;
 
 /// 新建视图
-///
-/// 具体传参参考如下定义：<p><p>
-///
-/// ###Params
-///
-/// mem 是否为内存视图
 fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
@@ -65,12 +58,6 @@ fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
 }
 
 /// 新建视图
-///
-/// 具体传参参考如下定义：<p><p>
-///
-/// ###Params
-///
-/// mem 是否为内存视图
 fn mock_new_view(database_name: String, name: String) -> GeorgeResult<View> {
     let now: NaiveDateTime = Local::now().naive_local();
     let create_time = Duration::nanoseconds(now.timestamp_nanos());
@@ -287,7 +274,7 @@ impl View {
         Ok(())
     }
 
-    /// 根据文件路径获取该文件追加写入的写对象
+    /// 追加写入的写对象
     ///
     /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
     ///
@@ -298,10 +285,14 @@ impl View {
         self.filer.append(content)
     }
 
+    /// 读取`start`起始且持续`last`长度的数据
     fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         self.filer.read(start, last)
     }
 
+    /// 写入的写对象到指定坐标
+    ///
+    /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
     fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
         self.filer.write(seek, content)
     }
@@ -351,27 +342,8 @@ impl TForm for View {
         Filer::read_sub(filepath, seek, data_len as usize)
     }
 
-    /// 检查值有效性
-    fn check(
-        &self,
-        conditions: Vec<Condition>,
-        delete: bool,
-        view_info_index: Vec<u8>,
-    ) -> GeorgeResult<(bool, Vec<u8>)> {
-        if Vector::is_empty(view_info_index.clone()) {
-            Ok((false, vec![]))
-        } else {
-            let real = DataReal::from(self.read_content_by_info(view_info_index)?)?;
-            let value_bytes = real.value();
-            if Condition::validate(conditions.clone(), value_bytes.clone()) {
-                if delete {
-                    self.remove(real.key(), real.value())?;
-                }
-                Ok((true, value_bytes))
-            } else {
-                Ok((false, vec![]))
-            }
-        }
+    fn rm(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
+        self.remove(key, value)
     }
 }
 
@@ -721,7 +693,7 @@ impl View {
                             .recovery_indexes(view_bak.clone(), paths)?;
                         log::debug!(
                             "view [db={}, name={}, create_time={}, pigeonhole={:#?}, {:#?}]",
-                            view.name(),
+                            view.database_name(),
                             view.name(),
                             view.create_time().num_nanoseconds().unwrap().to_string(),
                             view.pigeonhole(),

@@ -29,7 +29,7 @@ use crate::task::engine::sequence::Node as NS;
 use crate::task::engine::traits::{TForm, TIndex, TNode, TSeed};
 use crate::task::engine::DataReal;
 use crate::task::rich::{Constraint, Expectation};
-use crate::task::{Index, View};
+use crate::task::Index;
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::store::{ContentBytes, Metadata, HD};
 use crate::utils::writer::Filed;
@@ -430,7 +430,7 @@ impl Index {
     }
 
     /// 通过文件描述恢复结构信息
-    pub(crate) fn recover(view: Arc<RwLock<View>>, hd: HD) -> GeorgeResult<Arc<dyn TIndex>> {
+    pub(crate) fn recover(form: Arc<RwLock<dyn TForm>>, hd: HD) -> GeorgeResult<Arc<dyn TIndex>> {
         let des_bytes = hd.description();
         let description_str = Strings::from_utf8(des_bytes)?;
         match hex::decode(description_str) {
@@ -448,15 +448,15 @@ impl Index {
                 let create_time = Duration::nanoseconds(
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
-                let v_c = view.clone();
+                let v_c = form.clone();
                 let v_r = v_c.read().unwrap();
                 let filepath = Paths::index_filepath(v_r.database_name(), v_r.name(), name.clone());
                 let root: Arc<dyn TNode>;
                 match hd.index_type() {
-                    IndexType::Increment => root = NI::recovery(view.clone(), name.clone())?,
-                    IndexType::Sequence => root = NS::recovery(view.clone(), name.clone())?,
+                    IndexType::Increment => root = NI::recovery(form.clone(), name.clone())?,
+                    IndexType::Sequence => root = NS::recovery(form.clone(), name.clone())?,
                     IndexType::Disk => {
-                        root = ND::recovery(view.clone(), name.clone(), key_type, unique)?
+                        root = ND::recovery(form.clone(), name.clone(), key_type, unique)?
                     }
                     IndexType::Block => root = NB::recovery(name.clone(), key_type),
                     _ => return Err(Errs::str("unsupported engine type")),
@@ -468,7 +468,7 @@ impl Index {
                     v_r.name()
                 );
                 let index = Index {
-                    form: view,
+                    form,
                     name,
                     index_type,
                     primary,

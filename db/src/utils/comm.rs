@@ -38,11 +38,11 @@ pub const DEFAULT_COMMENT: &str = "system default";
 pub const INDEX_DISK: &str = "george_db_index_disk";
 /// 默认自增序列ID索引，不保证连续性，只保证有序性
 pub const INDEX_INCREMENT: &str = "george_db_index_increment";
-/// 默认`Block KV`存储索引
+/// 默认`Block KV`存储索引，区块hash存储索引，根据块hash查询区块
 pub const INDEX_BLOCK_HASH: &str = "george_db_index_block_hash";
-/// 默认`Block Height`存储索引
+/// 默认`Block Height`存储索引，区块高度存储索引，根据块高查询区块
 pub const INDEX_BLOCK_HEIGHT: &str = "george_db_index_block_height";
-/// 默认`Tx KV`存储索引
+/// 默认`Tx KV`存储索引，交易hash存储索引，根据交易hash查询区块、查询交易
 pub const INDEX_TX_HASH: &str = "george_db_index_tx_hash";
 
 /// 数据结果数据类型，正常数据类型

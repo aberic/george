@@ -62,13 +62,7 @@ pub(crate) trait TForm: Send + Sync + Debug {
     /// * view_info_index 数据索引字节数组
     fn read_content_by_info(&self, view_info_index: Vec<u8>) -> GeorgeResult<Vec<u8>>;
 
-    /// 检查值有效性
-    fn check(
-        &self,
-        conditions: Vec<Condition>,
-        delete: bool,
-        view_info_index: Vec<u8>,
-    ) -> GeorgeResult<(bool, Vec<u8>)>;
+    fn rm(&self, key: String, value: Vec<u8>) -> GeorgeResult<()>;
 }
 
 /// 索引通用特性，遵循此特性创建索引可以更方便的针对进行扩展
