@@ -22,7 +22,7 @@ use comm::strings::StringHandler;
 use comm::Json;
 use comm::Strings;
 
-use crate::task::engine::block::Node as NB;
+// use crate::task::engine::block::Node as NB;
 use crate::task::engine::disk::Node as ND;
 use crate::task::engine::increment::Node as NI;
 use crate::task::engine::sequence::Node as NS;
@@ -107,7 +107,7 @@ impl Index {
             IndexType::Increment => root = NI::create(form.clone(), name.clone())?,
             IndexType::Sequence => root = NS::create(form.clone(), name.clone())?,
             IndexType::Disk => root = ND::create(form.clone(), name.clone(), key_type, unique)?,
-            IndexType::Block => root = NB::create(name.clone(), key_type),
+            // IndexType::Block => root = NB::create(name.clone(), key_type),
             _ => return Err(Errs::str("unsupported engine type with none")),
         }
         let index = new_index(
@@ -458,7 +458,7 @@ impl Index {
                     IndexType::Disk => {
                         root = ND::recovery(form.clone(), name.clone(), key_type, unique)?
                     }
-                    IndexType::Block => root = NB::recovery(name.clone(), key_type),
+                    // IndexType::Block => root = NB::recovery(name.clone(), key_type),
                     _ => return Err(Errs::str("unsupported engine type")),
                 }
                 log::info!(

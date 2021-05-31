@@ -23,12 +23,12 @@ use comm::vectors::VectorHandler;
 use comm::Trans;
 use comm::Vector;
 
+use crate::task::engine;
 use crate::task::engine::disk::Node;
 use crate::task::engine::traits::{TForm, TNode, TSeed};
 use crate::task::engine::{DataReal, RootBytes};
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
-use crate::task::{engine, View};
 use crate::utils::comm::{Distance, IndexKey};
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::writer::Filed;
@@ -1599,12 +1599,12 @@ impl Node {
 
 impl Node {
     pub fn mock_recovery(
-        view: Arc<RwLock<View>>,
+        form: Arc<RwLock<dyn TForm>>,
         index_name: String,
         key_type: KeyType,
         unique: bool,
     ) -> GeorgeResult<Arc<Self>> {
-        let v_c = view.clone();
+        let v_c = form.clone();
         let v_r = v_c.read().unwrap();
         let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
         let node_filepath = Paths::node_filepath(index_path.clone(), String::from("disk"));
@@ -1629,7 +1629,7 @@ impl Node {
             }
         }
         Ok(Arc::new(Node {
-            form: view,
+            form,
             index_name,
             key_type,
             index_path,

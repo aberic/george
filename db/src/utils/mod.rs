@@ -34,7 +34,6 @@ pub trait EnumHandler {
     fn tag(b: u8) -> Tag;
     fn index_type(b: u8) -> IndexType;
     fn key_type(b: u8) -> KeyType;
-    fn key_type_str(key_type: KeyType) -> String;
 }
 
 pub struct Paths;

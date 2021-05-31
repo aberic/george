@@ -39,10 +39,6 @@ impl EnumHandler for Enum {
     fn key_type(b: u8) -> KeyType {
         key_type(b)
     }
-
-    fn key_type_str(key_type: KeyType) -> String {
-        key_type_str(key_type)
-    }
 }
 
 /// 标识符

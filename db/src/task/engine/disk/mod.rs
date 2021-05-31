@@ -11,11 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+use std::sync::{Arc, RwLock};
+
 use crate::task::engine::traits::TForm;
 use crate::task::engine::RootBytes;
 use crate::utils::enums::KeyType;
 use crate::utils::writer::Filed;
-use std::sync::{Arc, RwLock};
 
 pub(crate) mod node;
 mod node_test;
@@ -32,7 +33,8 @@ mod node_test;
 ///
 /// record文件最大为2^(8*8)=16348PB
 ///
-/// record存储固定长度的数据，长度为20，即view视图真实数据12+链式后续数据8，总计可存(2^64)/20条数据
+/// record存储固定长度的数据，长度为20，即view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 链式后续数据(8字节)
+/// 即view视图真实数据12+链式后续数据8，总计可存(2^64)/20条数据
 #[derive(Debug, Clone)]
 pub(crate) struct Node {
     form: Arc<RwLock<dyn TForm>>,
