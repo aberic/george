@@ -14,10 +14,10 @@
 
 use std::collections::HashMap;
 use std::fs::{read_dir, ReadDir};
-use std::sync::{mpsc, Arc, RwLock};
-use std::thread;
+use std::sync::{Arc, RwLock};
 
 use chrono::{Duration, Local, NaiveDateTime};
+use tokio::sync::mpsc::Sender;
 
 use comm::errors::{Errs, GeorgeResult};
 use comm::io::file::FilerReader;
@@ -39,7 +39,6 @@ use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::store::{ContentBytes, Metadata, HD};
 use crate::utils::writer::Filed;
 use crate::utils::Paths;
-use tokio::sync::mpsc::Sender;
 
 /// 新建视图
 ///
@@ -390,14 +389,6 @@ impl View {
     ///
     /// IndexResult<()>
     pub(crate) fn put(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        log::debug!(
-            "database {} view {} put key {} value {}",
-            self.database_name(),
-            self.name(),
-            key.clone(),
-            Strings::from_utf8(value.clone()).unwrap()
-        );
-        // self.save(key, value, false)
         GLOBAL_THREAD_POOL.task_block_on(self.save(key, value, false))
     }
 
@@ -413,14 +404,6 @@ impl View {
     ///
     /// IndexResult<()>
     pub(crate) fn set(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        log::debug!(
-            "database {} view {} set key {} value {}",
-            self.database_name(),
-            self.name(),
-            key.clone(),
-            Strings::from_utf8(value.clone()).unwrap()
-        );
-        // self.save(key, value, true)
         GLOBAL_THREAD_POOL.task_block_on(self.save(key, value, true))
     }
 
@@ -436,12 +419,6 @@ impl View {
     ///
     /// Seed value信息
     pub(crate) fn get(&self, index_name: &str, key: String) -> GeorgeResult<Vec<u8>> {
-        log::debug!(
-            "database {} view {} get key {}",
-            self.database_name(),
-            self.name(),
-            key.clone(),
-        );
         let index = self.index(index_name)?;
         Ok(index.get(key.clone())?.value())
     }
@@ -456,14 +433,8 @@ impl View {
     ///
     /// GeorgeResult<()>
     pub(crate) fn remove(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        log::debug!(
-            "database {} view {} remove key {}",
-            self.database_name(),
-            self.name(),
-            key.clone(),
-        );
         let real = self.index(INDEX_DISK)?.get(key.clone())?;
-        self.del(key, real.increment, value)
+        GLOBAL_THREAD_POOL.task_block_on(self.del(key, real.increment, value))
     }
 
     /// 条件检索
@@ -501,7 +472,7 @@ impl View {
         for (index_name, index) in self.index_map().read().unwrap().iter() {
             let (sender, receive) = tokio::sync::mpsc::channel(32);
             receives.push(receive);
-            GLOBAL_THREAD_POOL.spawn(self.clone().index_exec(
+            GLOBAL_THREAD_POOL.spawn(self.clone().index_put_exec(
                 index_name.clone(),
                 index.clone(),
                 key.clone(),
@@ -525,7 +496,7 @@ impl View {
         seed_w.save()
     }
 
-    async fn index_exec(
+    async fn index_put_exec(
         self,
         index_name: String,
         index: Arc<dyn TIndex>,
@@ -537,72 +508,61 @@ impl View {
     ) {
         match index_name.as_str() {
             INDEX_DISK => {
-                sender.send(index.put(key, seed, force)).await;
+                self.send_put(index_name, index, key, seed, force, sender)
+                    .await
             }
             INDEX_INCREMENT => {
-                sender.send(index.put(key, seed, force)).await;
+                self.send_put(index_name, index, key, seed, force, sender)
+                    .await
             }
-            _ => match IndexKey::fetch(index_name, value) {
+            _ => match IndexKey::fetch(index_name.clone(), value) {
                 Ok(res) => {
-                    sender.send(index.put(res, seed, force)).await;
+                    self.send_put(index_name, index, res, seed, force, sender)
+                        .await
                 }
                 Err(err) => {
-                    log::debug!("key fetch error: {}", err);
-                    sender.send(Ok(())).await;
+                    log::warn!("key fetch error: {}", err);
+                    match sender.send(Ok(())).await {
+                        Err(err) => {
+                            log::error!(
+                                "sender send put error in database {} view {} index {} while exec key {} {}",
+                                self.database_name(),
+                                self.name(),
+                                index_name,
+                                key,
+                                err
+                            );
+                        }
+                        _ => {}
+                    }
                 }
             },
         }
     }
 
-    // /// 插入数据业务方法<p><p>
-    // ///
-    // /// ###Params
-    // ///
-    // /// key string
-    // ///
-    // /// value 当前结果value信息<p><p>
-    // ///
-    // /// force 如果存在原值，是否覆盖原结果<p><p>
-    // ///
-    // /// ###Return
-    // ///
-    // /// IndexResult<()>
-    // fn save(&self, key: String, value: Vec<u8>, force: bool) -> GeorgeResult<()> {
-    //     let seed = Seed::create(Arc::new(self.clone()), key.clone(), value.clone());
-    //     let mut receives = Vec::new();
-    //     for (index_name, index) in self.index_map().read().unwrap().iter() {
-    //         let (sender, receive) = mpsc::channel();
-    //         receives.push(receive);
-    //         let index_name_clone = index_name.clone();
-    //         let index_clone = index.clone();
-    //         let key_clone = key.clone();
-    //         let value_clone = value.clone();
-    //         let seed_clone = seed.clone();
-    //         thread::spawn(move || match index_name_clone.as_str() {
-    //             INDEX_DISK => sender.send(index_clone.put(key_clone, seed_clone, force)),
-    //             INDEX_INCREMENT => sender.send(index_clone.put(key_clone, seed_clone, force)),
-    //             _ => match IndexKey::fetch(index_name_clone, value_clone) {
-    //                 Ok(res) => sender.send(index_clone.put(res, seed_clone, force)),
-    //                 Err(err) => {
-    //                     log::debug!("key fetch error: {}", err);
-    //                     sender.send(Ok(()))
-    //                 }
-    //             },
-    //         });
-    //     }
-    //     for receive in receives.iter() {
-    //         let res = receive.recv();
-    //         match res {
-    //             Ok(gr) => match gr {
-    //                 Err(err) => return Err(err),
-    //                 _ => {}
-    //             },
-    //             Err(err) => return Err(Errs::string(err.to_string())),
-    //         }
-    //     }
-    //     let seed_w = seed.write().unwrap();
-    //     seed_w.save()
-    // }
+    async fn send_put(
+        self,
+        index_name: String,
+        index: Arc<dyn TIndex>,
+        key: String,
+        seed: Arc<RwLock<Seed>>,
+        force: bool,
+        sender: Sender<GeorgeResult<()>>,
+    ) {
+        match sender.send(index.put(key.clone(), seed, force)).await {
+            Err(err) => {
+                log::error!(
+                    "sender send put error in database {} view {} index {} while exec key {} {}",
+                    self.database_name(),
+                    self.name(),
+                    index_name,
+                    key,
+                    err
+                );
+            }
+            _ => {}
+        }
+    }
 
     /// 插入数据业务方法<p><p>
     ///
@@ -617,7 +577,7 @@ impl View {
     /// ###Return
     ///
     /// IndexResult<()>
-    fn del(&self, key: String, increment: u64, value: Vec<u8>) -> GeorgeResult<()> {
+    async fn del(&self, key: String, increment: u64, value: Vec<u8>) -> GeorgeResult<()> {
         let seed = Seed::create_cus(
             Arc::new(self.clone()),
             key.clone(),
@@ -626,40 +586,86 @@ impl View {
         );
         let mut receives = Vec::new();
         for (index_name, index) in self.index_map().read().unwrap().iter() {
-            let (sender, receive) = mpsc::channel();
+            let (sender, receive) = tokio::sync::mpsc::channel(32);
             receives.push(receive);
-            let index_name_clone = index_name.clone();
-            let index_clone = index.clone();
-            let key_clone = key.clone();
-            let value_clone = value.clone();
-            let seed_clone = seed.clone();
-            thread::spawn(move || {
-                log::debug!("thread del index {}", index_name_clone);
-                match index_name_clone.as_str() {
-                    INDEX_DISK => sender.send(index_clone.del(key_clone, seed_clone)),
-                    INDEX_INCREMENT => sender.send(index_clone.del(key_clone, seed_clone)),
-                    _ => match IndexKey::fetch(index_name_clone, value_clone) {
-                        Ok(res) => sender.send(index_clone.del(res, seed_clone)),
-                        Err(err) => {
-                            log::debug!("key fetch error: {}", err);
-                            sender.send(Ok(()))
-                        }
-                    },
-                }
-            });
+            GLOBAL_THREAD_POOL.spawn(self.clone().index_del_exec(
+                index_name.clone(),
+                index.clone(),
+                key.clone(),
+                value.clone(),
+                seed.clone(),
+                sender,
+            ));
         }
-        for receive in receives.iter() {
-            let res = receive.recv();
-            match res {
-                Ok(gr) => match gr {
+        for receive in receives.iter_mut() {
+            let message = receive.recv().await;
+            match message {
+                Some(res) => match res {
                     Err(err) => return Err(err),
                     _ => {}
                 },
-                Err(err) => return Err(Errs::string(err.to_string())),
+                _ => {}
             }
         }
         let seed_w = seed.write().unwrap();
         seed_w.remove()
+    }
+
+    async fn index_del_exec(
+        self,
+        index_name: String,
+        index: Arc<dyn TIndex>,
+        key: String,
+        value: Vec<u8>,
+        seed: Arc<RwLock<Seed>>,
+        sender: Sender<GeorgeResult<()>>,
+    ) {
+        match index_name.as_str() {
+            INDEX_DISK => self.send_del(index_name, index, key, seed, sender).await,
+            INDEX_INCREMENT => self.send_del(index_name, index, key, seed, sender).await,
+            _ => match IndexKey::fetch(index_name.clone(), value) {
+                Ok(res) => self.send_del(index_name, index, res, seed, sender).await,
+                Err(err) => {
+                    log::warn!("key fetch error: {}", err);
+                    match sender.send(Ok(())).await {
+                        Err(err) => {
+                            log::error!(
+                                "sender send del error in database {} view {} index {} while exec key {} {}",
+                                self.database_name(),
+                                self.name(),
+                                index_name,
+                                key,
+                                err
+                            );
+                        }
+                        _ => {}
+                    }
+                }
+            },
+        }
+    }
+
+    async fn send_del(
+        self,
+        index_name: String,
+        index: Arc<dyn TIndex>,
+        key: String,
+        seed: Arc<RwLock<Seed>>,
+        sender: Sender<GeorgeResult<()>>,
+    ) {
+        match sender.send(index.del(key.clone(), seed)).await {
+            Err(err) => {
+                log::error!(
+                    "sender send del error in database {} view {} index {} while exec key {} {}",
+                    self.database_name(),
+                    self.name(),
+                    index_name,
+                    key,
+                    err
+                );
+            }
+            _ => {}
+        }
     }
 }
 
