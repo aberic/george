@@ -258,4 +258,16 @@ mod file {
         let file = Filer::reader("src/cryptos/mod.rs").unwrap();
         println!("len2 = {:#?}", Filer::len_file(file).unwrap());
     }
+
+    #[test]
+    fn absolute() {
+        match Filer::absolute("src/cryptos/mod.rs") {
+            Ok(res) => {
+                println!("file absolute = {}", res)
+            }
+            Err(err) => {
+                println!("file_test err = {}", err);
+            }
+        }
+    }
 }
