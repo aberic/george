@@ -24,7 +24,6 @@ use crate::utils::enums::{Engine, Tag};
 use crate::utils::Filed;
 use crate::Ge;
 
-/// impl for new
 impl Ge {
     /// ##生成非`index`属性的`ge`文件对象
     ///
@@ -36,7 +35,7 @@ impl Ge {
     /// ###Return
     ///
     /// 返回一个拼装完成的文件元数据信息，长度52字节
-    pub(crate) fn new_mock<P: AsRef<Path>>(
+    pub(crate) fn mock_new<P: AsRef<Path>>(
         filepath: P,
         tag: Tag,
         description: Vec<u8>,
@@ -54,6 +53,10 @@ impl Ge {
             }
         }
     }
+}
+
+/// impl for new
+impl Ge {
     /// ##生成非`index`属性的`ge`文件对象
     ///
     /// ###Params
@@ -173,6 +176,11 @@ impl Ge {
     /// 文件描述变更记录
     pub fn history(&self) -> GeorgeResult<Vec<Vec<u8>>> {
         self.metadata.description.history()
+    }
+
+    /// 文件描述字节数组
+    pub fn description(&self) -> GeorgeResult<Vec<u8>> {
+        self.metadata.description.description()
     }
 
     /// 根据文件路径获取该文件追加写入的写对象

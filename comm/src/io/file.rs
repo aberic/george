@@ -728,9 +728,12 @@ fn filepath_read_sub<P: AsRef<Path>>(
     start: u64,
     last: usize,
 ) -> GeorgeResult<Vec<u8>> {
-    match File::open(filepath) {
+    match File::open(&filepath) {
         Ok(file) => file_read_sub(file, start, last),
-        Err(err) => Err(Errs::string(err.to_string())),
+        Err(err) => Err(Errs::strings(
+            format!("file {} read sub", filepath.as_ref().to_str().unwrap()),
+            err.to_string(),
+        )),
     }
 }
 
@@ -762,8 +765,8 @@ fn file_read_sub(mut file: File, start: u64, last: usize) -> GeorgeResult<Vec<u8
     let file_len = file.seek(SeekFrom::End(0)).unwrap();
     if file_len < start + last as u64 {
         Err(Errs::string(format!(
-            "read sub file read failed! file_len is {} while start {} and last {}",
-            file_len, start, last
+            "read sub file {:#?} failed! file_len is {} while start {} and last {}",
+            file, file_len, start, last
         )))
     } else {
         file_read_subs_helper(file, start, last)

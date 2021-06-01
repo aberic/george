@@ -154,14 +154,3 @@ fn key_type(b: u8) -> KeyType {
         _ => KeyType::String,
     }
 }
-
-fn key_type_str(key_type: KeyType) -> String {
-    match key_type {
-        KeyType::String => String::from("string"),
-        KeyType::UInt => String::from("u64"),
-        KeyType::Int => String::from("i64"),
-        KeyType::Float => String::from("f64"),
-        KeyType::Bool => String::from("bool"),
-        KeyType::None => String::from("none"),
-    }
-}

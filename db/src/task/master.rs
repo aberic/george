@@ -13,15 +13,19 @@
  */
 
 use std::collections::HashMap;
-use std::fs::{read_dir, read_to_string, ReadDir};
+use std::fs::{read_dir, ReadDir};
 use std::sync::{Arc, RwLock};
 
-use chrono::Duration;
+use chrono::{Duration, Local, NaiveDateTime};
 use log::LevelFilter;
 
 use comm::errors::{Errs, GeorgeResult};
-use comm::io::file::FilerWriter;
-use comm::io::Filer;
+use comm::io::dir::DirHandler;
+use comm::io::file::FilerHandler;
+use comm::io::{Dir, Filer};
+use comm::Time;
+use ge::utils::enums::Tag;
+use ge::Ge;
 use logs::LogModule;
 
 use crate::task::rich::Expectation;
@@ -34,6 +38,75 @@ use crate::utils::store::ContentBytes;
 use crate::utils::Paths;
 
 impl Master {
+    /// 初始化
+    pub(crate) fn init(&self) -> GeorgeResult<()> {
+        log::info!("bootstrap init!");
+        self.create_page(DEFAULT_NAME.to_string(), DEFAULT_COMMENT.to_string())?;
+        self.create_database(DEFAULT_NAME.to_string(), DEFAULT_COMMENT.to_string())?;
+        self.create_view(DEFAULT_NAME.to_string(), DEFAULT_NAME.to_string(), true)
+    }
+
+    /// 生成Master
+    pub(super) fn generate() -> Arc<Self> {
+        // 尝试创建数据根目录，有则什么也不做，无则创建
+        Dir::mk_uncheck(Paths::data_path()).expect("create data path failed!");
+        // 启动文件
+        let bootstrap_file_path = Paths::bootstrap_filepath();
+        let init: bool;
+        let ge: Ge;
+        let duration: Duration;
+        if Filer::exist(bootstrap_file_path.clone()) {
+            ge = Ge::recovery(bootstrap_file_path.clone()).expect("recovery ge failed!");
+            let description = ge.description().expect("recovery description failed!");
+            duration = Duration::nanoseconds(
+                String::from_utf8(description)
+                    .expect("description bytes to string failed!")
+                    .parse::<i64>()
+                    .unwrap(),
+            );
+            init = false;
+        } else {
+            let now: NaiveDateTime = Local::now().naive_local();
+            duration = Duration::nanoseconds(now.timestamp_nanos());
+            let description = duration
+                .num_nanoseconds()
+                .unwrap()
+                .to_string()
+                .as_bytes()
+                .to_vec();
+            ge = Ge::new(bootstrap_file_path.clone(), Tag::Bootstrap, description)
+                .expect("create ge failed!");
+            init = true;
+        }
+
+        let create_time = Time::from(duration);
+        log::info!(
+            "george create at {}",
+            create_time.to_string("%Y-%m-%d %H:%M:%S")
+        );
+
+        let master = Master {
+            default_page_name: DEFAULT_NAME.to_string(),
+            pages: Arc::new(Default::default()),
+            databases: Default::default(),
+            create_time: Time::from(duration),
+            ge,
+        };
+        let master_arc = Arc::new(master);
+        if init {
+            log::info!("initialize new data");
+            master_arc.init().expect("initialize failed!");
+        } else {
+            log::info!("recovery exist data from bootstrap");
+            log::debug!(
+                "recovery exist data from bootstrap file {}",
+                bootstrap_file_path
+            );
+            master_arc.recovery().expect("recovery failed!");
+        }
+        master_arc
+    }
+
     pub(super) fn page_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Page>>>>> {
         self.pages.clone()
     }
@@ -42,8 +115,8 @@ impl Master {
         self.databases.clone()
     }
 
-    pub(super) fn create_time(&self) -> Duration {
-        self.create_time
+    pub(super) fn create_time(&self) -> Time {
+        self.create_time.clone()
     }
 
     /// 创建缓存页
@@ -580,42 +653,8 @@ impl Master {
 }
 
 impl Master {
-    /// 初始化或恢复数据
-    pub(crate) fn init_or_recovery(&self) -> GeorgeResult<()> {
-        let bootstrap_file = Paths::bootstrap_filepath();
-        match read_to_string(bootstrap_file.clone()) {
-            Ok(text) => {
-                if text.is_empty() {
-                    log::info!("initialize new data");
-                    self.init()
-                } else {
-                    log::info!("recovery exist data from bootstrap");
-                    log::debug!("recovery exist data from bootstrap file {}", bootstrap_file);
-                    self.recovery()
-                }
-            }
-            Err(err) => Err(Errs::strs("init_or_recovery", err)),
-        }
-    }
-
-    /// 初始化
-    fn init(&self) -> GeorgeResult<()> {
-        log::info!("bootstrap init!");
-        // 创建系统库，用户表(含权限等信息)、库历史记录表(含变更、归档等信息) todo
-        match Filer::write_force(Paths::bootstrap_filepath(), vec![0x01]) {
-            Err(err) => Err(Errs::strs("init", err)),
-            _ => self.init_default(),
-        }
-    }
-
-    fn init_default(&self) -> GeorgeResult<()> {
-        self.create_page(DEFAULT_NAME.to_string(), DEFAULT_COMMENT.to_string())?;
-        self.create_database(DEFAULT_NAME.to_string(), DEFAULT_COMMENT.to_string())?;
-        self.create_view(DEFAULT_NAME.to_string(), DEFAULT_NAME.to_string(), true)
-    }
-
     /// 恢复sky数据
-    fn recovery(&self) -> GeorgeResult<()> {
+    pub(crate) fn recovery(&self) -> GeorgeResult<()> {
         log::info!("bootstrap recovery!");
         // 读取data目录下所有文件
         match read_dir(Paths::data_database_path()) {

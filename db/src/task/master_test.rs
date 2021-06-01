@@ -591,8 +591,7 @@ fn database_map() {
 
 fn db_create_time() {
     let duration = GLOBAL_MASTER.create_time();
-    let time_from_stamp = NaiveDateTime::from_timestamp(duration.num_seconds(), 0);
-    let time_format = time_from_stamp.format("%Y-%m-%d %H:%M:%S");
+    let time_format = duration.to_string("%Y-%m-%d %H:%M:%S");
     println!("db_create_time = {}", time_format)
 }
 

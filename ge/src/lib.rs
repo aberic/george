@@ -10,7 +10,7 @@ mod ge_test;
 mod header;
 mod metadata;
 mod metadata_test;
-mod utils;
+pub mod utils;
 
 /// 当前文件版本号(2字节)
 pub const VERSION: [u8; 2] = [0x00, 0x00];

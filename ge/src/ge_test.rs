@@ -50,7 +50,7 @@ mod ge {
 
     #[test]
     fn recovery() {
-        let ge = Ge::new_mock(
+        let ge = Ge::mock_new(
             "src/test/recovery/none.ge",
             Tag::None,
             "test".as_bytes().to_vec(),
@@ -63,7 +63,7 @@ mod ge {
 
     #[test]
     fn modify_history() {
-        let mut ge = Ge::new_mock(
+        let mut ge = Ge::mock_new(
             "src/test/modify/none.ge",
             Tag::None,
             "hello".as_bytes().to_vec(),
@@ -72,14 +72,26 @@ mod ge {
         println!("ge = {:#?}", ge);
         let ge_recovery = Ge::recovery("src/test/modify/none.ge").unwrap();
         println!("ge_recovery = {:#?}", ge_recovery);
-        ge.modify("world".as_bytes().to_vec()).unwrap();
+        ge.modify("world 1".as_bytes().to_vec()).unwrap();
         println!("ge = {:#?}", ge);
-        let ge_modify = Ge::recovery("src/test/modify/none.ge").unwrap();
-        println!("ge_modify = {:#?}", ge_modify);
+        let ge_modify1 = Ge::recovery("src/test/modify/none.ge").unwrap();
+        println!("ge_modify1 = {:#?}", ge_modify1);
+        ge.modify("world 2".as_bytes().to_vec()).unwrap();
+        println!("ge = {:#?}", ge);
+        let ge_modify2 = Ge::recovery("src/test/modify/none.ge").unwrap();
+        println!("ge_modify2 = {:#?}", ge_modify2);
+        ge.modify("world 3".as_bytes().to_vec()).unwrap();
+        println!("ge = {:#?}", ge);
+        let ge_modify3 = Ge::recovery("src/test/modify/none.ge").unwrap();
+        println!("ge_modify3 = {:#?}", ge_modify3);
 
         let vc = ge.history().unwrap();
         for v in vc {
             println!("v = {}", String::from_utf8(v).unwrap())
         }
+        println!(
+            "last des = {}",
+            String::from_utf8(ge.description().unwrap()).unwrap()
+        )
     }
 }

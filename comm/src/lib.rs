@@ -16,6 +16,8 @@
 extern crate lazy_static;
 extern crate phf;
 
+use chrono::Duration;
+
 pub mod cryptos;
 pub mod env;
 mod env_test;
@@ -27,6 +29,8 @@ pub mod merkle;
 pub mod pool;
 pub mod strings;
 mod strings_test;
+pub mod time;
+mod time_test;
 pub mod trans;
 mod trans_test;
 pub mod vectors;
@@ -37,6 +41,11 @@ mod yaml_test;
 pub struct Env;
 
 pub struct Strings;
+
+#[derive(Debug, Copy, Clone)]
+pub struct Time {
+    duration: Duration,
+}
 
 pub struct Trans;
 

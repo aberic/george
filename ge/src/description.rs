@@ -124,6 +124,23 @@ impl Description {
         Ok(des_vc)
     }
 
+    /// 文件描述变更记录
+    pub(crate) fn description(&self) -> GeorgeResult<Vec<u8>> {
+        let mut description: Vec<u8> = vec![];
+        let mut modify_start = 32;
+        loop {
+            let description_bytes = self.filed.read().unwrap().read(modify_start, 20)?;
+            let start = Trans::bytes_2_u64(description_bytes[0..8].to_vec())?;
+            let last = Trans::bytes_2_u32(description_bytes[8..12].to_vec())? as usize;
+            modify_start = Trans::bytes_2_u64(description_bytes[12..20].to_vec())?;
+            description = self.filed.read().unwrap().read(start, last)?;
+            if modify_start == 0 {
+                break;
+            }
+        }
+        Ok(description)
+    }
+
     /// ##生成`ge`文件描述信息，长度20字节
     /// 文件描述由描述起始坐标(8字节) + 描述内容长度(4字节) + 变更后文件描述起始坐标(8字节)
     ///
