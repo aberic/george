@@ -15,8 +15,9 @@
 use std::sync::atomic::AtomicU64;
 use std::sync::{Arc, RwLock};
 
+use ge::Ge;
+
 use crate::task::engine::traits::TForm;
-use crate::utils::writer::Filed;
 
 pub(crate) mod node;
 
@@ -30,13 +31,9 @@ pub(crate) struct Node {
     form: Arc<RwLock<dyn TForm>>,
     atomic_key: Arc<AtomicU64>,
     index_name: String,
-    /// 索引文件路径
+    /// ge文件
     ///
     /// * 当有新的数据加入时，新数据存储地址在`node_file`中记录12字节。
     /// 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
-    node_filepath: String,
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
-    /// 需要借助对象包裹，以便更新file，避免self为mut
-    filer: Filed,
+    ge: Ge,
 }

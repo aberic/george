@@ -26,6 +26,7 @@ use crate::task::engine::traits::{TForm, TSeed};
 use crate::task::engine::DataReal;
 use crate::task::Seed;
 use crate::utils::enums::Engine;
+use ge::METADATA_SIZE;
 
 /// 待处理索引操作策略
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -131,7 +132,7 @@ impl TSeed for Seed {
 
     fn modify_4_put(&mut self, index_policy: IndexPolicy) {
         match index_policy.index_type {
-            Engine::Increment => self.real.set_seq(index_policy.seek / 8),
+            Engine::Increment => self.real.set_seq((index_policy.seek - METADATA_SIZE) / 8),
             _ => {}
         }
         self.policies.push(index_policy)

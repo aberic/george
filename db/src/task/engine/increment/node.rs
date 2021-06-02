@@ -16,10 +16,10 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 
 use comm::errors::{Errs, GeorgeResult};
-use comm::io::file::FilerReader;
-use comm::io::Filer;
 use comm::vectors::VectorHandler;
 use comm::Vector;
+use ge::utils::enums::Tag;
+use ge::{Ge, METADATA_SIZE};
 
 use crate::task::engine;
 use crate::task::engine::increment::Node;
@@ -28,7 +28,6 @@ use crate::task::engine::DataReal;
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::utils::enums::Engine;
-use crate::utils::writer::Filed;
 use crate::utils::Paths;
 
 impl Node {
@@ -41,14 +40,11 @@ impl Node {
         let v_r = v_c.read().unwrap();
         let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
         let node_filepath = Paths::node_filepath(index_path, String::from("increment"));
-        let filer = Filed::create(node_filepath.clone())?;
-        filer.append(Vector::create_empty_bytes(12))?;
         Ok(Arc::new(Node {
             form,
             atomic_key,
             index_name,
-            node_filepath,
-            filer,
+            ge: Ge::new_empty(node_filepath, Tag::Node)?,
         }))
     }
 
@@ -58,26 +54,23 @@ impl Node {
         let v_r = v_c.read().unwrap();
         let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
         let node_filepath = Paths::node_filepath(index_path, String::from("increment"));
-        let file_len = Filer::len(node_filepath.clone())?;
-        let last_key = file_len / 12;
-        // log::debug!("atomic_key_u32 = {}", atomic_key_u32);
+        let ge = Ge::recovery(node_filepath)?;
+        let last_key = (ge.len()? - METADATA_SIZE) / 12;
         let atomic_key = Arc::new(AtomicU64::new(last_key));
-        let filer = Filed::recovery(node_filepath.clone())?;
         Ok(Arc::new(Node {
             form,
             atomic_key,
             index_name,
-            node_filepath,
-            filer,
+            ge,
         }))
     }
 
     fn node_filepath(&self) -> String {
-        self.node_filepath.clone()
+        self.ge.filepath()
     }
 
     fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
-        self.filer.clone().read_allow_none(start, last)
+        self.ge.read_allow_none(start, last)
     }
 }
 
@@ -146,7 +139,7 @@ impl Node {
         Self: Sized,
     {
         // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
-        let seek = hash_key * 12;
+        let seek = METADATA_SIZE + hash_key * 12;
         if !force {
             // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
             let res = self.read(seek, 12)?;
@@ -165,7 +158,7 @@ impl Node {
 
     fn get_in_node(&self, hash_key: u64) -> GeorgeResult<DataReal> {
         // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
-        let seek = hash_key * 12;
+        let seek = METADATA_SIZE + hash_key * 12;
         // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
         let res = self.read(seek, 12)?;
         return if Vector::is_fill(res.clone()) {
@@ -184,7 +177,7 @@ impl Node {
         seed: Arc<RwLock<dyn TSeed>>,
     ) -> GeorgeResult<()> {
         // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
-        let seek = hash_key * 12;
+        let seek = METADATA_SIZE + hash_key * 12;
         // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
         let res = self.read(seek, 12)?;
         if Vector::is_fill(res) {
@@ -233,13 +226,12 @@ impl Node {
         let mut values: Vec<Vec<u8>> = vec![];
 
         // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
-        let mut key_start = start * 12;
+        let mut key_start = METADATA_SIZE + start * 12;
         let key_end: u64;
-        if end == 0 {
-            // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
-            key_end = (self.atomic_key.load(Ordering::Relaxed) - 1) * 12;
+        if end > 0 {
+            key_end = METADATA_SIZE + end * 12;
         } else {
-            key_end = end * 12;
+            key_end = METADATA_SIZE + (self.atomic_key.load(Ordering::Relaxed) - 1) * 12;
         }
         loop {
             if limit <= 0 || key_start > key_end {
@@ -300,13 +292,12 @@ impl Node {
         let mut values: Vec<Vec<u8>> = vec![];
 
         // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
-        let key_start = start * 12;
+        let key_start = METADATA_SIZE + start * 12;
         let mut key_end: u64;
-        if end == 0 {
-            // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
-            key_end = (self.atomic_key.load(Ordering::Relaxed) - 1) * 12;
+        if end > 0 {
+            key_end = METADATA_SIZE + end * 12;
         } else {
-            key_end = end * 12;
+            key_end = METADATA_SIZE + (self.atomic_key.load(Ordering::Relaxed) - 1) * 12;
         }
         loop {
             if limit <= 0 || key_start > key_end {

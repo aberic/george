@@ -346,20 +346,6 @@ mod master {
         }
 
         #[test]
-        fn increment_test_get() {
-            let database_name = "database_increment_base_test";
-            let view_name = "view_increment_base_test";
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "1", 1);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "2", 2);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "3", 3);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "4", 4);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "5", 5);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "6", 6);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "7", 7);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "8", 8);
-        }
-
-        #[test]
         fn increment_test_after() {
             let database_name = "database_increment_base_test";
             let view_name = "view_increment_base_test";
@@ -403,6 +389,7 @@ mod master {
         use comm::Json;
 
         use crate::task::master_test::*;
+        use crate::utils::comm::INDEX_INCREMENT;
 
         #[test]
         fn select_disk_prepare() {
@@ -474,6 +461,18 @@ mod master {
         }
 
         #[test]
+        fn select_increment_get_by_index() {
+            let database_name = "database_select_base_test";
+            let view_name = "view_base_test";
+            get_by_index(database_name, view_name, INDEX_INCREMENT, "1", 1);
+            get_by_index(database_name, view_name, INDEX_INCREMENT, "10", 10);
+            get_by_index(database_name, view_name, INDEX_INCREMENT, "100", 100);
+            get_by_index(database_name, view_name, INDEX_INCREMENT, "1000", 1000);
+            get_by_index(database_name, view_name, INDEX_INCREMENT, "10000", 10000);
+            get_by_index(database_name, view_name, INDEX_INCREMENT, "100000", 100000);
+        }
+
+        #[test]
         fn select_increment_left() {
             let database_name = "database_select_base_test";
             let view_name = "view_base_test";
@@ -483,17 +482,7 @@ mod master {
                                         {
                                             "Param":"george_db_index_increment",
                                             "Cond":"ge",
-                                            "Value":8990
-                                        },
-                                        {
-                                            "Param":"age",
-                                            "Cond":"ge",
-                                            "Value":4990
-                                        },
-                                        {
-                                            "Param":"age",
-                                            "Cond":"le",
-                                            "Value":9010
+                                            "Value":8000
                                         }
                                     ],
                                     "Sort":{
