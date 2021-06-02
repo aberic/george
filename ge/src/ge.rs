@@ -200,6 +200,10 @@ impl Ge {
     pub fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
         self.filed.write().unwrap().write(seek, content)
     }
+
+    pub fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
+        self.filed.read().unwrap().read(start, last)
+    }
 }
 
 /// impl for recovery

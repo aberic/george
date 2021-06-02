@@ -71,4 +71,8 @@ impl Time {
     pub fn to_string(&self, fmt: &str) -> String {
         self.format(fmt).to_string()
     }
+
+    pub fn duration(&self) -> Duration {
+        self.duration.clone()
+    }
 }

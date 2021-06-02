@@ -539,17 +539,11 @@ fn database_map() {
         let db_c = db.clone();
         let db_r = db_c.read().unwrap();
 
-        let duration: Duration = db_r.create_time();
-        let time_from_stamp = NaiveDateTime::from_timestamp(duration.num_seconds(), 0);
-
-        let time_format = time_from_stamp.format("%Y-%m-%d %H:%M:%S");
-
         println!(
-            "database_map_test {} | {} | {} | {}",
+            "database_map_test {} | {} | {}",
             database_name,
             db_r.name(),
-            db_r.create_time(),
-            time_format
+            db_r.create_time().format("%Y-%m-%d %H:%M:%S"),
         );
 
         for (view_name, view) in db_r.view_map().read().unwrap().iter().into_iter() {

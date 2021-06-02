@@ -693,14 +693,12 @@ impl Master {
 
     /// 恢复database数据
     fn recovery_database(&self, database_name: String) -> GeorgeResult<()> {
-        let hd = ContentBytes::recovery(Paths::database_filepath(database_name))?;
         // 恢复database数据
-        let db = Database::recover(hd.clone())?;
+        let db = Database::recover(database_name)?;
         log::debug!(
-            "db [name={}, create time = {}, {:#?}]",
+            "db [name={}, create time = {}]",
             db.name(),
-            db.create_time().num_nanoseconds().unwrap().to_string(),
-            hd.metadata()
+            db.create_time().format("%Y-%m-%d %H:%M:%S"),
         );
         // 如果已存在该database，则不处理
         if !self.exist_database(db.name()) {

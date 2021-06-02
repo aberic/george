@@ -19,103 +19,91 @@ use std::path::Path;
 use crate::errors::{Errs, GeorgeResult};
 use crate::io::Dir;
 
-pub trait DirHandler<T>: Sized {
-    fn exist(_: T) -> GeorgeResult<bool>;
+pub trait DirHandler: Sized {
+    fn exist<P: AsRef<Path>>(path: P) -> GeorgeResult<bool>;
 
-    fn mk(_: T) -> GeorgeResult<()>;
+    fn mk<P: AsRef<Path>>(path: P) -> GeorgeResult<()>;
 
-    fn mk_uncheck(_: T) -> GeorgeResult<()>;
+    fn mk_uncheck<P: AsRef<Path>>(path: P) -> GeorgeResult<()>;
 
-    fn rm(_: T) -> GeorgeResult<()>;
+    fn rm<P: AsRef<Path>>(path: P) -> GeorgeResult<()>;
 
     /// 指定路径下目录文件夹名称
-    fn name(_: T) -> GeorgeResult<String>;
+    fn name<P: AsRef<Path>>(path: P) -> GeorgeResult<String>;
 
     /// 拷贝`from`目录下内容至`to`目录下
     ///
     /// force 是否强制更新`to`目录为空目录
-    fn cp(_: T, _: T, force: bool) -> GeorgeResult<()>;
+    fn cp<P: AsRef<Path>>(from: P, to: P, force: bool) -> GeorgeResult<()>;
 
     /// 移动`from`目录下内容至`to`目录下
     ///
     /// force 是否强制更新`to`目录为空目录
-    fn mv(_: T, _: T, force: bool) -> GeorgeResult<()>;
+    fn mv<P: AsRef<Path>>(from: P, to: P, force: bool) -> GeorgeResult<()>;
+
+    /// 重命名
+    fn rename<P: AsRef<Path>>(from: P, to: P) -> GeorgeResult<()>;
 }
 
-impl DirHandler<String> for Dir {
-    fn exist(path: String) -> GeorgeResult<bool> {
+impl DirHandler for Dir {
+    fn exist<P: AsRef<Path>>(path: P) -> GeorgeResult<bool> {
         dir_exist(path)
     }
 
-    fn mk(path: String) -> GeorgeResult<()> {
+    fn mk<P: AsRef<Path>>(path: P) -> GeorgeResult<()> {
         dir_create(path)
     }
 
-    fn mk_uncheck(path: String) -> GeorgeResult<()> {
+    fn mk_uncheck<P: AsRef<Path>>(path: P) -> GeorgeResult<()> {
         dir_create_uncheck(path)
     }
 
-    fn rm(path: String) -> GeorgeResult<()> {
+    fn rm<P: AsRef<Path>>(path: P) -> GeorgeResult<()> {
         dir_remove(path)
     }
 
-    fn name(path: String) -> GeorgeResult<String> {
+    fn name<P: AsRef<Path>>(path: P) -> GeorgeResult<String> {
         dir_last_name(path)
     }
 
-    fn cp(from_path: String, to_path: String, force: bool) -> GeorgeResult<()> {
-        let from_dir_name = dir_last_name(from_path.clone())?;
-        let to_path = to_path.add("/").add(&from_dir_name);
-        dir_copy(from_path, to_path, force)
+    fn cp<P: AsRef<Path>>(from: P, to: P, force: bool) -> GeorgeResult<()> {
+        let from_dir_name = dir_last_name(&from)?;
+        let to = to
+            .as_ref()
+            .to_str()
+            .unwrap()
+            .to_string()
+            .add("/")
+            .add(&from_dir_name);
+        dir_copy(from.as_ref().to_str().unwrap().to_string(), to, force)
     }
 
-    fn mv(from_path: String, to_path: String, force: bool) -> GeorgeResult<()> {
-        let from_dir_name = dir_last_name(from_path.clone())?;
-        let to_path = to_path.add("/").add(&from_dir_name);
-        dir_move(from_path, to_path, force)
-    }
-}
-
-impl DirHandler<&str> for Dir {
-    fn exist(path: &str) -> GeorgeResult<bool> {
-        dir_exist(path.to_string())
-    }
-
-    fn mk(path: &str) -> GeorgeResult<()> {
-        dir_create(path.to_string())
+    fn mv<P: AsRef<Path>>(from: P, to: P, force: bool) -> GeorgeResult<()> {
+        let from_dir_name = dir_last_name(&from)?;
+        let to = to
+            .as_ref()
+            .to_str()
+            .unwrap()
+            .to_string()
+            .add("/")
+            .add(&from_dir_name);
+        dir_move(from.as_ref().to_str().unwrap().to_string(), to, force)
     }
 
-    fn mk_uncheck(path: &str) -> GeorgeResult<()> {
-        dir_create_uncheck(path.to_string())
-    }
-
-    fn rm(path: &str) -> GeorgeResult<()> {
-        dir_remove(path.to_string())
-    }
-
-    fn name(path: &str) -> GeorgeResult<String> {
-        dir_last_name(path.to_string())
-    }
-
-    fn cp(from_path: &str, to_path: &str, force: bool) -> GeorgeResult<()> {
-        let from_dir_name = dir_last_name(from_path.to_string())?;
-        let to_path = to_path.to_string().add("/").add(&from_dir_name);
-        dir_copy(from_path.to_string(), to_path, force)
-    }
-
-    fn mv(from_path: &str, to_path: &str, force: bool) -> GeorgeResult<()> {
-        let from_dir_name = dir_last_name(from_path.to_string())?;
-        let to_path = to_path.to_string().add("/").add(&from_dir_name);
-        dir_move(from_path.to_string(), to_path, force)
+    fn rename<P: AsRef<Path>>(from: P, to: P) -> GeorgeResult<()> {
+        dir_rename(from, to)
     }
 }
 
 /// 判断目录是否存在，如果目录为文件则报错，否则返回判断结果
-fn dir_exist(path: String) -> GeorgeResult<bool> {
-    let path_check = Path::new(&path);
+fn dir_exist<P: AsRef<Path>>(path: P) -> GeorgeResult<bool> {
+    let path_check = Path::new(path.as_ref());
     if path_check.exists() {
         if path_check.is_file() {
-            Err(Errs::string(format!("path {} is file", path)))
+            Err(Errs::string(format!(
+                "path {} is file",
+                path.as_ref().to_str().unwrap()
+            )))
         } else {
             Ok(true)
         }
@@ -125,34 +113,43 @@ fn dir_exist(path: String) -> GeorgeResult<bool> {
 }
 
 /// 创建目录
-fn dir_create(path: String) -> GeorgeResult<()> {
-    if dir_exist(path.clone())? {
+fn dir_create<P: AsRef<Path>>(path: P) -> GeorgeResult<()> {
+    if dir_exist(&path)? {
         Err(Errs::dir_exist_error())
     } else {
-        match fs::create_dir_all(path.clone()) {
+        match fs::create_dir_all(&path) {
             Ok(_) => Ok(()),
-            Err(err) => Err(Errs::strings(format!("path {} create error: ", path), err)),
+            Err(err) => Err(Errs::strings(
+                format!("path {} create error: ", path.as_ref().to_str().unwrap()),
+                err,
+            )),
         }
     }
 }
 
 /// 创建目录
-fn dir_create_uncheck(path: String) -> GeorgeResult<()> {
-    if dir_exist(path.clone())? {
+fn dir_create_uncheck<P: AsRef<Path>>(path: P) -> GeorgeResult<()> {
+    if dir_exist(&path)? {
         Ok(())
     } else {
-        match fs::create_dir_all(path.clone()) {
+        match fs::create_dir_all(&path) {
             Ok(_) => Ok(()),
-            Err(err) => Err(Errs::strings(format!("path {} create error: ", path), err)),
+            Err(err) => Err(Errs::strings(
+                format!("path {} create error: ", path.as_ref().to_str().unwrap()),
+                err,
+            )),
         }
     }
 }
 
 /// 删除目录
-fn dir_remove(path: String) -> GeorgeResult<()> {
-    match fs::remove_dir_all(path.clone()) {
+fn dir_remove<P: AsRef<Path>>(path: P) -> GeorgeResult<()> {
+    match fs::remove_dir_all(&path) {
         Ok(()) => Ok(()),
-        Err(err) => Err(Errs::strings(format!("path {} remove error: ", path), err)),
+        Err(err) => Err(Errs::strings(
+            format!("path {} remove error: ", path.as_ref().to_str().unwrap()),
+            err,
+        )),
     }
 }
 
@@ -163,53 +160,64 @@ fn dir_remove(path: String) -> GeorgeResult<()> {
 /// 如果存在并且是目录，则根据force来判断是否强制清空该目录
 ///
 /// force 是否强制更新该目录为空目录
-fn dir_absolute(path: String, force: bool) -> GeorgeResult<String> {
-    if dir_exist(path.clone())? {
+fn dir_absolute<P: AsRef<Path>>(path: P, force: bool) -> GeorgeResult<String> {
+    if dir_exist(&path)? {
         if force {
-            match fs::remove_dir_all(path.clone()) {
-                Ok(()) => dir_create_uncheck(path.clone())?,
-                Err(err) => return Err(Errs::strings(format!("remove dir {} error: ", path), err)),
+            match fs::remove_dir_all(&path) {
+                Ok(()) => dir_create_uncheck(&path)?,
+                Err(err) => {
+                    return Err(Errs::strings(
+                        format!("remove dir {} error: ", path.as_ref().to_str().unwrap()),
+                        err,
+                    ))
+                }
             }
         }
     } else {
-        dir_create_uncheck(path.clone())?;
+        dir_create_uncheck(&path)?;
     }
-    match fs::canonicalize(path.clone()) {
+    match fs::canonicalize(&path) {
         Ok(path_buf) => Ok(path_buf.to_str().unwrap().to_string()),
         Err(err) => Err(Errs::strings(
-            format!("fs {} canonicalize error: ", path),
+            format!(
+                "fs {} canonicalize error: ",
+                path.as_ref().to_str().unwrap()
+            ),
             err,
         )),
     }
 }
 
 /// 判断目录是否存在，如果目录为文件夹则报错，否则返回判断结果
-fn dir_last_name(path: String) -> GeorgeResult<String> {
-    if dir_exist(path.clone())? {
-        Ok(Path::new(&path)
+fn dir_last_name<P: AsRef<Path>>(path: P) -> GeorgeResult<String> {
+    if dir_exist(&path)? {
+        Ok(Path::new(path.as_ref())
             .file_name()
             .unwrap()
             .to_str()
             .unwrap()
             .to_string())
     } else {
-        Err(Errs::string(format!("path {} does't exist!", path)))
+        Err(Errs::string(format!(
+            "path {} does't exist!",
+            path.as_ref().to_str().unwrap()
+        )))
     }
 }
 
 /// 拷贝`from`目录至`to`目录下
 ///
 /// force 是否强制更新`to`目录为空目录
-fn dir_copy(from_path: String, to_path: String, force: bool) -> GeorgeResult<()> {
-    let from_absolute_path_str = dir_absolute(from_path.clone(), false)?;
-    let to_absolute_path_str = dir_absolute(to_path.clone(), force)?;
+fn dir_copy<P: AsRef<Path>>(from: P, to: P, force: bool) -> GeorgeResult<()> {
+    let from_absolute_path_str = dir_absolute(&from, false)?;
+    let to_absolute_path_str = dir_absolute(&to, force)?;
     if to_absolute_path_str.contains(&from_absolute_path_str) {
         Err(Errs::string(format!(
             "to path {} is a sub project of path {}",
             to_absolute_path_str, from_absolute_path_str
         )))
     } else {
-        match fs::read_dir(from_path) {
+        match fs::read_dir(from) {
             Ok(read_dir) => {
                 // 遍历database目录下文件
                 for path in read_dir {
@@ -219,7 +227,13 @@ fn dir_copy(from_path: String, to_path: String, force: bool) -> GeorgeResult<()>
                             let dir_path = dir.path();
                             let now_from_path = dir_path.to_str().unwrap();
                             let dir_name = dir.file_name().to_string_lossy().to_string();
-                            let now_to_path = to_path.clone().add("/").add(&dir_name);
+                            let now_to_path = to
+                                .as_ref()
+                                .to_str()
+                                .unwrap()
+                                .to_string()
+                                .add("/")
+                                .add(&dir_name);
                             if dir.path().is_dir() {
                                 match dir_create_uncheck(now_to_path.clone()) {
                                     Ok(()) => {
@@ -264,7 +278,14 @@ fn dir_copy(from_path: String, to_path: String, force: bool) -> GeorgeResult<()>
 /// 移动`from`目录至`to`目录下
 ///
 /// force 是否强制更新`to`目录为空目录
-fn dir_move(from_path: String, to_path: String, force: bool) -> GeorgeResult<()> {
-    dir_copy(from_path.clone(), to_path, force)?;
-    dir_remove(from_path)
+fn dir_move<P: AsRef<Path>>(from: P, to: P, force: bool) -> GeorgeResult<()> {
+    dir_copy(&from, &to, force)?;
+    dir_remove(from)
+}
+
+fn dir_rename<P: AsRef<Path>>(from: P, to: P) -> GeorgeResult<()> {
+    match std::fs::rename(from, to) {
+        Ok(_) => Ok(()),
+        Err(err) => Err(Errs::strs("dir rename failed", err.to_string())),
+    }
 }

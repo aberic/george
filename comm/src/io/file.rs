@@ -66,6 +66,9 @@ pub trait FilerHandler: Sized {
     ///
     /// 如果存在且为文件夹则报错
     fn absolute<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String>;
+
+    /// 重命名
+    fn rename<P: AsRef<Path>>(from: P, to: P) -> GeorgeResult<()>;
 }
 
 pub trait FilerExecutor<T>: Sized {
@@ -185,6 +188,10 @@ impl FilerHandler for Filer {
 
     fn absolute<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
         file_absolute(filepath)
+    }
+
+    fn rename<P: AsRef<Path>>(from: P, to: P) -> GeorgeResult<()> {
+        rename(from, to)
     }
 }
 
@@ -889,5 +896,12 @@ fn a_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<File> {
     match OpenOptions::new().append(true).open(filepath) {
         Ok(file) => Ok(file),
         Err(err) => Err(Errs::strs("open append file", err)),
+    }
+}
+
+fn rename<P: AsRef<Path>>(from: P, to: P) -> GeorgeResult<()> {
+    match std::fs::rename(from, to) {
+        Ok(_) => Ok(()),
+        Err(err) => Err(Errs::strs("file rename failed", err.to_string())),
     }
 }

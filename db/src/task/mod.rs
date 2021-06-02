@@ -80,13 +80,9 @@ pub(crate) struct Database {
     /// 描述
     comment: String,
     /// 创建时间
-    create_time: Duration,
-    /// 文件信息
-    metadata: Metadata,
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
-    /// 需要借助对象包裹，以便更新file，避免self为mut
-    filer: Filed,
+    create_time: Time,
+    /// ge文件对象
+    ge: Ge,
     /// 视图集合
     views: Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>>,
 }

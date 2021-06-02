@@ -21,49 +21,41 @@ use chrono::{Duration, Local, NaiveDateTime};
 use comm::errors::{Errs, GeorgeResult};
 use comm::json::JsonHandler;
 use comm::strings::StringHandler;
-use comm::{Json, Strings};
+use comm::{Json, Strings, Time};
 
 use crate::task::rich::Expectation;
 use crate::task::{Database, View};
 use crate::utils::store::{ContentBytes, Metadata, HD};
 use crate::utils::writer::Filed;
 use crate::utils::Paths;
-
-/// 新建数据库
-///
-/// 具体传参参考如下定义：<p><p>
-///
-/// ###Params
-///
-/// id 数据库唯一ID
-///
-/// name 数据库名称
-///
-/// comment 数据库描述
-fn new_database(name: String, comment: String) -> GeorgeResult<Database> {
-    let now: NaiveDateTime = Local::now().naive_local();
-    let create_time = Duration::nanoseconds(now.timestamp_nanos());
-    let filepath = Paths::database_filepath(name.clone());
-    Ok(Database {
-        name,
-        comment,
-        create_time,
-        metadata: Metadata::database(),
-        filer: Filed::create(filepath)?,
-        views: Arc::new(Default::default()),
-    })
-}
+use comm::io::file::FilerHandler;
+use comm::io::Filer;
+use ge::utils::enums::Tag;
+use ge::Ge;
 
 impl Database {
+    /// 新建数据库
+    ///
+    /// 具体传参参考如下定义：<p><p>
+    ///
+    /// ###Params
+    ///
+    /// id 数据库唯一ID
+    ///
+    /// name 数据库名称
+    ///
+    /// comment 数据库描述
     pub(crate) fn create(name: String, comment: String) -> GeorgeResult<Arc<RwLock<Database>>> {
-        let database = new_database(name, comment)?;
-        let mut metadata_bytes = database.metadata_bytes();
-        let mut description = database.description();
-        // 初始化为32 + 8，即head长度加正文描述符长度
-        let mut before_description = ContentBytes::before(44, description.len() as u32);
-        metadata_bytes.append(&mut before_description);
-        metadata_bytes.append(&mut description);
-        database.append(metadata_bytes)?;
+        let time = Time::now();
+        let filepath = Paths::database_filepath(name.clone());
+        let description = Database::descriptions(name.clone(), comment.clone(), time.duration());
+        let database = Database {
+            name,
+            comment,
+            create_time: time,
+            ge: Ge::new(filepath, Tag::Database, description)?,
+            views: Arc::new(Default::default()),
+        };
         Ok(Arc::new(RwLock::new(database)))
     }
 
@@ -78,13 +70,8 @@ impl Database {
     }
 
     /// 创建时间
-    pub(crate) fn create_time(&self) -> Duration {
+    pub(crate) fn create_time(&self) -> Time {
         self.create_time.clone()
-    }
-
-    /// 文件字节信息
-    pub(crate) fn metadata_bytes(&self) -> Vec<u8> {
-        self.metadata.bytes()
     }
 
     /// 根据文件路径获取该文件追加写入的写对象
@@ -95,15 +82,15 @@ impl Database {
     ///
     /// seek_end_before 写之前文件字节数据长度
     fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.filer.append(content)
+        self.ge.append(content)
     }
 
     fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
-        self.filer.read(start, last)
+        self.ge.read(start, last)
     }
 
     fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
-        self.filer.write(seek, content)
+        self.ge.write(seek, content)
     }
 
     /// 视图索引集合
@@ -113,29 +100,29 @@ impl Database {
 
     pub(crate) fn modify(&mut self, name: String, comment: String) -> GeorgeResult<()> {
         let old_name = self.name();
-        let content = self.read(0, 44)?;
+        let old_comment = self.comment();
         self.name = name.clone();
         self.comment = comment.clone();
-        let description = self.description();
-        let seek_end = self.append(description.clone())?;
-        log::debug!(
-            "database {} modify to {} with file seek_end = {}",
-            old_name.clone(),
-            self.name(),
-            seek_end
-        );
-        let content_new = ContentBytes::before(seek_end, description.len() as u32);
-        // 更新首部信息，初始化head为32，描述起始4字节，长度4字节
-        self.write(32, content_new)?;
-        let database_path_old = Paths::database_path(old_name);
-        let database_path_new = Paths::database_path(self.name());
-        match std::fs::rename(database_path_old, database_path_new) {
-            Ok(_) => Ok(()),
-            Err(err) => {
-                // 回滚数据
-                self.write(0, content)?;
-                Err(Errs::strs("file rename failed", err.to_string()))
+        let time = Time::now();
+        let description_bytes = Database::descriptions(name, comment, time.duration());
+        self.ge.modify(description_bytes)?;
+        if self.name().ne(&old_name) {
+            let database_path_old = Paths::database_path(old_name.clone());
+            let database_path_new = Paths::database_path(self.name());
+            match Filer::rename(database_path_old, database_path_new) {
+                Ok(_) => {
+                    self.create_time = time;
+                    Ok(())
+                }
+                Err(err) => {
+                    // 回滚数据
+                    self.name = old_name;
+                    self.comment = old_comment;
+                    Err(Errs::strs("file rename failed", err.to_string()))
+                }
             }
+        } else {
+            Ok(())
         }
     }
 
@@ -339,30 +326,45 @@ impl Database {
             "{}:#?{}:#?{}",
             self.name(),
             self.comment(),
-            self.create_time().num_nanoseconds().unwrap().to_string(),
+            self.create_time()
+                .duration()
+                .num_nanoseconds()
+                .unwrap()
+                .to_string(),
+        ))
+        .into_bytes()
+    }
+
+    /// 生成文件描述
+    fn descriptions(name: String, comment: String, create_time: Duration) -> Vec<u8> {
+        hex::encode(format!(
+            "{}:#?{}:#?{}",
+            name,
+            comment,
+            create_time.num_nanoseconds().unwrap().to_string(),
         ))
         .into_bytes()
     }
 
     /// 通过文件描述恢复结构信息
-    pub(crate) fn recover(hd: HD) -> GeorgeResult<Database> {
-        let description_str = Strings::from_utf8(hd.description())?;
+    pub(crate) fn recover(name: String) -> GeorgeResult<Database> {
+        let filepath = Paths::database_filepath(name.clone());
+        let ge = Ge::recovery(filepath)?;
+        let description_str = Strings::from_utf8(ge.description()?)?;
         match hex::decode(description_str) {
             Ok(vu8) => {
                 let real = Strings::from_utf8(vu8)?;
                 let mut split = real.split(":#?");
                 let name = split.next().unwrap().to_string();
                 let comment = split.next().unwrap().to_string();
-                let create_time = Duration::nanoseconds(
+                let duration = Duration::nanoseconds(
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
-                let filepath = Paths::database_filepath(name.clone());
                 let database = Database {
                     name,
                     comment,
-                    create_time,
-                    metadata: hd.metadata(),
-                    filer: Filed::recovery(filepath)?,
+                    create_time: Time::from(duration),
+                    ge,
                     views: Arc::new(Default::default()),
                 };
                 log::info!("recovery database {}", database.name());
