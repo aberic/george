@@ -239,7 +239,7 @@ impl Node {
             // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
             key_end = (self.atomic_key.load(Ordering::Relaxed) - 1) * 12;
         } else {
-            key_end = end * 8;
+            key_end = end * 12;
         }
         loop {
             if limit <= 0 || key_start > key_end {
@@ -306,7 +306,7 @@ impl Node {
             // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
             key_end = (self.atomic_key.load(Ordering::Relaxed) - 1) * 12;
         } else {
-            key_end = end * 8;
+            key_end = end * 12;
         }
         loop {
             if limit <= 0 || key_start > key_end {

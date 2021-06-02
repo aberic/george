@@ -10,6 +10,9 @@ mod metadata;
 mod metadata_test;
 pub mod utils;
 
+/// 文件元数据信息，长度52字节
+pub const METADATA_SIZE: u64 = 52;
+
 /// 当前文件版本号(2字节)
 pub const VERSION: [u8; 2] = [0x00, 0x00];
 /// 文件版本1(2字节)

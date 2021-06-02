@@ -26,8 +26,9 @@ use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::utils::comm::IndexKey;
 use crate::utils::enums::{Engine, KeyType};
-use crate::utils::writer::Filed;
 use crate::utils::Paths;
+use ge::utils::enums::Tag;
+use ge::{Ge, METADATA_SIZE};
 
 impl Node {
     /// 新建根结点
@@ -38,13 +39,10 @@ impl Node {
         let v_r = v_c.read().unwrap();
         let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
         let node_filepath = Paths::node_filepath(index_path, String::from("sequence"));
-        let filer = Filed::create(node_filepath.clone())?;
-        filer.append(Vector::create_empty_bytes(12))?;
         Ok(Arc::new(Node {
             form,
             index_name,
-            node_filepath,
-            filer,
+            ge: Ge::new_empty(node_filepath, Tag::Node)?,
         }))
     }
 
@@ -54,25 +52,23 @@ impl Node {
         let v_r = v_c.read().unwrap();
         let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
         let node_filepath = Paths::node_filepath(index_path, String::from("sequence"));
-        let filer = Filed::recovery(node_filepath.clone())?;
         Ok(Arc::new(Node {
             form,
             index_name,
-            node_filepath,
-            filer,
+            ge: Ge::recovery(node_filepath)?,
         }))
     }
 
     fn node_filepath(&self) -> String {
-        self.node_filepath.clone()
+        self.ge.filepath()
     }
 
     fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
-        self.filer.clone().read_allow_none(start, last)
+        self.ge.read_allow_none(start, last)
     }
 
     fn len(&self) -> GeorgeResult<u64> {
-        self.filer.clone().len()
+        self.ge.len()
     }
 }
 
@@ -135,7 +131,7 @@ impl Node {
         Self: Sized,
     {
         // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
-        let seek = hash_key * 12;
+        let seek = METADATA_SIZE + hash_key * 12;
         if !force {
             // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
             let res = self.read(seek, 12)?;
@@ -154,7 +150,7 @@ impl Node {
 
     fn get_in_node(&self, hash_key: u64) -> GeorgeResult<DataReal> {
         // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
-        let seek = hash_key * 12;
+        let seek = METADATA_SIZE + hash_key * 12;
         // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
         let res = self.read(seek, 12)?;
         return if Vector::is_fill(res.clone()) {
@@ -173,7 +169,7 @@ impl Node {
         seed: Arc<RwLock<dyn TSeed>>,
     ) -> GeorgeResult<()> {
         // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
-        let seek = hash_key * 12;
+        let seek = METADATA_SIZE + hash_key * 12;
         // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
         let res = self.read(seek, 12)?;
         if Vector::is_fill(res) {
@@ -222,10 +218,10 @@ impl Node {
         let mut values: Vec<Vec<u8>> = vec![];
 
         // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
-        let mut key_start = start * 12;
+        let mut key_start = METADATA_SIZE + start * 12;
         let key_end: u64;
         if end > 0 {
-            key_end = end * 8;
+            key_end = METADATA_SIZE + end * 12;
         } else {
             key_end = self.len()?;
         }
@@ -288,10 +284,10 @@ impl Node {
         let mut values: Vec<Vec<u8>> = vec![];
 
         // 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
-        let key_start = start * 12;
+        let key_start = METADATA_SIZE + start * 12;
         let mut key_end: u64;
         if end > 0 {
-            key_end = end * 8;
+            key_end = METADATA_SIZE + end * 12;
         } else {
             key_end = self.len()?;
         }

@@ -172,85 +172,45 @@ impl TIndex for Index {
                                 let opa = json_a.get_i64(param).unwrap();
                                 let opb = json_b.get_i64(param).unwrap();
                                 if sort.asc() {
-                                    if opa.gt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opa.cmp(&opb)
                                 } else {
-                                    if opa.lt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opb.cmp(&opa)
                                 }
                             }
                             KeyType::UInt => {
                                 let opa = json_a.get_u64(param).unwrap();
                                 let opb = json_b.get_u64(param).unwrap();
                                 if sort.asc() {
-                                    if opa.gt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opa.cmp(&opb)
                                 } else {
-                                    if opa.lt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opb.cmp(&opa)
                                 }
                             }
                             KeyType::Float => {
-                                let opa = json_a.get_f64(param).unwrap();
-                                let opb = json_b.get_f64(param).unwrap();
+                                let opa = json_a.get_f64(param).unwrap().to_bits();
+                                let opb = json_b.get_f64(param).unwrap().to_bits();
                                 if sort.asc() {
-                                    if opa.gt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opa.cmp(&opb)
                                 } else {
-                                    if opa.lt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opb.cmp(&opa)
                                 }
                             }
                             KeyType::String => {
                                 let opa = json_a.get_string(param).unwrap();
                                 let opb = json_b.get_string(param).unwrap();
                                 if sort.asc() {
-                                    if opa.gt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opa.cmp(&opb)
                                 } else {
-                                    if opa.lt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opb.cmp(&opa)
                                 }
                             }
                             KeyType::Bool => {
                                 let opa = json_a.get_bool(param).unwrap();
                                 let opb = json_b.get_bool(param).unwrap();
                                 if sort.asc() {
-                                    if opa.gt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opa.cmp(&opb)
                                 } else {
-                                    if opa.lt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opb.cmp(&opa)
                                 }
                             }
                             _ => panic!("{} can not match each other when sort", param),
@@ -260,81 +220,41 @@ impl TIndex for Index {
                                 let opa = json_a.get_i64(param).unwrap();
                                 let opb = json_b.get_i64(param).unwrap();
                                 if sort.asc() {
-                                    if opa.gt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opa.cmp(&opb)
                                 } else {
-                                    if opa.lt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opb.cmp(&opa)
                                 }
                             } else if json_a.is_u64(param) && json_b.is_u64(param) {
                                 let opa = json_a.get_i64(param).unwrap();
                                 let opb = json_b.get_i64(param).unwrap();
                                 if sort.asc() {
-                                    if opa.gt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opa.cmp(&opb)
                                 } else {
-                                    if opa.lt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opb.cmp(&opa)
                                 }
                             } else if json_a.is_f64(param) && json_b.is_f64(param) {
-                                let opa = json_a.get_i64(param).unwrap();
-                                let opb = json_b.get_i64(param).unwrap();
+                                let opa = json_a.get_f64(param).unwrap().to_bits();
+                                let opb = json_b.get_f64(param).unwrap().to_bits();
                                 if sort.asc() {
-                                    if opa.gt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opa.cmp(&opb)
                                 } else {
-                                    if opa.lt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opb.cmp(&opa)
                                 }
                             } else if json_a.is_string(param) && json_b.is_string(param) {
                                 let opa = json_a.get_i64(param).unwrap();
                                 let opb = json_b.get_i64(param).unwrap();
                                 if sort.asc() {
-                                    if opa.gt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opa.cmp(&opb)
                                 } else {
-                                    if opa.lt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opb.cmp(&opa)
                                 }
                             } else if json_a.is_bool(param) && json_b.is_bool(param) {
                                 let opa = json_a.get_i64(param).unwrap();
                                 let opb = json_b.get_i64(param).unwrap();
                                 if sort.asc() {
-                                    if opa.gt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opa.cmp(&opb)
                                 } else {
-                                    if opa.lt(&opb) {
-                                        a.cmp(b)
-                                    } else {
-                                        b.cmp(a)
-                                    }
+                                    opb.cmp(&opa)
                                 }
                             } else {
                                 panic!("{} can not match each other when sort", param)
