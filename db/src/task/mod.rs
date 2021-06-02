@@ -89,19 +89,19 @@ pub(crate) struct Database {
 #[derive(Debug, Clone)]
 pub(crate) struct View {
     /// 数据库名称
-    pub(crate) database_name: String,
+    database_name: String,
     /// 名称
-    pub(crate) name: String,
+    name: String,
     /// 描述
     comment: String,
     /// 创建时间
-    pub(crate) create_time: Time,
+    create_time: Time,
     /// ge文件对象
     ge: Ge,
     /// 索引集合
-    pub(crate) indexes: Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>,
+    indexes: Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>,
     /// 当前归档版本信息
-    pub(crate) pigeonhole: Pigeonhole,
+    pigeonhole: Pigeonhole,
 }
 
 #[derive(Debug, Clone)]
@@ -115,13 +115,9 @@ pub(crate) struct Page {
     /// 默认有效期(单位：秒)，如无设置，默认维300(0：永久有效)
     period: u32,
     /// 创建时间
-    create_time: Duration,
-    /// 文件信息
-    metadata: Metadata,
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
-    /// 需要借助对象包裹，以便更新file，避免self为mut
-    filer: Filed,
+    create_time: Time,
+    /// ge文件对象
+    ge: Ge,
     /// 默认缓存页
     node: Arc<RwLock<Node>>,
 }

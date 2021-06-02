@@ -27,7 +27,6 @@ use crate::task::engine::traits::{TForm, TNode, TSeed};
 use crate::task::engine::DataReal;
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
-use crate::utils::comm::IndexKey;
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::writer::Filed;
 use crate::utils::Paths;
@@ -75,10 +74,6 @@ impl Node {
         }))
     }
 
-    fn key_type(&self) -> KeyType {
-        self.key_type.clone()
-    }
-
     fn node_filepath(&self) -> String {
         self.node_filepath.clone()
     }
@@ -105,8 +100,10 @@ impl TNode for Node {
     }
 
     fn get(&self, key: String) -> GeorgeResult<DataReal> {
-        let hash_key = IndexKey::hash(self.key_type(), key)?;
-        self.get_in_node(hash_key)
+        match key.parse::<u64>() {
+            Ok(hash_key) => self.get_in_node(hash_key),
+            Err(err) => Err(Errs::strings(format!("key {} parse to u64", key), err)),
+        }
     }
 
     fn del(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {

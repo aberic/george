@@ -620,7 +620,7 @@ fn modify_database(database_name: &str, database_new_name: &str) {
 }
 
 fn create_page(page_name: &str) {
-    match GLOBAL_MASTER.create_page(String::from(page_name), String::from("comment")) {
+    match GLOBAL_MASTER.create_page(String::from(page_name), String::from("comment"), 0, 0) {
         Ok(()) => println!("create page {}", page_name),
         Err(err) => println!("create page {} error, {}", page_name, err),
     }

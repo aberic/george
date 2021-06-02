@@ -304,7 +304,7 @@ impl Database {
             "{}:#?{}:#?{}",
             name,
             comment,
-            create_time.num_nanoseconds_string().unwrap(),
+            create_time.nano_string().unwrap(),
         ))
         .into_bytes()
     }

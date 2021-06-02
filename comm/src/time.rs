@@ -76,12 +76,20 @@ impl Time {
         self.duration.clone()
     }
 
-    pub fn num_nanoseconds(&self) -> Option<i64> {
+    pub fn sec(&self) -> i64 {
+        self.duration.num_seconds()
+    }
+
+    pub fn sec_string(&self) -> String {
+        self.sec().to_string()
+    }
+
+    pub fn nano(&self) -> Option<i64> {
         self.duration.num_nanoseconds()
     }
 
-    pub fn num_nanoseconds_string(&self) -> Option<String> {
-        match self.duration.num_nanoseconds() {
+    pub fn nano_string(&self) -> Option<String> {
+        match self.nano() {
             Some(nano_i64) => Some(nano_i64.to_string()),
             None => None,
         }

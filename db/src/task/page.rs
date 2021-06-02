@@ -14,46 +14,17 @@
 
 use std::sync::{Arc, RwLock};
 
-use chrono::{Duration, Local, NaiveDateTime};
+use chrono::Duration;
 
 use comm::errors::{Errs, GeorgeResult};
 use comm::strings::StringHandler;
-use comm::Strings;
+use comm::{Strings, Time};
+use ge::utils::enums::Tag;
+use ge::Ge;
 
 use crate::task::engine::memory::Node;
 use crate::task::Page;
-use crate::utils::store::{ContentBytes, Metadata, HD};
-use crate::utils::writer::Filed;
 use crate::utils::Paths;
-
-/// 新建缓存页
-///
-/// 具体传参参考如下定义：<p><p>
-///
-/// ###Params
-///
-/// name 缓存页名称
-///
-/// comment 缓存页描述
-///
-/// size 可使用内存大小(单位：Mb)
-///
-/// period 默认有效期(单位：秒)，如无设置，默认维300
-fn new_page(name: String, comment: String, size: u64, period: u32) -> GeorgeResult<Page> {
-    let now: NaiveDateTime = Local::now().naive_local();
-    let create_time = Duration::nanoseconds(now.timestamp_nanos());
-    let filepath = Paths::page_filepath(name.clone());
-    Ok(Page {
-        name,
-        comment,
-        size,
-        period,
-        create_time,
-        metadata: Metadata::page(),
-        filer: Filed::create(filepath)?,
-        node: Node::create(),
-    })
-}
 
 impl Page {
     /// 新建缓存页
@@ -62,23 +33,29 @@ impl Page {
     ///
     /// ###Params
     ///
-    /// name 缓存页名称
-    ///
-    /// comment 缓存页描述
-    ///
-    /// size 可使用内存大小(单位：Mb)
-    ///
-    /// period 默认有效期(单位：秒)，如无设置，默认维300
-    pub(crate) fn create(name: String, comment: String) -> GeorgeResult<Arc<RwLock<Page>>> {
-        let page = new_page(name, comment, 0, 0)?;
-        let mut metadata_bytes = page.metadata_bytes();
-        let mut description = page.description();
-        // 初始化为32 + 8，即head长度加正文描述符长度
-        let mut before_description = ContentBytes::before(44, description.len() as u32);
-        metadata_bytes.append(&mut before_description);
-        metadata_bytes.append(&mut description);
-        page.append(metadata_bytes)?;
-        Ok(Arc::new(RwLock::new(page)))
+    /// * name 缓存页名称
+    /// * comment 缓存页描述
+    /// * size 可使用内存大小(单位：Mb)，为0则不限
+    /// * period 默认有效期(单位：秒)，如为0，则默认为300
+    pub(crate) fn create(
+        name: String,
+        comment: String,
+        size: u64,
+        period: u32,
+    ) -> GeorgeResult<Arc<RwLock<Page>>> {
+        let create_time = Time::now();
+        let filepath = Paths::page_filepath(name.clone());
+        let description =
+            Page::description(name.clone(), comment.clone(), size, period, create_time);
+        Ok(Arc::new(RwLock::new(Page {
+            name,
+            comment,
+            size,
+            period,
+            create_time,
+            ge: Ge::new(filepath, Tag::Page, description)?,
+            node: Node::create(),
+        })))
     }
 
     /// 名称
@@ -86,34 +63,13 @@ impl Page {
         self.name.clone()
     }
 
-    /// 描述
-    pub(crate) fn comment(&self) -> String {
-        self.comment.clone()
-    }
-
     /// 创建时间
-    pub(crate) fn create_time(&self) -> Duration {
+    pub(crate) fn create_time(&self) -> Time {
         self.create_time.clone()
-    }
-
-    /// 文件字节信息
-    pub(crate) fn metadata_bytes(&self) -> Vec<u8> {
-        self.metadata.bytes()
     }
 
     pub(super) fn node(&self) -> Arc<RwLock<Node>> {
         self.node.clone()
-    }
-
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
-    /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
-    ///
-    /// #Return
-    ///
-    /// seek_end_before 写之前文件字节数据长度
-    fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.filer.append(content)
     }
 }
 
@@ -133,6 +89,7 @@ impl Page {
     pub(crate) fn put(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
         self.node().read().unwrap().put(key, value, false)
     }
+
     /// 插入数据，无论存在与否都会插入或更新数据<p><p>
     ///
     /// ###Params
@@ -147,6 +104,7 @@ impl Page {
     pub(crate) fn set(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
         self.node().read().unwrap().put(key, value, true)
     }
+
     /// 获取数据，返回存储对象<p><p>
     ///
     /// ###Params
@@ -159,6 +117,7 @@ impl Page {
     pub(crate) fn get(&self, key: String) -> GeorgeResult<Vec<u8>> {
         self.node().read().unwrap().get(key)
     }
+
     /// 删除数据<p><p>
     ///
     /// ###Params
@@ -175,20 +134,29 @@ impl Page {
 
 impl Page {
     /// 生成文件描述
-    fn description(&self) -> Vec<u8> {
+    fn description(
+        name: String,
+        comment: String,
+        size: u64,
+        period: u32,
+        create_time: Time,
+    ) -> Vec<u8> {
         hex::encode(format!(
             "{}:#?{}:#?{}:#?{}:#?{}",
-            self.name(),
-            self.comment(),
-            self.size,
-            self.period,
-            self.create_time().num_nanoseconds().unwrap().to_string(),
+            name,
+            comment,
+            size,
+            period,
+            create_time.nano_string().unwrap(),
         ))
         .into_bytes()
     }
+
     /// 通过文件描述恢复结构信息
-    pub(crate) fn recover(hd: HD) -> GeorgeResult<Page> {
-        let description_str = Strings::from_utf8(hd.description())?;
+    pub(crate) fn recover(name: String) -> GeorgeResult<Page> {
+        let filepath = Paths::page_filepath(name.clone());
+        let ge = Ge::recovery(filepath)?;
+        let description_str = Strings::from_utf8(ge.description_content_bytes()?)?;
         match hex::decode(description_str) {
             Ok(vu8) => {
                 let real = Strings::from_utf8(vu8)?;
@@ -197,18 +165,16 @@ impl Page {
                 let comment = split.next().unwrap().to_string();
                 let size = split.next().unwrap().to_string().parse::<u64>().unwrap();
                 let period = split.next().unwrap().to_string().parse::<u32>().unwrap();
-                let create_time = Duration::nanoseconds(
+                let duration = Duration::nanoseconds(
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
-                let filepath = Paths::page_filepath(name.clone());
                 let page = Page {
                     name,
                     comment,
                     size,
                     period,
-                    create_time,
-                    metadata: hd.metadata(),
-                    filer: Filed::recovery(filepath)?,
+                    create_time: Time::from(duration),
+                    ge,
                     node: Node::recovery(),
                 };
                 log::info!("recovery page {}", page.name());

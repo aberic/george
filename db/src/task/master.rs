@@ -34,14 +34,13 @@ use crate::task::{Database, Master};
 use crate::utils::comm::{DEFAULT_COMMENT, DEFAULT_NAME, INDEX_DISK};
 use crate::utils::deploy::GLOBAL_CONFIG;
 use crate::utils::enums::{IndexType, KeyType};
-use crate::utils::store::ContentBytes;
 use crate::utils::Paths;
 
 impl Master {
     /// 初始化
     pub(crate) fn init(&self) -> GeorgeResult<()> {
         log::info!("bootstrap init!");
-        self.create_page(DEFAULT_NAME.to_string(), DEFAULT_COMMENT.to_string())?;
+        self.create_page(DEFAULT_NAME.to_string(), DEFAULT_COMMENT.to_string(), 0, 0)?;
         self.create_database(DEFAULT_NAME.to_string(), DEFAULT_COMMENT.to_string())?;
         self.create_view(
             DEFAULT_NAME.to_string(),
@@ -126,11 +125,24 @@ impl Master {
     }
 
     /// 创建缓存页
-    pub(super) fn create_page(&self, name: String, comment: String) -> GeorgeResult<()> {
+    ///
+    /// ###Params
+    ///
+    /// * name 缓存页名称
+    /// * comment 缓存页描述
+    /// * size 可使用内存大小(单位：Mb)，为0则不限
+    /// * period 默认有效期(单位：秒)，如为0，则默认为300
+    pub(super) fn create_page(
+        &self,
+        name: String,
+        comment: String,
+        size: u64,
+        period: u32,
+    ) -> GeorgeResult<()> {
         if self.exist_page(name.clone()) {
             return Err(Errs::page_exist_error());
         }
-        let page = Page::create(name.clone(), comment)?;
+        let page = Page::create(name.clone(), comment, size, period)?;
         self.page_map().write().unwrap().insert(name.clone(), page);
         log::debug!("create page {} success!", name);
         Ok(())
@@ -731,14 +743,12 @@ impl Master {
 
     /// 恢复page数据
     fn recovery_page(&self, page_name: String) -> GeorgeResult<()> {
-        let hd = ContentBytes::recovery(Paths::page_filepath(page_name))?;
         // 恢复database数据
-        let page = Page::recover(hd.clone())?;
+        let page = Page::recover(page_name)?;
         log::debug!(
-            "page [name={}, create time = {}, {:#?}]",
+            "page [name={}, create time = {}]",
             page.name(),
-            page.create_time().num_nanoseconds().unwrap().to_string(),
-            hd.metadata()
+            page.create_time().format("%Y-%m-%d %H:%M:%S"),
         );
         // 如果已存在该page，则不处理
         if !self.exist_page(page.name()) {

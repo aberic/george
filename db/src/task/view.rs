@@ -623,7 +623,7 @@ impl View {
             "{}:#?{}:#?{}:#?{}",
             name,
             comment,
-            create_time.num_nanoseconds_string().unwrap(),
+            create_time.nano_string().unwrap(),
             pigeonhole.to_string()
         ))
         .into_bytes()
@@ -663,7 +663,7 @@ impl View {
                             "view {{db={}, name={}, create_time={}, pigeonhole={:#?}}}",
                             database_name,
                             name,
-                            time.num_nanoseconds_string().unwrap(),
+                            time.format("%Y-%m-%d %H:%M:%S"),
                             pigeonhole,
                         );
                         Ok(view)

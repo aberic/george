@@ -371,7 +371,7 @@ impl Record {
             "{}|{}|{}",
             self.version(),
             self.filepath(),
-            self.create_time().num_nanoseconds_string().unwrap()
+            self.create_time().nano_string().unwrap()
         ))
     }
 
