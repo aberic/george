@@ -14,7 +14,6 @@
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
-use chrono::Duration;
 use once_cell::sync::Lazy;
 
 use comm::pool::ThreadPool;
@@ -29,8 +28,6 @@ use crate::task::seed::IndexPolicy;
 use crate::utils::comm::GEORGE_DB_CONFIG;
 use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
 use crate::utils::enums::{Engine, KeyType};
-use crate::utils::store::Metadata;
-use crate::utils::writer::Filed;
 
 mod database;
 pub mod engine;
@@ -130,21 +127,19 @@ pub(crate) struct Ledger {
     /// 名称
     pub(crate) name: String,
     /// 创建时间
-    pub(crate) create_time: Duration,
-    /// 文件信息
-    pub(crate) metadata: Metadata,
+    pub(crate) create_time: Time,
     /// 区块全数据记录文件
     ///
     /// 需要借助对象包裹，以便更新file，避免self为mut
-    pub(crate) filer: Filed,
+    pub(crate) ge: Ge,
     /// 区块Header数据记录文件
     ///
     /// 需要借助对象包裹，以便更新file，避免self为mut
-    pub(crate) filer_light: Filed,
+    pub(crate) ge_light: Ge,
     /// 区块Header数据以merkle形式进行存储的记录文件
     ///
     /// 需要借助对象包裹，以便更新file，避免self为mut
-    pub(crate) filer_merkle_light: Filed,
+    pub(crate) ge_merkle_light: Ge,
     /// 区块高度存储索引，根据块高查询区块
     pub(crate) index_block_height: Arc<dyn TIndex>,
     /// 区块hash存储索引，根据块hash查询区块
