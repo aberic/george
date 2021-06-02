@@ -14,33 +14,48 @@
 
 #[cfg(test)]
 mod ge {
-    use crate::utils::enums::{Engine, Tag};
+    use crate::utils::enums::Tag;
     use crate::Ge;
 
     #[test]
     fn fmt() {
-        let ge = Ge::new("src/test/db/none.ge", Tag::None, "test".as_bytes().to_vec()).unwrap();
+        let ge = Ge::new(
+            "src/test/fmt/none.ge",
+            Tag::None,
+            "test".as_bytes().to_vec(),
+        )
+        .unwrap();
         println!("ge = {:#?}", ge);
         let ge = Ge::new(
-            "src/test/db/bootstrap.ge",
+            "src/test/fmt/bootstrap.ge",
             Tag::Bootstrap,
             "test".as_bytes().to_vec(),
         )
         .unwrap();
         println!("ge = {:#?}", ge);
-        let ge = Ge::new("src/test/db/page.ge", Tag::Page, "test".as_bytes().to_vec()).unwrap();
-        println!("ge = {:#?}", ge);
-        let ge = Ge::new("src/test/db/view.ge", Tag::View, "test".as_bytes().to_vec()).unwrap();
-        println!("ge = {:#?}", ge);
-        let ge = Ge::new_4_index(
-            "src/test/db/index.ge",
-            Engine::Disk,
+        let ge = Ge::new(
+            "src/test/fmt/page.ge",
+            Tag::Page,
             "test".as_bytes().to_vec(),
         )
         .unwrap();
         println!("ge = {:#?}", ge);
         let ge = Ge::new(
-            "src/test/db/ledger.ge",
+            "src/test/fmt/view.ge",
+            Tag::View,
+            "test".as_bytes().to_vec(),
+        )
+        .unwrap();
+        println!("ge = {:#?}", ge);
+        let ge = Ge::new(
+            "src/test/fmt/index.ge",
+            Tag::Index,
+            "test".as_bytes().to_vec(),
+        )
+        .unwrap();
+        println!("ge = {:#?}", ge);
+        let ge = Ge::new(
+            "src/test/fmt/ledger.ge",
             Tag::Ledger,
             "test".as_bytes().to_vec(),
         )

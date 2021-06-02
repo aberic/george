@@ -20,16 +20,8 @@ impl EnumHandler for Enum {
         tag_u8(tag)
     }
 
-    fn engine_u8(engine: Engine) -> u8 {
-        index_type_u8(engine)
-    }
-
     fn tag(b: u8) -> Tag {
         tag(b)
-    }
-
-    fn engine(b: u8) -> Engine {
-        engine(b)
     }
 }
 
@@ -50,21 +42,6 @@ pub enum Tag {
     Index,
     /// 表数据文件
     Ledger,
-}
-
-/// 存储引擎类型符(1字节)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Engine {
-    /// 占位
-    None,
-    /// 卷宗存储引擎(单文件索引存储-64位)，最合适用于自增
-    Increment,
-    /// 卷宗存储引擎(单文件索引存储-64位)，最合适用于不重复u64
-    Sequence,
-    /// 卷宗存储引擎(单文件索引存储-64位)
-    Disk,
-    /// 块存储引擎(区块链索引存储-64位)
-    Block,
 }
 
 /// 文件类型标识符转字节码
@@ -90,28 +67,5 @@ fn tag(b: u8) -> Tag {
         0x05 => Tag::Page,
         0x06 => Tag::Ledger,
         _ => Tag::None,
-    }
-}
-
-/// 存储引擎类型符转字节码
-fn index_type_u8(index_type: Engine) -> u8 {
-    match index_type {
-        Engine::None => 0x00,
-        Engine::Increment => 0x01,
-        Engine::Disk => 0x02,
-        Engine::Sequence => 0x03,
-        Engine::Block => 0x04,
-    }
-}
-
-/// 字节码转存储引擎类型符
-fn engine(b: u8) -> Engine {
-    match b {
-        0x00 => Engine::None,
-        0x01 => Engine::Increment,
-        0x02 => Engine::Disk,
-        0x03 => Engine::Sequence,
-        0x04 => Engine::Block,
-        _ => Engine::None,
     }
 }

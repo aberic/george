@@ -14,73 +14,27 @@
 
 use std::sync::{Arc, RwLock};
 
-use chrono::{Duration, Local, NaiveDateTime};
+use chrono::Duration;
 
 use comm::errors::{Errs, GeorgeResult};
 use comm::json::{JsonExec, JsonGet, JsonNew};
 use comm::strings::StringHandler;
-use comm::Json;
 use comm::Strings;
+use comm::{Json, Time};
+use ge::utils::enums::Tag;
+use ge::Ge;
 
+use crate::task::engine::DataReal;
 // use crate::task::engine::block::Node as NB;
 use crate::task::engine::disk::Node as ND;
 use crate::task::engine::increment::Node as NI;
 use crate::task::engine::sequence::Node as NS;
 use crate::task::engine::traits::{TForm, TIndex, TNode, TSeed};
-use crate::task::engine::DataReal;
 use crate::task::rich::{Constraint, Expectation};
 use crate::task::Index;
-use crate::utils::enums::{IndexType, KeyType};
-use crate::utils::store::{ContentBytes, Metadata, HD};
-use crate::utils::writer::Filed;
+use crate::utils::enums::{Engine, KeyType};
 use crate::utils::Paths;
 use crate::utils::{Enum, EnumHandler};
-
-/// 新建索引
-///
-/// 该索引需要定义ID，此外索引所表达的字段组成内容也是必须的，并通过primary判断索引类型，具体传参参考如下定义：<p><p>
-///
-/// ###Params
-/// * view 视图
-/// * name 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
-/// * index_type 存储引擎类型
-/// * primary 是否主键，主键也是唯一索引，即默认列表依赖索引
-/// * unique 是否唯一索引
-/// * null 是否允许为空
-/// * key_type 索引值类型
-/// * root 根结点
-/// * metadata 索引文件信息
-fn new_index(
-    form: Arc<RwLock<dyn TForm>>,
-    name: String,
-    index_type: IndexType,
-    primary: bool,
-    unique: bool,
-    null: bool,
-    key_type: KeyType,
-    root: Arc<dyn TNode>,
-    metadata: Metadata,
-) -> GeorgeResult<Index> {
-    let now: NaiveDateTime = Local::now().naive_local();
-    let create_time = Duration::nanoseconds(now.timestamp_nanos());
-    let v_c = form.clone();
-    let v_r = v_c.read().unwrap();
-    let filepath = Paths::index_filepath(v_r.database_name(), v_r.name(), name.clone());
-    let index = Index {
-        form,
-        primary,
-        name,
-        root,
-        metadata,
-        create_time,
-        key_type,
-        unique,
-        null,
-        filer: Filed::create(filepath)?,
-        index_type,
-    };
-    Ok(index)
-}
 
 impl Index {
     /// 创建索引
@@ -88,7 +42,7 @@ impl Index {
     /// ###Params
     /// * view 视图
     /// * name 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
-    /// * index_type 存储引擎类型
+    /// * engine 存储引擎类型
     /// * primary 是否主键，主键也是唯一索引，即默认列表依赖索引
     /// * unique 是否唯一索引
     /// * null 是否允许为空
@@ -96,49 +50,45 @@ impl Index {
     pub(crate) fn create(
         form: Arc<RwLock<dyn TForm>>,
         name: String,
-        index_type: IndexType,
+        engine: Engine,
         primary: bool,
         unique: bool,
         null: bool,
         key_type: KeyType,
     ) -> GeorgeResult<Arc<dyn TIndex>> {
         let root: Arc<dyn TNode>;
-        match index_type {
-            IndexType::Increment => root = NI::create(form.clone(), name.clone())?,
-            IndexType::Sequence => root = NS::create(form.clone(), name.clone())?,
-            IndexType::Disk => root = ND::create(form.clone(), name.clone(), key_type, unique)?,
+        match engine {
+            Engine::Increment => root = NI::create(form.clone(), name.clone())?,
+            Engine::Sequence => root = NS::create(form.clone(), name.clone())?,
+            Engine::Disk => root = ND::create(form.clone(), name.clone(), key_type, unique)?,
             // IndexType::Block => root = NB::create(name.clone(), key_type),
             _ => return Err(Errs::str("unsupported engine type with none")),
         }
-        let index = new_index(
-            form,
-            name,
-            index_type.clone(),
+        let create_time = Time::now();
+        let v_c = form.clone();
+        let v_r = v_c.read().unwrap();
+        let filepath = Paths::index_filepath(v_r.database_name(), v_r.name(), name.clone());
+        let description = Index::descriptions(
+            name.clone(),
+            engine,
             primary,
             unique,
             null,
             key_type,
+            create_time,
+        );
+        Ok(Arc::new(Index {
+            form,
+            primary,
+            name,
             root,
-            Metadata::index(index_type)?,
-        )?;
-        let mut metadata_bytes = index.metadata_bytes();
-        let mut description = index.description();
-        // 初始化为32 + 8，即head长度加正文描述符长度
-        let mut before_description = ContentBytes::before(44, description.len() as u32);
-        metadata_bytes.append(&mut before_description);
-        metadata_bytes.append(&mut description);
-        index.append(metadata_bytes)?;
-        Ok(Arc::new(index))
-    }
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
-    /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
-    ///
-    /// #Return
-    ///
-    /// seek_end_before 写之前文件字节数据长度
-    fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.filer.append(content)
+            create_time,
+            key_type,
+            unique,
+            null,
+            ge: Ge::new(filepath, Tag::Index, description)?,
+            engine,
+        }))
     }
 }
 
@@ -160,23 +110,15 @@ impl TIndex for Index {
         self.name.clone()
     }
 
-    fn index_type(&self) -> IndexType {
-        self.index_type.clone()
+    fn engine(&self) -> Engine {
+        self.engine.clone()
     }
 
     fn key_type(&self) -> KeyType {
         self.key_type.clone()
     }
 
-    fn metadata(&self) -> Metadata {
-        self.metadata.clone()
-    }
-
-    fn metadata_bytes(&self) -> Vec<u8> {
-        self.metadata.bytes()
-    }
-
-    fn create_time(&self) -> Duration {
+    fn create_time(&self) -> Time {
         self.create_time.clone()
     }
 
@@ -415,70 +357,81 @@ impl TIndex for Index {
 
 impl Index {
     /// 生成文件描述
-    fn description(&self) -> Vec<u8> {
+    fn descriptions(
+        name: String,
+        engine: Engine,
+        primary: bool,
+        unique: bool,
+        null: bool,
+        key_type: KeyType,
+        create_time: Time,
+    ) -> Vec<u8> {
         hex::encode(format!(
             "{}:#?{}:#?{}:#?{}:#?{}:#?{}:#?{}",
-            self.name,
-            Enum::index_type_u8(self.index_type()),
-            self.primary,
-            self.unique,
-            self.null,
-            Enum::key_type_u8(self.key_type),
-            self.create_time().num_nanoseconds().unwrap().to_string(),
+            name,
+            Enum::engine_u8(engine),
+            primary,
+            unique,
+            null,
+            Enum::key_type_u8(key_type),
+            create_time.nano_string().unwrap(),
         ))
         .into_bytes()
     }
 
     /// 通过文件描述恢复结构信息
-    pub(crate) fn recover(form: Arc<RwLock<dyn TForm>>, hd: HD) -> GeorgeResult<Arc<dyn TIndex>> {
-        let des_bytes = hd.description();
-        let description_str = Strings::from_utf8(des_bytes)?;
+    pub(crate) fn recover(
+        form: Arc<RwLock<dyn TForm>>,
+        name: String,
+    ) -> GeorgeResult<Arc<dyn TIndex>> {
+        let v_c = form.clone();
+        let v_r = v_c.read().unwrap();
+        let filepath = Paths::index_filepath(v_r.database_name(), v_r.name(), name.clone());
+        let ge = Ge::recovery(filepath)?;
+        let description_str = Strings::from_utf8(ge.description_content_bytes()?)?;
         match hex::decode(description_str) {
             Ok(vu8) => {
                 let real = Strings::from_utf8(vu8)?;
                 let mut split = real.split(":#?");
                 let name = split.next().unwrap().to_string();
-                let index_type =
-                    Enum::index_type(split.next().unwrap().to_string().parse::<u8>().unwrap());
+                let engine = Enum::engine(split.next().unwrap().to_string().parse::<u8>().unwrap());
                 let primary = split.next().unwrap().to_string().parse::<bool>().unwrap();
                 let unique = split.next().unwrap().to_string().parse::<bool>().unwrap();
                 let null = split.next().unwrap().to_string().parse::<bool>().unwrap();
                 let key_type =
                     Enum::key_type(split.next().unwrap().to_string().parse::<u8>().unwrap());
-                let create_time = Duration::nanoseconds(
+                let duration = Duration::nanoseconds(
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
-                let v_c = form.clone();
-                let v_r = v_c.read().unwrap();
-                let filepath = Paths::index_filepath(v_r.database_name(), v_r.name(), name.clone());
                 let root: Arc<dyn TNode>;
-                match hd.index_type() {
-                    IndexType::Increment => root = NI::recovery(form.clone(), name.clone())?,
-                    IndexType::Sequence => root = NS::recovery(form.clone(), name.clone())?,
-                    IndexType::Disk => {
+                match engine {
+                    Engine::Increment => root = NI::recovery(form.clone(), name.clone())?,
+                    Engine::Sequence => root = NS::recovery(form.clone(), name.clone())?,
+                    Engine::Disk => {
                         root = ND::recovery(form.clone(), name.clone(), key_type, unique)?
                     }
                     // IndexType::Block => root = NB::recovery(name.clone(), key_type),
                     _ => return Err(Errs::str("unsupported engine type")),
                 }
+                let create_time = Time::from(duration);
                 log::info!(
-                    "recovery index {} from database.view {}.{}",
+                    "recovery index {} from database.view {}.{} created at {}",
                     name.clone(),
                     v_r.database_name(),
-                    v_r.name()
+                    v_r.name(),
+                    create_time.format("%Y-%m-%d %H:%M:%S")
                 );
                 let index = Index {
                     form,
                     name,
-                    index_type,
+                    engine,
                     primary,
                     unique,
                     create_time,
-                    metadata: hd.metadata(),
                     root,
                     key_type,
                     null,
-                    filer: Filed::recovery(filepath)?,
+                    ge,
                 };
                 Ok(Arc::new(index))
             }

@@ -33,7 +33,7 @@ use crate::task::Page;
 use crate::task::{Database, Master};
 use crate::utils::comm::{DEFAULT_COMMENT, DEFAULT_NAME, INDEX_DISK};
 use crate::utils::deploy::GLOBAL_CONFIG;
-use crate::utils::enums::{IndexType, KeyType};
+use crate::utils::enums::{Engine, KeyType};
 use crate::utils::Paths;
 
 impl Master {
@@ -348,7 +348,7 @@ impl Master {
         database_name: String,
         view_name: String,
         index_name: String,
-        index_type: IndexType,
+        index_type: Engine,
         key_type: KeyType,
         primary: bool,
         unique: bool,

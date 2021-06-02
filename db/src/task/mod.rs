@@ -28,7 +28,7 @@ use crate::task::master::init_log;
 use crate::task::seed::IndexPolicy;
 use crate::utils::comm::GEORGE_DB_CONFIG;
 use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
-use crate::utils::enums::{IndexType, KeyType};
+use crate::utils::enums::{Engine, KeyType};
 use crate::utils::store::Metadata;
 use crate::utils::writer::Filed;
 
@@ -164,7 +164,7 @@ pub(crate) struct Index {
     /// 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
     name: String,
     /// 存储引擎类型
-    index_type: IndexType,
+    engine: Engine,
     /// 是否主键，主键也是唯一索引，即默认列表依赖索引
     primary: bool,
     /// 是否唯一索引
@@ -175,14 +175,10 @@ pub(crate) struct Index {
     key_type: KeyType,
     /// 结点
     root: Arc<dyn TNode>,
-    /// 文件信息
-    metadata: Metadata,
     /// 创建时间
-    create_time: Duration,
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
-    /// 需要借助对象包裹，以便更新file，避免self为mut
-    filer: Filed,
+    create_time: Time,
+    /// ge文件对象
+    ge: Ge,
 }
 
 /// B+Tree索引叶子结点内防hash碰撞数组结构中单体结构

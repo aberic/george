@@ -25,7 +25,7 @@ use crate::task::engine::DataReal;
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::utils::comm::IndexKey;
-use crate::utils::enums::{IndexType, KeyType};
+use crate::utils::enums::{Engine, KeyType};
 use crate::utils::writer::Filed;
 use crate::utils::Paths;
 
@@ -151,7 +151,7 @@ impl Node {
         }
         seed.write().unwrap().modify_4_put(IndexPolicy::create(
             key,
-            IndexType::Sequence,
+            Engine::Sequence,
             self.node_filepath(),
             seek,
         ));
@@ -185,7 +185,7 @@ impl Node {
         if Vector::is_fill(res) {
             seed.write().unwrap().modify_4_del(IndexPolicy::create(
                 key,
-                IndexType::Sequence,
+                Engine::Sequence,
                 self.node_filepath(),
                 seek,
             ));

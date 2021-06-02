@@ -16,14 +16,13 @@
 mod metadata {
     use crate::header::Digest;
     use crate::metadata::{Description, Header};
-    use crate::utils::enums::{Engine, Tag};
+    use crate::utils::enums::Tag;
     use crate::Metadata;
 
     #[test]
     fn fmt() {
         let digest = Digest {
             tag: Tag::View,
-            engine: Engine::Sequence,
             version: [0x01, 0x02],
             sequence: [0x03, 0x04],
         };

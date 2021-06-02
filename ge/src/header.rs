@@ -17,7 +17,7 @@ use comm::vectors::VectorHandler;
 use comm::Vector;
 
 use crate::metadata::Header;
-use crate::utils::enums::{Engine, Tag};
+use crate::utils::enums::Tag;
 use crate::{END, FRONT};
 
 /// impl for new
@@ -33,13 +33,6 @@ impl Header {
     pub(crate) fn new(tag: Tag) -> Self {
         Header {
             digest: Digest::new(tag),
-        }
-    }
-
-    /// 索引数据文件默认摘要
-    pub(crate) fn new_4_index(engine: Engine) -> Self {
-        Header {
-            digest: Digest::new_4_index(engine),
         }
     }
 }
@@ -62,12 +55,12 @@ impl Header {
         // 首2字节
         header_bytes.push(FRONT.get(0).unwrap().clone());
         header_bytes.push(FRONT.get(1).unwrap().clone());
-        // 摘要28字节 = 已知6字节 + 占位22字节
-        // 摘要28字节 - 已知6字节
+        // 摘要28字节 = 已知5字节 + 占位23字节
+        // 摘要28字节 - 已知5字节
         let mut digest_bytes = self.digest.to_vec()?;
         header_bytes.append(&mut digest_bytes);
-        // 摘要28字节 - 占位22字节
-        let mut mid_bytes = Vector::create_empty_bytes(22);
+        // 摘要28字节 - 占位23字节
+        let mut mid_bytes = Vector::create_empty_bytes(23);
         header_bytes.append(&mut mid_bytes);
         // 尾2字节
         header_bytes.push(END.get(0).unwrap().clone());
@@ -91,7 +84,7 @@ impl Header {
             } else if 0x02 != header_bytes[30] || 0x19 != header_bytes[31] {
                 Err(Errs::str("recovery header failed! end is invalid!"))
             } else {
-                let digest_bytes = header_bytes[2..8].to_vec();
+                let digest_bytes = header_bytes[2..].to_vec();
                 Ok(Header {
                     digest: Digest::recovery(digest_bytes)?,
                 })
@@ -103,15 +96,13 @@ impl Header {
 /// ##文件元数据中摘要信息，长度28字节
 ///
 /// * `元数据`长度为32字节，由`起始符(2字节) + 摘要(28字节) + 截止符(2字节)`组成
-/// * `摘要`由`文件类型标识符(1字节) + 存储引擎类型符(1字节) + 文件版本号(2字节) + 文件序号(2字节) + 占位符(22字节)`组成
+/// * `摘要`由`文件类型标识符(1字节) + 文件版本号(2字节) + 文件序号(2字节) + 占位符(23字节)`组成
 /// * 文件版本号(2字节)，读取该文件时进行版本区分的编号，即`ge`文件版本发布号
 /// * 文件序号(2字节)，文件描述信息变更记录号，每当文件描述信息发生变更时，都会递增该序号
 #[derive(Clone)]
 pub struct Digest {
     /// 文件类型标识符(1字节)
     pub(crate) tag: Tag,
-    /// 存储引擎类型符(1字节)
-    pub(crate) engine: Engine,
     /// 文件版本号(2字节)，读取该文件时进行版本区分的编号，即`ge`文件版本发布号
     pub(crate) version: [u8; 2],
     /// 文件序号(2字节)，文件描述信息变更记录号，每当文件描述信息发生变更时，都会递增该序号

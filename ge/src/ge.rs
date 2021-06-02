@@ -19,7 +19,7 @@ use comm::io::file::{FilerHandler, FilerReader};
 use comm::io::Filer;
 
 use crate::metadata::{Description, Header};
-use crate::utils::enums::{Engine, Tag};
+use crate::utils::enums::Tag;
 use crate::utils::Filed;
 use crate::Ge;
 
@@ -39,17 +39,10 @@ impl Ge {
         tag: Tag,
         description: Vec<u8>,
     ) -> GeorgeResult<Ge> {
-        match tag {
-            Tag::Index => Err(Errs::str(
-                "index engine must be assigned, try new_4_index instead!",
-            )),
-            _ => {
-                if Filer::exist(&filepath) {
-                    Ge::recovery(filepath)
-                } else {
-                    Ge::new(filepath, tag, description)
-                }
-            }
+        if Filer::exist(&filepath) {
+            Ge::recovery(filepath)
+        } else {
+            Ge::new(filepath, tag, description)
         }
     }
 }
@@ -71,46 +64,9 @@ impl Ge {
         tag: Tag,
         mut description: Vec<u8>,
     ) -> GeorgeResult<Ge> {
-        match tag {
-            Tag::Index => Err(Errs::str(
-                "index engine must be assigned, try new_4_index instead!",
-            )),
-            _ => {
-                let filed = Filed::create(&filepath)?;
-                let filepath = Filer::absolute(filepath)?;
-                let metadata = Metadata::new(tag, description.len());
-                // 文件元数据信息，长度52字节
-                let mut metadata_bytes = metadata.to_vec()?;
-                metadata_bytes.append(&mut description);
-                // 将metadata默认值即描述内容同步写入
-                filed.append(metadata_bytes)?;
-                Ok(Ge {
-                    filepath,
-                    metadata,
-                    filed,
-                })
-            }
-        }
-    }
-
-    /// ##生成`index`属性的`ge`文件对象
-    ///
-    /// ###Params
-    /// * filepath 文件所在路径
-    /// * engine 存储引擎类型
-    /// * description 文件描述内容
-    ///
-    /// ###Return
-    ///
-    /// 返回一个拼装完成的文件元数据信息，长度52字节
-    pub fn new_4_index<P: AsRef<Path>>(
-        filepath: P,
-        engine: Engine,
-        mut description: Vec<u8>,
-    ) -> GeorgeResult<Ge> {
         let filed = Filed::create(&filepath)?;
         let filepath = Filer::absolute(filepath)?;
-        let metadata = Metadata::new_4_index(engine, description.len());
+        let metadata = Metadata::new(tag, description.len());
         // 文件元数据信息，长度52字节
         let mut metadata_bytes = metadata.to_vec()?;
         metadata_bytes.append(&mut description);
@@ -139,11 +95,6 @@ impl Ge {
     /// 获取文件类型标识符
     pub fn tag(&self) -> Tag {
         self.metadata.header.digest.tag()
-    }
-
-    /// 获取存储引擎类型
-    pub fn engine(&self) -> Engine {
-        self.metadata.header.digest.engine()
     }
 
     /// 文件版本号(2字节)，读取该文件时进行版本区分的编号，即ge文件版本发布号
@@ -304,7 +255,7 @@ impl Ge {
 /// * `变更后文件描述起始坐标`为一个新的文件描述，是由于当前文件进行了描述变更，为了定位新的描述主题且能够追溯版本变更历史而做的追加
 /// ---
 /// ##20210531版
-/// * `摘要`由`文件类型标识符(1字节) + 存储引擎类型符(1字节) + 文件版本号(2字节) + 文件序号(2字节) + 占位符(22字节)`组成
+/// * `摘要`由`文件类型标识符(1字节) + 文件版本号(2字节) + 文件序号(2字节) + 占位符(23字节)`组成
 /// * 版本文件序号为[0x00, 0x00]
 #[derive(Clone, Debug)]
 pub struct Metadata {

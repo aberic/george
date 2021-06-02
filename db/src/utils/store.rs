@@ -24,7 +24,7 @@ use comm::io::Filer;
 use comm::Trans;
 
 use crate::utils::deploy::VERSION;
-use crate::utils::enums::{IndexType, Tag};
+use crate::utils::enums::{Engine, Tag};
 use crate::utils::{Enum, EnumHandler};
 
 /// 起始符
@@ -38,7 +38,7 @@ pub struct Metadata {
     /// 标识符
     pub tag: Tag,
     /// 存储引擎类型
-    pub index_type: IndexType,
+    pub index_type: Engine,
     /// 版本号
     pub version: [u8; 2],
     /// 序号
@@ -63,7 +63,7 @@ impl Metadata {
     pub fn from_master(version: [u8; 2], sequence: u8) -> Metadata {
         Metadata {
             tag: Tag::Bootstrap,
-            index_type: IndexType::None,
+            index_type: Engine::None,
             version,
             sequence,
         }
@@ -72,7 +72,7 @@ impl Metadata {
     pub fn from_page(version: [u8; 2], sequence: u8) -> Metadata {
         Metadata {
             tag: Tag::Page,
-            index_type: IndexType::None,
+            index_type: Engine::None,
             version,
             sequence,
         }
@@ -81,7 +81,7 @@ impl Metadata {
     pub fn from_database(version: [u8; 2], sequence: u8) -> Metadata {
         Metadata {
             tag: Tag::Database,
-            index_type: IndexType::None,
+            index_type: Engine::None,
             version,
             sequence,
         }
@@ -90,7 +90,7 @@ impl Metadata {
     pub fn from_view(version: [u8; 2], sequence: u8) -> Metadata {
         Metadata {
             tag: Tag::View,
-            index_type: IndexType::None,
+            index_type: Engine::None,
             version,
             sequence,
         }
@@ -99,13 +99,13 @@ impl Metadata {
     pub fn from_ledger(version: [u8; 2], sequence: u8) -> Metadata {
         Metadata {
             tag: Tag::Ledger,
-            index_type: IndexType::None,
+            index_type: Engine::None,
             version,
             sequence,
         }
     }
 
-    pub fn from_index(index_type: IndexType, version: [u8; 2], sequence: u8) -> Metadata {
+    pub fn from_index(index_type: Engine, version: [u8; 2], sequence: u8) -> Metadata {
         Metadata {
             tag: Tag::Index,
             index_type,
@@ -117,7 +117,7 @@ impl Metadata {
     pub fn page() -> Metadata {
         Metadata {
             tag: Tag::Page,
-            index_type: IndexType::None,
+            index_type: Engine::None,
             version: VERSION,
             sequence: 0x00,
         }
@@ -126,7 +126,7 @@ impl Metadata {
     pub fn database() -> Metadata {
         Metadata {
             tag: Tag::Database,
-            index_type: IndexType::None,
+            index_type: Engine::None,
             version: VERSION,
             sequence: 0x00,
         }
@@ -135,7 +135,7 @@ impl Metadata {
     pub fn view() -> Metadata {
         Metadata {
             tag: Tag::View,
-            index_type: IndexType::None,
+            index_type: Engine::None,
             version: VERSION,
             sequence: 0x00,
         }
@@ -144,15 +144,15 @@ impl Metadata {
     pub fn ledger() -> Metadata {
         Metadata {
             tag: Tag::Ledger,
-            index_type: IndexType::None,
+            index_type: Engine::None,
             version: VERSION,
             sequence: 0x00,
         }
     }
 
-    pub fn index(index_type: IndexType) -> GeorgeResult<Metadata> {
+    pub fn index(index_type: Engine) -> GeorgeResult<Metadata> {
         match index_type {
-            IndexType::None => Err(Errs::str("unsupported engine type with none")),
+            Engine::None => Err(Errs::str("unsupported engine type with none")),
             _ => Ok(Metadata {
                 tag: Tag::Index,
                 index_type,
@@ -183,7 +183,7 @@ impl Metadata {
                     head.get(6).unwrap().clone(),
                 )),
                 Tag::Index => Ok(Metadata::from_index(
-                    Enum::index_type(head.get(3).unwrap().clone()),
+                    Enum::engine(head.get(3).unwrap().clone()),
                     [head.get(4).unwrap().clone(), head.get(5).unwrap().clone()],
                     head.get(6).unwrap().clone(),
                 )),
@@ -202,7 +202,7 @@ impl Metadata {
     }
 
     /// 索引引擎类型
-    pub fn index_type(&self) -> IndexType {
+    pub fn index_type(&self) -> Engine {
         self.index_type.clone()
     }
 
@@ -243,7 +243,7 @@ impl Metadata {
     pub fn bytes(&self) -> Vec<u8> {
         let mut type_u8: u8 = 0x00;
         match self.tag {
-            Tag::Index => type_u8 = Enum::index_type_u8(self.index_type()),
+            Tag::Index => type_u8 = Enum::engine_u8(self.index_type()),
             _ => {}
         }
         let head: [u8; 32] = [
@@ -295,7 +295,7 @@ impl HD {
         self.metadata.clone()
     }
 
-    pub fn index_type(&self) -> IndexType {
+    pub fn index_type(&self) -> Engine {
         self.metadata().index_type.clone()
     }
 

@@ -12,23 +12,22 @@
  * limitations under the License.
  */
 
+use std::collections::HashMap;
+use std::fmt;
+use std::ops::Add;
 use std::sync::{Arc, RwLock};
 
 use chrono::Duration;
+use serde::__private::fmt::Debug;
 
 use comm::errors::{Errs, GeorgeResult};
+use comm::strings::StringHandler;
+use comm::{Strings, Time};
 
 use crate::task::engine::DataReal;
 use crate::task::rich::{Condition, Constraint, Expectation};
 use crate::task::seed::IndexPolicy;
-use crate::utils::enums::{IndexType, KeyType};
-use crate::utils::store::Metadata;
-use comm::strings::StringHandler;
-use comm::{Strings, Time};
-use serde::__private::fmt::Debug;
-use std::collections::HashMap;
-use std::fmt;
-use std::ops::Add;
+use crate::utils::enums::{Engine, KeyType};
 
 /// 表通用特性，遵循此特性创建索引可以更方便的针对进行扩展
 ///
@@ -79,15 +78,11 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     /// siam::Index 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入<p><p>
     fn name(&self) -> String;
     /// 存储引擎类型
-    fn index_type(&self) -> IndexType;
+    fn engine(&self) -> Engine;
     /// 索引值类型
     fn key_type(&self) -> KeyType;
-    /// 文件信息
-    fn metadata(&self) -> Metadata;
-    /// 文件字节信息
-    fn metadata_bytes(&self) -> Vec<u8>;
     /// 创建时间
-    fn create_time(&self) -> Duration;
+    fn create_time(&self) -> Time;
     /// 插入数据，如果存在原值，不覆盖原结果<p><p>
     ///
     /// ###Params

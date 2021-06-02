@@ -14,7 +14,6 @@
 
 use std::error::Error;
 
-use chrono::{Duration, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 
 use comm::strings::StringHandler;
@@ -22,7 +21,7 @@ use comm::Strings;
 
 use crate::task::engine::traits::TForm;
 use crate::task::GLOBAL_MASTER;
-use crate::utils::enums::{IndexType, KeyType};
+use crate::utils::enums::{Engine, KeyType};
 
 #[cfg(test)]
 mod master {
@@ -33,7 +32,7 @@ mod master {
             create_view_with_increment, database_map, modify_database, modify_page, modify_view,
             view_record,
         };
-        use crate::utils::enums::{IndexType, KeyType};
+        use crate::utils::enums::{Engine, KeyType};
 
         #[test]
         fn test() {
@@ -70,7 +69,7 @@ mod master {
                 database_name,
                 view_name,
                 index_name,
-                IndexType::Disk,
+                Engine::Disk,
                 KeyType::String,
                 false,
                 true,
@@ -352,7 +351,7 @@ mod master {
                 database_name,
                 view_name,
                 index_name,
-                IndexType::Disk,
+                Engine::Disk,
                 KeyType::Int,
                 false,
                 false,
@@ -575,17 +574,11 @@ fn database_map() {
             for (index_name, index) in view_r.index_map().read().unwrap().iter().into_iter() {
                 let index_r = index.clone();
 
-                let duration: Duration = index_r.create_time();
-                let time_from_stamp = NaiveDateTime::from_timestamp(duration.num_seconds(), 0);
-
-                let time_format = time_from_stamp.format("%Y-%m-%d %H:%M:%S");
-
                 println!(
-                    "index_map_test {} | {} | {} | {}",
+                    "index_map_test {} | {} | {}",
                     index_name,
                     index_r.name(),
-                    index_r.create_time(),
-                    time_format
+                    index_r.create_time().format("%Y-%m-%d %H:%M:%S"),
                 )
             }
         }
@@ -716,7 +709,7 @@ fn create_index(
     database_name: &str,
     view_name: &str,
     index_name: &str,
-    index_type: IndexType,
+    index_type: Engine,
     key_type: KeyType,
     primary: bool,
     unique: bool,

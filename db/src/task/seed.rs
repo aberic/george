@@ -25,12 +25,12 @@ use comm::Vector;
 use crate::task::engine::traits::{TForm, TSeed};
 use crate::task::engine::DataReal;
 use crate::task::Seed;
-use crate::utils::enums::IndexType;
+use crate::utils::enums::Engine;
 
 /// 待处理索引操作策略
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct IndexPolicy {
-    index_type: IndexType,
+    index_type: Engine,
     /// 使用当前索引的原始key
     original_key: String,
     /// 待处理索引文件路径
@@ -44,7 +44,7 @@ pub(crate) struct IndexPolicy {
 impl IndexPolicy {
     pub fn create(
         key: String,
-        index_type: IndexType,
+        index_type: Engine,
         node_filepath: String,
         seek: u64,
     ) -> IndexPolicy {
@@ -64,7 +64,7 @@ impl IndexPolicy {
         custom: Vec<u8>,
     ) -> IndexPolicy {
         IndexPolicy {
-            index_type: IndexType::None,
+            index_type: Engine::None,
             original_key: key,
             node_filepath,
             seek,
@@ -131,7 +131,7 @@ impl TSeed for Seed {
 
     fn modify_4_put(&mut self, index_policy: IndexPolicy) {
         match index_policy.index_type {
-            IndexType::Increment => self.real.set_seq(index_policy.seek / 8),
+            Engine::Increment => self.real.set_seq(index_policy.seek / 8),
             _ => {}
         }
         self.policies.push(index_policy)
@@ -152,7 +152,7 @@ impl TSeed for Seed {
         // 将在数据在view中的坐标存入各个index
         for policy in self.policies.to_vec() {
             match policy.index_type {
-                IndexType::None => {
+                Engine::None => {
                     Filer::write_seek(policy.node_file_path(), policy.seek, policy.custom)?
                 }
                 _ => Filer::write_seek(
@@ -170,7 +170,7 @@ impl TSeed for Seed {
         // 坐标内容由view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)组成，因此是12个字节
         for policy in self.policies.to_vec() {
             match policy.index_type {
-                IndexType::None => {
+                Engine::None => {
                     Filer::write_seek(policy.node_file_path(), policy.seek, policy.custom)?
                 }
                 _ => Filer::write_seek(

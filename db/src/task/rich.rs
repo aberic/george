@@ -23,7 +23,7 @@ use comm::errors::{Errs, GeorgeResult};
 
 use crate::task::engine::traits::TIndex;
 use crate::utils::comm::IndexKey;
-use crate::utils::enums::{IndexType, KeyType};
+use crate::utils::enums::{Engine, KeyType};
 use comm::cryptos::hash::HashCRCHandler;
 
 /// 比较条件 gt/ge/lt/le/eq/ne 大于/大于等于/小于/小于等于/等于/不等
@@ -53,7 +53,7 @@ pub struct Condition {
     /// 条件 gt/ge/lt/le/eq/ne 大于/大于等于/小于/小于等于/等于/不等
     compare: Compare,
     /// 索引类型
-    index_type: IndexType,
+    index_type: Engine,
     /// 索引值类型
     key_type: KeyType,
     /// 比较对象为string
@@ -70,7 +70,7 @@ impl Condition {
     fn new(
         param: String,
         compare: Compare,
-        index_type: IndexType,
+        index_type: Engine,
         key_type: KeyType,
         value: String,
         index: Option<Arc<dyn TIndex>>,
@@ -364,7 +364,7 @@ impl Constraint {
                 // 比较条件 gt/ge/lt/le/eq/ne 大于/大于等于/小于/小于等于/等于/不等
                 let compare: Compare;
                 // 索引类型，初始化默认为None
-                let mut index_type: IndexType = IndexType::None;
+                let mut index_type: Engine = Engine::None;
                 // 条件值类型，初始化默认为None
                 let mut key_type: KeyType = KeyType::None;
                 // 开始解析单一对象
@@ -407,7 +407,7 @@ impl Constraint {
                         // 赋值当前单一对象可匹配索引
                         index = Some(idx.clone());
                         // 赋值索引类型
-                        index_type = idx.index_type();
+                        index_type = idx.engine();
                         // 赋值条件值类型
                         key_type = idx.key_type();
                     }
@@ -496,9 +496,9 @@ pub struct IndexStatus {
 impl IndexStatus {
     fn new(index: Arc<dyn TIndex>, conditions: Vec<Condition>) -> IndexStatus {
         let end: u64;
-        match index.index_type() {
-            IndexType::Increment => end = 0,
-            IndexType::Sequence => end = 0,
+        match index.engine() {
+            Engine::Increment => end = 0,
+            Engine::Sequence => end = 0,
             _ => end = 18446744073709551615,
         }
         IndexStatus {

@@ -20,8 +20,8 @@ impl EnumHandler for Enum {
         tag_u8(tag)
     }
 
-    fn index_type_u8(index_type: IndexType) -> u8 {
-        index_type_u8(index_type)
+    fn engine_u8(engine: Engine) -> u8 {
+        engine_u8(engine)
     }
 
     fn key_type_u8(key_type: KeyType) -> u8 {
@@ -32,8 +32,8 @@ impl EnumHandler for Enum {
         tag(b)
     }
 
-    fn index_type(b: u8) -> IndexType {
-        index_type(b)
+    fn engine(b: u8) -> Engine {
+        engine(b)
     }
 
     fn key_type(b: u8) -> KeyType {
@@ -76,8 +76,8 @@ pub enum KeyType {
 }
 
 /// 存储引擎类型
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum IndexType {
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum Engine {
     /// 占位
     None,
     /// 卷宗存储引擎(单文件索引存储-64位)，最合适用于自增
@@ -101,13 +101,13 @@ fn tag_u8(tag: Tag) -> u8 {
     }
 }
 
-fn index_type_u8(index_type: IndexType) -> u8 {
+fn engine_u8(index_type: Engine) -> u8 {
     match index_type {
-        IndexType::None => 0x00,
-        IndexType::Increment => 0x01,
-        IndexType::Disk => 0x02,
-        IndexType::Sequence => 0x03,
-        IndexType::Block => 0x04,
+        Engine::None => 0x00,
+        Engine::Increment => 0x01,
+        Engine::Disk => 0x02,
+        Engine::Sequence => 0x03,
+        Engine::Block => 0x04,
     }
 }
 
@@ -134,14 +134,14 @@ fn tag(b: u8) -> Tag {
     }
 }
 
-fn index_type(b: u8) -> IndexType {
+fn engine(b: u8) -> Engine {
     match b {
-        0x00 => IndexType::None,
-        0x01 => IndexType::Increment,
-        0x02 => IndexType::Disk,
-        0x03 => IndexType::Sequence,
-        0x04 => IndexType::Block,
-        _ => IndexType::None,
+        0x00 => Engine::None,
+        0x01 => Engine::Increment,
+        0x02 => Engine::Disk,
+        0x03 => Engine::Sequence,
+        0x04 => Engine::Block,
+        _ => Engine::None,
     }
 }
 

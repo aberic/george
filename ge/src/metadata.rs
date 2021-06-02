@@ -15,7 +15,7 @@
 use comm::errors::{Errs, GeorgeResult};
 
 use crate::header::Digest;
-use crate::utils::enums::{Engine, Tag};
+use crate::utils::enums::Tag;
 use crate::utils::Filed;
 use crate::Metadata;
 
@@ -32,21 +32,6 @@ impl Metadata {
     pub(crate) fn new(tag: Tag, len: usize) -> Metadata {
         Metadata {
             header: Header::new(tag),
-            description: Description::new(len),
-        }
-    }
-
-    /// ##生成`index`属性的`ge`文件文件元数据信息，长度52字节
-    ///
-    /// ###Params
-    /// * digest 文件元数据中摘要信息，长度28字节
-    ///
-    /// ###Return
-    ///
-    /// 返回一个拼装完成的文件元数据信息，长度52字节
-    pub(crate) fn new_4_index(engine: Engine, len: usize) -> Metadata {
-        Metadata {
-            header: Header::new_4_index(engine),
             description: Description::new(len),
         }
     }

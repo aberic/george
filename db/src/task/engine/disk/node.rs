@@ -30,7 +30,7 @@ use crate::task::engine::{DataReal, RootBytes};
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::utils::comm::{Distance, IndexKey};
-use crate::utils::enums::{IndexType, KeyType};
+use crate::utils::enums::{Engine, KeyType};
 use crate::utils::writer::Filed;
 use crate::utils::Paths;
 
@@ -312,7 +312,7 @@ impl Node {
             }
             seed.write().unwrap().modify_4_put(IndexPolicy::create(
                 key,
-                IndexType::Disk,
+                Engine::Disk,
                 self.record_filepath(),
                 record_info_seek,
             ));
@@ -377,7 +377,7 @@ impl Node {
                 }
                 seed.write().unwrap().modify_4_put(IndexPolicy::create(
                     key,
-                    IndexType::Disk,
+                    Engine::Disk,
                     self.record_filepath(),
                     record_info_seek,
                 ));
@@ -641,7 +641,7 @@ impl Node {
             if self.unique {
                 seed.write().unwrap().modify_4_del(IndexPolicy::create(
                     key,
-                    IndexType::Disk,
+                    Engine::Disk,
                     self.node_filepath(),
                     node_real_seek + next_node_start as u64,
                 ));
@@ -755,7 +755,7 @@ impl Node {
                 if Vector::is_empty(next_record_seek_bytes.clone()) {
                     seed.write().unwrap().modify_4_del(IndexPolicy::create(
                         key,
-                        IndexType::Disk,
+                        Engine::Disk,
                         self.record_filepath(),
                         record_seek,
                     ));

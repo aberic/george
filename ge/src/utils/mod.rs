@@ -13,7 +13,7 @@
  */
 use std::sync::{Arc, RwLock};
 
-use crate::utils::enums::{Engine, Tag};
+use crate::utils::enums::Tag;
 use crate::utils::filed::FiledExec;
 
 pub mod enums;
@@ -26,12 +26,8 @@ pub struct Enum {}
 pub trait EnumHandler {
     /// 文件类型标识符转字节码
     fn tag_u8(tag: Tag) -> u8;
-    /// 存储引擎类型符转字节码
-    fn engine_u8(engine: Engine) -> u8;
     /// 字节码转文件类型标识符
     fn tag(b: u8) -> Tag;
-    /// 字节码转存储引擎类型符
-    fn engine(b: u8) -> Engine;
 }
 
 #[derive(Debug, Clone)]

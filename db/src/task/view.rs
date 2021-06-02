@@ -27,6 +27,8 @@ use comm::vectors::VectorHandler;
 use comm::Trans;
 use comm::Vector;
 use comm::{Strings, Time};
+use ge::utils::enums::Tag;
+use ge::Ge;
 
 use crate::task::engine::traits::{Pigeonhole, TForm, TIndex, TSeed};
 use crate::task::rich::{Expectation, Selector};
@@ -34,11 +36,8 @@ use crate::task::Seed;
 use crate::task::View;
 use crate::task::{Index as IndexDefault, GLOBAL_THREAD_POOL};
 use crate::utils::comm::{IndexKey, INDEX_DISK, INDEX_INCREMENT};
-use crate::utils::enums::{IndexType, KeyType};
-use crate::utils::store::ContentBytes;
+use crate::utils::enums::{Engine, KeyType};
 use crate::utils::Paths;
-use ge::utils::enums::Tag;
-use ge::Ge;
 
 /// 新建视图
 fn new_view(database_name: String, name: String, comment: String) -> GeorgeResult<View> {
@@ -89,7 +88,7 @@ impl View {
         view.read().unwrap().create_index(
             view.clone(),
             INDEX_DISK.to_string(),
-            IndexType::Disk,
+            Engine::Disk,
             KeyType::String,
             true,
             true,
@@ -99,7 +98,7 @@ impl View {
             view.read().unwrap().create_index(
                 view.clone(),
                 INDEX_INCREMENT.to_string(),
-                IndexType::Increment,
+                Engine::Increment,
                 KeyType::UInt,
                 false,
                 true,
@@ -234,7 +233,7 @@ impl View {
         &self,
         view: Arc<RwLock<View>>,
         index_name: String,
-        index_type: IndexType,
+        index_type: Engine,
         key_type: KeyType,
         primary: bool,
         unique: bool,
@@ -697,23 +696,13 @@ impl View {
 
     /// 恢复view数据
     fn recovery_index(&self, view: Arc<RwLock<View>>, index_name: String) -> GeorgeResult<()> {
-        let index_file_path =
-            Paths::index_filepath(self.database_name(), self.name(), index_name.clone());
-        let hd = ContentBytes::recovery(index_file_path.clone())?;
-        let metadata = hd.metadata();
-        let index;
-        // 恢复index数据
-        match hd.index_type() {
-            IndexType::None => return Err(Errs::str("index engine type error")),
-            _ => index = IndexDefault::recover(view, hd)?,
-        }
+        let index = IndexDefault::recover(view, index_name.clone())?;
         log::debug!(
-            "index [db={}, view={}, name={}, create_time={}, {:#?}]",
+            "index [db={}, view={}, name={}, create_time={}]",
             self.database_name(),
             self.name(),
             index_name.clone(),
-            index.create_time().num_nanoseconds().unwrap().to_string(),
-            metadata
+            index.create_time().format("%Y-%m-%d %H:%M:%S"),
         );
         // 如果已存在该view，则不处理
         if !self.exist_index(index_name.clone()) {
