@@ -31,7 +31,7 @@ mod master {
         use crate::task::master_test::{
             archive_view, create_database, create_index, create_page, create_view,
             create_view_with_increment, database_map, modify_database, modify_page, modify_view,
-            view_metadata, view_record,
+            view_record,
         };
         use crate::utils::enums::{IndexType, KeyType};
 
@@ -80,11 +80,6 @@ mod master {
         }
 
         #[test]
-        fn database_map_test() {
-            database_map();
-        }
-
-        #[test]
         fn database_create_test() {
             create_database("database_create_test");
             database_map();
@@ -116,10 +111,10 @@ mod master {
 
         #[test]
         fn view_archive_test() {
-            create_view_with_increment("database_view_archive_test", "view_archive_test1");
+            create_view_with_increment("database_view_archive_test", "view_archive_test");
             archive_view(
                 "database_view_archive_test",
-                "view_archive_test1",
+                "view_archive_test",
                 "src/test/dir/x.ge",
             );
             database_map();
@@ -127,12 +122,12 @@ mod master {
 
         #[test]
         fn view_record_test() {
-            view_record("database_view_archive_test", "view_archive_test1", 0)
+            view_record("database_view_archive_test", "view_archive_test", 0)
         }
 
         #[test]
-        fn view_metadata_test() {
-            view_metadata("database_view_archive_test", "view_archive_test1")
+        fn database_map_test() {
+            database_map();
         }
     }
 
@@ -264,7 +259,13 @@ mod master {
             let mut i = 1;
             while i < 5 {
                 // 循环体
-                put(database_name, view_name, i.to_string().as_str(), "world", i);
+                put(
+                    database_name,
+                    view_name,
+                    i.to_string().as_str(),
+                    format!("world {}", i).as_str(),
+                    i,
+                );
                 i += 1;
             }
 
@@ -280,6 +281,20 @@ mod master {
                 );
                 i += 1;
             }
+        }
+
+        #[test]
+        fn increment_test_get() {
+            let database_name = "database_increment_base_test";
+            let view_name = "view_increment_base_test";
+            get_by_index(database_name, view_name, INDEX_INCREMENT, "1", 1);
+            get_by_index(database_name, view_name, INDEX_INCREMENT, "2", 2);
+            get_by_index(database_name, view_name, INDEX_INCREMENT, "3", 3);
+            get_by_index(database_name, view_name, INDEX_INCREMENT, "4", 4);
+            get_by_index(database_name, view_name, INDEX_INCREMENT, "5", 5);
+            get_by_index(database_name, view_name, INDEX_INCREMENT, "6", 6);
+            get_by_index(database_name, view_name, INDEX_INCREMENT, "7", 7);
+            get_by_index(database_name, view_name, INDEX_INCREMENT, "8", 8);
         }
 
         #[test]
@@ -550,17 +565,11 @@ fn database_map() {
             let view_c = view.clone();
             let view_r = view_c.read().unwrap();
 
-            let duration: Duration = view_r.create_time();
-            let time_from_stamp = NaiveDateTime::from_timestamp(duration.num_seconds(), 0);
-
-            let time_format = time_from_stamp.format("%Y-%m-%d %H:%M:%S");
-
             println!(
-                "view_map_test {} | {} | {} | {}",
+                "view_map_test {} | {} | {}",
                 view_name,
                 view_r.name(),
-                view_r.create_time(),
-                time_format
+                view_r.create_time().format("%Y-%m-%d %H:%M:%S"),
             );
 
             for (index_name, index) in view_r.index_map().read().unwrap().iter().into_iter() {
@@ -629,7 +638,12 @@ fn modify_page(page_name: &str, page_new_name: &str) {
 
 fn create_view(database_name: &str, view_name: &str) {
     create_database(database_name.clone());
-    match GLOBAL_MASTER.create_view(String::from(database_name), String::from(view_name), false) {
+    match GLOBAL_MASTER.create_view(
+        String::from(database_name),
+        String::from(view_name),
+        String::from("comment"),
+        false,
+    ) {
         Ok(()) => println!("create view {} from database {}", view_name, database_name),
         Err(err) => println!(
             "create view {} from database {} error, {}",
@@ -640,7 +654,12 @@ fn create_view(database_name: &str, view_name: &str) {
 
 fn create_view_with_increment(database_name: &str, view_name: &str) {
     create_database(database_name.clone());
-    match GLOBAL_MASTER.create_view(String::from(database_name), String::from(view_name), true) {
+    match GLOBAL_MASTER.create_view(
+        String::from(database_name),
+        String::from(view_name),
+        String::from("comment"),
+        true,
+    ) {
         Ok(()) => println!("create view {} from database {}", view_name, database_name),
         Err(err) => println!(
             "create view {} from database {} error, {}",
@@ -654,6 +673,7 @@ fn modify_view(database_name: &str, view_name: &str, view_new_name: &str) {
         String::from(database_name),
         String::from(view_name),
         String::from(view_new_name),
+        String::from("comment"),
     ) {
         Ok(()) => println!(
             "modify view {} to {} from {}",
@@ -686,16 +706,9 @@ fn view_record(database_name: &str, view_name: &str, version: u16) {
         Ok((filepath, create_time)) => println!(
             "filepath = {}, create_time = {}",
             filepath,
-            create_time.num_nanoseconds().unwrap().to_string(),
+            create_time.format("%Y-%m-%d %H:%M:%S"),
         ),
         Err(err) => println!("archive view {} error: {}", view_name, err),
-    }
-}
-
-fn view_metadata(database_name: &str, view_name: &str) {
-    match GLOBAL_MASTER.view_metadata(String::from(database_name), String::from(view_name)) {
-        Ok(res) => println!("view_metadata = {}", res),
-        Err(err) => println!("view_metadata {} error: {}", view_name, err),
     }
 }
 

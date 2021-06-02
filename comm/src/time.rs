@@ -75,4 +75,15 @@ impl Time {
     pub fn duration(&self) -> Duration {
         self.duration.clone()
     }
+
+    pub fn num_nanoseconds(&self) -> Option<i64> {
+        self.duration.num_nanoseconds()
+    }
+
+    pub fn num_nanoseconds_string(&self) -> Option<String> {
+        match self.duration.num_nanoseconds() {
+            Some(nano_i64) => Some(nano_i64.to_string()),
+            None => None,
+        }
+    }
 }

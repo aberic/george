@@ -14,7 +14,7 @@
 
 use std::sync::{Arc, RwLock};
 
-use chrono::{Duration, NaiveDateTime};
+use chrono::Duration;
 
 use comm::errors::{Errs, GeorgeResult};
 
@@ -24,7 +24,7 @@ use crate::task::seed::IndexPolicy;
 use crate::utils::enums::{IndexType, KeyType};
 use crate::utils::store::Metadata;
 use comm::strings::StringHandler;
-use comm::Strings;
+use comm::{Strings, Time};
 use serde::__private::fmt::Debug;
 use std::collections::HashMap;
 use std::fmt;
@@ -34,11 +34,14 @@ use std::ops::Add;
 ///
 /// 该特性包含了索引的基本方法，理论上都需要进行实现才能使用
 pub(crate) trait TForm: Send + Sync + Debug {
+    /// 数据库名称
+    fn database_name(&self) -> String;
+
     /// 名称
     fn name(&self) -> String;
 
-    /// 数据库名称
-    fn database_name(&self) -> String;
+    /// 介绍
+    fn comment(&self) -> String;
 
     /// 组装写入视图的内容，即持续长度+该长度的原文内容
     ///
@@ -242,7 +245,7 @@ impl fmt::Debug for Pigeonhole {
 }
 
 impl Pigeonhole {
-    pub(crate) fn create(version: u16, filepath: String, create_time: Duration) -> Pigeonhole {
+    pub(crate) fn create(version: u16, filepath: String, create_time: Time) -> Pigeonhole {
         Pigeonhole {
             now: Record {
                 version,
@@ -323,25 +326,23 @@ pub(crate) struct Record {
     /// 当前归档版本文件所处路径
     filepath: String,
     /// 归档时间
-    create_time: Duration,
+    create_time: Time,
 }
 
 impl fmt::Debug for Record {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let time_from_stamp = NaiveDateTime::from_timestamp(self.create_time().num_seconds(), 0);
-        let time_format = time_from_stamp.format("%Y-%m-%d %H:%M:%S");
         write!(
             f,
             "[version = {:#?}, filepath = {}, create_time = {}]",
             self.version(),
             self.filepath(),
-            time_format
+            self.create_time.format("%Y-%m-%d %H:%M:%S")
         )
     }
 }
 
 impl Record {
-    fn create(version: u16, filepath: String, create_time: Duration) -> Record {
+    fn create(version: u16, filepath: String, create_time: Time) -> Record {
         Record {
             version,
             filepath,
@@ -360,7 +361,7 @@ impl Record {
     }
 
     /// 归档时间
-    pub(crate) fn create_time(&self) -> Duration {
+    pub(crate) fn create_time(&self) -> Time {
         self.create_time.clone()
     }
 
@@ -370,7 +371,7 @@ impl Record {
             "{}|{}|{}",
             self.version(),
             self.filepath(),
-            self.create_time().num_nanoseconds().unwrap().to_string()
+            self.create_time().num_nanoseconds_string().unwrap()
         ))
     }
 
@@ -382,10 +383,10 @@ impl Record {
                 let mut split = real.split("|");
                 let version = split.next().unwrap().to_string().parse::<u16>().unwrap();
                 let filepath = split.next().unwrap().to_string();
-                let create_time = Duration::nanoseconds(
+                let duration = Duration::nanoseconds(
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
-                Ok(Record::create(version, filepath, create_time))
+                Ok(Record::create(version, filepath, Time::from(duration)))
             }
             Err(err) => Err(Errs::string(format!(
                 "recovery pigeonhole from utf8 1 failed! error is {}",

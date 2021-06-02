@@ -43,7 +43,12 @@ impl Master {
         log::info!("bootstrap init!");
         self.create_page(DEFAULT_NAME.to_string(), DEFAULT_COMMENT.to_string())?;
         self.create_database(DEFAULT_NAME.to_string(), DEFAULT_COMMENT.to_string())?;
-        self.create_view(DEFAULT_NAME.to_string(), DEFAULT_NAME.to_string(), true)
+        self.create_view(
+            DEFAULT_NAME.to_string(),
+            DEFAULT_NAME.to_string(),
+            DEFAULT_COMMENT.to_string(),
+            true,
+        )
     }
 
     /// 生成Master
@@ -57,7 +62,9 @@ impl Master {
         let duration: Duration;
         if Filer::exist(bootstrap_file_path.clone()) {
             ge = Ge::recovery(bootstrap_file_path.clone()).expect("recovery ge failed!");
-            let description = ge.description().expect("recovery description failed!");
+            let description = ge
+                .description_content_bytes()
+                .expect("recovery description failed!");
             duration = Duration::nanoseconds(
                 String::from_utf8(description)
                     .expect("description bytes to string failed!")
@@ -74,7 +81,7 @@ impl Master {
                 .to_string()
                 .as_bytes()
                 .to_vec();
-            ge = Ge::new(bootstrap_file_path.clone(), Tag::Bootstrap, description)
+            Ge::new(bootstrap_file_path.clone(), Tag::Bootstrap, description)
                 .expect("create ge failed!");
             init = true;
         }
@@ -90,7 +97,6 @@ impl Master {
             pages: Arc::new(Default::default()),
             databases: Default::default(),
             create_time: Time::from(duration),
-            ge,
         };
         let master_arc = Arc::new(master);
         if init {
@@ -248,12 +254,13 @@ impl Master {
         &self,
         database_name: String,
         view_name: String,
+        comment: String,
         with_sequence: bool,
     ) -> GeorgeResult<()> {
         match self.database_map().read().unwrap().get(&database_name) {
             Some(database_lock) => {
                 let database = database_lock.read().unwrap();
-                database.create_view(view_name, with_sequence)?;
+                database.create_view(view_name, comment, with_sequence)?;
             }
             None => return Err(Errs::database_no_exist_error()),
         }
@@ -266,11 +273,12 @@ impl Master {
         database_name: String,
         view_name: String,
         view_new_name: String,
+        comment: String,
     ) -> GeorgeResult<()> {
         match self.database_map().read().unwrap().get(&database_name) {
             Some(database_lock) => {
                 let database = database_lock.write().unwrap();
-                database.modify_view(view_name, view_new_name)
+                database.modify_view(view_name, view_new_name, comment)
             }
             None => return Err(Errs::database_no_exist_error()),
         }
@@ -303,23 +311,11 @@ impl Master {
         database_name: String,
         view_name: String,
         version: u16,
-    ) -> GeorgeResult<(String, Duration)> {
+    ) -> GeorgeResult<(String, Time)> {
         self.database(database_name)?
             .read()
             .unwrap()
             .view_record(view_name, version)
-    }
-
-    /// 视图文件信息
-    pub(crate) fn view_metadata(
-        &self,
-        database_name: String,
-        view_name: String,
-    ) -> GeorgeResult<String> {
-        self.database(database_name)?
-            .read()
-            .unwrap()
-            .view_metadata(view_name)
     }
 
     /// 在指定库及视图中创建索引
@@ -696,8 +692,9 @@ impl Master {
         // 恢复database数据
         let db = Database::recover(database_name)?;
         log::debug!(
-            "db [name={}, create time = {}]",
+            "db [name={}, comment={}, create time = {}]",
             db.name(),
+            db.comment(),
             db.create_time().format("%Y-%m-%d %H:%M:%S"),
         );
         // 如果已存在该database，则不处理

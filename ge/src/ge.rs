@@ -13,7 +13,6 @@
  */
 
 use std::path::Path;
-use std::sync::{Arc, RwLock};
 
 use comm::errors::{Errs, GeorgeResult};
 use comm::io::file::{FilerHandler, FilerReader};
@@ -35,7 +34,7 @@ impl Ge {
     /// ###Return
     ///
     /// 返回一个拼装完成的文件元数据信息，长度52字节
-    pub(crate) fn mock_new<P: AsRef<Path>>(
+    pub fn mock_new<P: AsRef<Path>>(
         filepath: P,
         tag: Tag,
         description: Vec<u8>,
@@ -77,16 +76,14 @@ impl Ge {
                 "index engine must be assigned, try new_4_index instead!",
             )),
             _ => {
-                let filed = Arc::new(RwLock::new(Filed::create(&filepath)?));
+                let filed = Filed::create(&filepath)?;
                 let filepath = Filer::absolute(filepath)?;
-                let metadata = Metadata::new(filed.clone(), tag, description.len());
+                let metadata = Metadata::new(tag, description.len());
                 // 文件元数据信息，长度52字节
                 let mut metadata_bytes = metadata.to_vec()?;
                 metadata_bytes.append(&mut description);
-                let filed_c = filed.clone();
-                let filed_w = filed_c.write().unwrap();
                 // 将metadata默认值即描述内容同步写入
-                filed_w.append(metadata_bytes)?;
+                filed.append(metadata_bytes)?;
                 Ok(Ge {
                     filepath,
                     metadata,
@@ -111,16 +108,14 @@ impl Ge {
         engine: Engine,
         mut description: Vec<u8>,
     ) -> GeorgeResult<Ge> {
-        let filed = Arc::new(RwLock::new(Filed::create(&filepath)?));
+        let filed = Filed::create(&filepath)?;
         let filepath = Filer::absolute(filepath)?;
-        let metadata = Metadata::new_4_index(filed.clone(), engine, description.len());
+        let metadata = Metadata::new_4_index(engine, description.len());
         // 文件元数据信息，长度52字节
         let mut metadata_bytes = metadata.to_vec()?;
         metadata_bytes.append(&mut description);
-        let filed_c = filed.clone();
-        let filed_w = filed_c.write().unwrap();
         // 将metadata默认值即描述内容同步写入
-        filed_w.append(metadata_bytes)?;
+        filed.append(metadata_bytes)?;
         Ok(Ge {
             filepath,
             metadata,
@@ -134,6 +129,11 @@ impl Ge {
     /// 文件元数据信息，长度52字节
     pub fn filepath(&self) -> String {
         self.filepath.clone()
+    }
+
+    /// 获取文件元数据信息
+    pub fn metadata(&self) -> Metadata {
+        self.metadata.clone()
     }
 
     /// 获取文件类型标识符
@@ -156,6 +156,52 @@ impl Ge {
         self.metadata.header.digest.sequence()
     }
 
+    /// ##初始化`ge`文件对象，一般在文件进行归档等操作后需要新的文件进行后续操作，新文件需要初始化
+    ///
+    /// 初始化结构为：`header_bytes(32字节) + [description_bytes(20字节) + description_content_bytes(len字节) … 循环]`
+    ///
+    /// ###Params
+    /// * header_bytes ge文件元数据中首部信息，长度32字节
+    /// * description_content_bytes_vc 文件描述变更记录
+    /// * description 文件描述内容
+    pub fn rebuild(
+        &self,
+        header_bytes: Vec<u8>,
+        description_content_bytes_vc: Vec<Vec<u8>>,
+    ) -> GeorgeResult<()> {
+        // 将32字节首部信息写入文件
+        self.append(header_bytes)?;
+        // 起始坐标为52，即文件元数据信息(52字节)后开始计算
+        let mut start = 52;
+        let vc_len = description_content_bytes_vc.len();
+        let pos = 1;
+        for description_content_bytes in description_content_bytes_vc {
+            let len = description_content_bytes.len();
+            if pos < vc_len {
+                let modify = start + (len as u64);
+                // 生成文件描述信息，长度20字节
+                let description_bytes = Description { start, len, modify }.to_vec();
+                // 将20字节文件描述信息写入文件
+                self.append(description_bytes)?;
+                self.append(description_content_bytes)?;
+                // 后续写入的文件描述内容的起始坐标为`modify + 20`
+                start = modify + 20;
+            } else {
+                // 生成文件描述信息，长度20字节
+                let description_bytes = Description {
+                    start,
+                    len,
+                    modify: 0,
+                }
+                .to_vec();
+                // 将20字节文件描述信息写入文件
+                self.append(description_bytes)?;
+                self.append(description_content_bytes)?;
+            }
+        }
+        Ok(())
+    }
+
     /// 变更描述信息
     ///
     /// ###Params
@@ -163,7 +209,11 @@ impl Ge {
     pub fn modify(&mut self, description_bytes: Vec<u8>) -> GeorgeResult<()> {
         match self.tag() {
             Tag::Index => Err(Errs::str("ge file with index tag can not be modify!")),
-            _ => match self.metadata.description.modify(description_bytes) {
+            _ => match self
+                .metadata
+                .description
+                .modify(description_bytes, &self.filed)
+            {
                 Ok(()) => {
                     let sequence_bytes = self.metadata.header.digest.sequence_add()?;
                     self.write(6, sequence_bytes)
@@ -175,12 +225,12 @@ impl Ge {
 
     /// 文件描述变更记录
     pub fn history(&self) -> GeorgeResult<Vec<Vec<u8>>> {
-        self.metadata.description.history()
+        self.metadata.description.history(&self.filed)
     }
 
-    /// 文件描述字节数组
-    pub fn description(&self) -> GeorgeResult<Vec<u8>> {
-        self.metadata.description.description()
+    /// 文件描述最新内容字节数组
+    pub fn description_content_bytes(&self) -> GeorgeResult<Vec<u8>> {
+        self.metadata.description.content_bytes(&self.filed)
     }
 
     /// 根据文件路径获取该文件追加写入的写对象
@@ -191,18 +241,25 @@ impl Ge {
     ///
     /// seek_end_before 写之前文件字节数据长度
     pub fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.filed.write().unwrap().append(content)
+        self.filed.append(content)
     }
 
     /// 写入的写对象到指定坐标
     ///
     /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
     pub fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
-        self.filed.write().unwrap().write(seek, content)
+        self.filed.write(seek, content)
     }
 
     pub fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
-        self.filed.read().unwrap().read(start, last)
+        self.filed.read(start, last)
+    }
+
+    /// 整理归档
+    ///
+    /// archive_file_path 归档路径
+    pub fn archive(&mut self, archive_file_path: String) -> GeorgeResult<()> {
+        self.filed.archive(archive_file_path)
     }
 }
 
@@ -218,9 +275,9 @@ impl Ge {
     /// 返回一个拼装完成的文件元数据信息，长度52字节
     pub fn recovery<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Ge> {
         let filepath = Filer::absolute(filepath)?;
-        let filed = Arc::new(RwLock::new(Filed::recovery(&filepath)?));
+        let filed = Filed::recovery(&filepath)?;
         let metadata_bytes = Filer::read_sub(&filepath, 0, 52)?;
-        let metadata = Metadata::recovery(filed.clone(), metadata_bytes)?;
+        let metadata = Metadata::recovery(&filed, metadata_bytes)?;
         Ok(Ge {
             filepath,
             metadata,

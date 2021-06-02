@@ -101,7 +101,7 @@ impl Digest {
     /// ###Return
     ///
     /// 返回一个拼装完成的文件已知摘要信息，长度6字节
-    pub(crate) fn to_vec(&self) -> GeorgeResult<Vec<u8>> {
+    pub fn to_vec(&self) -> GeorgeResult<Vec<u8>> {
         let engine: u8;
         let tag = Enum::tag_u8(self.tag());
         match self.tag() {

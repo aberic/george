@@ -46,12 +46,17 @@ impl Header {
 
 /// impl for fn
 impl Header {
+    /// 获取文件元数据中摘要信息
+    pub fn digest(&self) -> Digest {
+        self.digest.clone()
+    }
+
     /// ##生成ge文件元数据中首部信息，长度32字节
     ///
     /// ###Return
     ///
     /// 返回一个拼装完成的文件元数据中首部信息，长度32字节
-    pub(crate) fn to_vec(&self) -> GeorgeResult<Vec<u8>> {
+    pub fn to_vec(&self) -> GeorgeResult<Vec<u8>> {
         // 首2字节 + 摘要28字节 + 尾2字节 = 32字节
         let mut header_bytes: Vec<u8> = vec![];
         // 首2字节

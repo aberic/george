@@ -58,7 +58,7 @@ mod ge {
         .unwrap();
         println!("ge = {:#?}", ge);
         let ge_recovery = Ge::recovery("src/test/recovery/none.ge").unwrap();
-        println!("ge = {:#?}", ge_recovery);
+        println!("ge_recovery = {:#?}", ge_recovery);
     }
 
     #[test]
@@ -91,7 +91,30 @@ mod ge {
         }
         println!(
             "last des = {}",
-            String::from_utf8(ge.description().unwrap()).unwrap()
+            String::from_utf8(ge.description_content_bytes().unwrap()).unwrap()
         )
+    }
+
+    #[test]
+    fn rebuild() {
+        let mut ge = Ge::mock_new(
+            "src/test/rebuild/none.ge",
+            Tag::None,
+            "test".as_bytes().to_vec(),
+        )
+        .unwrap();
+        ge.modify("world 1".as_bytes().to_vec()).unwrap();
+        ge.modify("world 2".as_bytes().to_vec()).unwrap();
+        ge.modify("world 3".as_bytes().to_vec()).unwrap();
+        ge.modify("world 4".as_bytes().to_vec()).unwrap();
+        ge.modify("world 5".as_bytes().to_vec()).unwrap();
+
+        let hb = ge.metadata.header.to_vec().unwrap();
+        let dcb = ge.history().unwrap();
+        ge.archive("src/test/rebuild/build.ge".to_string()).unwrap();
+        ge.rebuild(hb, dcb).unwrap();
+        println!("ge = {:#?}", ge);
+        let ge_recovery = Ge::recovery("src/test/rebuild/build.ge").unwrap();
+        println!("ge_recovery = {:#?}", ge_recovery);
     }
 }

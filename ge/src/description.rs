@@ -13,7 +13,6 @@
  */
 
 use std::fmt;
-use std::sync::{Arc, RwLock};
 
 use comm::errors::{Errs, GeorgeResult};
 use comm::vectors::VectorHandler;
@@ -39,12 +38,11 @@ impl Description {
     /// 起始坐标为52，即文件元数据信息(52字节)后开始计算
     /// * 默认新建modify为0
     /// * 默认新建modify_seek为`首部信息(32字节) + 文件描述由描述起始坐标(8字节) + 描述内容长度(4字节)`=44
-    pub(crate) fn new(filed: Arc<RwLock<Filed>>, len: usize) -> Self {
+    pub(crate) fn new(len: usize) -> Self {
         Description {
             start: 52,
             len,
             modify: 0,
-            filed,
         }
     }
 }
@@ -75,11 +73,15 @@ impl Description {
     ///
     /// ###Params
     /// * description 待变更的文件描述内容
-    pub(crate) fn modify(&mut self, mut description_bytes: Vec<u8>) -> GeorgeResult<()> {
+    pub(crate) fn modify(
+        &mut self,
+        mut description_bytes: Vec<u8>,
+        filed: &Filed,
+    ) -> GeorgeResult<()> {
         if self.modify > 0 {
             Err(Errs::string(format!(
                 "ge file {} is invalid!",
-                self.filed.read().unwrap().filepath()
+                filed.filepath()
             )))
         } else {
             let len = description_bytes.len();
@@ -87,20 +89,20 @@ impl Description {
             let mut des = Vector::create_empty_bytes(20);
             des.append(&mut description_bytes);
             // 原modify记录下一文件描述坐标地址
-            let modify = self.append(des)?;
+            let modify = filed.append(des)?;
 
             // 新文件描述内容
             // 描述起始坐标 = 文件描述坐标地址 + 文件描述(20字节)
             let des_new_start = modify + 20;
             let des_new_len = len;
             let des_new_bytes = Description::des_to_vec(des_new_start, des_new_len, 0);
-            self.write(modify, des_new_bytes)?;
+            filed.write(modify, des_new_bytes)?;
 
             // `文件描述`由`描述起始坐标(8字节) + 描述内容长度(4字节) + 变更后文件描述起始坐标(8字节)`
             // `self.start`后紧跟描述内容，`self.start - 8`即为记录`变更后文件描述起始坐标(8字节)`的坐标
             let modify_seek = self.start - 8;
             let modify_bytes = Trans::u64_2_bytes(modify);
-            self.write(modify_seek, modify_bytes)?;
+            filed.write(modify_seek, modify_bytes)?;
             self.start = des_new_start;
             self.len = len;
             Ok(())
@@ -108,15 +110,15 @@ impl Description {
     }
 
     /// 文件描述变更记录
-    pub(crate) fn history(&self) -> GeorgeResult<Vec<Vec<u8>>> {
+    pub(crate) fn history(&self, filed: &Filed) -> GeorgeResult<Vec<Vec<u8>>> {
         let mut des_vc: Vec<Vec<u8>> = vec![];
         let mut modify_start = 32;
         loop {
-            let description_bytes = self.filed.read().unwrap().read(modify_start, 20)?;
+            let description_bytes = filed.read(modify_start, 20)?;
             let start = Trans::bytes_2_u64(description_bytes[0..8].to_vec())?;
             let last = Trans::bytes_2_u32(description_bytes[8..12].to_vec())? as usize;
             modify_start = Trans::bytes_2_u64(description_bytes[12..20].to_vec())?;
-            des_vc.push(self.filed.read().unwrap().read(start, last)?);
+            des_vc.push(filed.read(start, last)?);
             if modify_start == 0 {
                 break;
             }
@@ -124,21 +126,21 @@ impl Description {
         Ok(des_vc)
     }
 
-    /// 文件描述变更记录
-    pub(crate) fn description(&self) -> GeorgeResult<Vec<u8>> {
-        let mut description: Vec<u8> = vec![];
+    /// 文件描述最新内容字节数组
+    pub(crate) fn content_bytes(&self, filed: &Filed) -> GeorgeResult<Vec<u8>> {
+        let mut content_bytes: Vec<u8>;
         let mut modify_start = 32;
         loop {
-            let description_bytes = self.filed.read().unwrap().read(modify_start, 20)?;
+            let description_bytes = filed.read(modify_start, 20)?;
             let start = Trans::bytes_2_u64(description_bytes[0..8].to_vec())?;
             let last = Trans::bytes_2_u32(description_bytes[8..12].to_vec())? as usize;
             modify_start = Trans::bytes_2_u64(description_bytes[12..20].to_vec())?;
-            description = self.filed.read().unwrap().read(start, last)?;
+            content_bytes = filed.read(start, last)?;
             if modify_start == 0 {
                 break;
             }
         }
-        Ok(description)
+        Ok(content_bytes)
     }
 
     /// ##生成`ge`文件描述信息，长度20字节
@@ -147,36 +149,15 @@ impl Description {
     /// ###Return
     ///
     /// 返回一个拼装完成的文件描述信息，长度20字节
-    pub(crate) fn to_vec(&self) -> Vec<u8> {
+    pub fn to_vec(&self) -> Vec<u8> {
         Description::des_to_vec(self.start, self.len, self.modify)
-    }
-
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
-    /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
-    ///
-    /// #Return
-    ///
-    /// seek_end_before 写之前文件字节数据长度
-    fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.filed.write().unwrap().append(content)
-    }
-
-    /// 写入的写对象到指定坐标
-    ///
-    /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
-    fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
-        self.filed.write().unwrap().write(seek, content)
     }
 }
 
 /// impl for recovery
 impl Description {
     /// ##恢复`ge`文件描述信息，长度20字节
-    pub(crate) fn recovery(
-        filed: Arc<RwLock<Filed>>,
-        description_bytes: Vec<u8>,
-    ) -> GeorgeResult<Description> {
+    pub(crate) fn recovery(filed: &Filed, description_bytes: Vec<u8>) -> GeorgeResult<Description> {
         if description_bytes.len() != 20 {
             Err(Errs::str(
                 "recovery description failed! description bytes len must be 20!",
@@ -186,15 +167,10 @@ impl Description {
             let len = Trans::bytes_2_u32(description_bytes[8..12].to_vec())? as usize;
             let modify = Trans::bytes_2_u64(description_bytes[12..20].to_vec())?;
             if modify > 0 {
-                let description_bytes = filed.read().unwrap().read(modify, 20)?;
+                let description_bytes = filed.read(modify, 20)?;
                 Description::recovery(filed, description_bytes)
             } else {
-                Ok(Description {
-                    start,
-                    len,
-                    modify,
-                    filed,
-                })
+                Ok(Description { start, len, modify })
             }
         }
     }

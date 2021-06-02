@@ -69,8 +69,6 @@ pub struct Master {
     databases: Arc<RwLock<HashMap<String, Arc<RwLock<Database>>>>>,
     /// 创建时间
     create_time: Time,
-    /// ge文件对象
-    ge: Ge,
 }
 
 #[derive(Debug, Clone)]
@@ -94,14 +92,12 @@ pub(crate) struct View {
     pub(crate) database_name: String,
     /// 名称
     pub(crate) name: String,
+    /// 描述
+    comment: String,
     /// 创建时间
-    pub(crate) create_time: Duration,
-    /// 文件信息
-    pub(crate) metadata: Metadata,
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
-    /// 需要借助对象包裹，以便更新file，避免self为mut
-    pub(crate) filer: Filed,
+    pub(crate) create_time: Time,
+    /// ge文件对象
+    ge: Ge,
     /// 索引集合
     pub(crate) indexes: Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>,
     /// 当前归档版本信息

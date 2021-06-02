@@ -17,9 +17,7 @@ mod metadata {
     use crate::header::Digest;
     use crate::metadata::{Description, Header};
     use crate::utils::enums::{Engine, Tag};
-    use crate::utils::Filed;
     use crate::Metadata;
-    use std::sync::{Arc, RwLock};
 
     #[test]
     fn fmt() {
@@ -33,9 +31,6 @@ mod metadata {
             start: 100,
             len: 1000,
             modify: 10000,
-            filed: Arc::new(RwLock::new(
-                Filed::mock("src/test/metadata/fmt.ge").unwrap(),
-            )),
         };
         let header = Header { digest };
         let md = Metadata {

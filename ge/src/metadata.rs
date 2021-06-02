@@ -12,8 +12,6 @@
  * limitations under the License.
  */
 
-use std::sync::{Arc, RwLock};
-
 use comm::errors::{Errs, GeorgeResult};
 
 use crate::header::Digest;
@@ -31,10 +29,10 @@ impl Metadata {
     /// ###Return
     ///
     /// 返回一个拼装完成的文件元数据信息，长度52字节
-    pub(crate) fn new(filed: Arc<RwLock<Filed>>, tag: Tag, len: usize) -> Metadata {
+    pub(crate) fn new(tag: Tag, len: usize) -> Metadata {
         Metadata {
             header: Header::new(tag),
-            description: Description::new(filed, len),
+            description: Description::new(len),
         }
     }
 
@@ -46,25 +44,32 @@ impl Metadata {
     /// ###Return
     ///
     /// 返回一个拼装完成的文件元数据信息，长度52字节
-    pub(crate) fn new_4_index(filed: Arc<RwLock<Filed>>, engine: Engine, len: usize) -> Metadata {
+    pub(crate) fn new_4_index(engine: Engine, len: usize) -> Metadata {
         Metadata {
             header: Header::new_4_index(engine),
-            description: Description::new(filed, len),
+            description: Description::new(len),
         }
     }
 }
 
 /// impl for fn
 impl Metadata {
+    /// 获取文件元数据中首部信息
+    pub fn header(&self) -> Header {
+        self.header.clone()
+    }
+
+    /// 获取文件描述
+    pub fn description(&self) -> Description {
+        self.description.clone()
+    }
+
     /// ##生成ge文件元数据信息，长度52字节
-    ///
-    /// ###Params
-    /// * digest 文件元数据中摘要信息，长度28字节
     ///
     /// ###Return
     ///
     /// 返回一个拼装完成的文件元数据信息，长度52字节
-    pub(crate) fn to_vec(&self) -> GeorgeResult<Vec<u8>> {
+    pub fn to_vec(&self) -> GeorgeResult<Vec<u8>> {
         // 文件元数据信息，长度52字节
         let mut metadata_bytes: Vec<u8> = vec![];
         // 文件元数据中首部信息，长度32字节
@@ -82,10 +87,7 @@ impl Metadata {
 /// impl for recovery
 impl Metadata {
     /// ##恢复`ge`文件元数据信息，长度52字节
-    pub(crate) fn recovery(
-        filed: Arc<RwLock<Filed>>,
-        metadata_bytes: Vec<u8>,
-    ) -> GeorgeResult<Metadata> {
+    pub(crate) fn recovery(filed: &Filed, metadata_bytes: Vec<u8>) -> GeorgeResult<Metadata> {
         if metadata_bytes.len() != 52 {
             Err(Errs::str(
                 "recovery metadata failed! metadata bytes len must be 52!",
@@ -121,8 +123,4 @@ pub struct Description {
     pub(crate) len: usize,
     /// 变更后文件描述起始坐标(8字节)
     pub(crate) modify: u64,
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
-    /// 需要借助对象包裹，以便更新file，避免self为mut
-    pub(crate) filed: Arc<RwLock<Filed>>,
 }

@@ -16,17 +16,17 @@ use std::collections::HashMap;
 use std::fs::{read_dir, ReadDir};
 use std::sync::{Arc, RwLock};
 
-use chrono::{Duration, Local, NaiveDateTime};
+use chrono::Duration;
 use tokio::sync::mpsc::Sender;
 
 use comm::errors::{Errs, GeorgeResult};
-use comm::io::file::FilerReader;
+use comm::io::file::{FilerHandler, FilerReader};
 use comm::io::Filer;
 use comm::strings::StringHandler;
 use comm::vectors::VectorHandler;
-use comm::Strings;
 use comm::Trans;
 use comm::Vector;
+use comm::{Strings, Time};
 
 use crate::task::engine::traits::{Pigeonhole, TForm, TIndex, TSeed};
 use crate::task::rich::{Expectation, Selector};
@@ -35,42 +35,44 @@ use crate::task::View;
 use crate::task::{Index as IndexDefault, GLOBAL_THREAD_POOL};
 use crate::utils::comm::{IndexKey, INDEX_DISK, INDEX_INCREMENT};
 use crate::utils::enums::{IndexType, KeyType};
-use crate::utils::store::{ContentBytes, Metadata, HD};
-use crate::utils::writer::Filed;
+use crate::utils::store::ContentBytes;
 use crate::utils::Paths;
+use ge::utils::enums::Tag;
+use ge::Ge;
 
 /// 新建视图
-fn new_view(database_name: String, name: String) -> GeorgeResult<View> {
-    let now: NaiveDateTime = Local::now().naive_local();
-    let create_time = Duration::nanoseconds(now.timestamp_nanos());
+fn new_view(database_name: String, name: String, comment: String) -> GeorgeResult<View> {
+    let time = Time::now();
     let filepath = Paths::view_filepath(database_name.clone(), name.clone());
-    let metadata = Metadata::view();
+    let pigeonhole = Pigeonhole::create(0, filepath.clone(), time);
+    let description = View::description(name.clone(), comment.clone(), time, pigeonhole.clone());
     let view = View {
         database_name,
         name,
-        create_time,
-        metadata,
-        filer: Filed::create(filepath.clone())?,
+        comment,
+        create_time: time,
+        ge: Ge::new(filepath, Tag::View, description)?,
         indexes: Default::default(),
-        pigeonhole: Pigeonhole::create(0, filepath, create_time),
+        pigeonhole,
     };
     Ok(view)
 }
 
 /// 新建视图
 fn mock_new_view(database_name: String, name: String) -> GeorgeResult<View> {
-    let now: NaiveDateTime = Local::now().naive_local();
-    let create_time = Duration::nanoseconds(now.timestamp_nanos());
+    let comment = "comment".to_string();
+    let time = Time::now();
     let filepath = Paths::view_filepath(database_name.clone(), name.clone());
-    let metadata = Metadata::view();
+    let pigeonhole = Pigeonhole::create(0, filepath.clone(), time);
+    let description = View::description(name.clone(), comment.clone(), time, pigeonhole.clone());
     let view = View {
         database_name,
         name,
-        create_time,
-        metadata,
-        filer: Filed::mock(filepath.clone())?,
+        comment,
+        create_time: time,
+        ge: Ge::new(filepath, Tag::View, description)?,
         indexes: Default::default(),
-        pigeonhole: Pigeonhole::create(0, filepath, create_time),
+        pigeonhole,
     };
     Ok(view)
 }
@@ -79,11 +81,11 @@ impl View {
     pub(crate) fn create(
         database_name: String,
         name: String,
+        comment: String,
         with_sequence: bool,
     ) -> GeorgeResult<Arc<RwLock<View>>> {
-        let view_new = new_view(database_name, name)?;
+        let view_new = new_view(database_name, name, comment)?;
         let view = Arc::new(RwLock::new(view_new));
-        view.clone().read().unwrap().init()?;
         view.read().unwrap().create_index(
             view.clone(),
             INDEX_DISK.to_string(),
@@ -107,25 +109,9 @@ impl View {
         Ok(view)
     }
 
-    fn init(&self) -> GeorgeResult<()> {
-        let mut metadata_bytes = self.metadata_bytes();
-        let mut description = self.description();
-        // 初始化为32 + 8，即head长度加正文描述符长度
-        let mut before_description = ContentBytes::before(44, description.len() as u32);
-        metadata_bytes.append(&mut before_description);
-        metadata_bytes.append(&mut description);
-        self.append(metadata_bytes)?;
-        Ok(())
-    }
-
     /// 创建时间
-    pub(crate) fn create_time(&self) -> Duration {
+    pub(crate) fn create_time(&self) -> Time {
         self.create_time.clone()
-    }
-
-    /// 文件信息
-    pub(crate) fn metadata(&self) -> Metadata {
-        self.metadata.clone()
     }
 
     /// 索引集合
@@ -149,11 +135,6 @@ impl View {
     /// 当前视图文件地址
     fn filepath(&self) -> String {
         self.pigeonhole().now().filepath()
-    }
-
-    /// 文件字节信息
-    fn metadata_bytes(&self) -> Vec<u8> {
-        self.metadata.bytes()
     }
 
     /// 当前归档版本信息
@@ -190,7 +171,7 @@ impl View {
     /// #return
     /// * filepath 当前归档版本文件所处路径
     /// * create_time 归档时间
-    pub(crate) fn record(&self, version: u16) -> GeorgeResult<(String, Duration)> {
+    pub(crate) fn record(&self, version: u16) -> GeorgeResult<(String, Time)> {
         if self.pigeonhole().now().version.eq(&version) {
             let record = self.pigeonhole().now();
             Ok((record.filepath(), record.create_time()))
@@ -207,38 +188,35 @@ impl View {
     /// 整理归档
     ///
     /// archive_file_path 归档路径
-    pub(crate) fn archive(&self, archive_file_path: String) -> GeorgeResult<()> {
-        self.filer.clone().archive(archive_file_path)?;
-        self.init()
+    pub(crate) fn archive(&mut self, archive_file_path: String) -> GeorgeResult<()> {
+        let header_bytes = self.ge.metadata().header().to_vec()?;
+        let description_content_bytes_vc = self.ge.history()?;
+        self.ge.archive(archive_file_path)?;
+        self.ge.rebuild(header_bytes, description_content_bytes_vc)
     }
 
     /// 视图变更
-    pub(crate) fn modify(&mut self, database_name: String, name: String) -> GeorgeResult<()> {
-        let old_db_name = self.database_name();
-        let old_view_name = self.name();
-        let content_old = self.read(0, 44)?;
-        self.database_name = database_name.clone();
-        self.name = name.clone();
-        let description = self.description();
-        let seek_end = self.append(description.clone())?;
-        log::debug!(
-            "view {} modify to {} with file seek_end = {}",
-            old_view_name.clone(),
-            self.name(),
-            seek_end
-        );
-        let content_new = ContentBytes::before(seek_end, description.len() as u32);
-        // 更新首部信息，初始化head为32，描述起始4字节，长度4字节
-        self.write(32, content_new)?;
-        let view_path_old = Paths::view_path(old_db_name.clone(), old_view_name.clone());
-        let view_path_new = Paths::view_path(database_name.clone(), self.name());
-        match std::fs::rename(view_path_old, view_path_new) {
-            Ok(_) => Ok(()),
-            Err(err) => {
-                // 回滚数据
-                self.write(0, content_old)?;
-                Err(Errs::strs("file rename failed", err))
+    pub(crate) fn modify(&mut self, name: String, comment: String) -> GeorgeResult<()> {
+        let time = Time::now();
+        let view_path_new = Paths::view_path(self.database_name(), name.clone());
+        let pigeonhole = Pigeonhole::create(0, view_path_new.clone(), time);
+        let description_bytes = View::description(name.clone(), comment.clone(), time, pigeonhole);
+        self.ge.modify(description_bytes)?;
+        if self.name().ne(&name) {
+            let view_path_old = Paths::view_path(self.database_name(), self.name());
+            match Filer::rename(view_path_old, view_path_new) {
+                Ok(_) => {
+                    self.name = name;
+                    self.comment = comment;
+                    self.create_time = time;
+                    Ok(())
+                }
+                Err(err) => Err(Errs::strs("file rename failed", err.to_string())),
             }
+        } else {
+            self.comment = comment;
+            self.create_time = time;
+            Ok(())
         }
     }
 
@@ -282,29 +260,21 @@ impl View {
     ///
     /// seek_end_before 写之前文件字节数据长度
     fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.filer.append(content)
-    }
-
-    /// 读取`start`起始且持续`last`长度的数据
-    fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
-        self.filer.read(start, last)
-    }
-
-    /// 写入的写对象到指定坐标
-    ///
-    /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
-    fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
-        self.filer.write(seek, content)
+        self.ge.append(content)
     }
 }
 
 impl TForm for View {
+    fn database_name(&self) -> String {
+        self.database_name.clone()
+    }
+
     fn name(&self) -> String {
         self.name.clone()
     }
 
-    fn database_name(&self) -> String {
-        self.database_name.clone()
+    fn comment(&self) -> String {
+        self.comment.clone()
     }
 
     fn write_content(&self, value: Vec<u8>) -> GeorgeResult<Vec<u8>> {
@@ -643,63 +613,60 @@ impl View {
 
 impl View {
     /// 生成文件描述
-    fn description(&self) -> Vec<u8> {
+    fn description(
+        name: String,
+        comment: String,
+        create_time: Time,
+        pigeonhole: Pigeonhole,
+    ) -> Vec<u8> {
         hex::encode(format!(
-            "{}:#?{}:#?{}",
-            self.name(),
-            self.create_time().num_nanoseconds().unwrap().to_string(),
-            self.pigeonhole().to_string()
+            "{}:#?{}:#?{}:#?{}",
+            name,
+            comment,
+            create_time.num_nanoseconds_string().unwrap(),
+            pigeonhole.to_string()
         ))
         .into_bytes()
     }
 
     /// 通过文件描述恢复结构信息
-    pub(crate) fn recover(
-        database_name: String,
-        hd: HD,
-    ) -> GeorgeResult<(String, Arc<RwLock<View>>)> {
-        let description_str = Strings::from_utf8(hd.description())?;
+    pub(crate) fn recover(database_name: String, name: String) -> GeorgeResult<Arc<RwLock<View>>> {
+        let filepath = Paths::view_filepath(database_name.clone(), name.clone());
+        let ge = Ge::recovery(filepath)?;
+        let description_str = Strings::from_utf8(ge.description_content_bytes()?)?;
         match hex::decode(description_str) {
             Ok(vu8) => {
                 let real = Strings::from_utf8(vu8)?;
                 let mut split = real.split(":#?");
                 let name = split.next().unwrap().to_string();
-                let create_time = Duration::nanoseconds(
+                let comment = split.next().unwrap().to_string();
+                let duration = Duration::nanoseconds(
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
                 let pigeonhole = Pigeonhole::from_string(split.next().unwrap().to_string())?;
-                let filepath = Paths::view_filepath(database_name.clone(), name.clone());
-                let view = View {
+                let time = Time::from(duration);
+                let view = Arc::new(RwLock::new(View {
                     database_name: database_name.clone(),
-                    name,
-                    create_time,
-                    metadata: hd.metadata(),
-                    filer: Filed::recovery(filepath)?,
+                    name: name.clone(),
+                    comment,
+                    create_time: time,
+                    ge,
                     indexes: Arc::new(Default::default()),
-                    pigeonhole,
-                };
-                log::info!(
-                    "recovery view {} from database {}",
-                    view.name(),
-                    database_name,
-                );
-                let view_bak = Arc::new(RwLock::new(view.clone()));
-                match read_dir(Paths::view_path(database_name, view.name())) {
+                    pigeonhole: pigeonhole.clone(),
+                }));
+                log::info!("recovery view {} from database {}", name, database_name,);
+                match read_dir(Paths::view_path(database_name.clone(), name.clone())) {
                     // 恢复indexes数据
                     Ok(paths) => {
-                        view_bak
-                            .read()
-                            .unwrap()
-                            .recovery_indexes(view_bak.clone(), paths)?;
+                        view.read().unwrap().recovery_indexes(view.clone(), paths)?;
                         log::debug!(
-                            "view [db={}, name={}, create_time={}, pigeonhole={:#?}, {:#?}]",
-                            view.database_name(),
-                            view.name(),
-                            view.create_time().num_nanoseconds().unwrap().to_string(),
-                            view.pigeonhole(),
-                            hd.metadata()
+                            "view {{db={}, name={}, create_time={}, pigeonhole={:#?}}}",
+                            database_name,
+                            name,
+                            time.num_nanoseconds_string().unwrap(),
+                            pigeonhole,
                         );
-                        Ok((view.name(), view_bak))
+                        Ok(view)
                     }
                     Err(err) => Err(Errs::strs("recovery view read dir", err)),
                 }
@@ -763,13 +730,11 @@ impl View {
     ) -> GeorgeResult<Arc<RwLock<View>>> {
         let view = mock_new_view(database_name, name)?;
         let view_bak = Arc::new(RwLock::new(view));
-        view_bak.clone().read().unwrap().init()?;
         Ok(view_bak)
     }
 
     pub(crate) fn mock_create_single(database_name: String, name: String) -> GeorgeResult<View> {
         let view = mock_new_view(database_name, name)?;
-        view.init()?;
         Ok(view)
     }
 }

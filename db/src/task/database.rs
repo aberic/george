@@ -16,22 +16,19 @@ use std::collections::HashMap;
 use std::fs::{read_dir, ReadDir};
 use std::sync::{Arc, RwLock};
 
-use chrono::{Duration, Local, NaiveDateTime};
+use chrono::Duration;
 
 use comm::errors::{Errs, GeorgeResult};
-use comm::json::JsonHandler;
+use comm::io::file::FilerHandler;
+use comm::io::Filer;
 use comm::strings::StringHandler;
-use comm::{Json, Strings, Time};
+use comm::{Strings, Time};
+use ge::utils::enums::Tag;
+use ge::Ge;
 
 use crate::task::rich::Expectation;
 use crate::task::{Database, View};
-use crate::utils::store::{ContentBytes, Metadata, HD};
-use crate::utils::writer::Filed;
 use crate::utils::Paths;
-use comm::io::file::FilerHandler;
-use comm::io::Filer;
-use ge::utils::enums::Tag;
-use ge::Ge;
 
 impl Database {
     /// 新建数据库
@@ -48,7 +45,7 @@ impl Database {
     pub(crate) fn create(name: String, comment: String) -> GeorgeResult<Arc<RwLock<Database>>> {
         let time = Time::now();
         let filepath = Paths::database_filepath(name.clone());
-        let description = Database::descriptions(name.clone(), comment.clone(), time.duration());
+        let description = Database::description(name.clone(), comment.clone(), time);
         let database = Database {
             name,
             comment,
@@ -74,54 +71,30 @@ impl Database {
         self.create_time.clone()
     }
 
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
-    /// 直接进行写操作，不提供对外获取方法，因为当库名称发生变更时会导致异常
-    ///
-    /// #Return
-    ///
-    /// seek_end_before 写之前文件字节数据长度
-    fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.ge.append(content)
-    }
-
-    fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
-        self.ge.read(start, last)
-    }
-
-    fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
-        self.ge.write(seek, content)
-    }
-
     /// 视图索引集合
     pub(crate) fn view_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>> {
         self.views.clone()
     }
 
     pub(crate) fn modify(&mut self, name: String, comment: String) -> GeorgeResult<()> {
-        let old_name = self.name();
-        let old_comment = self.comment();
-        self.name = name.clone();
-        self.comment = comment.clone();
         let time = Time::now();
-        let description_bytes = Database::descriptions(name, comment, time.duration());
+        let description_bytes = Database::description(name.clone(), comment.clone(), time);
         self.ge.modify(description_bytes)?;
-        if self.name().ne(&old_name) {
-            let database_path_old = Paths::database_path(old_name.clone());
-            let database_path_new = Paths::database_path(self.name());
+        if self.name().ne(&name) {
+            let database_path_old = Paths::database_path(self.name());
+            let database_path_new = Paths::database_path(name.clone());
             match Filer::rename(database_path_old, database_path_new) {
                 Ok(_) => {
+                    self.name = name;
+                    self.comment = comment;
                     self.create_time = time;
                     Ok(())
                 }
-                Err(err) => {
-                    // 回滚数据
-                    self.name = old_name;
-                    self.comment = old_comment;
-                    Err(Errs::strs("file rename failed", err.to_string()))
-                }
+                Err(err) => Err(Errs::strs("file rename failed", err.to_string())),
             }
         } else {
+            self.comment = comment;
+            self.create_time = time;
             Ok(())
         }
     }
@@ -144,13 +117,18 @@ impl Database {
     /// 创建视图
     ///
     /// mem 是否为内存视图
-    pub(crate) fn create_view(&self, name: String, with_sequence: bool) -> GeorgeResult<()> {
+    pub(crate) fn create_view(
+        &self,
+        name: String,
+        comment: String,
+        with_sequence: bool,
+    ) -> GeorgeResult<()> {
         if self.exist_view(name.clone()) {
             return Err(Errs::view_exist_error());
         }
         self.view_map().write().unwrap().insert(
             name.clone(),
-            View::create(self.name(), name, with_sequence)?,
+            View::create(self.name(), name, comment, with_sequence)?,
         );
         Ok(())
     }
@@ -166,7 +144,12 @@ impl Database {
     }
 
     /// 修改视图
-    pub(crate) fn modify_view(&self, view_name: String, view_new_name: String) -> GeorgeResult<()> {
+    pub(crate) fn modify_view(
+        &self,
+        view_name: String,
+        view_new_name: String,
+        comment: String,
+    ) -> GeorgeResult<()> {
         if !self.exist_view(view_name.clone()) {
             return Err(Errs::view_no_exist_error());
         }
@@ -177,7 +160,7 @@ impl Database {
         view.clone()
             .write()
             .unwrap()
-            .modify(self.name(), view_new_name.clone())?;
+            .modify(view_new_name.clone(), comment)?;
         self.remove_view(view_name)?;
         self.recovery_view(view_new_name)
     }
@@ -207,13 +190,8 @@ impl Database {
         &self,
         view_name: String,
         version: u16,
-    ) -> GeorgeResult<(String, Duration)> {
+    ) -> GeorgeResult<(String, Time)> {
         self.view(view_name)?.read().unwrap().record(version)
-    }
-
-    /// 视图文件信息
-    pub(crate) fn view_metadata(&self, view_name: String) -> GeorgeResult<String> {
-        Json::obj_2_string(&self.view(view_name)?.read().unwrap().metadata())
     }
 }
 
@@ -321,27 +299,12 @@ impl Database {
 
 impl Database {
     /// 生成文件描述
-    fn description(&self) -> Vec<u8> {
-        hex::encode(format!(
-            "{}:#?{}:#?{}",
-            self.name(),
-            self.comment(),
-            self.create_time()
-                .duration()
-                .num_nanoseconds()
-                .unwrap()
-                .to_string(),
-        ))
-        .into_bytes()
-    }
-
-    /// 生成文件描述
-    fn descriptions(name: String, comment: String, create_time: Duration) -> Vec<u8> {
+    fn description(name: String, comment: String, create_time: Time) -> Vec<u8> {
         hex::encode(format!(
             "{}:#?{}:#?{}",
             name,
             comment,
-            create_time.num_nanoseconds().unwrap().to_string(),
+            create_time.num_nanoseconds_string().unwrap(),
         ))
         .into_bytes()
     }
@@ -350,7 +313,7 @@ impl Database {
     pub(crate) fn recover(name: String) -> GeorgeResult<Database> {
         let filepath = Paths::database_filepath(name.clone());
         let ge = Ge::recovery(filepath)?;
-        let description_str = Strings::from_utf8(ge.description()?)?;
+        let description_str = Strings::from_utf8(ge.description_content_bytes()?)?;
         match hex::decode(description_str) {
             Ok(vu8) => {
                 let real = Strings::from_utf8(vu8)?;
@@ -407,9 +370,7 @@ impl Database {
 
     /// 恢复view数据
     fn recovery_view(&self, view_name: String) -> GeorgeResult<()> {
-        let view_file_path = Paths::view_filepath(self.name(), view_name);
-        let hd = ContentBytes::recovery(view_file_path.clone())?;
-        let (view_name, view) = View::recover(self.name(), hd.clone())?;
+        let view = View::recover(self.name(), view_name.clone())?;
         // 如果已存在该view，则不处理
         if !self.exist_view(view_name.clone()) {
             self.view_map().write().unwrap().insert(view_name, view);
