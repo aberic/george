@@ -42,6 +42,8 @@ pub enum Tag {
     Index,
     /// 表数据文件
     Ledger,
+    /// 表数据文件
+    Node,
 }
 
 /// 文件类型标识符转字节码
@@ -54,6 +56,7 @@ fn tag_u8(tag: Tag) -> u8 {
         Tag::Index => 0x04,
         Tag::Page => 0x05,
         Tag::Ledger => 0x06,
+        Tag::Node => 0x07,
     }
 }
 
@@ -66,6 +69,7 @@ fn tag(b: u8) -> Tag {
         0x04 => Tag::Index,
         0x05 => Tag::Page,
         0x06 => Tag::Ledger,
+        0x07 => Tag::Node,
         _ => Tag::None,
     }
 }

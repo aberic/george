@@ -12,11 +12,11 @@
  * limitations under the License.
  */
 
-use crate::task::engine::traits::TForm;
-use crate::utils::enums::KeyType;
-use crate::utils::writer::Filed;
 use std::sync::atomic::AtomicU64;
 use std::sync::{Arc, RwLock};
+
+use crate::task::engine::traits::TForm;
+use crate::utils::writer::Filed;
 
 pub(crate) mod node;
 
@@ -30,7 +30,6 @@ pub(crate) struct Node {
     form: Arc<RwLock<dyn TForm>>,
     atomic_key: Arc<AtomicU64>,
     index_name: String,
-    key_type: KeyType,
     /// 索引文件路径
     ///
     /// * 当有新的数据加入时，新数据存储地址在`node_file`中记录12字节。

@@ -27,7 +27,7 @@ use crate::task::engine::traits::{TForm, TNode, TSeed};
 use crate::task::engine::DataReal;
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
-use crate::utils::enums::{Engine, KeyType};
+use crate::utils::enums::Engine;
 use crate::utils::writer::Filed;
 use crate::utils::Paths;
 
@@ -47,7 +47,6 @@ impl Node {
             form,
             atomic_key,
             index_name,
-            key_type: KeyType::UInt,
             node_filepath,
             filer,
         }))
@@ -68,7 +67,6 @@ impl Node {
             form,
             atomic_key,
             index_name,
-            key_type: KeyType::UInt,
             node_filepath,
             filer,
         }))

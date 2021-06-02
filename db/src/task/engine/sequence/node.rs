@@ -43,7 +43,6 @@ impl Node {
         Ok(Arc::new(Node {
             form,
             index_name,
-            key_type: KeyType::UInt,
             node_filepath,
             filer,
         }))
@@ -59,14 +58,9 @@ impl Node {
         Ok(Arc::new(Node {
             form,
             index_name,
-            key_type: KeyType::UInt,
             node_filepath,
             filer,
         }))
-    }
-
-    fn key_type(&self) -> KeyType {
-        self.key_type.clone()
     }
 
     fn node_filepath(&self) -> String {
@@ -94,12 +88,12 @@ impl TNode for Node {
     ///
     /// EngineResult<()>
     fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
-        let hash_key = IndexKey::hash(self.key_type(), key.clone())?;
+        let hash_key = IndexKey::hash(KeyType::UInt, key.clone())?;
         self.put_in_node(key, hash_key, seed, force)
     }
 
     fn get(&self, key: String) -> GeorgeResult<DataReal> {
-        let hash_key = IndexKey::hash(self.key_type(), key)?;
+        let hash_key = IndexKey::hash(KeyType::UInt, key)?;
         self.get_in_node(hash_key)
     }
 
