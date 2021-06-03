@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-use crate::utils::enums::{Engine, KeyType, Tag};
+use crate::utils::enums::{Engine, KeyType};
 
 pub mod comm;
 mod comm_test;
@@ -21,17 +21,12 @@ mod deploy_test;
 pub mod enums;
 pub mod path;
 mod path_test;
-pub mod store;
-mod store_test;
-pub mod writer;
 
 pub struct Enum {}
 
 pub trait EnumHandler {
-    fn tag_u8(tag: Tag) -> u8;
     fn engine_u8(index_type: Engine) -> u8;
     fn key_type_u8(key_type: KeyType) -> u8;
-    fn tag(b: u8) -> Tag;
     fn engine(b: u8) -> Engine;
     fn key_type(b: u8) -> KeyType;
 }

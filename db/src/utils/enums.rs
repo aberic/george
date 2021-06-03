@@ -12,24 +12,17 @@
  * limitations under the License.
  */
 
-use crate::utils::{Enum, EnumHandler};
 use serde::{Deserialize, Serialize};
 
-impl EnumHandler for Enum {
-    fn tag_u8(tag: Tag) -> u8 {
-        tag_u8(tag)
-    }
+use crate::utils::{Enum, EnumHandler};
 
+impl EnumHandler for Enum {
     fn engine_u8(engine: Engine) -> u8 {
         engine_u8(engine)
     }
 
     fn key_type_u8(key_type: KeyType) -> u8 {
         key_type_u8(key_type)
-    }
-
-    fn tag(b: u8) -> Tag {
-        tag(b)
     }
 
     fn engine(b: u8) -> Engine {
@@ -39,23 +32,6 @@ impl EnumHandler for Enum {
     fn key_type(b: u8) -> KeyType {
         key_type(b)
     }
-}
-
-/// 标识符
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Tag {
-    /// 引导文件
-    Bootstrap,
-    /// 缓存页文件
-    Page,
-    /// 数据库文件
-    Database,
-    /// 表数据文件
-    View,
-    /// 索引数据文件
-    Index,
-    /// 表数据文件
-    Ledger,
 }
 
 /// 索引值类型
@@ -90,17 +66,6 @@ pub enum Engine {
     Block,
 }
 
-fn tag_u8(tag: Tag) -> u8 {
-    match tag {
-        Tag::Bootstrap => 0x00,
-        Tag::Database => 0x01,
-        Tag::View => 0x02,
-        Tag::Index => 0x03,
-        Tag::Page => 0x04,
-        Tag::Ledger => 0x05,
-    }
-}
-
 fn engine_u8(index_type: Engine) -> u8 {
     match index_type {
         Engine::None => 0x00,
@@ -119,18 +84,6 @@ fn key_type_u8(key_type: KeyType) -> u8 {
         KeyType::Float => 0x05,
         KeyType::Bool => 0x07,
         KeyType::None => 0x08,
-    }
-}
-
-fn tag(b: u8) -> Tag {
-    match b {
-        0x00 => Tag::Bootstrap,
-        0x01 => Tag::Database,
-        0x02 => Tag::View,
-        0x03 => Tag::Index,
-        0x04 => Tag::Page,
-        0x05 => Tag::Ledger,
-        _ => Tag::Bootstrap,
     }
 }
 
