@@ -18,19 +18,20 @@ mod metadata {
     use crate::metadata::{Description, Header};
     use crate::utils::enums::Tag;
     use crate::Metadata;
+    use std::sync::{Arc, RwLock};
 
     #[test]
     fn fmt() {
-        let digest = Digest {
+        let digest = Arc::new(RwLock::new(Digest {
             tag: Tag::View,
             version: [0x01, 0x02],
             sequence: [0x03, 0x04],
-        };
-        let description = Description {
+        }));
+        let description = Arc::new(RwLock::new(Description {
             start: 100,
             len: 1000,
             modify: 10000,
-        };
+        }));
         let header = Header { digest };
         let md = Metadata {
             header,

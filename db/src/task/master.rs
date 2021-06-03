@@ -25,7 +25,7 @@ use comm::io::file::FilerHandler;
 use comm::io::{Dir, Filer};
 use comm::Time;
 use ge::utils::enums::Tag;
-use ge::Ge;
+use ge::{Ge, GeFactory};
 use logs::LogModule;
 
 use crate::task::rich::Expectation;
@@ -57,10 +57,12 @@ impl Master {
         // 启动文件
         let bootstrap_file_path = Paths::bootstrap_filepath();
         let init: bool;
-        let ge: Ge;
         let duration: Duration;
+        let ge: Arc<dyn Ge>;
         if Filer::exist(bootstrap_file_path.clone()) {
-            ge = Ge::recovery(bootstrap_file_path.clone()).expect("recovery ge failed!");
+            ge = GeFactory {}
+                .recovery(Tag::Bootstrap, bootstrap_file_path.clone())
+                .expect("recovery ge failed!");
             let description = ge
                 .description_content_bytes()
                 .expect("recovery description failed!");
@@ -74,13 +76,16 @@ impl Master {
         } else {
             let now: NaiveDateTime = Local::now().naive_local();
             duration = Duration::nanoseconds(now.timestamp_nanos());
-            let description = duration
-                .num_nanoseconds()
-                .unwrap()
-                .to_string()
-                .as_bytes()
-                .to_vec();
-            Ge::new(bootstrap_file_path.clone(), Tag::Bootstrap, description)
+            let description = Some(
+                duration
+                    .num_nanoseconds()
+                    .unwrap()
+                    .to_string()
+                    .as_bytes()
+                    .to_vec(),
+            );
+            GeFactory {}
+                .create(Tag::Bootstrap, bootstrap_file_path.clone(), description)
                 .expect("create ge failed!");
             init = true;
         }

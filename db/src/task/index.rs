@@ -22,7 +22,7 @@ use comm::strings::StringHandler;
 use comm::Strings;
 use comm::{Json, Time};
 use ge::utils::enums::Tag;
-use ge::Ge;
+use ge::GeFactory;
 
 use crate::task::engine::DataReal;
 // use crate::task::engine::block::Node as NB;
@@ -68,7 +68,7 @@ impl Index {
         let v_c = form.clone();
         let v_r = v_c.read().unwrap();
         let filepath = Paths::index_filepath(v_r.database_name(), v_r.name(), name.clone());
-        let description = Index::descriptions(
+        let description = Some(Index::descriptions(
             name.clone(),
             engine,
             primary,
@@ -76,7 +76,7 @@ impl Index {
             null,
             key_type,
             create_time,
-        );
+        ));
         Ok(Arc::new(Index {
             form,
             primary,
@@ -86,7 +86,7 @@ impl Index {
             key_type,
             unique,
             null,
-            ge: Ge::new(filepath, Tag::Index, description)?,
+            ge: GeFactory {}.create(Tag::Index, filepath, description)?,
             engine,
         }))
     }
@@ -307,7 +307,7 @@ impl Index {
         let v_c = form.clone();
         let v_r = v_c.read().unwrap();
         let filepath = Paths::index_filepath(v_r.database_name(), v_r.name(), name.clone());
-        let ge = Ge::recovery(filepath)?;
+        let ge = GeFactory {}.recovery(Tag::Index, filepath)?;
         let description_str = Strings::from_utf8(ge.description_content_bytes()?)?;
         match hex::decode(description_str) {
             Ok(vu8) => {

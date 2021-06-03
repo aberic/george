@@ -19,7 +19,7 @@ use comm::errors::{Errs, GeorgeResult};
 use comm::vectors::VectorHandler;
 use comm::Vector;
 use ge::utils::enums::Tag;
-use ge::{Ge, METADATA_SIZE};
+use ge::{GeFactory, METADATA_SIZE};
 
 use crate::task::engine;
 use crate::task::engine::increment::Node;
@@ -44,7 +44,7 @@ impl Node {
             form,
             atomic_key,
             index_name,
-            ge: Ge::new_empty(node_filepath, Tag::Node)?,
+            ge: GeFactory {}.create(Tag::Node, node_filepath, None)?,
         }))
     }
 
@@ -54,7 +54,7 @@ impl Node {
         let v_r = v_c.read().unwrap();
         let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
         let node_filepath = Paths::node_filepath(index_path, String::from("increment"));
-        let ge = Ge::recovery(node_filepath)?;
+        let ge = GeFactory {}.recovery(Tag::Node, node_filepath)?;
         let last_key = (ge.len()? - METADATA_SIZE) / 12;
         let atomic_key = Arc::new(AtomicU64::new(last_key));
         Ok(Arc::new(Node {

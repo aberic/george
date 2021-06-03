@@ -28,7 +28,7 @@ use comm::Trans;
 use comm::Vector;
 use comm::{Strings, Time};
 use ge::utils::enums::Tag;
-use ge::Ge;
+use ge::GeFactory;
 
 use crate::task::engine::traits::{Pigeonhole, TForm, TIndex, TSeed};
 use crate::task::rich::{Expectation, Selector};
@@ -44,13 +44,18 @@ fn new_view(database_name: String, name: String, comment: String) -> GeorgeResul
     let time = Time::now();
     let filepath = Paths::view_filepath(database_name.clone(), name.clone());
     let pigeonhole = Pigeonhole::create(0, filepath.clone(), time);
-    let description = View::description(name.clone(), comment.clone(), time, pigeonhole.clone());
+    let description = Some(View::description(
+        name.clone(),
+        comment.clone(),
+        time,
+        pigeonhole.clone(),
+    ));
     let view = View {
         database_name,
         name,
         comment,
         create_time: time,
-        ge: Ge::new(filepath, Tag::View, description)?,
+        ge: GeFactory {}.create(Tag::View, filepath, description)?,
         indexes: Default::default(),
         pigeonhole,
     };
@@ -63,13 +68,18 @@ fn mock_new_view(database_name: String, name: String) -> GeorgeResult<View> {
     let time = Time::now();
     let filepath = Paths::view_filepath(database_name.clone(), name.clone());
     let pigeonhole = Pigeonhole::create(0, filepath.clone(), time);
-    let description = View::description(name.clone(), comment.clone(), time, pigeonhole.clone());
+    let description = Some(View::description(
+        name.clone(),
+        comment.clone(),
+        time,
+        pigeonhole.clone(),
+    ));
     let view = View {
         database_name,
         name,
         comment,
         create_time: time,
-        ge: Ge::new(filepath, Tag::View, description)?,
+        ge: GeFactory {}.create(Tag::View, filepath, description)?,
         indexes: Default::default(),
         pigeonhole,
     };
@@ -631,7 +641,7 @@ impl View {
     /// 通过文件描述恢复结构信息
     pub(crate) fn recover(database_name: String, name: String) -> GeorgeResult<Arc<RwLock<View>>> {
         let filepath = Paths::view_filepath(database_name.clone(), name.clone());
-        let ge = Ge::recovery(filepath)?;
+        let ge = GeFactory {}.recovery(Tag::View, filepath)?;
         let description_str = Strings::from_utf8(ge.description_content_bytes()?)?;
         match hex::decode(description_str) {
             Ok(vu8) => {

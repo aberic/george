@@ -106,32 +106,47 @@ pub trait FilerWriter<T>: Sized {
     /// 向file_obj(filepath/file)中追加写content，如果file_obj不存在则新建
     fn append_file_force(file: File, content: T) -> GeorgeResult<()>;
 
+    /// 在指定文件中指定位置后覆盖数据
     fn write_file_seek(file: File, seek: u64, content: T) -> GeorgeResult<()>;
 }
 
 pub trait FilerReader: Sized {
+    /// 将文件的全部内容读入字符串
     fn read<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String>;
 
+    /// 将文件的全部内容读入字节数组
     fn read_bytes<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>>;
 
+    /// 读取文件部分内容，从start开始，一直持续读取last长度
     fn read_sub<P: AsRef<Path>>(filepath: P, start: u64, last: usize) -> GeorgeResult<Vec<u8>>;
 
+    /// 读取文件部分内容，从start开始，一直持续读取last长度
+    ///
+    /// 如果无法读取该内容，即预期读取坐标超过实际内容长度，则返回期望读取长度的空字节数
     fn read_sub_allow_none<P: AsRef<Path>>(
         filepath: P,
         start: u64,
         last: usize,
     ) -> GeorgeResult<Vec<u8>>;
 
+    /// 获取文件长度
     fn len<P: AsRef<Path>>(filepath: P) -> GeorgeResult<u64>;
 
+    /// 读取文件中直到EOF的所有字节，并将它们附加到`string buf`返回
     fn read_file(file: File) -> GeorgeResult<String>;
 
+    /// 读取文件中直到EOF的所有字节，并返回
     fn read_file_bytes(file: File) -> GeorgeResult<Vec<u8>>;
 
+    /// 读取文件部分内容，从start开始，一直持续读取last长度
     fn read_file_sub(file: File, start: u64, last: usize) -> GeorgeResult<Vec<u8>>;
 
+    /// 读取文件部分内容，从start开始，一直持续读取last长度
+    ///
+    /// 如果无法读取该内容，即预期读取坐标超过实际内容长度，则返回期望读取长度的空字节数组
     fn read_file_sub_allow_none(file: File, start: u64, last: usize) -> GeorgeResult<Vec<u8>>;
 
+    /// 获取文件长度
     fn len_file(file: File) -> GeorgeResult<u64>;
 }
 
@@ -691,6 +706,7 @@ fn file_write_seek(mut file: File, seek: u64, content: &[u8]) -> GeorgeResult<()
     }
 }
 
+/// 将文件的全部内容读入字符串
 fn filepath_read<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
     match read_to_string(filepath) {
         Ok(s) => Ok(s),
@@ -714,6 +730,7 @@ fn initial_buffer_size(file: &File) -> usize {
     file.metadata().map(|m| m.len() as usize + 1).unwrap_or(0)
 }
 
+/// 将文件的全部内容读入字节数组
 fn filepath_reads<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
     match read(filepath) {
         Ok(u8s) => Ok(u8s),
@@ -745,6 +762,7 @@ fn filepath_read_sub<P: AsRef<Path>>(
 }
 
 /// 读取文件部分内容，从start开始，一直持续读取last长度
+/// 如果无法读取该内容，即预期读取坐标超过实际内容长度，则返回期望读取长度的空字节数
 fn filepath_read_sub_allow_none<P: AsRef<Path>>(
     filepath: P,
     start: u64,

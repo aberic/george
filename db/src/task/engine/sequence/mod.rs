@@ -33,5 +33,5 @@ pub(crate) struct Node {
     ///
     /// * 当有新的数据加入时，新数据存储地址在`node_file`中记录12字节。
     /// 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)`组成
-    ge: Ge,
+    ge: Arc<dyn Ge>,
 }

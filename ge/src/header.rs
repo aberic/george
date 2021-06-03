@@ -19,6 +19,7 @@ use comm::Vector;
 use crate::metadata::Header;
 use crate::utils::enums::Tag;
 use crate::{END, FRONT};
+use std::sync::{Arc, RwLock};
 
 /// impl for new
 impl Header {
@@ -32,7 +33,7 @@ impl Header {
     /// 返回一个拼装完成的文件元数据中摘要信息
     pub(crate) fn new(tag: Tag) -> Self {
         Header {
-            digest: Digest::new(tag),
+            digest: Arc::new(RwLock::new(Digest::new(tag))),
         }
     }
 }
@@ -40,7 +41,7 @@ impl Header {
 /// impl for fn
 impl Header {
     /// 获取文件元数据中摘要信息
-    pub fn digest(&self) -> Digest {
+    pub fn digest(&self) -> Arc<RwLock<Digest>> {
         self.digest.clone()
     }
 
@@ -57,7 +58,7 @@ impl Header {
         header_bytes.push(FRONT.get(1).unwrap().clone());
         // 摘要28字节 = 已知5字节 + 占位23字节
         // 摘要28字节 - 已知5字节
-        let mut digest_bytes = self.digest.to_vec()?;
+        let mut digest_bytes = self.digest.read().unwrap().to_vec()?;
         header_bytes.append(&mut digest_bytes);
         // 摘要28字节 - 占位23字节
         let mut mid_bytes = Vector::create_empty_bytes(23);
@@ -86,7 +87,7 @@ impl Header {
             } else {
                 let digest_bytes = header_bytes[2..].to_vec();
                 Ok(Header {
-                    digest: Digest::recovery(digest_bytes)?,
+                    digest: Arc::new(RwLock::new(Digest::recovery(digest_bytes)?)),
                 })
             }
         }

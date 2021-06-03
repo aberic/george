@@ -26,7 +26,7 @@ impl EnumHandler for Enum {
 }
 
 /// 文件类型标识符(1字节)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Tag {
     /// 占位
     None,

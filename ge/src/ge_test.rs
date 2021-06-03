@@ -13,48 +13,97 @@
  */
 
 #[cfg(test)]
+mod ge_lib {
+    use crate::factory::Bootstrap;
+    use crate::utils::enums::Tag;
+    use crate::{Ge, GeFactory};
+
+    #[test]
+    fn create() {
+        let b = Bootstrap::new("src/test/factory/tmp/none.ge", "test".as_bytes().to_vec()).unwrap();
+        println!("filepath = {}", b.filepath());
+    }
+
+    #[test]
+    fn recovery() {
+        let b = Bootstrap::recovery("src/test/factory/tmp/none.ge").unwrap();
+        println!("filepath = {}", b.filepath());
+        println!("metadata = {:#?}", b.metadata());
+        println!("header = {:#?}", b.metadata().header());
+        println!("description = {:#?}", b.metadata().description());
+        println!("digest = {:#?}", b.metadata().header().digest());
+    }
+
+    #[test]
+    fn factory_create() {
+        let f = GeFactory;
+        let b_ge = f
+            .create(
+                Tag::Bootstrap,
+                "src/test/factory/impl/none.ge",
+                Some("test".as_bytes().to_vec()),
+            )
+            .unwrap();
+        println!("filepath = {}", b_ge.filepath());
+    }
+
+    #[test]
+    fn factory_recovery() {
+        let f = GeFactory;
+        let b_ge = f
+            .recovery(Tag::Bootstrap, "src/test/factory/impl/none.ge")
+            .unwrap();
+        println!("filepath = {}", b_ge.filepath());
+        println!("metadata = {:#?}", b_ge.metadata());
+        println!("header = {:#?}", b_ge.metadata().header());
+        println!("description = {:#?}", b_ge.metadata().description());
+        println!("digest = {:#?}", b_ge.metadata().header().digest());
+    }
+}
+
+#[cfg(test)]
 mod ge {
     use crate::utils::enums::Tag;
-    use crate::Ge;
+    use crate::{Ge, GeImpl};
 
     #[test]
     fn fmt() {
-        let ge = Ge::new(
+        let ge = GeImpl::new(
             "src/test/fmt/none.ge",
             Tag::None,
             "test".as_bytes().to_vec(),
         )
         .unwrap();
         println!("ge = {:#?}", ge);
-        let ge = Ge::new(
+        let ge = GeImpl::new(
             "src/test/fmt/bootstrap.ge",
             Tag::Bootstrap,
             "test".as_bytes().to_vec(),
         )
         .unwrap();
         println!("ge = {:#?}", ge);
-        let ge = Ge::new(
+        let ge = GeImpl::new(
             "src/test/fmt/page.ge",
             Tag::Page,
             "test".as_bytes().to_vec(),
         )
         .unwrap();
         println!("ge = {:#?}", ge);
-        let ge = Ge::new(
+        let ge = GeImpl::new(
             "src/test/fmt/view.ge",
             Tag::View,
             "test".as_bytes().to_vec(),
         )
         .unwrap();
         println!("ge = {:#?}", ge);
-        let ge = Ge::new(
+        let ge = GeImpl::new(
             "src/test/fmt/index.ge",
             Tag::Index,
             "test".as_bytes().to_vec(),
         )
         .unwrap();
         println!("ge = {:#?}", ge);
-        let ge = Ge::new(
+        let ge = GeImpl::new(
             "src/test/fmt/ledger.ge",
             Tag::Ledger,
             "test".as_bytes().to_vec(),
@@ -65,39 +114,39 @@ mod ge {
 
     #[test]
     fn recovery() {
-        let ge = Ge::mock_new(
+        let ge = GeImpl::mock_new(
             "src/test/recovery/none.ge",
             Tag::None,
             "test".as_bytes().to_vec(),
         )
         .unwrap();
         println!("ge = {:#?}", ge);
-        let ge_recovery = Ge::recovery("src/test/recovery/none.ge").unwrap();
+        let ge_recovery = GeImpl::recovery("src/test/recovery/none.ge").unwrap();
         println!("ge_recovery = {:#?}", ge_recovery);
     }
 
     #[test]
     fn modify_history() {
-        let mut ge = Ge::mock_new(
+        let ge = GeImpl::mock_new(
             "src/test/modify/none.ge",
             Tag::None,
             "hello".as_bytes().to_vec(),
         )
         .unwrap();
         println!("ge = {:#?}", ge);
-        let ge_recovery = Ge::recovery("src/test/modify/none.ge").unwrap();
+        let ge_recovery = GeImpl::recovery("src/test/modify/none.ge").unwrap();
         println!("ge_recovery = {:#?}", ge_recovery);
         ge.modify("world 1".as_bytes().to_vec()).unwrap();
         println!("ge = {:#?}", ge);
-        let ge_modify1 = Ge::recovery("src/test/modify/none.ge").unwrap();
+        let ge_modify1 = GeImpl::recovery("src/test/modify/none.ge").unwrap();
         println!("ge_modify1 = {:#?}", ge_modify1);
         ge.modify("world 2".as_bytes().to_vec()).unwrap();
         println!("ge = {:#?}", ge);
-        let ge_modify2 = Ge::recovery("src/test/modify/none.ge").unwrap();
+        let ge_modify2 = GeImpl::recovery("src/test/modify/none.ge").unwrap();
         println!("ge_modify2 = {:#?}", ge_modify2);
         ge.modify("world 3".as_bytes().to_vec()).unwrap();
         println!("ge = {:#?}", ge);
-        let ge_modify3 = Ge::recovery("src/test/modify/none.ge").unwrap();
+        let ge_modify3 = GeImpl::recovery("src/test/modify/none.ge").unwrap();
         println!("ge_modify3 = {:#?}", ge_modify3);
 
         let vc = ge.history().unwrap();
@@ -112,7 +161,7 @@ mod ge {
 
     #[test]
     fn rebuild() {
-        let mut ge = Ge::mock_new(
+        let ge = GeImpl::mock_new(
             "src/test/rebuild/none.ge",
             Tag::None,
             "test".as_bytes().to_vec(),
@@ -129,7 +178,7 @@ mod ge {
         ge.archive("src/test/rebuild/build.ge".to_string()).unwrap();
         ge.rebuild(hb, dcb).unwrap();
         println!("ge = {:#?}", ge);
-        let ge_recovery = Ge::recovery("src/test/rebuild/build.ge").unwrap();
+        let ge_recovery = GeImpl::recovery("src/test/rebuild/build.ge").unwrap();
         println!("ge_recovery = {:#?}", ge_recovery);
     }
 }

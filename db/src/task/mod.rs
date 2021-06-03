@@ -77,7 +77,7 @@ pub(crate) struct Database {
     /// 创建时间
     create_time: Time,
     /// ge文件对象
-    ge: Ge,
+    ge: Arc<dyn Ge>,
     /// 视图集合
     views: Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>>,
 }
@@ -94,7 +94,7 @@ pub(crate) struct View {
     /// 创建时间
     create_time: Time,
     /// ge文件对象
-    ge: Ge,
+    ge: Arc<dyn Ge>,
     /// 索引集合
     indexes: Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>,
     /// 当前归档版本信息
@@ -114,7 +114,7 @@ pub(crate) struct Page {
     /// 创建时间
     create_time: Time,
     /// ge文件对象
-    ge: Ge,
+    ge: Arc<dyn Ge>,
     /// 默认缓存页
     node: Arc<RwLock<Node>>,
 }
@@ -131,15 +131,15 @@ pub(crate) struct Ledger {
     /// 区块全数据记录文件
     ///
     /// 需要借助对象包裹，以便更新file，避免self为mut
-    pub(crate) ge: Ge,
+    pub(crate) ge: Arc<dyn Ge>,
     /// 区块Header数据记录文件
     ///
     /// 需要借助对象包裹，以便更新file，避免self为mut
-    pub(crate) ge_light: Ge,
+    pub(crate) ge_light: Arc<dyn Ge>,
     /// 区块Header数据以merkle形式进行存储的记录文件
     ///
     /// 需要借助对象包裹，以便更新file，避免self为mut
-    pub(crate) ge_merkle_light: Ge,
+    pub(crate) ge_merkle_light: Arc<dyn Ge>,
     /// 区块高度存储索引，根据块高查询区块
     pub(crate) index_block_height: Arc<dyn TIndex>,
     /// 区块hash存储索引，根据块hash查询区块
@@ -173,7 +173,7 @@ pub(crate) struct Index {
     /// 创建时间
     create_time: Time,
     /// ge文件对象
-    ge: Ge,
+    ge: Arc<dyn Ge>,
 }
 
 /// B+Tree索引叶子结点内防hash碰撞数组结构中单体结构

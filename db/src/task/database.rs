@@ -24,7 +24,7 @@ use comm::io::Filer;
 use comm::strings::StringHandler;
 use comm::{Strings, Time};
 use ge::utils::enums::Tag;
-use ge::Ge;
+use ge::GeFactory;
 
 use crate::task::rich::Expectation;
 use crate::task::{Database, View};
@@ -45,12 +45,12 @@ impl Database {
     pub(crate) fn create(name: String, comment: String) -> GeorgeResult<Arc<RwLock<Database>>> {
         let time = Time::now();
         let filepath = Paths::database_filepath(name.clone());
-        let description = Database::description(name.clone(), comment.clone(), time);
+        let description = Some(Database::description(name.clone(), comment.clone(), time));
         let database = Database {
             name,
             comment,
             create_time: time,
-            ge: Ge::new(filepath, Tag::Database, description)?,
+            ge: GeFactory {}.create(Tag::Database, filepath, description)?,
             views: Arc::new(Default::default()),
         };
         Ok(Arc::new(RwLock::new(database)))
@@ -312,7 +312,7 @@ impl Database {
     /// 通过文件描述恢复结构信息
     pub(crate) fn recover(name: String) -> GeorgeResult<Database> {
         let filepath = Paths::database_filepath(name.clone());
-        let ge = Ge::recovery(filepath)?;
+        let ge = GeFactory {}.recovery(Tag::Database, filepath)?;
         let description_str = Strings::from_utf8(ge.description_content_bytes()?)?;
         match hex::decode(description_str) {
             Ok(vu8) => {

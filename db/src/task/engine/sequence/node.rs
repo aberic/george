@@ -17,6 +17,8 @@ use std::sync::{Arc, RwLock};
 use comm::errors::{Errs, GeorgeResult};
 use comm::vectors::VectorHandler;
 use comm::Vector;
+use ge::utils::enums::Tag;
+use ge::{GeFactory, METADATA_SIZE};
 
 use crate::task::engine;
 use crate::task::engine::sequence::Node;
@@ -27,8 +29,6 @@ use crate::task::seed::IndexPolicy;
 use crate::utils::comm::IndexKey;
 use crate::utils::enums::{Engine, KeyType};
 use crate::utils::Paths;
-use ge::utils::enums::Tag;
-use ge::{Ge, METADATA_SIZE};
 
 impl Node {
     /// 新建根结点
@@ -42,7 +42,7 @@ impl Node {
         Ok(Arc::new(Node {
             form,
             index_name,
-            ge: Ge::new_empty(node_filepath, Tag::Node)?,
+            ge: GeFactory {}.create(Tag::Node, node_filepath, None)?,
         }))
     }
 
@@ -55,7 +55,7 @@ impl Node {
         Ok(Arc::new(Node {
             form,
             index_name,
-            ge: Ge::recovery(node_filepath)?,
+            ge: GeFactory {}.recovery(Tag::Node, node_filepath)?,
         }))
     }
 

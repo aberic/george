@@ -20,7 +20,7 @@ use comm::errors::{Errs, GeorgeResult};
 use comm::strings::StringHandler;
 use comm::{Strings, Time};
 use ge::utils::enums::Tag;
-use ge::Ge;
+use ge::GeFactory;
 
 use crate::task::engine::memory::Node;
 use crate::task::Page;
@@ -45,15 +45,20 @@ impl Page {
     ) -> GeorgeResult<Arc<RwLock<Page>>> {
         let create_time = Time::now();
         let filepath = Paths::page_filepath(name.clone());
-        let description =
-            Page::description(name.clone(), comment.clone(), size, period, create_time);
+        let description = Some(Page::description(
+            name.clone(),
+            comment.clone(),
+            size,
+            period,
+            create_time,
+        ));
         Ok(Arc::new(RwLock::new(Page {
             name,
             comment,
             size,
             period,
             create_time,
-            ge: Ge::new(filepath, Tag::Page, description)?,
+            ge: GeFactory {}.create(Tag::Page, filepath, description)?,
             node: Node::create(),
         })))
     }
@@ -155,7 +160,7 @@ impl Page {
     /// 通过文件描述恢复结构信息
     pub(crate) fn recover(name: String) -> GeorgeResult<Page> {
         let filepath = Paths::page_filepath(name.clone());
-        let ge = Ge::recovery(filepath)?;
+        let ge = GeFactory {}.recovery(Tag::Page, filepath)?;
         let description_str = Strings::from_utf8(ge.description_content_bytes()?)?;
         match hex::decode(description_str) {
             Ok(vu8) => {

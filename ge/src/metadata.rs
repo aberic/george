@@ -18,6 +18,7 @@ use crate::header::Digest;
 use crate::utils::enums::Tag;
 use crate::utils::Filed;
 use crate::Metadata;
+use std::sync::{Arc, RwLock};
 
 /// impl for new
 impl Metadata {
@@ -32,7 +33,7 @@ impl Metadata {
     pub(crate) fn new(tag: Tag, len: usize) -> Metadata {
         Metadata {
             header: Header::new(tag),
-            description: Description::new(len),
+            description: Arc::new(RwLock::new(Description::new(len))),
         }
     }
 }
@@ -45,7 +46,7 @@ impl Metadata {
     }
 
     /// 获取文件描述
-    pub fn description(&self) -> Description {
+    pub fn description(&self) -> Arc<RwLock<Description>> {
         self.description.clone()
     }
 
@@ -60,7 +61,7 @@ impl Metadata {
         // 文件元数据中首部信息，长度32字节
         let mut header_bytes = self.header.to_vec()?;
         // 文件描述信息，长度20字节
-        let mut des = self.description.to_vec();
+        let mut des = self.description.read().unwrap().to_vec();
 
         metadata_bytes.append(&mut header_bytes);
         metadata_bytes.append(&mut des);
@@ -80,7 +81,10 @@ impl Metadata {
         } else {
             Ok(Metadata {
                 header: Header::recovery(metadata_bytes[0..32].to_vec())?,
-                description: Description::recovery(filed, metadata_bytes[32..52].to_vec())?,
+                description: Arc::new(RwLock::new(Description::recovery(
+                    filed,
+                    metadata_bytes[32..52].to_vec(),
+                )?)),
             })
         }
     }
@@ -94,7 +98,7 @@ impl Metadata {
 #[derive(Clone, Debug)]
 pub struct Header {
     /// 文件元数据中摘要信息，长度28字节
-    pub(crate) digest: Digest,
+    pub(crate) digest: Arc<RwLock<Digest>>,
 }
 
 /// ##文件描述

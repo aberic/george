@@ -45,14 +45,19 @@ impl Filed {
         })
     }
 
+    /// 获取文件长度
     pub fn len(&self) -> GeorgeResult<u64> {
         self.exec.read().unwrap().len(self.filepath())
     }
 
+    /// 读取文件部分内容，从start开始，一直持续读取last长度
     pub fn read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         self.exec.read().unwrap().read(self.filepath(), start, last)
     }
 
+    /// 读取文件部分内容，从start开始，一直持续读取last长度
+    ///
+    /// 如果无法读取该内容，即预期读取坐标超过实际内容长度，则返回期望读取长度的空字节数
     pub fn read_allow_none(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         self.exec
             .read()
@@ -60,10 +65,12 @@ impl Filed {
             .read_allow_none(self.filepath(), start, last)
     }
 
+    /// 在指定坐标后写入content
     pub fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
         self.exec.write().unwrap().write(seek, content)
     }
 
+    /// 向File中追加content
     pub fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
         self.exec.write().unwrap().append(content)
     }
@@ -75,7 +82,7 @@ impl Filed {
     /// 整理归档
     ///
     /// archive_file_path 归档路径
-    pub fn archive(&mut self, archive_filepath: String) -> GeorgeResult<()> {
+    pub fn archive(&self, archive_filepath: String) -> GeorgeResult<()> {
         Filer::mv(self.filepath(), archive_filepath)?;
         Filer::touch(self.filepath())?;
         self.exec.write().unwrap().recovery(self.filepath())
@@ -95,14 +102,19 @@ impl FiledExec {
         Ok(())
     }
 
+    /// 获取文件长度
     fn len<P: AsRef<Path>>(&self, filepath: P) -> GeorgeResult<u64> {
         Filer::len(filepath)
     }
 
+    /// 读取文件部分内容，从start开始，一直持续读取last长度
     fn read<P: AsRef<Path>>(&self, filepath: P, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
         Filer::read_sub(filepath, start, last)
     }
 
+    /// 读取文件部分内容，从start开始，一直持续读取last长度
+    ///
+    /// 如果无法读取该内容，即预期读取坐标超过实际内容长度，则返回期望读取长度的空字节数
     fn read_allow_none<P: AsRef<Path>>(
         &self,
         filepath: P,
@@ -112,6 +124,7 @@ impl FiledExec {
         Filer::read_sub_allow_none(filepath, start, last)
     }
 
+    /// 在指定坐标后写入content
     fn write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
         match self.writer.try_clone() {
             Ok(mut file) => match file.seek(SeekFrom::Start(seek)) {
@@ -125,6 +138,7 @@ impl FiledExec {
         }
     }
 
+    /// 向File中追加content
     fn append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
         match self.appender.try_clone() {
             Ok(mut file) => match file.seek(SeekFrom::End(0)) {

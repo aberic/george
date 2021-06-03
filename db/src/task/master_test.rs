@@ -310,7 +310,7 @@ mod master {
 
     #[cfg(test)]
     mod get_by_index {
-        use crate::task::master_test::{create_view_with_increment, del, get_by_index, put};
+        use crate::task::master_test::{create_view_with_increment, del, get, get_by_index, put};
         use crate::utils::comm::INDEX_INCREMENT;
 
         #[test]
@@ -372,6 +372,7 @@ mod master {
             let view_name = "view_increment_base_test";
             del(database_name, view_name, "2", 2);
             get_by_index(database_name, view_name, INDEX_INCREMENT, "1", 1);
+            get(database_name, view_name, "2", 2);
             get_by_index(database_name, view_name, INDEX_INCREMENT, "2", 2);
             get_by_index(database_name, view_name, INDEX_INCREMENT, "3", 3);
             get_by_index(database_name, view_name, INDEX_INCREMENT, "4", 4);
