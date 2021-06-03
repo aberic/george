@@ -29,12 +29,12 @@ impl Node {
     /// ###Return
     ///
     /// 返回一个拼装完成的文件元数据信息，长度52字节
-    pub(crate) fn new<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Self>
+    pub(crate) fn new<P: AsRef<Path>>(filepath: P, description: Vec<u8>) -> GeorgeResult<Self>
     where
         Self: Sized,
     {
         Ok(Node {
-            ge: GeImpl::new_empty(filepath, Tag::Node)?,
+            ge: GeImpl::new(filepath, Tag::Node, description)?,
         })
     }
 

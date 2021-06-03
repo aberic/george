@@ -253,7 +253,13 @@ mod master {
             let mut i = 1;
             while i < 5 {
                 // 循环体
-                put(database_name, view_name, i.to_string().as_str(), "world", i);
+                put(
+                    database_name,
+                    view_name,
+                    i.to_string().as_str(),
+                    format!("world {}", i).as_str(),
+                    i,
+                );
                 i += 1;
             }
 

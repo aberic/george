@@ -102,17 +102,17 @@ impl Digest {
 /// impl for recovery
 impl Digest {
     /// ##恢复`ge`文件默认摘要已知内容，长度5字节
-    pub(crate) fn recovery(digest_bytes: Vec<u8>) -> GeorgeResult<Digest> {
+    pub(crate) fn recovery(digest_bytes: Vec<u8>) -> Digest {
         // 文件类型标识符(1字节)
         let tag = Enum::tag(digest_bytes[0]);
         // 文件版本号(2字节)
         let version: [u8; 2] = [digest_bytes[1], digest_bytes[2]];
         // 文件序号(2字节)
         let sequence: [u8; 2] = [digest_bytes[3], digest_bytes[4]];
-        Ok(Digest {
+        Digest {
             tag,
             version,
             sequence,
-        })
+        }
     }
 }

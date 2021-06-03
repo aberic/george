@@ -17,11 +17,11 @@ use std::sync::{Arc, RwLock};
 use num_integer::Integer;
 
 use comm::errors::{Errs, GeorgeResult};
-use comm::io::file::FilerHandler;
-use comm::io::Filer;
 use comm::vectors::VectorHandler;
 use comm::Trans;
 use comm::Vector;
+use ge::utils::enums::Tag;
+use ge::{GeFactory, METADATA_SIZE};
 
 use crate::task::engine;
 use crate::task::engine::disk::Node;
@@ -31,11 +31,16 @@ use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
 use crate::utils::comm::{Distance, IndexKey};
 use crate::utils::enums::{Engine, KeyType};
-use crate::utils::writer::Filed;
 use crate::utils::Paths;
 
 const BYTES_LEN_FOR_DISK: usize = 16380;
 const BYTES_LEN_FOR_DISK_LEAF: usize = 7020;
+/// 当有数据插入时，需要实时判断是否更新`root`节点内字节数组，如果根结点有新数据插入，则需要更新
+///
+/// 根结点的字节数组长度为16380字节，创建`ge`文件时文件元数据`Metadata`长度为`ge::METADATA_SIZE`(52字节)
+///
+/// 因此`MODIFY_LIMIT_SEEK`长度为`BYTES_LEN_FOR_DISK + ge::METADATA_SIZE` = 16380 + 52 = 16432字节
+const MODIFY_LIMIT_SEEK: u64 = 16432;
 
 impl Node {
     /// 新建根结点
@@ -51,23 +56,19 @@ impl Node {
         let v_r = v_c.read().unwrap();
         let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
         let node_filepath = Paths::node_filepath(index_path.clone(), String::from("disk"));
-        let node_filer = Filed::create(node_filepath.clone())?;
         let record_filepath = Paths::record_filepath(index_path.clone());
-        let record_filer = Filed::create(record_filepath.clone())?;
-        record_filer.append(vec![0x86, 0x87])?;
         let rb = RootBytes::create(BYTES_LEN_FOR_DISK);
-        node_filer.append(rb.bytes())?;
+        let node_ge = GeFactory {}.create(Tag::Node, node_filepath, None)?;
+        node_ge.append(rb.bytes())?;
         let root_bytes = Arc::new(RwLock::new(rb));
         Ok(Arc::new(Node {
             form,
             index_name,
             key_type,
             index_path,
-            node_filepath,
-            record_filepath,
             unique,
-            node_filer,
-            record_filer,
+            node_ge,
+            record_ge: GeFactory {}.create(Tag::Node, record_filepath, None)?,
             root_bytes,
         }))
     }
@@ -83,21 +84,18 @@ impl Node {
         let v_r = v_c.read().unwrap();
         let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
         let node_filepath = Paths::node_filepath(index_path.clone(), String::from("disk"));
-        let node_filer = Filed::recovery(node_filepath.clone())?;
         let record_filepath = Paths::record_filepath(index_path.clone());
-        let record_filer = Filed::recovery(record_filepath.clone())?;
-        let rb = node_filer.read(0, BYTES_LEN_FOR_DISK)?;
+        let node_ge = GeFactory {}.recovery(Tag::Node, node_filepath)?;
+        let rb = node_ge.read(METADATA_SIZE, BYTES_LEN_FOR_DISK)?;
         let root_bytes = Arc::new(RwLock::new(RootBytes::recovery(rb, BYTES_LEN_FOR_DISK)?));
         Ok(Arc::new(Node {
             form,
             index_name,
             key_type,
             index_path,
-            node_filepath,
-            record_filepath,
             unique,
-            node_filer,
-            record_filer,
+            node_ge,
+            record_ge: GeFactory {}.recovery(Tag::Node, record_filepath)?,
             root_bytes,
         }))
     }
@@ -111,7 +109,7 @@ impl Node {
     }
 
     fn node_filepath(&self) -> String {
-        self.node_filepath.clone()
+        self.node_ge.filepath()
     }
 
     /// 根据文件路径获取该文件追加写入的写对象
@@ -122,25 +120,26 @@ impl Node {
     ///
     /// seek_end_before 写之前文件字节数据长度
     fn node_append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.node_filer.append(content)
+        self.node_ge.append(content)
     }
 
     fn node_read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
-        self.node_filer.clone().read(start, last)
+        self.node_ge.read(start, last)
     }
 
     fn node_write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
-        if seek < BYTES_LEN_FOR_DISK as u64 {
+        if seek < MODIFY_LIMIT_SEEK as u64 {
+            let modify_seek = (seek - METADATA_SIZE) as usize;
             self.root_bytes
                 .write()
                 .unwrap()
-                .modify(seek as usize, content.clone())
+                .modify(modify_seek, content.clone())
         }
-        self.node_filer.write(seek, content)
+        self.node_ge.write(seek, content)
     }
 
     fn record_filepath(&self) -> String {
-        self.record_filepath.clone()
+        self.record_ge.filepath()
     }
 
     /// 根据文件路径获取该文件追加写入的写对象
@@ -151,7 +150,7 @@ impl Node {
     ///
     /// seek_end_before 写之前文件字节数据长度
     fn record_append(&self, content: Vec<u8>) -> GeorgeResult<u64> {
-        self.record_filer.append(content)
+        self.record_ge.append(content)
     }
 
     /// 根据文件路径获取该文件追加写入的空数据
@@ -164,15 +163,15 @@ impl Node {
     ///
     /// seek_end_before 写之前文件字节数据长度
     fn record_append_empty(&self) -> GeorgeResult<u64> {
-        self.record_filer.append(Vector::create_empty_bytes(20))
+        self.record_ge.append(Vector::create_empty_bytes(20))
     }
 
     fn record_read(&self, start: u64, last: usize) -> GeorgeResult<Vec<u8>> {
-        self.record_filer.clone().read(start, last)
+        self.record_ge.read(start, last)
     }
 
     fn record_write(&self, seek: u64, content: Vec<u8>) -> GeorgeResult<()> {
-        self.record_filer.write(seek, content)
+        self.record_ge.write(seek, content)
     }
 }
 
@@ -189,7 +188,15 @@ impl TNode for Node {
     /// EngineResult<()>
     fn put(&self, key: String, seed: Arc<RwLock<dyn TSeed>>, force: bool) -> GeorgeResult<()> {
         let hash_key = IndexKey::hash(self.key_type(), key.clone())?;
-        self.put_in_node(0, self.node_bytes(), key, 1, hash_key, seed, force)
+        self.put_in_node(
+            METADATA_SIZE,
+            self.node_bytes(),
+            key,
+            1,
+            hash_key,
+            seed,
+            force,
+        )
     }
 
     fn get(&self, key: String) -> GeorgeResult<DataReal> {
@@ -199,7 +206,7 @@ impl TNode for Node {
 
     fn del(&self, key: String, seed: Arc<RwLock<dyn TSeed>>) -> GeorgeResult<()> {
         let hash_key = IndexKey::hash(self.key_type(), key.clone())?;
-        self.del_in_node(self.node_bytes(), 0, key, 1, hash_key, seed)
+        self.del_in_node(self.node_bytes(), METADATA_SIZE, key, 1, hash_key, seed)
     }
 
     fn select(
@@ -1594,51 +1601,5 @@ impl Node {
         count += c;
         values.append(&mut v);
         Ok((skip, limit, total, count, values))
-    }
-}
-
-impl Node {
-    pub fn mock_recovery(
-        form: Arc<RwLock<dyn TForm>>,
-        index_name: String,
-        key_type: KeyType,
-        unique: bool,
-    ) -> GeorgeResult<Arc<Self>> {
-        let v_c = form.clone();
-        let v_r = v_c.read().unwrap();
-        let index_path = Paths::index_path(v_r.database_name(), v_r.name(), index_name.clone());
-        let node_filepath = Paths::node_filepath(index_path.clone(), String::from("disk"));
-        let node_filer = Filed::mock(node_filepath.clone())?;
-        let record_filepath = Paths::record_filepath(index_path.clone());
-        let record_filer: Filed;
-        if Filer::exist(record_filepath.clone()) {
-            record_filer = Filed::mock(record_filepath.clone())?;
-        } else {
-            record_filer = Filed::mock(record_filepath.clone())?;
-            record_filer.append(vec![0x86, 0x87])?;
-        }
-        let root_bytes: Arc<RwLock<RootBytes>>;
-        match node_filer.read(0, BYTES_LEN_FOR_DISK) {
-            Ok(rb) => {
-                root_bytes = Arc::new(RwLock::new(RootBytes::recovery(rb, BYTES_LEN_FOR_DISK)?))
-            }
-            Err(_) => {
-                let rb = RootBytes::create(BYTES_LEN_FOR_DISK);
-                node_filer.append(rb.bytes())?;
-                root_bytes = Arc::new(RwLock::new(rb))
-            }
-        }
-        Ok(Arc::new(Node {
-            form,
-            index_name,
-            key_type,
-            index_path,
-            node_filepath,
-            record_filepath,
-            unique,
-            node_filer,
-            record_filer,
-            root_bytes,
-        }))
     }
 }

@@ -62,30 +62,6 @@ fn new_view(database_name: String, name: String, comment: String) -> GeorgeResul
     Ok(view)
 }
 
-/// 新建视图
-fn mock_new_view(database_name: String, name: String) -> GeorgeResult<View> {
-    let comment = "comment".to_string();
-    let time = Time::now();
-    let filepath = Paths::view_filepath(database_name.clone(), name.clone());
-    let pigeonhole = Pigeonhole::create(0, filepath.clone(), time);
-    let description = Some(View::description(
-        name.clone(),
-        comment.clone(),
-        time,
-        pigeonhole.clone(),
-    ));
-    let view = View {
-        database_name,
-        name,
-        comment,
-        create_time: time,
-        ge: GeFactory {}.create(Tag::View, filepath, description)?,
-        indexes: Default::default(),
-        pigeonhole,
-    };
-    Ok(view)
-}
-
 impl View {
     pub(crate) fn create(
         database_name: String,
@@ -719,21 +695,5 @@ impl View {
             self.index_map().write().unwrap().insert(index_name, index);
         }
         Ok(())
-    }
-}
-
-impl View {
-    pub(crate) fn mock_create(
-        database_name: String,
-        name: String,
-    ) -> GeorgeResult<Arc<RwLock<View>>> {
-        let view = mock_new_view(database_name, name)?;
-        let view_bak = Arc::new(RwLock::new(view));
-        Ok(view_bak)
-    }
-
-    pub(crate) fn mock_create_single(database_name: String, name: String) -> GeorgeResult<View> {
-        let view = mock_new_view(database_name, name)?;
-        Ok(view)
     }
 }

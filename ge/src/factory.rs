@@ -44,23 +44,20 @@ impl GeFactory {
         filepath: P,
         description: Option<Vec<u8>>,
     ) -> GeorgeResult<Arc<dyn Ge>> {
-        if tag == Tag::Node {
-            Ok(Arc::new(Node::new(filepath)?))
-        } else {
-            let des: Vec<u8>;
-            match description {
-                Some(res) => des = res,
-                None => des = vec![],
-            }
-            match tag {
-                Tag::Bootstrap => Ok(Arc::new(Bootstrap::new(filepath, des)?)),
-                Tag::Page => Ok(Arc::new(Page::new(filepath, des)?)),
-                Tag::Database => Ok(Arc::new(Database::new(filepath, des)?)),
-                Tag::View => Ok(Arc::new(View::new(filepath, des)?)),
-                Tag::Ledger => Ok(Arc::new(Ledger::new(filepath, des)?)),
-                Tag::Index => Ok(Arc::new(Index::new(filepath, des)?)),
-                _ => Err(Errs::str("ge tag none do not support!")),
-            }
+        let des: Vec<u8>;
+        match description {
+            Some(res) => des = res,
+            None => des = vec![],
+        }
+        match tag {
+            Tag::Bootstrap => Ok(Arc::new(Bootstrap::new(filepath, des)?)),
+            Tag::Page => Ok(Arc::new(Page::new(filepath, des)?)),
+            Tag::Database => Ok(Arc::new(Database::new(filepath, des)?)),
+            Tag::View => Ok(Arc::new(View::new(filepath, des)?)),
+            Tag::Ledger => Ok(Arc::new(Ledger::new(filepath, des)?)),
+            Tag::Index => Ok(Arc::new(Index::new(filepath, des)?)),
+            Tag::Node => Ok(Arc::new(Node::new(filepath, des)?)),
+            _ => Err(Errs::str("ge tag none do not support!")),
         }
     }
 

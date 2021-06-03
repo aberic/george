@@ -79,32 +79,6 @@ impl GeImpl {
             filed,
         })
     }
-
-    /// ##生成无`文件描述内容`属性的`ge`文件对象
-    ///
-    /// ###Params
-    /// * filepath 文件所在路径
-    /// * tag 文件类型标识符
-    ///
-    /// ###Return
-    ///
-    /// 返回一个拼装完成的文件元数据信息，长度52字节
-    pub fn new_empty<P: AsRef<Path>>(filepath: P, tag: Tag) -> GeorgeResult<GeImpl> {
-        let mut description = vec![];
-        let filed = Filed::create(&filepath)?;
-        let filepath = Filer::absolute(filepath)?;
-        let metadata = Metadata::new(tag, description.len());
-        // 文件元数据信息，长度52字节
-        let mut metadata_bytes = metadata.to_vec()?;
-        metadata_bytes.append(&mut description);
-        // 将metadata默认值即描述内容同步写入
-        filed.append(metadata_bytes)?;
-        Ok(GeImpl {
-            filepath,
-            metadata,
-            filed,
-        })
-    }
 }
 
 /// impl for fn

@@ -24,13 +24,6 @@ use comm::io::file::{FilerExecutor, FilerHandler, FilerNormal, FilerReader};
 use comm::io::Filer;
 
 impl Filed {
-    pub fn mock<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Filed> {
-        if !Filer::exist(&filepath) {
-            Filer::touch(&filepath)?;
-        }
-        Filed::recovery(filepath)
-    }
-
     pub fn create<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Filed> {
         Filer::touch(&filepath)?;
         Filed::recovery(filepath)

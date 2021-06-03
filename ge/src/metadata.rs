@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-use comm::errors::{Errs, GeorgeResult};
+use comm::errors::GeorgeResult;
 
 use crate::header::Digest;
 use crate::utils::enums::Tag;
@@ -74,19 +74,13 @@ impl Metadata {
 impl Metadata {
     /// ##恢复`ge`文件元数据信息，长度52字节
     pub(crate) fn recovery(filed: &Filed, metadata_bytes: Vec<u8>) -> GeorgeResult<Metadata> {
-        if metadata_bytes.len() != 52 {
-            Err(Errs::str(
-                "recovery metadata failed! metadata bytes len must be 52!",
-            ))
-        } else {
-            Ok(Metadata {
-                header: Header::recovery(metadata_bytes[0..32].to_vec())?,
-                description: Arc::new(RwLock::new(Description::recovery(
-                    filed,
-                    metadata_bytes[32..52].to_vec(),
-                )?)),
-            })
-        }
+        Ok(Metadata {
+            header: Header::recovery(filed.filepath(), metadata_bytes[0..32].to_vec())?,
+            description: Arc::new(RwLock::new(Description::recovery(
+                filed,
+                metadata_bytes[32..52].to_vec(),
+            )?)),
+        })
     }
 }
 

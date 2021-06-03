@@ -14,13 +14,13 @@
 
 use std::sync::{Arc, RwLock};
 
+use ge::Ge;
+
 use crate::task::engine::traits::TForm;
 use crate::task::engine::RootBytes;
 use crate::utils::enums::KeyType;
-use crate::utils::writer::Filed;
 
 pub(crate) mod node;
-mod node_test;
 
 /// 索引B+Tree结点结构
 ///
@@ -42,7 +42,9 @@ pub(crate) struct Node {
     index_name: String,
     key_type: KeyType,
     index_path: String,
-    /// 索引文件路径
+    /// 是否唯一索引
+    unique: bool,
+    /// 根据文件路径获取该文件追加写入的写对象
     ///
     /// 当有新的数据加入时，新数据存储地址在`node_file`中记录8字节
     ///
@@ -51,24 +53,19 @@ pub(crate) struct Node {
     /// 当`unique`为true时，则存储的8字节为view视图真实数据地址
     ///
     /// 当`unique`为false时，则与`record_file`搭配使用，启动碰撞链式结构
-    node_filepath: String,
+    ///
+    /// 需要借助对象包裹，以便更新file，避免self为mut
+    node_ge: Arc<dyn Ge>,
+    /// 根据文件路径获取该文件追加写入的写对象
     /// * 用于记录重复索引链式结构信息
     /// * 当有新的数据加入时，新数据存储地址在`node_file`中记录8字节，为`数据地址`
     /// * `数据地址`指向`record_file`中起始偏移量，持续20字节。
     /// 由`view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节) + 下一数据地址(8字节)`组成
     /// * 当下一数据地址为空时，则表示当前链式结构已到尾部
     /// * 当`unique`为true时，该项不启用
-    record_filepath: String,
-    /// 是否唯一索引
-    unique: bool,
-    /// 根据文件路径获取该文件追加写入的写对象
     ///
     /// 需要借助对象包裹，以便更新file，避免self为mut
-    node_filer: Filed,
-    /// 根据文件路径获取该文件追加写入的写对象
-    ///
-    /// 需要借助对象包裹，以便更新file，避免self为mut
-    record_filer: Filed,
+    record_ge: Arc<dyn Ge>,
     /// 存储根结点所属各子结点坐标顺序字节数组
     ///
     /// 子项是64位node集合，在node集合中每一个node的默认字节长度是14(下一结点指针8字节 + 当前数据指针6字节)，数量是1170，即一次性读取16380个字节

@@ -159,9 +159,10 @@ impl Description {
     /// ##恢复`ge`文件描述信息，长度20字节
     pub(crate) fn recovery(filed: &Filed, description_bytes: Vec<u8>) -> GeorgeResult<Description> {
         if description_bytes.len() != 20 {
-            Err(Errs::str(
-                "recovery description failed! description bytes len must be 20!",
-            ))
+            Err(Errs::string(format!(
+                "recovery description failed! description bytes len must be 20 while file {}!",
+                filed.filepath()
+            )))
         } else {
             let start = Trans::bytes_2_u64(description_bytes[0..8].to_vec())?;
             let len = Trans::bytes_2_u32(description_bytes[8..12].to_vec())? as usize;

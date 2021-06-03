@@ -74,22 +74,22 @@ impl Header {
 /// impl for recovery
 impl Header {
     /// ##恢复`ge`文件元数据中首部信息，长度32字节
-    pub(crate) fn recovery(header_bytes: Vec<u8>) -> GeorgeResult<Header> {
-        if header_bytes.len() != 32 {
-            Err(Errs::str(
-                "recovery header failed! header bytes len must be 32!",
-            ))
+    pub(crate) fn recovery(filepath: String, header_bytes: Vec<u8>) -> GeorgeResult<Header> {
+        if 0x20 != header_bytes[0] || 0x19 != header_bytes[1] {
+            Err(Errs::string(format!(
+                "recovery header failed! front is invalid while file {}!",
+                filepath
+            )))
+        } else if 0x02 != header_bytes[30] || 0x19 != header_bytes[31] {
+            Err(Errs::string(format!(
+                "recovery header failed! end is invalid while file {}!",
+                filepath
+            )))
         } else {
-            if 0x20 != header_bytes[0] || 0x19 != header_bytes[1] {
-                Err(Errs::str("recovery header failed! front is invalid!"))
-            } else if 0x02 != header_bytes[30] || 0x19 != header_bytes[31] {
-                Err(Errs::str("recovery header failed! end is invalid!"))
-            } else {
-                let digest_bytes = header_bytes[2..].to_vec();
-                Ok(Header {
-                    digest: Arc::new(RwLock::new(Digest::recovery(digest_bytes)?)),
-                })
-            }
+            let digest_bytes = header_bytes[2..].to_vec();
+            Ok(Header {
+                digest: Arc::new(RwLock::new(Digest::recovery(digest_bytes))),
+            })
         }
     }
 }
