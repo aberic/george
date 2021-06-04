@@ -12,6 +12,22 @@
  * limitations under the License.
  */
 
+use futures::executor;
+use grpc::ClientStubExt;
+use protocols::impls::db::service::Request;
+use protocols::impls::db::service_grpc::DatabaseServiceClient;
+
 fn main() {
     println!("Hello, client!");
+
+    let client = DatabaseServiceClient::new_plain("127.0.0.1", 9000, Default::default()).unwrap();
+    let req = Request::new();
+    let resp = client
+        .databases(grpc::RequestOptions::new(), req)
+        .join_metadata_result();
+    let resp = executor::block_on(resp);
+    match resp {
+        Ok(resp) => println!("DBList = {:#?}", resp.1),
+        Err(err) => println!("err = {}", err.to_string()),
+    }
 }

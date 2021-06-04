@@ -12,32 +12,36 @@
  * limitations under the License.
  */
 
-use log::LevelFilter;
-use logs::LogModule;
+#[cfg(test)]
+mod test {
 
-#[test]
-fn logs() {
-    let module = LogModule {
-        name: String::from("db"),
-        pkg: "".to_string(),
-        level: LevelFilter::Trace,
-        additive: false,
-        dir: String::from("src/test"),
-        file_max_size: 1024,
-        file_max_count: 7,
-    };
-    module.set_log(vec![LogModule {
-        name: "mod1".to_string(),
-        pkg: "logs::examples::log_test::log_test_mod".to_string(),
-        level: LevelFilter::Trace,
-        additive: true,
-        dir: "".to_string(),
-        file_max_size: 0,
-        file_max_count: 0,
-    }]);
-    log::trace!("Hello, world!");
-    log::debug!("Hello, world!");
-    log::info!("Hello, world!");
-    log::warn!("Hello, world!");
-    log::error!("Hello, world!");
+    use log::LevelFilter;
+    use logs::LogModule;
+
+    #[test]
+    fn logs() {
+        let module = LogModule {
+            name: String::from("db"),
+            pkg: "".to_string(),
+            level: LevelFilter::Trace,
+            additive: false,
+            dir: String::from("src/test"),
+            file_max_size: 1024,
+            file_max_count: 7,
+        };
+        module.set_log(vec![LogModule {
+            name: "mod1".to_string(),
+            pkg: "logs::examples::log_test::log_test_mod".to_string(),
+            level: LevelFilter::Trace,
+            additive: true,
+            dir: "".to_string(),
+            file_max_size: 0,
+            file_max_count: 0,
+        }]);
+        log::trace!("Hello, world!");
+        log::debug!("Hello, world!");
+        log::info!("Hello, world!");
+        log::warn!("Hello, world!");
+        log::error!("Hello, world!");
+    }
 }

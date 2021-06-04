@@ -31,7 +31,7 @@ use crate::utils::enums::Engine;
 
 /// 待处理索引操作策略
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct IndexPolicy {
+pub struct IndexPolicy {
     index_type: Engine,
     /// 使用当前索引的原始key
     original_key: String,

@@ -189,8 +189,8 @@ impl ::protobuf::reflect::ProtobufValue for Transaction {
 pub struct TransactionInfo {
     // message fields
     pub hash: ::std::string::String,
-    pub timestamp: ::protobuf::SingularPtrField<super::timestamp::Timestamp>,
-    pub commit: ::protobuf::SingularPtrField<super::timestamp::Timestamp>,
+    pub timestamp: ::protobuf::SingularPtrField<::protobuf::well_known_types::Timestamp>,
+    pub commit: ::protobuf::SingularPtrField<::protobuf::well_known_types::Timestamp>,
     pub contract: ::protobuf::SingularPtrField<super::contract::ContractBase>,
     pub function: ::std::string::String,
     pub value: ::std::vec::Vec<u8>,
@@ -240,11 +240,11 @@ impl TransactionInfo {
         ::std::mem::replace(&mut self.hash, ::std::string::String::new())
     }
 
-    // .chain.Timestamp timestamp = 2;
+    // .google.protobuf.Timestamp timestamp = 2;
 
 
-    pub fn get_timestamp(&self) -> &super::timestamp::Timestamp {
-        self.timestamp.as_ref().unwrap_or_else(|| <super::timestamp::Timestamp as ::protobuf::Message>::default_instance())
+    pub fn get_timestamp(&self) -> &::protobuf::well_known_types::Timestamp {
+        self.timestamp.as_ref().unwrap_or_else(|| <::protobuf::well_known_types::Timestamp as ::protobuf::Message>::default_instance())
     }
     pub fn clear_timestamp(&mut self) {
         self.timestamp.clear();
@@ -255,13 +255,13 @@ impl TransactionInfo {
     }
 
     // Param is passed by value, moved
-    pub fn set_timestamp(&mut self, v: super::timestamp::Timestamp) {
+    pub fn set_timestamp(&mut self, v: ::protobuf::well_known_types::Timestamp) {
         self.timestamp = ::protobuf::SingularPtrField::some(v);
     }
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_timestamp(&mut self) -> &mut super::timestamp::Timestamp {
+    pub fn mut_timestamp(&mut self) -> &mut ::protobuf::well_known_types::Timestamp {
         if self.timestamp.is_none() {
             self.timestamp.set_default();
         }
@@ -269,15 +269,15 @@ impl TransactionInfo {
     }
 
     // Take field
-    pub fn take_timestamp(&mut self) -> super::timestamp::Timestamp {
-        self.timestamp.take().unwrap_or_else(|| super::timestamp::Timestamp::new())
+    pub fn take_timestamp(&mut self) -> ::protobuf::well_known_types::Timestamp {
+        self.timestamp.take().unwrap_or_else(|| ::protobuf::well_known_types::Timestamp::new())
     }
 
-    // .chain.Timestamp commit = 3;
+    // .google.protobuf.Timestamp commit = 3;
 
 
-    pub fn get_commit(&self) -> &super::timestamp::Timestamp {
-        self.commit.as_ref().unwrap_or_else(|| <super::timestamp::Timestamp as ::protobuf::Message>::default_instance())
+    pub fn get_commit(&self) -> &::protobuf::well_known_types::Timestamp {
+        self.commit.as_ref().unwrap_or_else(|| <::protobuf::well_known_types::Timestamp as ::protobuf::Message>::default_instance())
     }
     pub fn clear_commit(&mut self) {
         self.commit.clear();
@@ -288,13 +288,13 @@ impl TransactionInfo {
     }
 
     // Param is passed by value, moved
-    pub fn set_commit(&mut self, v: super::timestamp::Timestamp) {
+    pub fn set_commit(&mut self, v: ::protobuf::well_known_types::Timestamp) {
         self.commit = ::protobuf::SingularPtrField::some(v);
     }
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_commit(&mut self) -> &mut super::timestamp::Timestamp {
+    pub fn mut_commit(&mut self) -> &mut ::protobuf::well_known_types::Timestamp {
         if self.commit.is_none() {
             self.commit.set_default();
         }
@@ -302,8 +302,8 @@ impl TransactionInfo {
     }
 
     // Take field
-    pub fn take_commit(&mut self) -> super::timestamp::Timestamp {
-        self.commit.take().unwrap_or_else(|| super::timestamp::Timestamp::new())
+    pub fn take_commit(&mut self) -> ::protobuf::well_known_types::Timestamp {
+        self.commit.take().unwrap_or_else(|| ::protobuf::well_known_types::Timestamp::new())
     }
 
     // .chain.ContractBase contract = 4;
@@ -640,12 +640,12 @@ impl ::protobuf::Message for TransactionInfo {
                 |m: &TransactionInfo| { &m.hash },
                 |m: &mut TransactionInfo| { &mut m.hash },
             ));
-            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::timestamp::Timestamp>>(
+            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<::protobuf::well_known_types::Timestamp>>(
                 "timestamp",
                 |m: &TransactionInfo| { &m.timestamp },
                 |m: &mut TransactionInfo| { &mut m.timestamp },
             ));
-            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::timestamp::Timestamp>>(
+            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<::protobuf::well_known_types::Timestamp>>(
                 "commit",
                 |m: &TransactionInfo| { &m.commit },
                 |m: &mut TransactionInfo| { &mut m.commit },
@@ -716,19 +716,20 @@ impl ::protobuf::reflect::ProtobufValue for TransactionInfo {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\"src/protos/chain/transaction.proto\x12\x05chain\x1a\x20src/protos/ch\
-    ain/timestamp.proto\x1a\x1fsrc/protos/chain/contract.proto\x1a\x1csrc/pr\
-    otos/chain/rwset.proto\x1a\x1bsrc/protos/chain/sign.proto\"1\n\x0bTransa\
-    ction\x12\"\n\x0ctransactions\x18\x01\x20\x03(\x0cR\x0ctransactions\"\
-    \xa9\x02\n\x0fTransactionInfo\x12\x12\n\x04hash\x18\x01\x20\x01(\tR\x04h\
-    ash\x12.\n\ttimestamp\x18\x02\x20\x01(\x0b2\x10.chain.TimestampR\ttimest\
-    amp\x12(\n\x06commit\x18\x03\x20\x01(\x0b2\x10.chain.TimestampR\x06commi\
-    t\x12/\n\x08contract\x18\x04\x20\x01(\x0b2\x13.chain.ContractBaseR\x08co\
-    ntract\x12\x1a\n\x08function\x18\x05\x20\x01(\tR\x08function\x12\x14\n\
-    \x05value\x18\x06\x20\x01(\x0cR\x05value\x12\x1e\n\x03set\x18\x07\x20\
-    \x01(\x0b2\x0c.chain.RWSetR\x03set\x12%\n\x06signer\x18\x08\x20\x01(\x0b\
-    2\r.chain.SignerR\x06signerBW\n\x20cn.aberic.george.protocols.chainB\x10\
-    TransactionProtoZ!github.com/george/protocols/chainb\x06proto3\
+    \n\"src/protos/chain/transaction.proto\x12\x05chain\x1a\x1fgoogle/protob\
+    uf/timestamp.proto\x1a\x1fsrc/protos/chain/contract.proto\x1a\x1csrc/pro\
+    tos/chain/rwset.proto\x1a\x1bsrc/protos/chain/sign.proto\"1\n\x0bTransac\
+    tion\x12\"\n\x0ctransactions\x18\x01\x20\x03(\x0cR\x0ctransactions\"\xbd\
+    \x02\n\x0fTransactionInfo\x12\x12\n\x04hash\x18\x01\x20\x01(\tR\x04hash\
+    \x128\n\ttimestamp\x18\x02\x20\x01(\x0b2\x1a.google.protobuf.TimestampR\
+    \ttimestamp\x122\n\x06commit\x18\x03\x20\x01(\x0b2\x1a.google.protobuf.T\
+    imestampR\x06commit\x12/\n\x08contract\x18\x04\x20\x01(\x0b2\x13.chain.C\
+    ontractBaseR\x08contract\x12\x1a\n\x08function\x18\x05\x20\x01(\tR\x08fu\
+    nction\x12\x14\n\x05value\x18\x06\x20\x01(\x0cR\x05value\x12\x1e\n\x03se\
+    t\x18\x07\x20\x01(\x0b2\x0c.chain.RWSetR\x03set\x12%\n\x06signer\x18\x08\
+    \x20\x01(\x0b2\r.chain.SignerR\x06signerBW\n\x20cn.aberic.george.protoco\
+    ls.chainB\x10TransactionProtoZ!github.com/george/protocols/chainb\x06pro\
+    to3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

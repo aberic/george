@@ -33,7 +33,7 @@ use crate::utils::enums::{Engine, KeyType};
 /// 索引通用特性，遵循此特性创建索引可以更方便的针对进行扩展
 ///
 /// 该特性包含了索引的基本方法，理论上都需要进行实现才能使用
-pub(crate) trait TIndex: Send + Sync + Debug {
+pub trait TIndex: Send + Sync + Debug {
     fn form(&self) -> Arc<RwLock<dyn TForm>>;
     fn database_name(&self) -> String;
     fn view_name(&self) -> String;
@@ -42,6 +42,9 @@ pub(crate) trait TIndex: Send + Sync + Debug {
     fn name(&self) -> String;
     /// 存储引擎类型
     fn engine(&self) -> Engine;
+    fn primary(&self) -> bool;
+    fn unique(&self) -> bool;
+    fn null(&self) -> bool;
     /// 索引值类型
     fn key_type(&self) -> KeyType;
     /// 创建时间
@@ -168,7 +171,7 @@ pub(crate) trait TNode: Send + Sync + Debug {
 /// 发送和同步是自动特性。可以添加自动特征到一个dyn特征类型
 ///
 /// 如果要写dyn Trait + Send + Sync到处都是，那么需要声明Send和Sync是Trait的Super Traits
-pub(crate) trait TSeed: Send + Sync + Debug {
+pub trait TSeed: Send + Sync + Debug {
     /// 获取当前结果原始key信息
     fn key(&self) -> String;
     /// value最终存储在文件中的内容

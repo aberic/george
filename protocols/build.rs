@@ -14,48 +14,20 @@
 
 use protoc_rust::Customize;
 
-fn protos_chain_single() {
+// 先执行无依赖proto，完成后导入mod，再执行有依赖proto，完成后导入mod
+fn init_chain() {
     let mut ps_block: Vec<&str> = vec![];
-    ps_block.push("src/protos/chain/timestamp.proto");
     ps_block.push("src/protos/chain/contract.proto");
     ps_block.push("src/protos/chain/data.proto");
     ps_block.push("src/protos/chain/peer.proto");
     ps_block.push("src/protos/chain/policy.proto");
     ps_block.push("src/protos/chain/rwset.proto");
     ps_block.push("src/protos/chain/sign.proto");
-    protoc_rust_grpc::Codegen::new()
-        .out_dir("src/impls/chain")
-        .inputs(ps_block)
-        .rust_protobuf(true)
-        .rust_protobuf_customize(Customize {
-            serde_derive: Some(true),
-            ..Default::default()
-        })
-        .run()
-        .expect("protoc-rust-grpc");
-}
-
-fn protos_chain_depends() {
-    let mut ps_block: Vec<&str> = vec![];
     ps_block.push("src/protos/chain/block.proto");
     ps_block.push("src/protos/chain/genesis.proto");
     ps_block.push("src/protos/chain/ledger.proto");
     ps_block.push("src/protos/chain/organization.proto");
     ps_block.push("src/protos/chain/transaction.proto");
-    protoc_rust_grpc::Codegen::new()
-        .out_dir("src/impls/chain")
-        .inputs(ps_block)
-        .rust_protobuf(true)
-        .rust_protobuf_customize(Customize {
-            serde_derive: Some(true),
-            ..Default::default()
-        })
-        .run()
-        .expect("protoc-rust-grpc");
-}
-
-fn protos_chain_service() {
-    let mut ps_block: Vec<&str> = vec![];
     ps_block.push("src/protos/chain/service.proto");
     protoc_rust_grpc::Codegen::new()
         .out_dir("src/impls/chain")
@@ -69,9 +41,28 @@ fn protos_chain_service() {
         .expect("protoc-rust-grpc");
 }
 
+fn init_db() {
+    let mut ps_block: Vec<&str> = vec![];
+    ps_block.push("src/protos/db/database.proto");
+    ps_block.push("src/protos/db/index.proto");
+    ps_block.push("src/protos/db/master.proto");
+    ps_block.push("src/protos/db/page.proto");
+    ps_block.push("src/protos/db/service.proto");
+    ps_block.push("src/protos/db/view.proto");
+    protoc_rust_grpc::Codegen::new()
+        .out_dir("src/impls/db")
+        .inputs(ps_block)
+        .rust_protobuf(true)
+        .rust_protobuf_customize(Customize {
+            serde_derive: Some(true),
+            ..Default::default()
+        })
+        .run()
+        .expect("protoc-rust-grpc");
+}
+
 // 先执行无依赖proto，完成后导入mod，再执行有依赖proto，完成后导入mod
 fn main() {
-    protos_chain_single();
-    protos_chain_depends();
-    protos_chain_service();
+    init_chain();
+    init_db();
 }

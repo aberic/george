@@ -57,22 +57,22 @@ impl Database {
     }
 
     /// 名称
-    pub(crate) fn name(&self) -> String {
+    pub fn name(&self) -> String {
         self.name.clone()
     }
 
     /// 描述
-    pub(crate) fn comment(&self) -> String {
+    pub fn comment(&self) -> String {
         self.comment.clone()
     }
 
     /// 创建时间
-    pub(crate) fn create_time(&self) -> Time {
+    pub fn create_time(&self) -> Time {
         self.create_time.clone()
     }
 
     /// 视图索引集合
-    pub(crate) fn view_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>> {
+    pub fn view_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>> {
         self.views.clone()
     }
 

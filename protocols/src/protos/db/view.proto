@@ -1,0 +1,47 @@
+/*
+ * Copyright (c) 2020. Aberic - All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+option go_package = "github.com/george/protocols/db";
+option java_package = "cn.aberic.george.protocols.db";
+option java_outer_classname = "ViewProto";
+
+package db;
+
+import "google/protobuf/timestamp.proto";
+import "src/protos/db/index.proto";
+
+// 视图
+message View {
+  // 名称
+  string name = 1;
+  // 描述
+  string comment = 2;
+  // 创建时间
+  google.protobuf.Timestamp create_time = 3;
+  // 索引集合
+  repeated Index indexes = 4;
+}
+
+// 视图集合
+message ViewList {
+  repeated View views = 1;
+}
+
+// 请求视图集合
+message RequestViewList {
+  // 数据库名称
+  string database_name = 1;
+}

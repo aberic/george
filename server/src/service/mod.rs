@@ -12,16 +12,7 @@
  * limitations under the License.
  */
 
-pub mod block;
-pub mod contract;
-pub mod data;
-pub mod genesis;
-pub mod ledger;
-pub mod organization;
-pub mod peer;
-pub mod policy;
-pub mod rwset;
-pub mod service;
-pub mod service_grpc;
-pub mod sign;
-pub mod transaction;
+pub mod database;
+pub mod index;
+pub mod page;
+pub mod view;

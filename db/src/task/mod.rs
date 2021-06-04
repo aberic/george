@@ -47,7 +47,7 @@ pub(super) static GLOBAL_THREAD_POOL: Lazy<ThreadPool> = Lazy::new(|| {
     ThreadPool::new(worker_threads).expect("thread pool new failed!")
 });
 
-/// 数据库
+/// 主管员
 #[derive(Debug, Clone)]
 pub struct Master {
     /// 默认缓存页名称
@@ -60,6 +60,7 @@ pub struct Master {
     create_time: Time,
 }
 
+/// 数据库
 #[derive(Debug, Clone)]
 pub struct Database {
     /// 名称
@@ -72,6 +73,25 @@ pub struct Database {
     ge: Arc<dyn Ge>,
     /// 视图集合
     views: Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>>,
+}
+
+/// 缓存页
+#[derive(Debug, Clone)]
+pub struct Page {
+    /// 名称
+    name: String,
+    /// 描述
+    comment: String,
+    /// 可使用内存大小(单位：Mb，0：不限制大小)
+    size: u64,
+    /// 默认有效期(单位：秒)，如无设置，默认维300(0：永久有效)
+    period: u32,
+    /// 创建时间
+    create_time: Time,
+    /// ge文件对象
+    ge: Arc<dyn Ge>,
+    /// 默认缓存页
+    node: Arc<RwLock<Node>>,
 }
 
 /// 视图，类似表
@@ -91,24 +111,6 @@ pub struct View {
     indexes: Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>,
     /// 当前归档版本信息
     pigeonhole: Pigeonhole,
-}
-
-#[derive(Debug, Clone)]
-pub struct Page {
-    /// 名称
-    name: String,
-    /// 描述
-    comment: String,
-    /// 可使用内存大小(单位：Mb，0：不限制大小)
-    size: u64,
-    /// 默认有效期(单位：秒)，如无设置，默认维300(0：永久有效)
-    period: u32,
-    /// 创建时间
-    create_time: Time,
-    /// ge文件对象
-    ge: Arc<dyn Ge>,
-    /// 默认缓存页
-    node: Arc<RwLock<Node>>,
 }
 
 /// 账本

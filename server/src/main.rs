@@ -12,6 +12,39 @@
  * limitations under the License.
  */
 
+use crate::service::database::DatabaseServer;
+use crate::service::index::IndexServer;
+use crate::service::page::PageServer;
+use crate::service::view::ViewServer;
+use db::Task;
+use protocols::impls::db::service_grpc::{
+    DatabaseServiceServer, IndexServiceServer, PageServiceServer, ViewServiceServer,
+};
+use std::sync::Arc;
+use std::thread;
+
+pub mod service;
+mod utils;
+
 fn main() {
-    println!("Hello, server!");
+    let task = Arc::new(Task::new());
+    let mut server = grpc::ServerBuilder::new_plain();
+    server.http.set_port(9000);
+    // server.http.set_cpu_pool_threads(4);
+    server.add_service(PageServiceServer::new_service_def(PageServer {
+        task: task.clone(),
+    }));
+    server.add_service(DatabaseServiceServer::new_service_def(DatabaseServer {
+        task: task.clone(),
+    }));
+    server.add_service(ViewServiceServer::new_service_def(ViewServer {
+        task: task.clone(),
+    }));
+    server.add_service(IndexServiceServer::new_service_def(IndexServer {
+        task: task.clone(),
+    }));
+    let _server = server.build().expect("Could not start server");
+    loop {
+        thread::park();
+    }
 }

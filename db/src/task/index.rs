@@ -115,6 +115,18 @@ impl TIndex for Index {
         self.engine.clone()
     }
 
+    fn primary(&self) -> bool {
+        self.primary
+    }
+
+    fn unique(&self) -> bool {
+        self.unique
+    }
+
+    fn null(&self) -> bool {
+        self.null
+    }
+
     fn key_type(&self) -> KeyType {
         self.key_type.clone()
     }

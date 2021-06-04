@@ -12,13 +12,30 @@
  * limitations under the License.
  */
 
-#[cfg(test)]
-mod test {
-    use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
+syntax = "proto3";
 
-    #[test]
-    fn init_test() {
-        init_config("src/examples/conf.yaml".to_string());
-        println!("config = {:#?}", GLOBAL_CONFIG);
-    }
+option go_package = "github.com/george/protocols/db";
+option java_package = "cn.aberic.george.protocols.db";
+option java_outer_classname = "DatabaseProto";
+
+package db;
+
+import "google/protobuf/timestamp.proto";
+import "src/protos/db/view.proto";
+
+// 数据库
+message Database {
+  // 名称
+  string name = 1;
+  // 描述
+  string comment = 2;
+  // 创建时间
+  google.protobuf.Timestamp create_time = 3;
+  // 视图集合
+  repeated View views = 4;
+}
+
+// 数据库集合
+message DatabaseList {
+  repeated Database databases = 1;
 }

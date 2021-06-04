@@ -13,6 +13,7 @@ edition = "2018"
 
 [dependencies]
 comm = { path = "../comm", version = "0.1.0" }
-db = { path = "../db", version = "0.1.0" }
 logs = { path = "../logs", version = "0.1.0" }
-#protocols = { path = "../protocols", version = "0.1.0" }s
+protocols = { path = "../protocols", version = "0.1.0" }
+grpc = "0.8.3"
+futures = "0.3.*"

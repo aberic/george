@@ -379,7 +379,7 @@ pub trait TMaster {
 /// 表通用特性，遵循此特性创建索引可以更方便的针对进行扩展
 ///
 /// 该特性包含了索引的基本方法，理论上都需要进行实现才能使用
-pub(crate) trait TForm: Send + Sync + Debug {
+pub trait TForm: Send + Sync + Debug {
     /// 数据库名称
     fn database_name(&self) -> String;
 

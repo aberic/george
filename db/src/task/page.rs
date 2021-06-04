@@ -64,12 +64,27 @@ impl Page {
     }
 
     /// 名称
-    pub(crate) fn name(&self) -> String {
+    pub fn name(&self) -> String {
         self.name.clone()
     }
 
+    /// 描述
+    pub fn comment(&self) -> String {
+        self.comment.clone()
+    }
+
+    /// 可使用内存大小(单位：Mb，0：不限制大小)
+    pub fn size(&self) -> u64 {
+        self.size
+    }
+
+    /// 默认有效期(单位：秒)，如无设置，默认维300(0：永久有效)
+    pub fn period(&self) -> u32 {
+        self.period
+    }
+
     /// 创建时间
-    pub(crate) fn create_time(&self) -> Time {
+    pub fn create_time(&self) -> Time {
         self.create_time.clone()
     }
 

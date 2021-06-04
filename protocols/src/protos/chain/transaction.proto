@@ -20,7 +20,7 @@ option java_outer_classname = "TransactionProto";
 
 package chain;
 
-import "src/protos/chain/timestamp.proto";
+import "google/protobuf/timestamp.proto";
 import "src/protos/chain/contract.proto";
 import "src/protos/chain/rwset.proto";
 import "src/protos/chain/sign.proto";
@@ -36,9 +36,9 @@ message TransactionInfo {
   // 交易hash，sm3
   string hash = 1;
   // 交易接收时间
-  Timestamp timestamp = 2;
+  google.protobuf.Timestamp timestamp = 2;
   // 交易提交时间
-  Timestamp commit = 3;
+  google.protobuf.Timestamp commit = 3;
   // 交易所依赖合约
   ContractBase contract = 4;
   // 交易提交的方法名

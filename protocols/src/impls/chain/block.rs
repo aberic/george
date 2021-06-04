@@ -321,7 +321,7 @@ pub struct BlockHeader {
     pub number: u64,
     pub preHash: ::std::string::String,
     pub hash: ::std::string::String,
-    pub timestamp: ::protobuf::SingularPtrField<super::timestamp::Timestamp>,
+    pub timestamp: ::protobuf::SingularPtrField<::protobuf::well_known_types::Timestamp>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -407,11 +407,11 @@ impl BlockHeader {
         ::std::mem::replace(&mut self.hash, ::std::string::String::new())
     }
 
-    // .chain.Timestamp timestamp = 4;
+    // .google.protobuf.Timestamp timestamp = 4;
 
 
-    pub fn get_timestamp(&self) -> &super::timestamp::Timestamp {
-        self.timestamp.as_ref().unwrap_or_else(|| <super::timestamp::Timestamp as ::protobuf::Message>::default_instance())
+    pub fn get_timestamp(&self) -> &::protobuf::well_known_types::Timestamp {
+        self.timestamp.as_ref().unwrap_or_else(|| <::protobuf::well_known_types::Timestamp as ::protobuf::Message>::default_instance())
     }
     pub fn clear_timestamp(&mut self) {
         self.timestamp.clear();
@@ -422,13 +422,13 @@ impl BlockHeader {
     }
 
     // Param is passed by value, moved
-    pub fn set_timestamp(&mut self, v: super::timestamp::Timestamp) {
+    pub fn set_timestamp(&mut self, v: ::protobuf::well_known_types::Timestamp) {
         self.timestamp = ::protobuf::SingularPtrField::some(v);
     }
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_timestamp(&mut self) -> &mut super::timestamp::Timestamp {
+    pub fn mut_timestamp(&mut self) -> &mut ::protobuf::well_known_types::Timestamp {
         if self.timestamp.is_none() {
             self.timestamp.set_default();
         }
@@ -436,8 +436,8 @@ impl BlockHeader {
     }
 
     // Take field
-    pub fn take_timestamp(&mut self) -> super::timestamp::Timestamp {
-        self.timestamp.take().unwrap_or_else(|| super::timestamp::Timestamp::new())
+    pub fn take_timestamp(&mut self) -> ::protobuf::well_known_types::Timestamp {
+        self.timestamp.take().unwrap_or_else(|| ::protobuf::well_known_types::Timestamp::new())
     }
 }
 
@@ -569,7 +569,7 @@ impl ::protobuf::Message for BlockHeader {
                 |m: &BlockHeader| { &m.hash },
                 |m: &mut BlockHeader| { &mut m.hash },
             ));
-            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::timestamp::Timestamp>>(
+            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<::protobuf::well_known_types::Timestamp>>(
                 "timestamp",
                 |m: &BlockHeader| { &m.timestamp },
                 |m: &mut BlockHeader| { &mut m.timestamp },
@@ -1409,24 +1409,24 @@ impl ::protobuf::reflect::ProtobufValue for BlockInfo {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x1csrc/protos/chain/block.proto\x12\x05chain\x1a\x20src/protos/chain/\
-    timestamp.proto\x1a\"src/protos/chain/transaction.proto\x1a\x1bsrc/proto\
-    s/chain/sign.proto\"\x8b\x01\n\x05Block\x12*\n\x06header\x18\x01\x20\x01\
-    (\x0b2\x12.chain.BlockHeaderR\x06header\x12$\n\x04data\x18\x02\x20\x01(\
+    \n\x1csrc/protos/chain/block.proto\x12\x05chain\x1a\x1fgoogle/protobuf/t\
+    imestamp.proto\x1a\"src/protos/chain/transaction.proto\x1a\x1bsrc/protos\
+    /chain/sign.proto\"\x8b\x01\n\x05Block\x12*\n\x06header\x18\x01\x20\x01(\
+    \x0b2\x12.chain.BlockHeaderR\x06header\x12$\n\x04data\x18\x02\x20\x01(\
     \x0b2\x10.chain.BlockDataR\x04data\x120\n\x08metadata\x18\x03\x20\x01(\
-    \x0b2\x14.chain.BlockMetadataR\x08metadata\"\x83\x01\n\x0bBlockHeader\
+    \x0b2\x14.chain.BlockMetadataR\x08metadata\"\x8d\x01\n\x0bBlockHeader\
     \x12\x16\n\x06number\x18\x01\x20\x01(\x04R\x06number\x12\x18\n\x07preHas\
     h\x18\x02\x20\x01(\tR\x07preHash\x12\x12\n\x04hash\x18\x03\x20\x01(\tR\
-    \x04hash\x12.\n\ttimestamp\x18\x04\x20\x01(\x0b2\x10.chain.TimestampR\tt\
-    imestamp\"\x1f\n\tBlockData\x12\x12\n\x04data\x18\x01\x20\x01(\x0cR\x04d\
-    ata\"z\n\rBlockMetadata\x12\x16\n\x06length\x18\x01\x20\x01(\rR\x06lengt\
-    h\x12*\n\x05index\x18\x02\x20\x01(\x0b2\x14.chain.PreBlockIndexR\x05inde\
-    x\x12%\n\x06signer\x18\x03\x20\x01(\x0b2\r.chain.SignerR\x06signer\"3\n\
-    \rPreBlockIndex\x12\x0e\n\x02no\x18\x01\x20\x01(\rR\x02no\x12\x12\n\x04s\
-    eek\x18\x02\x20\x01(\rR\x04seek\"A\n\tBlockInfo\x124\n\x0btransaction\
-    \x18\x01\x20\x01(\x0b2\x12.chain.TransactionR\x0btransactionBQ\n\x20cn.a\
-    beric.george.protocols.chainB\nBlockProtoZ!github.com/george/protocols/c\
-    hainb\x06proto3\
+    \x04hash\x128\n\ttimestamp\x18\x04\x20\x01(\x0b2\x1a.google.protobuf.Tim\
+    estampR\ttimestamp\"\x1f\n\tBlockData\x12\x12\n\x04data\x18\x01\x20\x01(\
+    \x0cR\x04data\"z\n\rBlockMetadata\x12\x16\n\x06length\x18\x01\x20\x01(\r\
+    R\x06length\x12*\n\x05index\x18\x02\x20\x01(\x0b2\x14.chain.PreBlockInde\
+    xR\x05index\x12%\n\x06signer\x18\x03\x20\x01(\x0b2\r.chain.SignerR\x06si\
+    gner\"3\n\rPreBlockIndex\x12\x0e\n\x02no\x18\x01\x20\x01(\rR\x02no\x12\
+    \x12\n\x04seek\x18\x02\x20\x01(\rR\x04seek\"A\n\tBlockInfo\x124\n\x0btra\
+    nsaction\x18\x01\x20\x01(\x0b2\x12.chain.TransactionR\x0btransactionBQ\n\
+    \x20cn.aberic.george.protocols.chainB\nBlockProtoZ!github.com/george/pro\
+    tocols/chainb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

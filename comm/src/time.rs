@@ -84,6 +84,13 @@ impl Time {
         self.sec().to_string()
     }
 
+    pub fn nanos(&self) -> i32 {
+        match self.duration.num_nanoseconds() {
+            Some(nano) => nano as i32,
+            None => 0,
+        }
+    }
+
     pub fn nano(&self) -> Option<i64> {
         self.duration.num_nanoseconds()
     }

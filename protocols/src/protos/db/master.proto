@@ -14,21 +14,24 @@
 
 syntax = "proto3";
 
-package chain;
+option go_package = "github.com/george/protocols/db";
+option java_package = "cn.aberic.george.protocols.db";
+option java_outer_classname = "MasterProto";
 
-option go_package = "github.com/george/protocols/chain";
-option java_package = "cn.aberic.george.protocols.chain";
-option java_outer_classname = "TimestampProto";
+package db;
 
-message Timestamp {
-  // Represents seconds of UTC time since Unix epoch
-  // 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
-  // 9999-12-31T23:59:59Z inclusive.
-  int64 seconds = 1;
+import "google/protobuf/timestamp.proto";
+import "src/protos/db/database.proto";
+import "src/protos/db/page.proto";
 
-  // Non-negative fractions of a second at nanosecond resolution. Negative
-  // second values with fractions must still have non-negative nanos values
-  // that count forward in time. Must be from 0 to 999,999,999
-  // inclusive.
-  int32 nanos = 2;
+// 主管员
+message Master {
+  // 默认缓存页名称
+  string default_page_name = 1;
+  // 缓存页集合
+  repeated Page pages = 2;
+  // 库集合
+  repeated Database databases = 3;
+  // 创建时间
+  google.protobuf.Timestamp create_time = 4;
 }

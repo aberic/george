@@ -12,26 +12,29 @@
  * limitations under the License.
  */
 
-use crate::utils::Paths;
+#[cfg(test)]
+mod test {
+    use crate::utils::Paths;
 
-#[test]
-fn path_test() {
-    println!("data_path = {}", Paths::data_path());
-    println!(
-        "database_path = {}",
-        Paths::database_path(String::from("database"))
-    );
-    println!(
-        "view_path = {}",
-        Paths::view_path(String::from("database"), String::from("view"))
-    );
-    println!("bootstrap_file_path = {}", Paths::bootstrap_filepath());
-    println!(
-        "index_file_path = {}",
-        Paths::index_filepath(
-            String::from("database"),
-            String::from("view"),
-            String::from("index")
-        )
-    );
+    #[test]
+    fn path_test() {
+        println!("data_path = {}", Paths::data_path());
+        println!(
+            "database_path = {}",
+            Paths::database_path(String::from("database"))
+        );
+        println!(
+            "view_path = {}",
+            Paths::view_path(String::from("database"), String::from("view"))
+        );
+        println!("bootstrap_file_path = {}", Paths::bootstrap_filepath());
+        println!(
+            "index_file_path = {}",
+            Paths::index_filepath(
+                String::from("database"),
+                String::from("view"),
+                String::from("index")
+            )
+        );
+    }
 }

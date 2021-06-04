@@ -96,12 +96,12 @@ impl View {
     }
 
     /// 创建时间
-    pub(crate) fn create_time(&self) -> Time {
+    pub fn create_time(&self) -> Time {
         self.create_time.clone()
     }
 
     /// 索引集合
-    pub(crate) fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>> {
+    pub fn index_map(&self) -> Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>> {
         self.indexes.clone()
     }
 
