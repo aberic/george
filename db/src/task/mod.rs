@@ -17,37 +17,29 @@ use std::sync::{Arc, RwLock};
 use once_cell::sync::Lazy;
 
 use comm::pool::ThreadPool;
-use comm::{Env, Time};
+use comm::Time;
 use ge::Ge;
 
 use crate::task::engine::memory::Node;
-use crate::task::engine::traits::{Pigeonhole, TForm, TIndex, TNode};
+use crate::task::engine::traits::{Pigeonhole, TIndex, TNode};
 use crate::task::engine::DataReal;
-use crate::task::master::init_log;
 use crate::task::seed::IndexPolicy;
+use crate::task::traits::TForm;
 use crate::utils::comm::GEORGE_DB_CONFIG;
 use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
 use crate::utils::enums::{Engine, KeyType};
 
 mod database;
-pub mod engine;
+mod engine;
 mod index;
 mod ledger;
 pub mod master;
 mod master_test;
 mod page;
-mod rich;
+pub mod rich;
 mod seed;
+pub mod traits;
 mod view;
-
-pub static GLOBAL_MASTER: Lazy<Arc<Master>> = Lazy::new(|| {
-    init_config(Env::get(GEORGE_DB_CONFIG, "src/examples/conf.yaml"));
-    init_log();
-    log::info!("config & log init success!");
-    GLOBAL_THREAD_POOL.init();
-    log::info!("thread pool init success!");
-    Master::generate()
-});
 
 pub(super) static GLOBAL_THREAD_POOL: Lazy<ThreadPool> = Lazy::new(|| {
     let config = GLOBAL_CONFIG.read().unwrap();
@@ -57,6 +49,7 @@ pub(super) static GLOBAL_THREAD_POOL: Lazy<ThreadPool> = Lazy::new(|| {
 });
 
 /// 数据库
+#[derive(Debug, Clone)]
 pub struct Master {
     /// 默认缓存页名称
     default_page_name: String,
@@ -69,7 +62,7 @@ pub struct Master {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct Database {
+pub struct Database {
     /// 名称
     name: String,
     /// 描述
@@ -84,7 +77,7 @@ pub(crate) struct Database {
 
 /// 视图，类似表
 #[derive(Debug, Clone)]
-pub(crate) struct View {
+pub struct View {
     /// 数据库名称
     database_name: String,
     /// 名称
@@ -102,7 +95,7 @@ pub(crate) struct View {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct Page {
+pub struct Page {
     /// 名称
     name: String,
     /// 描述
@@ -121,7 +114,7 @@ pub(crate) struct Page {
 
 /// 账本
 #[derive(Debug, Clone)]
-pub(crate) struct Ledger {
+pub struct Ledger {
     /// 数据库名称
     pub(crate) database_name: String,
     /// 名称

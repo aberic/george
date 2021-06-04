@@ -19,9 +19,9 @@ use serde::{Deserialize, Serialize};
 use comm::strings::StringHandler;
 use comm::Strings;
 
-use crate::task::engine::traits::TForm;
-use crate::task::GLOBAL_MASTER;
+use crate::task::traits::{TForm, TMaster};
 use crate::utils::enums::{Engine, KeyType};
+use crate::Task;
 
 #[cfg(test)]
 mod master {
@@ -33,39 +33,42 @@ mod master {
             view_record,
         };
         use crate::utils::enums::{Engine, KeyType};
+        use crate::Task;
 
         #[test]
         fn test() {
+            let task = Task::new();
             // database_create_test
             let database_name = "database_create_base_test";
-            create_database(database_name);
+            create_database(task.clone(), database_name);
             // database_modify_test
             let database_name = "database_modify_base_test1";
             let database_new_name = "database_modify_base_test2";
-            create_database(database_name);
-            modify_database(database_name, database_new_name);
-            modify_database(database_name, database_new_name);
+            create_database(task.clone(), database_name);
+            modify_database(task.clone(), database_name, database_new_name);
+            modify_database(task.clone(), database_name, database_new_name);
             // view_create_test
             let database_name = "database_view_create_base_test";
             let view_name = "view_create_base_test";
-            create_view(database_name, view_name);
+            create_view(task.clone(), database_name, view_name);
             // view_modify_test
             let database_name = "database_view_modify_base_test";
             let view_name = "view_modify_base_test1";
             let view_new_name = "view_modify_base_test2";
-            create_view_with_increment(database_name, view_name);
-            modify_view(database_name, view_name, view_new_name);
-            modify_view(database_name, view_name, view_new_name);
+            create_view_with_increment(task.clone(), database_name, view_name);
+            modify_view(task.clone(), database_name, view_name, view_new_name);
+            modify_view(task.clone(), database_name, view_name, view_new_name);
             // page_test
             let page_name = "page_modify_base_test1";
             let page_new_name = "page_modify_base_test2";
-            create_page(page_name);
-            modify_page(page_name, page_new_name);
+            create_page(task.clone(), page_name);
+            modify_page(task.clone(), page_name, page_new_name);
             // index_disk_create_test
             let database_name = "database_index_disk_create_test";
             let view_name = "view_index_create_test";
             let index_name = "index_create_test";
             create_index(
+                task.clone(),
                 database_name,
                 view_name,
                 index_name,
@@ -80,6 +83,7 @@ mod master {
             let view_name = "view_index_create_test";
             let index_name = "index_create_test";
             create_index(
+                task.clone(),
                 database_name,
                 view_name,
                 index_name,
@@ -89,58 +93,88 @@ mod master {
                 true,
                 false,
             );
-            database_map();
+            database_map(task);
         }
 
         #[test]
         fn database_create_test() {
-            create_database("database_create_test");
-            database_map();
+            let task = Task::new();
+            create_database(task.clone(), "database_create_test");
+            database_map(task);
         }
 
         #[test]
         fn database_modify_test() {
-            create_database("database_modify_test1");
-            modify_database("database_modify_test1", "database_modify_test2");
-            database_map();
+            let task = Task::new();
+            create_database(task.clone(), "database_modify_test1");
+            modify_database(
+                task.clone(),
+                "database_modify_test1",
+                "database_modify_test2",
+            );
+            database_map(task);
         }
 
         #[test]
         fn view_create_test() {
-            create_view_with_increment("database_view_create_test", "view_create_test");
-            database_map();
+            let task = Task::new();
+            create_view_with_increment(
+                task.clone(),
+                "database_view_create_test",
+                "view_create_test",
+            );
+            database_map(task);
         }
 
         #[test]
         fn view_modify_test() {
-            create_view_with_increment("database_view_modify_test", "view_modify_test1");
+            let task = Task::new();
+            create_view_with_increment(
+                task.clone(),
+                "database_view_modify_test",
+                "view_modify_test1",
+            );
             modify_view(
+                task.clone(),
                 "database_view_modify_test",
                 "view_modify_test1",
                 "view_modify_test2",
             );
-            database_map();
+            database_map(task);
         }
 
         #[test]
         fn view_archive_test() {
-            create_view_with_increment("database_view_archive_test", "view_archive_test");
+            let task = Task::new();
+            create_view_with_increment(
+                task.clone(),
+                "database_view_archive_test",
+                "view_archive_test",
+            );
             archive_view(
+                task.clone(),
                 "database_view_archive_test",
                 "view_archive_test",
                 "src/test/dir/x.ge",
             );
-            database_map();
+            database_map(task);
         }
 
         #[test]
         fn view_record_test() {
-            view_record("database_view_archive_test", "view_archive_test", 0)
+            let task = Task::new();
+            view_record(
+                task.clone(),
+                "database_view_archive_test",
+                "view_archive_test",
+                0,
+            )
         }
 
         #[test]
         fn database_map_test() {
-            database_map();
+            let task = Task::new();
+            database_map(task);
         }
     }
 
@@ -150,64 +184,71 @@ mod master {
             create_page, get_memory, get_memory_default, put_memory, put_memory_default,
             remove_memory, remove_memory_default, set_memory, set_memory_default,
         };
+        use crate::Task;
 
         #[test]
         fn memory_test1() {
+            let task = Task::new();
             let key1 = "a";
             let key2 = "b";
             let key3 = "c";
-            put_memory_default(key1, "test1", 1);
-            put_memory_default(key2, "test2", 2);
-            get_memory_default(key1, 1);
-            get_memory_default(key2, 2);
-            remove_memory_default(key2, 3);
-            get_memory_default(key2, 3);
-            put_memory_default(key3, "test4", 4);
-            get_memory_default(key3, 4);
-            put_memory_default(key3, "test5", 5);
-            get_memory_default(key3, 5);
-            set_memory_default(key3, "test6", 6);
-            get_memory_default(key3, 6);
+            put_memory_default(task.clone(), key1, "test1", 1);
+            put_memory_default(task.clone(), key2, "test2", 2);
+            get_memory_default(task.clone(), key1, 1);
+            get_memory_default(task.clone(), key2, 2);
+            remove_memory_default(task.clone(), key2, 3);
+            get_memory_default(task.clone(), key2, 3);
+            put_memory_default(task.clone(), key3, "test4", 4);
+            get_memory_default(task.clone(), key3, 4);
+            put_memory_default(task.clone(), key3, "test5", 5);
+            get_memory_default(task.clone(), key3, 5);
+            set_memory_default(task.clone(), key3, "test6", 6);
+            get_memory_default(task.clone(), key3, 6);
         }
 
         #[test]
         fn memory_test2() {
+            let task = Task::new();
             let page_name = "page_test2";
-            create_page(page_name);
+            create_page(task.clone(), page_name);
             let key1 = "a";
             let key2 = "b";
             let key3 = "c";
-            put_memory(page_name, key1, "test1", 1);
-            put_memory(page_name, key2, "test2", 2);
-            get_memory(page_name, key1, 1);
-            get_memory(page_name, key2, 2);
-            remove_memory(page_name, key2, 3);
-            get_memory(page_name, key2, 3);
-            put_memory(page_name, key3, "test4", 4);
-            get_memory(page_name, key3, 4);
-            put_memory(page_name, key3, "test5", 5);
-            get_memory(page_name, key3, 5);
-            set_memory(page_name, key3, "test6", 6);
-            get_memory(page_name, key3, 6);
+            put_memory(task.clone(), page_name, key1, "test1", 1);
+            put_memory(task.clone(), page_name, key2, "test2", 2);
+            get_memory(task.clone(), page_name, key1, 1);
+            get_memory(task.clone(), page_name, key2, 2);
+            remove_memory(task.clone(), page_name, key2, 3);
+            get_memory(task.clone(), page_name, key2, 3);
+            put_memory(task.clone(), page_name, key3, "test4", 4);
+            get_memory(task.clone(), page_name, key3, 4);
+            put_memory(task.clone(), page_name, key3, "test5", 5);
+            get_memory(task.clone(), page_name, key3, 5);
+            set_memory(task.clone(), page_name, key3, "test6", 6);
+            get_memory(task.clone(), page_name, key3, 6);
         }
     }
 
     #[cfg(test)]
     mod index {
+        use comm::json::JsonHandler;
+        use comm::Json;
+
         use crate::task::master_test::{
             create_index, create_t, create_view, create_view_with_increment, get, get_by_index, put,
         };
         use crate::utils::enums::{Engine, KeyType};
-        use comm::json::JsonHandler;
-        use comm::Json;
+        use crate::Task;
 
         #[test]
         fn index_with_sequence() {
+            let task = Task::new();
             let database_name = "database_index_sequence_test";
             let view_name = "view_index_test";
             let index_name = "age";
-            create_view(database_name, view_name);
+            create_view(task.clone(), database_name, view_name);
             create_index(
+                task.clone(),
                 database_name,
                 view_name,
                 index_name,
@@ -222,6 +263,7 @@ mod master {
                 // 循环体
                 let user_str = Json::obj_2_string(&create_t(i, 10000 - i)).unwrap();
                 put(
+                    task.clone(),
                     database_name,
                     view_name,
                     i.to_string().as_str(),
@@ -235,6 +277,7 @@ mod master {
             while i < 5 {
                 // 循环体
                 get_by_index(
+                    task.clone(),
                     database_name,
                     view_name,
                     index_name.clone(),
@@ -247,13 +290,15 @@ mod master {
 
         #[test]
         fn index_with_increment() {
+            let task = Task::new();
             let database_name = "database_index_test";
             let view_name = "view_index_test";
-            create_view_with_increment(database_name, view_name);
+            create_view_with_increment(task.clone(), database_name, view_name);
             let mut i = 1;
             while i < 5 {
                 // 循环体
                 put(
+                    task.clone(),
                     database_name,
                     view_name,
                     i.to_string().as_str(),
@@ -266,7 +311,13 @@ mod master {
             i = 1;
             while i < 5 {
                 // 循环体
-                get(database_name, view_name, i.to_string().as_str(), i);
+                get(
+                    task.clone(),
+                    database_name,
+                    view_name,
+                    i.to_string().as_str(),
+                    i,
+                );
                 i += 1;
             }
         }
@@ -275,40 +326,78 @@ mod master {
     #[cfg(test)]
     mod index_disk {
         use crate::task::master_test::{create_view_with_increment, get, put, set};
+        use crate::Task;
 
         #[test]
         fn put_set_get_test() {
+            let task = Task::new();
             let database_name = "database_disk_base_test";
             let view_name = "view_disk_base_test";
-            create_view_with_increment(database_name, view_name);
-            put(database_name, view_name, "hello1", "world1", 1);
-            put(database_name, view_name, "hello2", "world2", 2);
-            put(database_name, view_name, "hello3", "world3", 3);
-            get(database_name, view_name, "hello1", 1);
-            get(database_name, view_name, "hello2", 2);
-            get(database_name, view_name, "hello3", 3);
-            set(database_name, view_name, "hello1", "world4", 4);
-            get(database_name, view_name, "hello1", 1);
-            get(database_name, view_name, "hello2", 2);
-            get(database_name, view_name, "hello3", 3);
+            create_view_with_increment(task.clone(), database_name, view_name);
+            put(
+                task.clone(),
+                database_name,
+                view_name,
+                "hello1",
+                "world1",
+                1,
+            );
+            put(
+                task.clone(),
+                database_name,
+                view_name,
+                "hello2",
+                "world2",
+                2,
+            );
+            put(
+                task.clone(),
+                database_name,
+                view_name,
+                "hello3",
+                "world3",
+                3,
+            );
+            get(task.clone(), database_name, view_name, "hello1", 1);
+            get(task.clone(), database_name, view_name, "hello2", 2);
+            get(task.clone(), database_name, view_name, "hello3", 3);
+            set(
+                task.clone(),
+                database_name,
+                view_name,
+                "hello1",
+                "world4",
+                4,
+            );
+            get(task.clone(), database_name, view_name, "hello1", 1);
+            get(task.clone(), database_name, view_name, "hello2", 2);
+            get(task.clone(), database_name, view_name, "hello3", 3);
         }
 
         #[test]
         fn put_get_1000_test() {
+            let task = Task::new();
             let database_name = "database_disk_base_test";
             let view_name = "view_disk_base_test";
             let mut pos = 1;
             while pos <= 1000 {
                 let key = format!("yes{}", pos);
                 let value = format!("no{}", pos);
-                put(database_name, view_name, key.as_str(), value.as_str(), pos);
+                put(
+                    task.clone(),
+                    database_name,
+                    view_name,
+                    key.as_str(),
+                    value.as_str(),
+                    pos,
+                );
                 pos += 1;
             }
 
             pos = 800;
             while pos <= 840 {
                 let key = format!("yes{}", pos);
-                get(database_name, view_name, key.as_str(), pos);
+                get(task.clone(), database_name, view_name, key.as_str(), pos);
                 pos += 1;
             }
         }
@@ -318,16 +407,19 @@ mod master {
     mod get_by_index {
         use crate::task::master_test::{create_view_with_increment, del, get, get_by_index, put};
         use crate::utils::comm::INDEX_INCREMENT;
+        use crate::Task;
 
         #[test]
         fn increment_test() {
+            let task = Task::new();
             let database_name = "database_increment_base_test";
             let view_name = "view_increment_base_test";
-            create_view_with_increment(database_name, view_name);
+            create_view_with_increment(task.clone(), database_name, view_name);
             let mut i = 1;
             while i < 5 {
                 // 循环体
                 put(
+                    task.clone(),
                     database_name,
                     view_name,
                     i.to_string().as_str(),
@@ -341,6 +433,7 @@ mod master {
             while i < 5 {
                 // 循环体
                 get_by_index(
+                    task.clone(),
                     database_name,
                     view_name,
                     INDEX_INCREMENT,
@@ -353,40 +446,162 @@ mod master {
 
         #[test]
         fn increment_test_after() {
+            let task = Task::new();
             let database_name = "database_increment_base_test";
             let view_name = "view_increment_base_test";
             put(
+                task.clone(),
                 database_name,
                 view_name,
                 "7",
                 "hello12345hello67890world12345world67890",
                 1,
             );
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "1", 1);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "2", 2);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "3", 3);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "4", 4);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "5", 5);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "6", 6);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "7", 7);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "8", 8);
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "1",
+                1,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "2",
+                2,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "3",
+                3,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "4",
+                4,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "5",
+                5,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "6",
+                6,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "7",
+                7,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "8",
+                8,
+            );
         }
 
         #[test]
         fn increment_test_delete() {
+            let task = Task::new();
             let database_name = "database_increment_base_test";
             let view_name = "view_increment_base_test";
-            del(database_name, view_name, "2", 2);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "1", 1);
-            get(database_name, view_name, "2", 2);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "2", 2);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "3", 3);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "4", 4);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "5", 5);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "6", 6);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "7", 7);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "8", 8);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "9", 9);
+            del(task.clone(), database_name, view_name, "2", 2);
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "1",
+                1,
+            );
+            get(task.clone(), database_name, view_name, "2", 2);
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "2",
+                2,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "3",
+                3,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "4",
+                4,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "5",
+                5,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "6",
+                6,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "7",
+                7,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "8",
+                8,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "9",
+                9,
+            );
         }
     }
 
@@ -400,12 +615,14 @@ mod master {
 
         #[test]
         fn select_disk_prepare() {
+            let task = Task::new();
             let database_name = "database_select_base_test";
             let view_name = "view_base_test";
             let index_name_disk = "age";
             let index_name_sequence = "height";
-            create_view_with_increment(database_name, view_name);
+            create_view_with_increment(task.clone(), database_name, view_name);
             create_index(
+                task.clone(),
                 database_name,
                 view_name,
                 index_name_disk,
@@ -416,6 +633,7 @@ mod master {
                 false,
             );
             create_index(
+                task.clone(),
                 database_name,
                 view_name,
                 index_name_sequence,
@@ -431,6 +649,7 @@ mod master {
                 print!("{} ", pos1);
                 let user_str = Json::obj_2_string(&create_t(pos1, 10000 - pos1)).unwrap();
                 put(
+                    task.clone(),
                     database_name,
                     view_name,
                     pos1.to_string().as_str(),
@@ -443,44 +662,146 @@ mod master {
 
         #[test]
         fn select_disk_get_by_index() {
+            let task = Task::new();
             let database_name = "database_select_base_test";
             let view_name = "view_base_test";
             let index_name = "age";
-            get_by_index(database_name, view_name, index_name, "1", 1);
-            get_by_index(database_name, view_name, index_name, "10", 10);
-            get_by_index(database_name, view_name, index_name, "100", 100);
-            get_by_index(database_name, view_name, index_name, "1000", 1000);
-            get_by_index(database_name, view_name, index_name, "10000", 10000);
-            get_by_index(database_name, view_name, index_name, "100000", 100000);
+            get_by_index(task.clone(), database_name, view_name, index_name, "1", 1);
+            get_by_index(task.clone(), database_name, view_name, index_name, "10", 10);
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                index_name,
+                "100",
+                100,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                index_name,
+                "1000",
+                1000,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                index_name,
+                "10000",
+                10000,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                index_name,
+                "100000",
+                100000,
+            );
         }
 
         #[test]
         fn select_sequence_get_by_index() {
+            let task = Task::new();
             let database_name = "database_select_base_test";
             let view_name = "view_base_test";
             let index_name = "height";
-            get_by_index(database_name, view_name, index_name, "1", 1);
-            get_by_index(database_name, view_name, index_name, "10", 10);
-            get_by_index(database_name, view_name, index_name, "100", 100);
-            get_by_index(database_name, view_name, index_name, "1000", 1000);
-            get_by_index(database_name, view_name, index_name, "10000", 10000);
-            get_by_index(database_name, view_name, index_name, "100000", 100000);
+            get_by_index(task.clone(), database_name, view_name, index_name, "1", 1);
+            get_by_index(task.clone(), database_name, view_name, index_name, "10", 10);
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                index_name,
+                "100",
+                100,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                index_name,
+                "1000",
+                1000,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                index_name,
+                "10000",
+                10000,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                index_name,
+                "100000",
+                100000,
+            );
         }
 
         #[test]
         fn select_increment_get_by_index() {
+            let task = Task::new();
             let database_name = "database_select_base_test";
             let view_name = "view_base_test";
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "1", 1);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "10", 10);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "100", 100);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "1000", 1000);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "10000", 10000);
-            get_by_index(database_name, view_name, INDEX_INCREMENT, "100000", 100000);
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "1",
+                1,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "10",
+                10,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "100",
+                100,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "1000",
+                1000,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "10000",
+                10000,
+            );
+            get_by_index(
+                task.clone(),
+                database_name,
+                view_name,
+                INDEX_INCREMENT,
+                "100000",
+                100000,
+            );
         }
 
         #[test]
         fn select_increment_left() {
+            let task = Task::new();
             let database_name = "database_select_base_test";
             let view_name = "view_base_test";
             let cond_str0 = r#"
@@ -499,11 +820,18 @@ mod master {
                                     "Skip":0,
                                     "Limit":20
                                   }"#;
-            select(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
+            select(
+                task.clone(),
+                database_name,
+                view_name,
+                cond_str0.as_bytes().to_vec(),
+                0,
+            );
         }
 
         #[test]
         fn select_disk_left() {
+            let task = Task::new();
             let database_name = "database_select_base_test";
             let view_name = "view_base_test";
             let cond_str0 = r#"
@@ -532,11 +860,18 @@ mod master {
                                     "Skip":0,
                                     "Limit":20
                                   }"#;
-            select(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
+            select(
+                task.clone(),
+                database_name,
+                view_name,
+                cond_str0.as_bytes().to_vec(),
+                0,
+            );
         }
 
         #[test]
         fn select_disk_right() {
+            let task = Task::new();
             let database_name = "database_select_base_test";
             let view_name = "view_base_test";
             let cond_str0 = r#"
@@ -565,11 +900,18 @@ mod master {
                                     "Skip":0,
                                     "Limit":20
                                   }"#;
-            select(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
+            select(
+                task.clone(),
+                database_name,
+                view_name,
+                cond_str0.as_bytes().to_vec(),
+                0,
+            );
         }
 
         #[test]
         fn select_sequence_left() {
+            let task = Task::new();
             let database_name = "database_select_base_test";
             let view_name = "view_base_test";
             let cond_str0 = r#"
@@ -598,11 +940,18 @@ mod master {
                                     "Skip":0,
                                     "Limit":20
                                   }"#;
-            select(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
+            select(
+                task.clone(),
+                database_name,
+                view_name,
+                cond_str0.as_bytes().to_vec(),
+                0,
+            );
         }
 
         #[test]
         fn select_sequence_right() {
+            let task = Task::new();
             let database_name = "database_select_base_test";
             let view_name = "view_base_test";
             let cond_str0 = r#"
@@ -631,11 +980,18 @@ mod master {
                                     "Skip":0,
                                     "Limit":20
                                   }"#;
-            select(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
+            select(
+                task.clone(),
+                database_name,
+                view_name,
+                cond_str0.as_bytes().to_vec(),
+                0,
+            );
         }
 
         #[test]
         fn select_delete_increment() {
+            let task = Task::new();
             let database_name = "database_select_base_test";
             let view_name = "view_base_test";
             let cond_str0 = r#"
@@ -664,7 +1020,13 @@ mod master {
                                     "Skip":10,
                                     "Limit":100
                                   }"#;
-            delete(database_name, view_name, cond_str0.as_bytes().to_vec(), 0);
+            delete(
+                task.clone(),
+                database_name,
+                view_name,
+                cond_str0.as_bytes().to_vec(),
+                0,
+            );
         }
     }
 }
@@ -690,15 +1052,12 @@ fn create_t(a: u32, h: u32) -> Teacher {
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-fn database_map() {
-    db_create_time();
-    for (database_name, db) in GLOBAL_MASTER
-        .database_map()
-        .read()
-        .unwrap()
-        .iter()
-        .into_iter()
-    {
+fn database_map(task: Task) {
+    println!(
+        "db_create_time = {}",
+        task.create_time().format("%Y-%m-%d %H:%M:%S")
+    );
+    for (database_name, db) in task.database_map().read().unwrap().iter().into_iter() {
         let db_c = db.clone();
         let db_r = db_c.read().unwrap();
 
@@ -734,21 +1093,15 @@ fn database_map() {
     }
 }
 
-fn db_create_time() {
-    let duration = GLOBAL_MASTER.create_time();
-    let time_format = duration.to_string("%Y-%m-%d %H:%M:%S");
-    println!("db_create_time = {}", time_format)
-}
-
-fn create_database(database_name: &str) {
-    match GLOBAL_MASTER.create_database(String::from(database_name), String::from("comment")) {
+fn create_database(task: Task, database_name: &str) {
+    match task.create_database(String::from(database_name), String::from("comment")) {
         Ok(()) => println!("create database {}", database_name),
         Err(err) => println!("create database {} error, {}", database_name, err),
     }
 }
 
-fn modify_database(database_name: &str, database_new_name: &str) {
-    match GLOBAL_MASTER.modify_database(
+fn modify_database(task: Task, database_name: &str, database_new_name: &str) {
+    match task.modify_database(
         String::from(database_name),
         String::from(database_new_name),
         String::from("comment"),
@@ -761,15 +1114,15 @@ fn modify_database(database_name: &str, database_new_name: &str) {
     }
 }
 
-fn create_page(page_name: &str) {
-    match GLOBAL_MASTER.create_page(String::from(page_name), String::from("comment"), 0, 0) {
+fn create_page(task: Task, page_name: &str) {
+    match task.create_page(String::from(page_name), String::from("comment"), 0, 0) {
         Ok(()) => println!("create page {}", page_name),
         Err(err) => println!("create page {} error, {}", page_name, err),
     }
 }
 
-fn modify_page(page_name: &str, page_new_name: &str) {
-    match GLOBAL_MASTER.modify_page(String::from(page_name), String::from(page_new_name)) {
+fn modify_page(task: Task, page_name: &str, page_new_name: &str) {
+    match task.modify_page(String::from(page_name), String::from(page_new_name)) {
         Ok(()) => println!("modify page {} to {}", page_name, page_new_name),
         Err(err) => println!(
             "modify page {} to {} error, {}",
@@ -778,9 +1131,9 @@ fn modify_page(page_name: &str, page_new_name: &str) {
     }
 }
 
-fn create_view(database_name: &str, view_name: &str) {
-    create_database(database_name.clone());
-    match GLOBAL_MASTER.create_view(
+fn create_view(task: Task, database_name: &str, view_name: &str) {
+    create_database(task.clone(), database_name.clone());
+    match task.create_view(
         String::from(database_name),
         String::from(view_name),
         String::from("comment"),
@@ -794,9 +1147,9 @@ fn create_view(database_name: &str, view_name: &str) {
     }
 }
 
-fn create_view_with_increment(database_name: &str, view_name: &str) {
-    create_database(database_name.clone());
-    match GLOBAL_MASTER.create_view(
+fn create_view_with_increment(task: Task, database_name: &str, view_name: &str) {
+    create_database(task.clone(), database_name.clone());
+    match task.create_view(
         String::from(database_name),
         String::from(view_name),
         String::from("comment"),
@@ -810,8 +1163,8 @@ fn create_view_with_increment(database_name: &str, view_name: &str) {
     }
 }
 
-fn modify_view(database_name: &str, view_name: &str, view_new_name: &str) {
-    match GLOBAL_MASTER.modify_view(
+fn modify_view(task: Task, database_name: &str, view_name: &str, view_new_name: &str) {
+    match task.modify_view(
         String::from(database_name),
         String::from(view_name),
         String::from(view_new_name),
@@ -828,8 +1181,8 @@ fn modify_view(database_name: &str, view_name: &str, view_new_name: &str) {
     }
 }
 
-fn archive_view(database_name: &str, view_name: &str, archive_file_path: &str) {
-    match GLOBAL_MASTER.archive_view(
+fn archive_view(task: Task, database_name: &str, view_name: &str, archive_file_path: &str) {
+    match task.archive_view(
         String::from(database_name),
         String::from(view_name),
         String::from(archive_file_path),
@@ -839,8 +1192,8 @@ fn archive_view(database_name: &str, view_name: &str, archive_file_path: &str) {
     }
 }
 
-fn view_record(database_name: &str, view_name: &str, version: u16) {
-    match GLOBAL_MASTER.view_record(
+fn view_record(task: Task, database_name: &str, view_name: &str, version: u16) {
+    match task.view_record(
         String::from(database_name),
         String::from(view_name),
         version,
@@ -855,6 +1208,7 @@ fn view_record(database_name: &str, view_name: &str, version: u16) {
 }
 
 fn create_index(
+    task: Task,
     database_name: &str,
     view_name: &str,
     index_name: &str,
@@ -864,8 +1218,8 @@ fn create_index(
     unique: bool,
     null: bool,
 ) {
-    create_view_with_increment(database_name.clone(), view_name.clone());
-    match GLOBAL_MASTER.create_index(
+    create_view_with_increment(task.clone(), database_name.clone(), view_name.clone());
+    match task.create_index(
         String::from(database_name),
         String::from(view_name),
         String::from(index_name),
@@ -886,8 +1240,8 @@ fn create_index(
     }
 }
 
-fn put(database_name: &str, view_name: &str, key: &str, value: &str, position: usize) {
-    match GLOBAL_MASTER.put_disk(
+fn put(task: Task, database_name: &str, view_name: &str, key: &str, value: &str, position: usize) {
+    match task.put_disk(
         database_name.to_string(),
         view_name.to_string(),
         key.to_string(),
@@ -902,8 +1256,8 @@ fn put(database_name: &str, view_name: &str, key: &str, value: &str, position: u
     }
 }
 
-fn set(database_name: &str, view_name: &str, key: &str, value: &str, position: usize) {
-    match GLOBAL_MASTER.set_disk(
+fn set(task: Task, database_name: &str, view_name: &str, key: &str, value: &str, position: usize) {
+    match task.set_disk(
         database_name.to_string(),
         view_name.to_string(),
         key.to_string(),
@@ -918,8 +1272,8 @@ fn set(database_name: &str, view_name: &str, key: &str, value: &str, position: u
     }
 }
 
-fn get(database_name: &str, view_name: &str, key: &str, position: usize) {
-    match GLOBAL_MASTER.get_disk(
+fn get(task: Task, database_name: &str, view_name: &str, key: &str, position: usize) {
+    match task.get_disk(
         database_name.to_string(),
         view_name.to_string(),
         key.to_string(),
@@ -933,8 +1287,8 @@ fn get(database_name: &str, view_name: &str, key: &str, position: usize) {
     }
 }
 
-fn del(database_name: &str, view_name: &str, key: &str, position: usize) {
-    match GLOBAL_MASTER.remove_disk(
+fn del(task: Task, database_name: &str, view_name: &str, key: &str, position: usize) {
+    match task.remove_disk(
         database_name.to_string(),
         view_name.to_string(),
         key.to_string(),
@@ -945,13 +1299,14 @@ fn del(database_name: &str, view_name: &str, key: &str, position: usize) {
 }
 
 fn get_by_index(
+    task: Task,
     database_name: &str,
     view_name: &str,
     index_name: &str,
     key: &str,
     position: usize,
 ) {
-    match GLOBAL_MASTER.get_disk_by_index(
+    match task.get_disk_by_index(
         database_name.to_string(),
         view_name.to_string(),
         index_name.to_string(),
@@ -966,8 +1321,8 @@ fn get_by_index(
     }
 }
 
-fn put_memory(page_name: &str, key: &str, value: &str, position: usize) {
-    match GLOBAL_MASTER.put_memory(
+fn put_memory(task: Task, page_name: &str, key: &str, value: &str, position: usize) {
+    match task.put_memory(
         page_name.to_string(),
         key.to_string(),
         value.to_string().into_bytes(),
@@ -981,8 +1336,8 @@ fn put_memory(page_name: &str, key: &str, value: &str, position: usize) {
     }
 }
 
-fn set_memory(page_name: &str, key: &str, value: &str, position: usize) {
-    match GLOBAL_MASTER.set_memory(
+fn set_memory(task: Task, page_name: &str, key: &str, value: &str, position: usize) {
+    match task.set_memory(
         page_name.to_string(),
         key.to_string(),
         value.to_string().into_bytes(),
@@ -996,8 +1351,8 @@ fn set_memory(page_name: &str, key: &str, value: &str, position: usize) {
     }
 }
 
-fn get_memory(page_name: &str, key: &str, position: usize) {
-    match GLOBAL_MASTER.get_memory(page_name.to_string(), key.to_string()) {
+fn get_memory(task: Task, page_name: &str, key: &str, position: usize) {
+    match task.get_memory(page_name.to_string(), key.to_string()) {
         Ok(vu8) => println!(
             "get{} is {:#?}",
             position,
@@ -1007,8 +1362,8 @@ fn get_memory(page_name: &str, key: &str, position: usize) {
     }
 }
 
-fn remove_memory(page_name: &str, key: &str, position: usize) {
-    match GLOBAL_MASTER.remove_memory(page_name.to_string(), key.to_string()) {
+fn remove_memory(task: Task, page_name: &str, key: &str, position: usize) {
+    match task.remove_memory(page_name.to_string(), key.to_string()) {
         Ok(_) => println!("remove{} success!", position),
         Err(ie) => println!(
             "remove{} is {:#?}",
@@ -1018,8 +1373,8 @@ fn remove_memory(page_name: &str, key: &str, position: usize) {
     }
 }
 
-fn put_memory_default(key: &str, value: &str, position: usize) {
-    match GLOBAL_MASTER.put_memory_default(key.to_string(), value.to_string().into_bytes()) {
+fn put_memory_default(task: Task, key: &str, value: &str, position: usize) {
+    match task.put_memory_default(key.to_string(), value.to_string().into_bytes()) {
         Err(ie) => println!(
             "put{} error is {:#?}",
             position,
@@ -1029,8 +1384,8 @@ fn put_memory_default(key: &str, value: &str, position: usize) {
     }
 }
 
-fn set_memory_default(key: &str, value: &str, position: usize) {
-    match GLOBAL_MASTER.set_memory_default(key.to_string(), value.to_string().into_bytes()) {
+fn set_memory_default(task: Task, key: &str, value: &str, position: usize) {
+    match task.set_memory_default(key.to_string(), value.to_string().into_bytes()) {
         Err(ie) => println!(
             "put{} error is {:#?}",
             position,
@@ -1040,8 +1395,8 @@ fn set_memory_default(key: &str, value: &str, position: usize) {
     }
 }
 
-fn get_memory_default(key: &str, position: usize) {
-    match GLOBAL_MASTER.get_memory_default(key.to_string()) {
+fn get_memory_default(task: Task, key: &str, position: usize) {
+    match task.get_memory_default(key.to_string()) {
         Ok(vu8) => println!(
             "get{} is {:#?}",
             position,
@@ -1051,8 +1406,8 @@ fn get_memory_default(key: &str, position: usize) {
     }
 }
 
-fn remove_memory_default(key: &str, position: usize) {
-    match GLOBAL_MASTER.remove_memory_default(key.to_string()) {
+fn remove_memory_default(task: Task, key: &str, position: usize) {
+    match task.remove_memory_default(key.to_string()) {
         Ok(_) => println!("remove{} success!", position),
         Err(ie) => println!(
             "remove{} is {:#?}",
@@ -1062,8 +1417,14 @@ fn remove_memory_default(key: &str, position: usize) {
     }
 }
 
-fn select(database_name: &str, view_name: &str, constraint_json_bytes: Vec<u8>, position: usize) {
-    match GLOBAL_MASTER.select_disk(
+fn select(
+    task: Task,
+    database_name: &str,
+    view_name: &str,
+    constraint_json_bytes: Vec<u8>,
+    position: usize,
+) {
+    match task.select_disk(
         database_name.to_string(),
         view_name.to_string(),
         constraint_json_bytes,
@@ -1085,8 +1446,14 @@ fn select(database_name: &str, view_name: &str, constraint_json_bytes: Vec<u8>, 
     }
 }
 
-fn delete(database_name: &str, view_name: &str, constraint_json_bytes: Vec<u8>, position: usize) {
-    match GLOBAL_MASTER.delete_disk(
+fn delete(
+    task: Task,
+    database_name: &str,
+    view_name: &str,
+    constraint_json_bytes: Vec<u8>,
+    position: usize,
+) {
+    match task.delete_disk(
         database_name.to_string(),
         view_name.to_string(),
         constraint_json_bytes,

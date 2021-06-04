@@ -1,8 +1,10 @@
 [workspace]
 members = [
+    "client",
     "comm",
+    "db",
     "ge",
     "logs",
     "protocols",
-    "db",
+    "server",
 ]

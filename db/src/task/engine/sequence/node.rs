@@ -22,10 +22,11 @@ use ge::{GeFactory, METADATA_SIZE};
 
 use crate::task::engine;
 use crate::task::engine::sequence::Node;
-use crate::task::engine::traits::{TForm, TNode, TSeed};
+use crate::task::engine::traits::{TNode, TSeed};
 use crate::task::engine::DataReal;
 use crate::task::rich::Condition;
 use crate::task::seed::IndexPolicy;
+use crate::task::traits::TForm;
 use crate::utils::comm::IndexKey;
 use crate::utils::enums::{Engine, KeyType};
 use crate::utils::Paths;

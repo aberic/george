@@ -21,12 +21,13 @@ use comm::io::file::FilerWriter;
 use comm::io::Filer;
 use comm::vectors::VectorHandler;
 use comm::Vector;
+use ge::METADATA_SIZE;
 
-use crate::task::engine::traits::{TForm, TSeed};
+use crate::task::engine::traits::TSeed;
 use crate::task::engine::DataReal;
+use crate::task::traits::TForm;
 use crate::task::Seed;
 use crate::utils::enums::Engine;
-use ge::METADATA_SIZE;
 
 /// 待处理索引操作策略
 #[derive(Debug, Clone, Serialize, Deserialize)]

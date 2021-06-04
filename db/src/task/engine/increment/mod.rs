@@ -17,7 +17,7 @@ use std::sync::{Arc, RwLock};
 
 use ge::Ge;
 
-use crate::task::engine::traits::TForm;
+use crate::task::traits::TForm;
 
 pub(crate) mod node;
 

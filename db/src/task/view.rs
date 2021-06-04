@@ -30,8 +30,9 @@ use comm::{Strings, Time};
 use ge::utils::enums::Tag;
 use ge::GeFactory;
 
-use crate::task::engine::traits::{Pigeonhole, TForm, TIndex, TSeed};
+use crate::task::engine::traits::{Pigeonhole, TIndex, TSeed};
 use crate::task::rich::{Expectation, Selector};
+use crate::task::traits::TForm;
 use crate::task::Seed;
 use crate::task::View;
 use crate::task::{Index as IndexDefault, GLOBAL_THREAD_POOL};

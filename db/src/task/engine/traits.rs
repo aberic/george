@@ -27,45 +27,8 @@ use comm::{Strings, Time};
 use crate::task::engine::DataReal;
 use crate::task::rich::{Condition, Constraint, Expectation};
 use crate::task::seed::IndexPolicy;
+use crate::task::traits::TForm;
 use crate::utils::enums::{Engine, KeyType};
-
-/// 表通用特性，遵循此特性创建索引可以更方便的针对进行扩展
-///
-/// 该特性包含了索引的基本方法，理论上都需要进行实现才能使用
-pub(crate) trait TForm: Send + Sync + Debug {
-    /// 数据库名称
-    fn database_name(&self) -> String;
-
-    /// 名称
-    fn name(&self) -> String;
-
-    /// 介绍
-    fn comment(&self) -> String;
-
-    /// 组装写入视图的内容，即持续长度+该长度的原文内容
-    ///
-    /// 将数据存入view，返回数据在view中的起始偏移量坐标
-    ///
-    /// #param
-    /// * value 待写入view中字节数组
-    /// #return
-    /// * view_info_index view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
-    fn write_content(&self, value: Vec<u8>) -> GeorgeResult<Vec<u8>>;
-
-    /// 读取已组装写入视图的内容，根据view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
-    ///
-    /// * version view版本号
-    /// * data_len view数据持续长度
-    /// * seek view数据偏移量
-    fn read_content(&self, version: u16, data_len: u32, seek: u64) -> GeorgeResult<Vec<u8>>;
-
-    /// 读取已组装写入视图的内容，根据view版本号(2字节) + view持续长度(4字节) + view偏移量(6字节)
-    ///
-    /// * view_info_index 数据索引字节数组
-    fn read_content_by_info(&self, view_info_index: Vec<u8>) -> GeorgeResult<Vec<u8>>;
-
-    fn rm(&self, key: String, value: Vec<u8>) -> GeorgeResult<()>;
-}
 
 /// 索引通用特性，遵循此特性创建索引可以更方便的针对进行扩展
 ///
