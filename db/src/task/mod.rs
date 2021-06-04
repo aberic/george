@@ -25,8 +25,7 @@ use crate::task::engine::traits::{Pigeonhole, TIndex, TNode};
 use crate::task::engine::DataReal;
 use crate::task::seed::IndexPolicy;
 use crate::task::traits::TForm;
-use crate::utils::comm::GEORGE_DB_CONFIG;
-use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
+use crate::utils::deploy::GLOBAL_CONFIG;
 use crate::utils::enums::{Engine, KeyType};
 
 mod database;

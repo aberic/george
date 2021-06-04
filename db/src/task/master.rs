@@ -17,7 +17,6 @@ use std::fs::{read_dir, ReadDir};
 use std::sync::{Arc, RwLock};
 
 use chrono::{Duration, Local, NaiveDateTime};
-use log::LevelFilter;
 
 use comm::errors::{Errs, GeorgeResult};
 use comm::io::dir::DirHandler;
@@ -26,14 +25,12 @@ use comm::io::{Dir, Filer};
 use comm::Time;
 use ge::utils::enums::Tag;
 use ge::{Ge, GeFactory};
-use logs::LogModule;
 
 use crate::task::rich::Expectation;
 use crate::task::traits::TMaster;
 use crate::task::Page;
 use crate::task::{Database, Master};
 use crate::utils::comm::{DEFAULT_COMMENT, DEFAULT_NAME, INDEX_DISK};
-use crate::utils::deploy::GLOBAL_CONFIG;
 use crate::utils::enums::{Engine, KeyType};
 use crate::utils::Paths;
 
