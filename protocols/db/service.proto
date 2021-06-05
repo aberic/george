@@ -30,14 +30,25 @@ service PageService {
   rpc page_create(RequestPageCreate) returns (Response);
   rpc page_modify(RequestPageModify) returns (Response);
   rpc page_info(RequestPageInfo) returns (ResponsePageInfo);
+  rpc page_remove(RequestPageRemove) returns (Response);
 }
 
 service DatabaseService {
   rpc databases(Request) returns (DatabaseList);
+  rpc database_create(RequestDatabaseCreate) returns (Response);
+  rpc database_modify(RequestDatabaseModify) returns (Response);
+  rpc database_info(RequestDatabaseInfo) returns (ResponseDatabaseInfo);
+  rpc database_remove(RequestDatabaseRemove) returns (Response);
 }
 
 service ViewService {
   rpc views(RequestViewList) returns (ViewList);
+  rpc view_create(RequestViewCreate) returns (Response);
+  rpc view_modify(RequestViewModify) returns (Response);
+  rpc view_info(RequestViewInfo) returns (ResponseViewInfo);
+  rpc view_remove(RequestViewRemove) returns (Response);
+  rpc view_archive(RequestViewArchive) returns (Response);
+  rpc view_record(RequestViewRecord) returns (ResponseViewRecord);
 }
 
 service IndexService {

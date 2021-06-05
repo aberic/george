@@ -116,25 +116,26 @@ impl Database {
 
     /// 创建视图
     ///
-    /// mem 是否为内存视图
+    /// ##param
+    /// * with_increment 是否带自增ID
     pub(crate) fn create_view(
         &self,
         name: String,
         comment: String,
-        with_sequence: bool,
+        with_increment: bool,
     ) -> GeorgeResult<()> {
         if self.exist_view(name.clone()) {
             return Err(Errs::view_exist_error());
         }
         self.view_map().write().unwrap().insert(
             name.clone(),
-            View::create(self.name(), name, comment, with_sequence)?,
+            View::create(self.name(), name, comment, with_increment)?,
         );
         Ok(())
     }
 
     /// 删除视图
-    pub(super) fn remove_view(&self, view_name: String) -> GeorgeResult<()> {
+    pub fn remove_view(&self, view_name: String) -> GeorgeResult<()> {
         if !self.exist_view(view_name.clone()) {
             Err(Errs::view_exist_error())
         } else {

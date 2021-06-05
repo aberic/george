@@ -37,36 +37,32 @@ impl IndexService for IndexServer {
     ) -> Result<()> {
         let mut list = IndexList::new();
         let mut indexes: RepeatedField<Index> = RepeatedField::new();
-        let db_map = self.task.database_map();
-        let db_map_r = db_map.read().unwrap();
-        let view_map;
-        match db_map_r.get(req.message.get_database_name()) {
-            Some(db) => {
-                view_map = db.read().unwrap().view_map();
+        match Comm::view_map(self.task.clone(), req.message.get_database_name()) {
+            Some(view_map) => {
+                let view_map_r = view_map.read().unwrap();
+                let index_map;
+                match view_map_r.get(req.message.get_view_name()) {
+                    Some(view) => {
+                        index_map = view.read().unwrap().index_map();
+                    }
+                    None => return resp.finish(list),
+                }
+                let index_map_r = index_map.read().unwrap();
+                for index in index_map_r.values() {
+                    let mut index_item = Index::new();
+                    index_item.set_name(index.name());
+                    index_item.set_engine(self.engine(index.engine()));
+                    index_item.set_primary(index.primary());
+                    index_item.set_unique(index.unique());
+                    index_item.set_null(index.null());
+                    index_item.set_key_type(self.key_type(index.key_type()));
+                    index_item.set_create_time(Comm::time_2_grpc_timestamp(index.create_time()));
+                    indexes.push(index_item);
+                }
+                list.set_indexes(indexes);
             }
-            None => return resp.finish(list),
+            _ => {}
         }
-        let view_map_r = view_map.read().unwrap();
-        let index_map;
-        match view_map_r.get(req.message.get_view_name()) {
-            Some(view) => {
-                index_map = view.read().unwrap().index_map();
-            }
-            None => return resp.finish(list),
-        }
-        let index_map_r = index_map.read().unwrap();
-        for index in index_map_r.values() {
-            let mut index_item = Index::new();
-            index_item.set_name(index.name());
-            index_item.set_engine(self.engine(index.engine()));
-            index_item.set_primary(index.primary());
-            index_item.set_unique(index.unique());
-            index_item.set_null(index.null());
-            index_item.set_key_type(self.key_type(index.key_type()));
-            index_item.set_create_time(Comm::time_2_grpc_timestamp(index.create_time()));
-            indexes.push(index_item);
-        }
-        list.set_indexes(indexes);
         resp.finish(list)
     }
 }

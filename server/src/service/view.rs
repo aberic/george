@@ -12,15 +12,24 @@
  * limitations under the License.
  */
 
-use std::sync::Arc;
+use std::collections::hash_map::RandomState;
+use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
 
-use grpc::{Result, ServerHandlerContext, ServerRequestSingle, ServerResponseUnarySink};
+use grpc::{
+    Error, GrpcMessageError, Result, ServerHandlerContext, ServerRequestSingle,
+    ServerResponseUnarySink,
+};
 use protobuf::RepeatedField;
 
 use db::task::traits::{TForm, TMaster};
 use db::Task;
+use protocols::impls::db::service::Response;
 use protocols::impls::db::service_grpc::ViewService;
-use protocols::impls::db::view::{RequestViewList, View, ViewList};
+use protocols::impls::db::view::{
+    RequestViewArchive, RequestViewCreate, RequestViewInfo, RequestViewList, RequestViewModify,
+    RequestViewRecord, RequestViewRemove, ResponseViewInfo, ResponseViewRecord, View, ViewList,
+};
 
 use crate::utils::Comm;
 
@@ -37,25 +46,147 @@ impl ViewService for ViewServer {
     ) -> Result<()> {
         let mut list = ViewList::new();
         let mut views: RepeatedField<View> = RepeatedField::new();
-        let db_map = self.task.database_map();
-        let db_map_r = db_map.read().unwrap();
-        let view_map;
-        match db_map_r.get(req.message.get_database_name()) {
-            Some(db) => {
-                view_map = db.read().unwrap().view_map();
+        match Comm::view_map(self.task.clone(), req.message.get_database_name()) {
+            Some(view_map) => {
+                let view_map_r = view_map.read().unwrap();
+                for view in view_map_r.values() {
+                    let view_r = view.read().unwrap();
+                    let mut view_item = View::new();
+                    view_item.set_name(view_r.name());
+                    view_item.set_comment(view_r.comment());
+                    view_item.set_create_time(Comm::time_2_grpc_timestamp(view_r.create_time()));
+                    views.push(view_item);
+                }
             }
-            None => return resp.finish(list),
-        }
-        let view_map_r = view_map.read().unwrap();
-        for view in view_map_r.values() {
-            let view_r = view.read().unwrap();
-            let mut view_item = View::new();
-            view_item.set_name(view_r.name());
-            view_item.set_comment(view_r.comment());
-            view_item.set_create_time(Comm::time_2_grpc_timestamp(view_r.create_time()));
-            views.push(view_item);
+            _ => {}
         }
         list.set_views(views);
         resp.finish(list)
+    }
+
+    fn view_create(
+        &self,
+        _o: ServerHandlerContext,
+        req: ServerRequestSingle<RequestViewCreate>,
+        resp: ServerResponseUnarySink<Response>,
+    ) -> Result<()> {
+        let response = Response::new();
+        match self.task.view_create(
+            req.message.get_database_name().to_string(),
+            req.message.get_name().to_string(),
+            req.message.get_comment().to_string(),
+        ) {
+            Ok(()) => resp.finish(response),
+            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
+                grpc_status: 0,
+                grpc_message: err.to_string(),
+            })),
+        }
+    }
+
+    fn view_modify(
+        &self,
+        _o: ServerHandlerContext,
+        req: ServerRequestSingle<RequestViewModify>,
+        resp: ServerResponseUnarySink<Response>,
+    ) -> Result<()> {
+        let response = Response::new();
+        match self.task.view_modify(
+            req.message.database_name,
+            req.message.name,
+            req.message.name_new,
+            req.message.comment,
+        ) {
+            Ok(()) => resp.finish(response),
+            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
+                grpc_status: 0,
+                grpc_message: err.to_string(),
+            })),
+        }
+    }
+
+    fn view_info(
+        &self,
+        _o: ServerHandlerContext,
+        req: ServerRequestSingle<RequestViewInfo>,
+        resp: ServerResponseUnarySink<ResponseViewInfo>,
+    ) -> Result<()> {
+        let mut info = ResponseViewInfo::new();
+        let mut item = View::new();
+        match self.task.view(req.message.name, req.message.name) {
+            Ok(res) => {
+                let item_r = res.read().unwrap();
+                item.set_name(item_r.name());
+                item.set_comment(item_r.comment());
+                item.set_create_time(Comm::time_2_grpc_timestamp(item_r.create_time()));
+                info.set_view(item);
+                resp.finish(info)
+            }
+            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
+                grpc_status: 0,
+                grpc_message: err.to_string(),
+            })),
+        }
+    }
+
+    fn view_remove(
+        &self,
+        _o: ServerHandlerContext,
+        req: ServerRequestSingle<RequestViewRemove>,
+        resp: ServerResponseUnarySink<Response>,
+    ) -> Result<()> {
+        match self
+            .task
+            .view_remove(req.message.database_name, req.message.name)
+        {
+            Ok(()) => resp.finish(Response::new()),
+            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
+                grpc_status: 0,
+                grpc_message: err.to_string(),
+            })),
+        }
+    }
+
+    fn view_archive(
+        &self,
+        _o: ServerHandlerContext,
+        req: ServerRequestSingle<RequestViewArchive>,
+        resp: ServerResponseUnarySink<Response>,
+    ) -> Result<()> {
+        match self.task.view_archive(
+            req.message.database_name,
+            req.message.name,
+            req.message.archive_file_path,
+        ) {
+            Ok(()) => resp.finish(Response::new()),
+            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
+                grpc_status: 0,
+                grpc_message: err.to_string(),
+            })),
+        }
+    }
+
+    fn view_record(
+        &self,
+        _o: ServerHandlerContext,
+        req: ServerRequestSingle<RequestViewRecord>,
+        resp: ServerResponseUnarySink<ResponseViewRecord>,
+    ) -> Result<()> {
+        match self.task.view_record(
+            req.message.database_name,
+            req.message.name,
+            req.message.version as u16,
+        ) {
+            Ok((filepath, create_time)) => {
+                let mut response = ResponseViewRecord::new();
+                response.set_filepath(filepath);
+                response.set_time(Comm::time_2_grpc_timestamp(create_time));
+                resp.finish(response)
+            }
+            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
+                grpc_status: 0,
+                grpc_message: err.to_string(),
+            })),
+        }
     }
 }

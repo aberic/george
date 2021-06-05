@@ -64,11 +64,15 @@ fn new_view(database_name: String, name: String, comment: String) -> GeorgeResul
 }
 
 impl View {
+    /// 新建视图
+    ///
+    /// ##param
+    /// * with_increment 是否带自增ID
     pub(crate) fn create(
         database_name: String,
         name: String,
         comment: String,
-        with_sequence: bool,
+        with_increment: bool,
     ) -> GeorgeResult<Arc<RwLock<View>>> {
         let view_new = new_view(database_name, name, comment)?;
         let view = Arc::new(RwLock::new(view_new));
@@ -81,7 +85,7 @@ impl View {
             true,
             false,
         )?;
-        if with_sequence {
+        if with_increment {
             view.read().unwrap().create_index(
                 view.clone(),
                 INDEX_INCREMENT.to_string(),

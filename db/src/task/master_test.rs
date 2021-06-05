@@ -1099,14 +1099,14 @@ mod test {
     }
 
     fn create_database(task: Task, database_name: &str) {
-        match task.create_database(String::from(database_name), String::from("comment")) {
+        match task.database_create(String::from(database_name), String::from("comment")) {
             Ok(()) => println!("create database {}", database_name),
             Err(err) => println!("create database {} error, {}", database_name, err),
         }
     }
 
     fn modify_database(task: Task, database_name: &str, database_new_name: &str) {
-        match task.modify_database(
+        match task.database_modify(
             String::from(database_name),
             String::from(database_new_name),
             String::from("comment"),
@@ -1120,14 +1120,14 @@ mod test {
     }
 
     fn create_page(task: Task, page_name: &str) {
-        match task.create_page(String::from(page_name), String::from("comment"), 0, 0) {
+        match task.page_create(String::from(page_name), String::from("comment"), 0, 0) {
             Ok(()) => println!("create page {}", page_name),
             Err(err) => println!("create page {} error, {}", page_name, err),
         }
     }
 
     fn modify_page(task: Task, page_name: &str, page_new_name: &str) {
-        match task.modify_page(String::from(page_name), String::from(page_new_name)) {
+        match task.page_modify(String::from(page_name), String::from(page_new_name)) {
             Ok(()) => println!("modify page {} to {}", page_name, page_new_name),
             Err(err) => println!(
                 "modify page {} to {} error, {}",
@@ -1138,7 +1138,7 @@ mod test {
 
     fn create_view(task: Task, database_name: &str, view_name: &str) {
         create_database(task.clone(), database_name.clone());
-        match task.create_view(
+        match task.view_create(
             String::from(database_name),
             String::from(view_name),
             String::from("comment"),
@@ -1154,7 +1154,7 @@ mod test {
 
     fn create_view_with_increment(task: Task, database_name: &str, view_name: &str) {
         create_database(task.clone(), database_name.clone());
-        match task.create_view(
+        match task.view_create(
             String::from(database_name),
             String::from(view_name),
             String::from("comment"),
@@ -1169,7 +1169,7 @@ mod test {
     }
 
     fn modify_view(task: Task, database_name: &str, view_name: &str, view_new_name: &str) {
-        match task.modify_view(
+        match task.view_modify(
             String::from(database_name),
             String::from(view_name),
             String::from(view_new_name),
@@ -1187,7 +1187,7 @@ mod test {
     }
 
     fn archive_view(task: Task, database_name: &str, view_name: &str, archive_file_path: &str) {
-        match task.archive_view(
+        match task.view_archive(
             String::from(database_name),
             String::from(view_name),
             String::from(archive_file_path),
@@ -1224,7 +1224,7 @@ mod test {
         null: bool,
     ) {
         create_view_with_increment(task.clone(), database_name.clone(), view_name.clone());
-        match task.create_index(
+        match task.index_create(
             String::from(database_name),
             String::from(view_name),
             String::from(index_name),

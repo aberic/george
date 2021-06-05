@@ -23,7 +23,7 @@ use logs::LogModule;
 
 use crate::task::rich::Expectation;
 use crate::task::traits::TMaster;
-use crate::task::{Database, Master, Page, GLOBAL_THREAD_POOL};
+use crate::task::{Database, Master, Page, View, GLOBAL_THREAD_POOL};
 use crate::utils::comm::GEORGE_DB_CONFIG;
 use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
 use crate::utils::enums::{Engine, KeyType};
@@ -89,34 +89,30 @@ fn log_level(level: String) -> LevelFilter {
 }
 
 impl TMaster for Task {
-    fn page_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Page>>>>> {
-        self.master.page_map()
-    }
-
-    fn database_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Database>>>>> {
-        self.master.database_map()
-    }
-
     fn create_time(&self) -> Time {
         self.master.create_time()
     }
 
-    fn create_page(
+    fn page_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Page>>>>> {
+        self.master.page_map()
+    }
+
+    fn page_create(
         &self,
         name: String,
         comment: String,
         size: u64,
         period: u32,
     ) -> GeorgeResult<()> {
-        self.master.create_page(name, comment, size, period)
+        self.master.page_create(name, comment, size, period)
     }
 
-    fn remove_page(&self, page_name: String) -> GeorgeResult<()> {
-        self.master.remove_page(page_name)
+    fn page_remove(&self, page_name: String) -> GeorgeResult<()> {
+        self.master.page_remove(page_name)
     }
 
-    fn modify_page(&self, page_name: String, page_new_name: String) -> GeorgeResult<()> {
-        self.master.modify_page(page_name, page_new_name)
+    fn page_modify(&self, page_name: String, page_new_name: String) -> GeorgeResult<()> {
+        self.master.page_modify(page_name, page_new_name)
     }
 
     fn page(&self, page_name: String) -> GeorgeResult<Arc<RwLock<Page>>> {
@@ -127,40 +123,44 @@ impl TMaster for Task {
         self.master.page_default()
     }
 
-    fn create_database(&self, database_name: String, database_comment: String) -> GeorgeResult<()> {
-        self.master.create_database(database_name, database_comment)
+    fn database_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Database>>>>> {
+        self.master.database_map()
     }
 
-    fn remove_database(&self, database_name: String) -> GeorgeResult<()> {
-        self.master.remove_database(database_name)
+    fn database_create(&self, database_name: String, database_comment: String) -> GeorgeResult<()> {
+        self.master.database_create(database_name, database_comment)
     }
 
-    fn modify_database(
+    fn database_remove(&self, database_name: String) -> GeorgeResult<()> {
+        self.master.database_remove(database_name)
+    }
+
+    fn database_modify(
         &self,
         database_name: String,
         database_new_name: String,
         database_comment: String,
     ) -> GeorgeResult<()> {
         self.master
-            .modify_database(database_name, database_new_name, database_comment)
+            .database_modify(database_name, database_new_name, database_comment)
     }
 
     fn database(&self, database_name: String) -> GeorgeResult<Arc<RwLock<Database>>> {
         self.master.database(database_name)
     }
 
-    fn create_view(
+    fn view_create(
         &self,
         database_name: String,
         view_name: String,
         comment: String,
-        with_sequence: bool,
+        with_increment: bool,
     ) -> GeorgeResult<()> {
         self.master
-            .create_view(database_name, view_name, comment, with_sequence)
+            .view_create(database_name, view_name, comment, with_increment)
     }
 
-    fn modify_view(
+    fn view_modify(
         &self,
         database_name: String,
         view_name: String,
@@ -168,17 +168,17 @@ impl TMaster for Task {
         comment: String,
     ) -> GeorgeResult<()> {
         self.master
-            .modify_view(database_name, view_name, view_new_name, comment)
+            .view_modify(database_name, view_name, view_new_name, comment)
     }
 
-    fn archive_view(
+    fn view_archive(
         &self,
         database_name: String,
         view_name: String,
         archive_file_path: String,
     ) -> GeorgeResult<()> {
         self.master
-            .archive_view(database_name, view_name, archive_file_path)
+            .view_archive(database_name, view_name, archive_file_path)
     }
 
     fn view_record(
@@ -190,7 +190,15 @@ impl TMaster for Task {
         self.master.view_record(database_name, view_name, version)
     }
 
-    fn create_index(
+    fn view_remove(&self, database_name: String, view_name: String) -> GeorgeResult<()> {
+        self.master.view_remove(database_name, view_name)
+    }
+
+    fn view(&self, database_name: String, view_name: String) -> GeorgeResult<Arc<RwLock<View>>> {
+        self.master.view(database_name, view_name)
+    }
+
+    fn index_create(
         &self,
         database_name: String,
         view_name: String,
@@ -201,7 +209,7 @@ impl TMaster for Task {
         unique: bool,
         null: bool,
     ) -> GeorgeResult<()> {
-        self.master.create_index(
+        self.master.index_create(
             database_name,
             view_name,
             index_name,

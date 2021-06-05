@@ -21,18 +21,15 @@ use comm::errors::GeorgeResult;
 use comm::Time;
 
 use crate::task::rich::Expectation;
-use crate::task::{Database, Page};
+use crate::task::{Database, Page, View};
 use crate::utils::enums::{Engine, KeyType};
 
 pub trait TMaster {
-    /// 缓存页集合
-    fn page_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Page>>>>>;
-
-    /// 库集合
-    fn database_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Database>>>>>;
-
     /// 创建时间
     fn create_time(&self) -> Time;
+
+    /// 缓存页集合
+    fn page_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Page>>>>>;
 
     /// 创建缓存页
     ///
@@ -42,7 +39,7 @@ pub trait TMaster {
     /// * comment 缓存页描述
     /// * size 可使用内存大小(单位：Mb)，为0则不限
     /// * period 默认有效期(单位：秒)，如为0，则默认为300
-    fn create_page(
+    fn page_create(
         &self,
         name: String,
         comment: String,
@@ -51,10 +48,10 @@ pub trait TMaster {
     ) -> GeorgeResult<()>;
 
     /// 删除缓存页
-    fn remove_page(&self, page_name: String) -> GeorgeResult<()>;
+    fn page_remove(&self, page_name: String) -> GeorgeResult<()>;
 
     /// 修改缓存页
-    fn modify_page(&self, page_name: String, page_new_name: String) -> GeorgeResult<()>;
+    fn page_modify(&self, page_name: String, page_new_name: String) -> GeorgeResult<()>;
 
     /// 根据缓存页name获取库
     fn page(&self, page_name: String) -> GeorgeResult<Arc<RwLock<Page>>>;
@@ -62,14 +59,17 @@ pub trait TMaster {
     /// 获取默认缓存页
     fn page_default(&self) -> GeorgeResult<Arc<RwLock<Page>>>;
 
+    /// 库集合
+    fn database_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Database>>>>>;
+
     /// 创建数据库
-    fn create_database(&self, database_name: String, database_comment: String) -> GeorgeResult<()>;
+    fn database_create(&self, database_name: String, database_comment: String) -> GeorgeResult<()>;
 
     /// 删除数据库
-    fn remove_database(&self, database_name: String) -> GeorgeResult<()>;
+    fn database_remove(&self, database_name: String) -> GeorgeResult<()>;
 
     /// 修改数据库
-    fn modify_database(
+    fn database_modify(
         &self,
         database_name: String,
         database_new_name: String,
@@ -81,17 +81,18 @@ pub trait TMaster {
 
     /// 创建视图
     ///
-    /// mem 是否为内存视图
-    fn create_view(
+    /// ##param
+    /// * with_increment 是否带自增ID
+    fn view_create(
         &self,
         database_name: String,
         view_name: String,
         comment: String,
-        with_sequence: bool,
+        with_increment: bool,
     ) -> GeorgeResult<()>;
 
     /// 修改视图
-    fn modify_view(
+    fn view_modify(
         &self,
         database_name: String,
         view_name: String,
@@ -102,7 +103,7 @@ pub trait TMaster {
     /// 整理归档
     ///
     /// archive_file_path 归档路径
-    fn archive_view(
+    fn view_archive(
         &self,
         database_name: String,
         view_name: String,
@@ -123,6 +124,12 @@ pub trait TMaster {
         version: u16,
     ) -> GeorgeResult<(String, Time)>;
 
+    /// 删除视图
+    fn view_remove(&self, database_name: String, view_name: String) -> GeorgeResult<()>;
+
+    /// 根据视图name获取视图
+    fn view(&self, database_name: String, view_name: String) -> GeorgeResult<Arc<RwLock<View>>>;
+
     /// 在指定库及视图中创建索引
     ///
     /// 该索引需要定义ID，此外索引所表达的字段组成内容也是必须的，并通过primary判断索引类型，具体传参参考如下定义：<p><p>
@@ -136,7 +143,7 @@ pub trait TMaster {
     /// * primary 是否主键，主键也是唯一索引，即默认列表依赖索引
     /// * unique 是否唯一索引
     /// * null 是否允许为空
-    fn create_index(
+    fn index_create(
         &self,
         database_name: String,
         view_name: String,

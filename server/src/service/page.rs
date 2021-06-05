@@ -23,7 +23,8 @@ use protobuf::RepeatedField;
 use db::task::traits::TMaster;
 use db::Task;
 use protocols::impls::db::page::{
-    Page, PageList, RequestPageCreate, RequestPageInfo, RequestPageModify, ResponsePageInfo,
+    Page, PageList, RequestPageCreate, RequestPageInfo, RequestPageModify, RequestPageRemove,
+    ResponsePageInfo,
 };
 use protocols::impls::db::service::{Request, Response};
 use protocols::impls::db::service_grpc::PageService;
@@ -65,14 +66,13 @@ impl PageService for PageServer {
         req: ServerRequestSingle<RequestPageCreate>,
         resp: ServerResponseUnarySink<Response>,
     ) -> Result<()> {
-        let response = Response::new();
-        match self.task.create_page(
+        match self.task.page_create(
             req.message.get_name().to_string(),
             req.message.get_comment().to_string(),
             req.message.get_size(),
             req.message.get_period(),
         ) {
-            Ok(()) => resp.finish(response),
+            Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
                 grpc_status: 0,
                 grpc_message: err.to_string(),
@@ -86,12 +86,11 @@ impl PageService for PageServer {
         req: ServerRequestSingle<RequestPageModify>,
         resp: ServerResponseUnarySink<Response>,
     ) -> Result<()> {
-        let response = Response::new();
         match self
             .task
-            .modify_page(req.message.name, req.message.name_new)
+            .page_modify(req.message.name, req.message.name_new)
         {
-            Ok(()) => resp.finish(response),
+            Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
                 grpc_status: 0,
                 grpc_message: err.to_string(),
@@ -105,19 +104,34 @@ impl PageService for PageServer {
         req: ServerRequestSingle<RequestPageInfo>,
         resp: ServerResponseUnarySink<ResponsePageInfo>,
     ) -> Result<()> {
-        let mut page_info = ResponsePageInfo::new();
-        let mut page = Page::new();
-        match self.task.page(req.message.page_name) {
-            Ok(p) => {
-                let page_r = p.read().unwrap();
-                page.set_name(page_r.name());
-                page.set_comment(page_r.comment());
-                page.set_size(page_r.size());
-                page.set_period(page_r.period());
-                page.set_create_time(Comm::time_2_grpc_timestamp(page_r.create_time()));
-                page_info.set_page(page);
-                resp.finish(page_info)
+        let mut info = ResponsePageInfo::new();
+        let mut item = Page::new();
+        match self.task.page(req.message.name) {
+            Ok(res) => {
+                let item_r = res.read().unwrap();
+                item.set_name(item_r.name());
+                item.set_comment(item_r.comment());
+                item.set_size(item_r.size());
+                item.set_period(item_r.period());
+                item.set_create_time(Comm::time_2_grpc_timestamp(item_r.create_time()));
+                info.set_page(item);
+                resp.finish(info)
             }
+            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
+                grpc_status: 0,
+                grpc_message: err.to_string(),
+            })),
+        }
+    }
+
+    fn page_remove(
+        &self,
+        _o: ServerHandlerContext,
+        req: ServerRequestSingle<RequestPageRemove>,
+        resp: ServerResponseUnarySink<Response>,
+    ) -> Result<()> {
+        match self.task.page_remove(req.message.name) {
+            Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
                 grpc_status: 0,
                 grpc_message: err.to_string(),

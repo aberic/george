@@ -63,10 +63,15 @@ message RequestPageModify {
 
 // 请求缓存页信息
 message RequestPageInfo {
-    string page_name = 1;
+    string name = 1;
 }
 
 // 请求缓存页信息
 message ResponsePageInfo {
   Page page = 3;
+}
+
+// 请求缓存页信息删除
+message RequestPageRemove {
+  string name = 1;
 }
