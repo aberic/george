@@ -14,33 +14,24 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/george/protocols/chain";
-option java_package = "cn.aberic.george.protocols.chain";
-option java_outer_classname = "ServiceProto";
+option go_package = "github.com/george/protocols/db";
+option java_package = "cn.aberic.george.protocols.db";
+option java_outer_classname = "MasterProto";
 
-package chain;
+package db;
 
-import "src/protos/chain/block.proto";
+import "google/protobuf/timestamp.proto";
+import "db/database.proto";
+import "db/page.proto";
 
-service Blocks {
-  rpc add(Block) returns (Response);
-  rpc get(BlockGet) returns (Block);
-}
-
-message BlockGet {
-  oneof get {
-    uint32 height = 1;
-    string hash = 2;
-    string tx_hash = 3;
-  }
-}
-
-message Response {
-  Status status = 1;
-  string error = 2;
-}
-
-enum Status {
-  SUCCESS = 0;
-  FAIL = 1;
+// 主管员
+message Master {
+  // 默认缓存页名称
+  string default_page_name = 1;
+  // 缓存页集合
+  repeated Page pages = 2;
+  // 库集合
+  repeated Database databases = 3;
+  // 创建时间
+  google.protobuf.Timestamp create_time = 4;
 }

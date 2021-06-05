@@ -16,22 +16,32 @@ syntax = "proto3";
 
 option go_package = "github.com/george/protocols/db";
 option java_package = "cn.aberic.george.protocols.db";
-option java_outer_classname = "MasterProto";
+option java_outer_classname = "ViewProto";
 
 package db;
 
 import "google/protobuf/timestamp.proto";
-import "src/protos/db/database.proto";
-import "src/protos/db/page.proto";
+import "db/index.proto";
 
-// 主管员
-message Master {
-  // 默认缓存页名称
-  string default_page_name = 1;
-  // 缓存页集合
-  repeated Page pages = 2;
-  // 库集合
-  repeated Database databases = 3;
+// 视图
+message View {
+  // 名称
+  string name = 1;
+  // 描述
+  string comment = 2;
   // 创建时间
-  google.protobuf.Timestamp create_time = 4;
+  google.protobuf.Timestamp create_time = 3;
+  // 索引集合
+  repeated Index indexes = 4;
+}
+
+// 视图集合
+message ViewList {
+  repeated View views = 1;
+}
+
+// 请求视图集合
+message RequestViewList {
+  // 数据库名称
+  string database_name = 1;
 }

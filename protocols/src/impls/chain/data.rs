@@ -17,7 +17,7 @@
 #![allow(trivial_casts)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `src/protos/chain/data.proto`
+//! Generated file from `chain/data.proto`
 
 /// Generated files are compatible only with the same version
 /// of protobuf runtime.
@@ -939,18 +939,18 @@ impl ::protobuf::reflect::ProtobufValue for HeaderType {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x1bsrc/protos/chain/data.proto\x12\x05chain\"A\n\x04Data\x12%\n\x06he\
-    ader\x18\x01\x20\x01(\x0b2\r.chain.HeaderR\x06header\x12\x12\n\x04info\
-    \x18\x02\x20\x01(\x0cR\x04info\"e\n\x06Header\x12%\n\x04type\x18\x01\x20\
-    \x01(\x0e2\x11.chain.HeaderTypeR\x04type\x12\x1c\n\tsignature\x18\x02\
-    \x20\x01(\x0cR\tsignature\x12\x16\n\x06ledger\x18\x03\x20\x01(\x0cR\x06l\
-    edger\"?\n\x0fSignatureHeader\x12\x18\n\x07creator\x18\x01\x20\x01(\x0cR\
-    \x07creator\x12\x12\n\x04sign\x18\x02\x20\x01(\x0cR\x04sign\"8\n\x0cLedg\
-    erHeader\x12\x0e\n\x02id\x18\x01\x20\x01(\tR\x02id\x12\x18\n\x07version\
-    \x18\x02\x20\x01(\rR\x07version*Q\n\nHeaderType\x12\r\n\tUNDEFINED\x10\0\
-    \x12\n\n\x06LEDGER\x10\x01\x12\x0c\n\x08CONTRACT\x10\x02\x12\t\n\x05BLOC\
-    K\x10\x03\x12\x0f\n\x0bTRANSACTION\x10\x04BP\n\x20cn.aberic.george.proto\
-    cols.chainB\tDataProtoZ!github.com/george/protocols/chainb\x06proto3\
+    \n\x10chain/data.proto\x12\x05chain\"A\n\x04Data\x12%\n\x06header\x18\
+    \x01\x20\x01(\x0b2\r.chain.HeaderR\x06header\x12\x12\n\x04info\x18\x02\
+    \x20\x01(\x0cR\x04info\"e\n\x06Header\x12%\n\x04type\x18\x01\x20\x01(\
+    \x0e2\x11.chain.HeaderTypeR\x04type\x12\x1c\n\tsignature\x18\x02\x20\x01\
+    (\x0cR\tsignature\x12\x16\n\x06ledger\x18\x03\x20\x01(\x0cR\x06ledger\"?\
+    \n\x0fSignatureHeader\x12\x18\n\x07creator\x18\x01\x20\x01(\x0cR\x07crea\
+    tor\x12\x12\n\x04sign\x18\x02\x20\x01(\x0cR\x04sign\"8\n\x0cLedgerHeader\
+    \x12\x0e\n\x02id\x18\x01\x20\x01(\tR\x02id\x12\x18\n\x07version\x18\x02\
+    \x20\x01(\rR\x07version*Q\n\nHeaderType\x12\r\n\tUNDEFINED\x10\0\x12\n\n\
+    \x06LEDGER\x10\x01\x12\x0c\n\x08CONTRACT\x10\x02\x12\t\n\x05BLOCK\x10\
+    \x03\x12\x0f\n\x0bTRANSACTION\x10\x04BP\n\x20cn.aberic.george.protocols.\
+    chainB\tDataProtoZ!github.com/george/protocols/chainb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

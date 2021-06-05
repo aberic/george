@@ -17,7 +17,7 @@
 #![allow(trivial_casts)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `src/protos/db/master.proto`
+//! Generated file from `db/master.proto`
 
 /// Generated files are compatible only with the same version
 /// of protobuf runtime.
@@ -341,14 +341,14 @@ impl ::protobuf::reflect::ProtobufValue for Master {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x1asrc/protos/db/master.proto\x12\x02db\x1a\x1fgoogle/protobuf/timest\
-    amp.proto\x1a\x1csrc/protos/db/database.proto\x1a\x18src/protos/db/page.\
-    proto\"\xbd\x01\n\x06Master\x12*\n\x11default_page_name\x18\x01\x20\x01(\
-    \tR\x0fdefaultPageName\x12\x1e\n\x05pages\x18\x02\x20\x03(\x0b2\x08.db.P\
-    ageR\x05pages\x12*\n\tdatabases\x18\x03\x20\x03(\x0b2\x0c.db.DatabaseR\t\
-    databases\x12;\n\x0bcreate_time\x18\x04\x20\x01(\x0b2\x1a.google.protobu\
-    f.TimestampR\ncreateTimeBL\n\x1dcn.aberic.george.protocols.dbB\x0bMaster\
-    ProtoZ\x1egithub.com/george/protocols/dbb\x06proto3\
+    \n\x0fdb/master.proto\x12\x02db\x1a\x1fgoogle/protobuf/timestamp.proto\
+    \x1a\x11db/database.proto\x1a\rdb/page.proto\"\xbd\x01\n\x06Master\x12*\
+    \n\x11default_page_name\x18\x01\x20\x01(\tR\x0fdefaultPageName\x12\x1e\n\
+    \x05pages\x18\x02\x20\x03(\x0b2\x08.db.PageR\x05pages\x12*\n\tdatabases\
+    \x18\x03\x20\x03(\x0b2\x0c.db.DatabaseR\tdatabases\x12;\n\x0bcreate_time\
+    \x18\x04\x20\x01(\x0b2\x1a.google.protobuf.TimestampR\ncreateTimeBL\n\
+    \x1dcn.aberic.george.protocols.dbB\x0bMasterProtoZ\x1egithub.com/george/\
+    protocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

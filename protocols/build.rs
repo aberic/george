@@ -17,18 +17,18 @@ use protoc_rust::Customize;
 // 先执行无依赖proto，完成后导入mod，再执行有依赖proto，完成后导入mod
 fn init_chain() {
     let mut ps_block: Vec<&str> = vec![];
-    ps_block.push("src/protos/chain/contract.proto");
-    ps_block.push("src/protos/chain/data.proto");
-    ps_block.push("src/protos/chain/peer.proto");
-    ps_block.push("src/protos/chain/policy.proto");
-    ps_block.push("src/protos/chain/rwset.proto");
-    ps_block.push("src/protos/chain/sign.proto");
-    ps_block.push("src/protos/chain/block.proto");
-    ps_block.push("src/protos/chain/genesis.proto");
-    ps_block.push("src/protos/chain/ledger.proto");
-    ps_block.push("src/protos/chain/organization.proto");
-    ps_block.push("src/protos/chain/transaction.proto");
-    ps_block.push("src/protos/chain/service.proto");
+    ps_block.push("chain/contract.proto");
+    ps_block.push("chain/data.proto");
+    ps_block.push("chain/peer.proto");
+    ps_block.push("chain/policy.proto");
+    ps_block.push("chain/rwset.proto");
+    ps_block.push("chain/sign.proto");
+    ps_block.push("chain/block.proto");
+    ps_block.push("chain/genesis.proto");
+    ps_block.push("chain/ledger.proto");
+    ps_block.push("chain/organization.proto");
+    ps_block.push("chain/transaction.proto");
+    ps_block.push("chain/service.proto");
     protoc_rust_grpc::Codegen::new()
         .out_dir("src/impls/chain")
         .inputs(ps_block)
@@ -43,12 +43,12 @@ fn init_chain() {
 
 fn init_db() {
     let mut ps_block: Vec<&str> = vec![];
-    ps_block.push("src/protos/db/database.proto");
-    ps_block.push("src/protos/db/index.proto");
-    ps_block.push("src/protos/db/master.proto");
-    ps_block.push("src/protos/db/page.proto");
-    ps_block.push("src/protos/db/service.proto");
-    ps_block.push("src/protos/db/view.proto");
+    ps_block.push("db/database.proto");
+    ps_block.push("db/index.proto");
+    ps_block.push("db/master.proto");
+    ps_block.push("db/page.proto");
+    ps_block.push("db/service.proto");
+    ps_block.push("db/view.proto");
     protoc_rust_grpc::Codegen::new()
         .out_dir("src/impls/db")
         .inputs(ps_block)

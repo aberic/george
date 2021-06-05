@@ -20,9 +20,9 @@ option java_outer_classname = "LedgerProto";
 
 package chain;
 
-import "src/protos/chain/organization.proto";
-import "src/protos/chain/policy.proto";
-import "src/protos/chain/sign.proto";
+import "chain/organization.proto";
+import "chain/policy.proto";
+import "chain/sign.proto";
 
 // 账本配置对象
 message LedgerConfig {

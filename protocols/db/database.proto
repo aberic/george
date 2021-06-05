@@ -21,7 +21,7 @@ option java_outer_classname = "DatabaseProto";
 package db;
 
 import "google/protobuf/timestamp.proto";
-import "src/protos/db/view.proto";
+import "db/view.proto";
 
 // 数据库
 message Database {

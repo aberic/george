@@ -17,7 +17,7 @@
 #![allow(trivial_casts)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `src/protos/db/database.proto`
+//! Generated file from `db/database.proto`
 
 /// Generated files are compatible only with the same version
 /// of protobuf runtime.
@@ -503,15 +503,14 @@ impl ::protobuf::reflect::ProtobufValue for DatabaseList {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x1csrc/protos/db/database.proto\x12\x02db\x1a\x1fgoogle/protobuf/time\
-    stamp.proto\x1a\x18src/protos/db/view.proto\"\x95\x01\n\x08Database\x12\
-    \x12\n\x04name\x18\x01\x20\x01(\tR\x04name\x12\x18\n\x07comment\x18\x02\
-    \x20\x01(\tR\x07comment\x12;\n\x0bcreate_time\x18\x03\x20\x01(\x0b2\x1a.\
-    google.protobuf.TimestampR\ncreateTime\x12\x1e\n\x05views\x18\x04\x20\
-    \x03(\x0b2\x08.db.ViewR\x05views\":\n\x0cDatabaseList\x12*\n\tdatabases\
-    \x18\x01\x20\x03(\x0b2\x0c.db.DatabaseR\tdatabasesBN\n\x1dcn.aberic.geor\
-    ge.protocols.dbB\rDatabaseProtoZ\x1egithub.com/george/protocols/dbb\x06p\
-    roto3\
+    \n\x11db/database.proto\x12\x02db\x1a\x1fgoogle/protobuf/timestamp.proto\
+    \x1a\rdb/view.proto\"\x95\x01\n\x08Database\x12\x12\n\x04name\x18\x01\
+    \x20\x01(\tR\x04name\x12\x18\n\x07comment\x18\x02\x20\x01(\tR\x07comment\
+    \x12;\n\x0bcreate_time\x18\x03\x20\x01(\x0b2\x1a.google.protobuf.Timesta\
+    mpR\ncreateTime\x12\x1e\n\x05views\x18\x04\x20\x03(\x0b2\x08.db.ViewR\
+    \x05views\":\n\x0cDatabaseList\x12*\n\tdatabases\x18\x01\x20\x03(\x0b2\
+    \x0c.db.DatabaseR\tdatabasesBN\n\x1dcn.aberic.george.protocols.dbB\rData\
+    baseProtoZ\x1egithub.com/george/protocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

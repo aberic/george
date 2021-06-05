@@ -17,7 +17,7 @@
 #![allow(trivial_casts)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `src/protos/db/page.proto`
+//! Generated file from `db/page.proto`
 
 /// Generated files are compatible only with the same version
 /// of protobuf runtime.
@@ -1341,21 +1341,21 @@ impl ::protobuf::reflect::ProtobufValue for ResponsePageInfo {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x18src/protos/db/page.proto\x12\x02db\x1a\x1fgoogle/protobuf/timestam\
-    p.proto\"\x9d\x01\n\x04Page\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04nam\
-    e\x12\x18\n\x07comment\x18\x02\x20\x01(\tR\x07comment\x12\x12\n\x04size\
-    \x18\x03\x20\x01(\x04R\x04size\x12\x16\n\x06period\x18\x04\x20\x01(\rR\
-    \x06period\x12;\n\x0bcreate_time\x18\x05\x20\x01(\x0b2\x1a.google.protob\
-    uf.TimestampR\ncreateTime\"*\n\x08PageList\x12\x1e\n\x05pages\x18\x01\
-    \x20\x03(\x0b2\x08.db.PageR\x05pages\"m\n\x11RequestPageCreate\x12\x12\n\
-    \x04name\x18\x01\x20\x01(\tR\x04name\x12\x18\n\x07comment\x18\x02\x20\
-    \x01(\tR\x07comment\x12\x12\n\x04size\x18\x03\x20\x01(\x04R\x04size\x12\
-    \x16\n\x06period\x18\x04\x20\x01(\rR\x06period\"B\n\x11RequestPageModify\
-    \x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04name\x12\x19\n\x08name_new\x18\
-    \x02\x20\x01(\tR\x07nameNew\".\n\x0fRequestPageInfo\x12\x1b\n\tpage_name\
-    \x18\x01\x20\x01(\tR\x08pageName\"0\n\x10ResponsePageInfo\x12\x1c\n\x04p\
-    age\x18\x03\x20\x01(\x0b2\x08.db.PageR\x04pageBJ\n\x1dcn.aberic.george.p\
-    rotocols.dbB\tPageProtoZ\x1egithub.com/george/protocols/dbb\x06proto3\
+    \n\rdb/page.proto\x12\x02db\x1a\x1fgoogle/protobuf/timestamp.proto\"\x9d\
+    \x01\n\x04Page\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04name\x12\x18\n\
+    \x07comment\x18\x02\x20\x01(\tR\x07comment\x12\x12\n\x04size\x18\x03\x20\
+    \x01(\x04R\x04size\x12\x16\n\x06period\x18\x04\x20\x01(\rR\x06period\x12\
+    ;\n\x0bcreate_time\x18\x05\x20\x01(\x0b2\x1a.google.protobuf.TimestampR\
+    \ncreateTime\"*\n\x08PageList\x12\x1e\n\x05pages\x18\x01\x20\x03(\x0b2\
+    \x08.db.PageR\x05pages\"m\n\x11RequestPageCreate\x12\x12\n\x04name\x18\
+    \x01\x20\x01(\tR\x04name\x12\x18\n\x07comment\x18\x02\x20\x01(\tR\x07com\
+    ment\x12\x12\n\x04size\x18\x03\x20\x01(\x04R\x04size\x12\x16\n\x06period\
+    \x18\x04\x20\x01(\rR\x06period\"B\n\x11RequestPageModify\x12\x12\n\x04na\
+    me\x18\x01\x20\x01(\tR\x04name\x12\x19\n\x08name_new\x18\x02\x20\x01(\tR\
+    \x07nameNew\".\n\x0fRequestPageInfo\x12\x1b\n\tpage_name\x18\x01\x20\x01\
+    (\tR\x08pageName\"0\n\x10ResponsePageInfo\x12\x1c\n\x04page\x18\x03\x20\
+    \x01(\x0b2\x08.db.PageR\x04pageBJ\n\x1dcn.aberic.george.protocols.dbB\tP\
+    ageProtoZ\x1egithub.com/george/protocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

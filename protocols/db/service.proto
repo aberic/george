@@ -16,32 +16,34 @@ syntax = "proto3";
 
 option go_package = "github.com/george/protocols/db";
 option java_package = "cn.aberic.george.protocols.db";
-option java_outer_classname = "ViewProto";
+option java_outer_classname = "ServiceProto";
 
 package db;
 
-import "google/protobuf/timestamp.proto";
-import "src/protos/db/index.proto";
+import "db/page.proto";
+import "db/database.proto";
+import "db/view.proto";
+import "db/index.proto";
 
-// 视图
-message View {
-  // 名称
-  string name = 1;
-  // 描述
-  string comment = 2;
-  // 创建时间
-  google.protobuf.Timestamp create_time = 3;
-  // 索引集合
-  repeated Index indexes = 4;
+service PageService {
+  rpc pages(Request) returns (PageList);
+  rpc page_create(RequestPageCreate) returns (Response);
+  rpc page_modify(RequestPageModify) returns (Response);
+  rpc page_info(RequestPageInfo) returns (ResponsePageInfo);
 }
 
-// 视图集合
-message ViewList {
-  repeated View views = 1;
+service DatabaseService {
+  rpc databases(Request) returns (DatabaseList);
 }
 
-// 请求视图集合
-message RequestViewList {
-  // 数据库名称
-  string database_name = 1;
+service ViewService {
+  rpc views(RequestViewList) returns (ViewList);
 }
+
+service IndexService {
+  rpc indexes(RequestIndexList) returns (IndexList);
+}
+
+message Request {}
+
+message Response {}

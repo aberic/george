@@ -21,9 +21,9 @@ option java_outer_classname = "TransactionProto";
 package chain;
 
 import "google/protobuf/timestamp.proto";
-import "src/protos/chain/contract.proto";
-import "src/protos/chain/rwset.proto";
-import "src/protos/chain/sign.proto";
+import "chain/contract.proto";
+import "chain/rwset.proto";
+import "chain/sign.proto";
 
 // 区块中每笔被提交的交易
 message Transaction {
