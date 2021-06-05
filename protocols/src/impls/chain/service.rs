@@ -17,7 +17,7 @@
 #![allow(trivial_casts)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `src/protos/chain/service.proto`
+//! Generated file from `chain/service.proto`
 
 /// Generated files are compatible only with the same version
 /// of protobuf runtime.
@@ -582,16 +582,16 @@ impl ::protobuf::reflect::ProtobufValue for Status {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x1esrc/protos/chain/service.proto\x12\x05chain\x1a\x1csrc/protos/chai\
-    n/block.proto\"\\\n\x08BlockGet\x12\x18\n\x06height\x18\x01\x20\x01(\rH\
-    \0R\x06height\x12\x14\n\x04hash\x18\x02\x20\x01(\tH\0R\x04hash\x12\x19\n\
-    \x07tx_hash\x18\x03\x20\x01(\tH\0R\x06txHashB\x05\n\x03get\"G\n\x08Respo\
-    nse\x12%\n\x06status\x18\x01\x20\x01(\x0e2\r.chain.StatusR\x06status\x12\
-    \x14\n\x05error\x18\x02\x20\x01(\tR\x05error*\x1f\n\x06Status\x12\x0b\n\
-    \x07SUCCESS\x10\0\x12\x08\n\x04FAIL\x10\x012T\n\x06Blocks\x12$\n\x03add\
-    \x12\x0c.chain.Block\x1a\x0f.chain.Response\x12$\n\x03get\x12\x0f.chain.\
-    BlockGet\x1a\x0c.chain.BlockBS\n\x20cn.aberic.george.protocols.chainB\
-    \x0cServiceProtoZ!github.com/george/protocols/chainb\x06proto3\
+    \n\x13chain/service.proto\x12\x05chain\x1a\x11chain/block.proto\"\\\n\
+    \x08BlockGet\x12\x18\n\x06height\x18\x01\x20\x01(\rH\0R\x06height\x12\
+    \x14\n\x04hash\x18\x02\x20\x01(\tH\0R\x04hash\x12\x19\n\x07tx_hash\x18\
+    \x03\x20\x01(\tH\0R\x06txHashB\x05\n\x03get\"G\n\x08Response\x12%\n\x06s\
+    tatus\x18\x01\x20\x01(\x0e2\r.chain.StatusR\x06status\x12\x14\n\x05error\
+    \x18\x02\x20\x01(\tR\x05error*\x1f\n\x06Status\x12\x0b\n\x07SUCCESS\x10\
+    \0\x12\x08\n\x04FAIL\x10\x012T\n\x06Blocks\x12$\n\x03add\x12\x0c.chain.B\
+    lock\x1a\x0f.chain.Response\x12$\n\x03get\x12\x0f.chain.BlockGet\x1a\x0c\
+    .chain.BlockBS\n\x20cn.aberic.george.protocols.chainB\x0cServiceProtoZ!g\
+    ithub.com/george/protocols/chainb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

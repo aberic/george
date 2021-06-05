@@ -14,13 +14,19 @@
 
 use std::sync::Arc;
 
-use grpc::{Result, ServerHandlerContext, ServerRequestSingle, ServerResponseUnarySink};
+use grpc::{
+    Error, GrpcMessageError, Result, ServerHandlerContext, ServerRequestSingle,
+    ServerResponseUnarySink,
+};
 use protobuf::RepeatedField;
 
 use db::task::traits::TMaster;
 use db::Task;
-use protocols::impls::db::database::{Database, DatabaseList};
-use protocols::impls::db::service::Request;
+use protocols::impls::db::database::{
+    Database, DatabaseList, RequestDatabaseCreate, RequestDatabaseInfo, RequestDatabaseModify,
+    RequestDatabaseRemove, ResponseDatabaseInfo,
+};
+use protocols::impls::db::service::{Request, Response};
 use protocols::impls::db::service_grpc::DatabaseService;
 
 use crate::utils::Comm;
@@ -50,5 +56,82 @@ impl DatabaseService for DatabaseServer {
         }
         list.set_databases(databases);
         resp.finish(list)
+    }
+
+    fn database_create(
+        &self,
+        _o: ServerHandlerContext,
+        req: ServerRequestSingle<RequestDatabaseCreate>,
+        resp: ServerResponseUnarySink<Response>,
+    ) -> Result<()> {
+        let response = Response::new();
+        match self.task.database_create(
+            req.message.get_name().to_string(),
+            req.message.get_comment().to_string(),
+        ) {
+            Ok(()) => resp.finish(response),
+            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
+                grpc_status: 0,
+                grpc_message: err.to_string(),
+            })),
+        }
+    }
+
+    fn database_modify(
+        &self,
+        _o: ServerHandlerContext,
+        req: ServerRequestSingle<RequestDatabaseModify>,
+        resp: ServerResponseUnarySink<Response>,
+    ) -> Result<()> {
+        let response = Response::new();
+        match self
+            .task
+            .database_modify(req.message.name, req.message.name_new, req.message.comment)
+        {
+            Ok(()) => resp.finish(response),
+            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
+                grpc_status: 0,
+                grpc_message: err.to_string(),
+            })),
+        }
+    }
+
+    fn database_info(
+        &self,
+        _o: ServerHandlerContext,
+        req: ServerRequestSingle<RequestDatabaseInfo>,
+        resp: ServerResponseUnarySink<ResponseDatabaseInfo>,
+    ) -> Result<()> {
+        let mut info = ResponseDatabaseInfo::new();
+        let mut item = Database::new();
+        match self.task.database(req.message.name) {
+            Ok(res) => {
+                let item_r = res.read().unwrap();
+                item.set_name(item_r.name());
+                item.set_comment(item_r.comment());
+                item.set_create_time(Comm::time_2_grpc_timestamp(item_r.create_time()));
+                info.set_database(item);
+                resp.finish(info)
+            }
+            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
+                grpc_status: 0,
+                grpc_message: err.to_string(),
+            })),
+        }
+    }
+
+    fn database_remove(
+        &self,
+        _o: ServerHandlerContext,
+        req: ServerRequestSingle<RequestDatabaseRemove>,
+        resp: ServerResponseUnarySink<Response>,
+    ) -> Result<()> {
+        match self.task.database_remove(req.message.name) {
+            Ok(()) => resp.finish(Response::new()),
+            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
+                grpc_status: 0,
+                grpc_message: err.to_string(),
+            })),
+        }
     }
 }

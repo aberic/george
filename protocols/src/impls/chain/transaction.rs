@@ -17,7 +17,7 @@
 #![allow(trivial_casts)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `src/protos/chain/transaction.proto`
+//! Generated file from `chain/transaction.proto`
 
 /// Generated files are compatible only with the same version
 /// of protobuf runtime.
@@ -716,20 +716,19 @@ impl ::protobuf::reflect::ProtobufValue for TransactionInfo {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\"src/protos/chain/transaction.proto\x12\x05chain\x1a\x1fgoogle/protob\
-    uf/timestamp.proto\x1a\x1fsrc/protos/chain/contract.proto\x1a\x1csrc/pro\
-    tos/chain/rwset.proto\x1a\x1bsrc/protos/chain/sign.proto\"1\n\x0bTransac\
-    tion\x12\"\n\x0ctransactions\x18\x01\x20\x03(\x0cR\x0ctransactions\"\xbd\
-    \x02\n\x0fTransactionInfo\x12\x12\n\x04hash\x18\x01\x20\x01(\tR\x04hash\
-    \x128\n\ttimestamp\x18\x02\x20\x01(\x0b2\x1a.google.protobuf.TimestampR\
-    \ttimestamp\x122\n\x06commit\x18\x03\x20\x01(\x0b2\x1a.google.protobuf.T\
-    imestampR\x06commit\x12/\n\x08contract\x18\x04\x20\x01(\x0b2\x13.chain.C\
-    ontractBaseR\x08contract\x12\x1a\n\x08function\x18\x05\x20\x01(\tR\x08fu\
-    nction\x12\x14\n\x05value\x18\x06\x20\x01(\x0cR\x05value\x12\x1e\n\x03se\
-    t\x18\x07\x20\x01(\x0b2\x0c.chain.RWSetR\x03set\x12%\n\x06signer\x18\x08\
-    \x20\x01(\x0b2\r.chain.SignerR\x06signerBW\n\x20cn.aberic.george.protoco\
-    ls.chainB\x10TransactionProtoZ!github.com/george/protocols/chainb\x06pro\
-    to3\
+    \n\x17chain/transaction.proto\x12\x05chain\x1a\x1fgoogle/protobuf/timest\
+    amp.proto\x1a\x14chain/contract.proto\x1a\x11chain/rwset.proto\x1a\x10ch\
+    ain/sign.proto\"1\n\x0bTransaction\x12\"\n\x0ctransactions\x18\x01\x20\
+    \x03(\x0cR\x0ctransactions\"\xbd\x02\n\x0fTransactionInfo\x12\x12\n\x04h\
+    ash\x18\x01\x20\x01(\tR\x04hash\x128\n\ttimestamp\x18\x02\x20\x01(\x0b2\
+    \x1a.google.protobuf.TimestampR\ttimestamp\x122\n\x06commit\x18\x03\x20\
+    \x01(\x0b2\x1a.google.protobuf.TimestampR\x06commit\x12/\n\x08contract\
+    \x18\x04\x20\x01(\x0b2\x13.chain.ContractBaseR\x08contract\x12\x1a\n\x08\
+    function\x18\x05\x20\x01(\tR\x08function\x12\x14\n\x05value\x18\x06\x20\
+    \x01(\x0cR\x05value\x12\x1e\n\x03set\x18\x07\x20\x01(\x0b2\x0c.chain.RWS\
+    etR\x03set\x12%\n\x06signer\x18\x08\x20\x01(\x0b2\r.chain.SignerR\x06sig\
+    nerBW\n\x20cn.aberic.george.protocols.chainB\x10TransactionProtoZ!github\
+    .com/george/protocols/chainb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

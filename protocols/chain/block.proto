@@ -21,8 +21,8 @@ option java_outer_classname = "BlockProto";
 package chain;
 
 import "google/protobuf/timestamp.proto";
-import "src/protos/chain/transaction.proto";
-import "src/protos/chain/sign.proto";
+import "chain/transaction.proto";
+import "chain/sign.proto";
 
 // 区块结构，该结构为节点出块、校验、共享以及同步等通用结构，最终会存储在指定的 block file 文件中
 //

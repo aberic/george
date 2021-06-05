@@ -17,7 +17,7 @@
 #![allow(trivial_casts)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `src/protos/chain/sign.proto`
+//! Generated file from `chain/sign.proto`
 
 /// Generated files are compatible only with the same version
 /// of protobuf runtime.
@@ -397,11 +397,11 @@ impl ::protobuf::reflect::ProtobufValue for Signer {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x1bsrc/protos/chain/sign.proto\x12\x05chain\"1\n\x06Signet\x12'\n\x07\
-    signers\x18\x02\x20\x03(\x0b2\r.chain.SignerR\x07signers\"6\n\x06Signer\
-    \x12\x0e\n\x02id\x18\x01\x20\x01(\tR\x02id\x12\x1c\n\tsignature\x18\x02\
-    \x20\x01(\tR\tsignatureBP\n\x20cn.aberic.george.protocols.chainB\tSignPr\
-    otoZ!github.com/george/protocols/chainb\x06proto3\
+    \n\x10chain/sign.proto\x12\x05chain\"1\n\x06Signet\x12'\n\x07signers\x18\
+    \x02\x20\x03(\x0b2\r.chain.SignerR\x07signers\"6\n\x06Signer\x12\x0e\n\
+    \x02id\x18\x01\x20\x01(\tR\x02id\x12\x1c\n\tsignature\x18\x02\x20\x01(\t\
+    R\tsignatureBP\n\x20cn.aberic.george.protocols.chainB\tSignProtoZ!github\
+    .com/george/protocols/chainb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

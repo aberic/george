@@ -17,7 +17,7 @@
 #![allow(trivial_casts)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `src/protos/chain/contract.proto`
+//! Generated file from `chain/contract.proto`
 
 /// Generated files are compatible only with the same version
 /// of protobuf runtime.
@@ -489,13 +489,13 @@ impl ::protobuf::reflect::ProtobufValue for Contract {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x1fsrc/protos/chain/contract.proto\x12\x05chain\"8\n\x0cContractBase\
-    \x12\x0e\n\x02id\x18\x01\x20\x01(\tR\x02id\x12\x18\n\x07version\x18\x02\
-    \x20\x01(\tR\x07version\"i\n\x08Contract\x12'\n\x04base\x18\x01\x20\x01(\
-    \x0b2\x13.chain.ContractBaseR\x04base\x12\x12\n\x04name\x18\x02\x20\x01(\
-    \tR\x04name\x12\x20\n\x0bdescription\x18\x03\x20\x01(\tR\x0bdescriptionB\
-    T\n\x20cn.aberic.george.protocols.chainB\rContractProtoZ!github.com/geor\
-    ge/protocols/chainb\x06proto3\
+    \n\x14chain/contract.proto\x12\x05chain\"8\n\x0cContractBase\x12\x0e\n\
+    \x02id\x18\x01\x20\x01(\tR\x02id\x12\x18\n\x07version\x18\x02\x20\x01(\t\
+    R\x07version\"i\n\x08Contract\x12'\n\x04base\x18\x01\x20\x01(\x0b2\x13.c\
+    hain.ContractBaseR\x04base\x12\x12\n\x04name\x18\x02\x20\x01(\tR\x04name\
+    \x12\x20\n\x0bdescription\x18\x03\x20\x01(\tR\x0bdescriptionBT\n\x20cn.a\
+    beric.george.protocols.chainB\rContractProtoZ!github.com/george/protocol\
+    s/chainb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

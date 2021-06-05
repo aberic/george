@@ -21,8 +21,8 @@ option java_outer_classname = "MasterProto";
 package db;
 
 import "google/protobuf/timestamp.proto";
-import "src/protos/db/database.proto";
-import "src/protos/db/page.proto";
+import "db/database.proto";
+import "db/page.proto";
 
 // 主管员
 message Master {

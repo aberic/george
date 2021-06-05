@@ -28,8 +28,8 @@ use ge::{Ge, GeFactory};
 
 use crate::task::rich::Expectation;
 use crate::task::traits::TMaster;
-use crate::task::Page;
 use crate::task::{Database, Master};
+use crate::task::{Page, View};
 use crate::utils::comm::{DEFAULT_COMMENT, DEFAULT_NAME, INDEX_DISK};
 use crate::utils::enums::{Engine, KeyType};
 use crate::utils::Paths;
@@ -38,9 +38,9 @@ impl Master {
     /// 初始化
     fn init(&self) -> GeorgeResult<()> {
         log::info!("bootstrap init!");
-        self.create_page(DEFAULT_NAME.to_string(), DEFAULT_COMMENT.to_string(), 0, 0)?;
-        self.create_database(DEFAULT_NAME.to_string(), DEFAULT_COMMENT.to_string())?;
-        self.create_view(
+        self.page_create(DEFAULT_NAME.to_string(), DEFAULT_COMMENT.to_string(), 0, 0)?;
+        self.database_create(DEFAULT_NAME.to_string(), DEFAULT_COMMENT.to_string())?;
+        self.view_create(
             DEFAULT_NAME.to_string(),
             DEFAULT_NAME.to_string(),
             DEFAULT_COMMENT.to_string(),
@@ -130,27 +130,15 @@ impl Master {
 }
 
 impl TMaster for Master {
-    fn page_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Page>>>>> {
-        self.pages.clone()
-    }
-
-    fn database_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Database>>>>> {
-        self.databases.clone()
-    }
-
     fn create_time(&self) -> Time {
         self.create_time.clone()
     }
 
-    /// 创建缓存页
-    ///
-    /// ###Params
-    ///
-    /// * name 缓存页名称
-    /// * comment 缓存页描述
-    /// * size 可使用内存大小(单位：Mb)，为0则不限
-    /// * period 默认有效期(单位：秒)，如为0，则默认为300
-    fn create_page(
+    fn page_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Page>>>>> {
+        self.pages.clone()
+    }
+
+    fn page_create(
         &self,
         name: String,
         comment: String,
@@ -166,8 +154,7 @@ impl TMaster for Master {
         Ok(())
     }
 
-    /// 删除缓存页
-    fn remove_page(&self, page_name: String) -> GeorgeResult<()> {
+    fn page_remove(&self, page_name: String) -> GeorgeResult<()> {
         if !self.exist_page(page_name.clone()) {
             Err(Errs::page_exist_error())
         } else {
@@ -176,8 +163,7 @@ impl TMaster for Master {
         }
     }
 
-    /// 修改缓存页
-    fn modify_page(&self, page_name: String, page_new_name: String) -> GeorgeResult<()> {
+    fn page_modify(&self, page_name: String, page_new_name: String) -> GeorgeResult<()> {
         if !self.exist_page(page_name.clone()) {
             return Err(Errs::page_no_exist_error());
         }
@@ -189,10 +175,9 @@ impl TMaster for Master {
             .write()
             .unwrap()
             .insert(page_new_name.clone(), page);
-        self.remove_page(page_name)
+        self.page_remove(page_name)
     }
 
-    /// 根据缓存页name获取库
     fn page(&self, page_name: String) -> GeorgeResult<Arc<RwLock<Page>>> {
         match self.page_map().read().unwrap().get(&page_name) {
             Some(page) => Ok(page.clone()),
@@ -204,8 +189,11 @@ impl TMaster for Master {
         self.page(self.default_page_name.clone())
     }
 
-    /// 创建数据库
-    fn create_database(&self, database_name: String, database_comment: String) -> GeorgeResult<()> {
+    fn database_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Database>>>>> {
+        self.databases.clone()
+    }
+
+    fn database_create(&self, database_name: String, database_comment: String) -> GeorgeResult<()> {
         if self.exist_database(database_name.clone()) {
             return Err(Errs::database_exist_error());
         }
@@ -218,8 +206,7 @@ impl TMaster for Master {
         Ok(())
     }
 
-    /// 删除数据库
-    fn remove_database(&self, database_name: String) -> GeorgeResult<()> {
+    fn database_remove(&self, database_name: String) -> GeorgeResult<()> {
         if !self.exist_database(database_name.clone()) {
             Err(Errs::database_exist_error())
         } else {
@@ -228,8 +215,7 @@ impl TMaster for Master {
         }
     }
 
-    /// 修改数据库
-    fn modify_database(
+    fn database_modify(
         &self,
         database_name: String,
         database_new_name: String,
@@ -247,11 +233,10 @@ impl TMaster for Master {
             .write()
             .unwrap()
             .modify(database_new_name.clone(), database_comment)?;
-        self.remove_database(database_name)?;
+        self.database_remove(database_name)?;
         self.recovery_database(database_new_name)
     }
 
-    /// 根据库name获取库
     fn database(&self, database_name: String) -> GeorgeResult<Arc<RwLock<Database>>> {
         match self.database_map().read().unwrap().get(&database_name) {
             Some(database) => Ok(database.clone()),
@@ -259,28 +244,24 @@ impl TMaster for Master {
         }
     }
 
-    /// 创建视图
-    ///
-    /// mem 是否为内存视图
-    fn create_view(
+    fn view_create(
         &self,
         database_name: String,
         view_name: String,
         comment: String,
-        with_sequence: bool,
+        with_increment: bool,
     ) -> GeorgeResult<()> {
         match self.database_map().read().unwrap().get(&database_name) {
             Some(database_lock) => {
                 let database = database_lock.read().unwrap();
-                database.create_view(view_name, comment, with_sequence)?;
+                database.create_view(view_name, comment, with_increment)?;
             }
             None => return Err(Errs::database_no_exist_error()),
         }
         Ok(())
     }
 
-    /// 修改视图
-    fn modify_view(
+    fn view_modify(
         &self,
         database_name: String,
         view_name: String,
@@ -296,10 +277,7 @@ impl TMaster for Master {
         }
     }
 
-    /// 整理归档
-    ///
-    /// archive_file_path 归档路径
-    fn archive_view(
+    fn view_archive(
         &self,
         database_name: String,
         view_name: String,
@@ -311,13 +289,6 @@ impl TMaster for Master {
             .archive_view(view_name, archive_file_path)
     }
 
-    /// 指定归档版本信息
-    ///
-    /// version 版本号
-    ///
-    /// #return
-    /// * filepath 当前归档版本文件所处路径
-    /// * create_time 归档时间
     fn view_record(
         &self,
         database_name: String,
@@ -330,20 +301,21 @@ impl TMaster for Master {
             .view_record(view_name, version)
     }
 
-    /// 在指定库及视图中创建索引
-    ///
-    /// 该索引需要定义ID，此外索引所表达的字段组成内容也是必须的，并通过primary判断索引类型，具体传参参考如下定义：<p><p>
-    ///
-    /// ###Params
-    /// * database_name 数据库名
-    /// * view_name 视图名
-    /// * index_name 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
-    /// * index_type 存储引擎类型
-    /// * key_type 索引值类型
-    /// * primary 是否主键，主键也是唯一索引，即默认列表依赖索引
-    /// * unique 是否唯一索引
-    /// * null 是否允许为空
-    fn create_index(
+    fn view_remove(&self, database_name: String, view_name: String) -> GeorgeResult<()> {
+        match self.database_map().read().unwrap().get(&database_name) {
+            Some(database) => database.read().unwrap().remove_view(view_name),
+            None => Err(Errs::database_no_exist_error()),
+        }
+    }
+
+    fn view(&self, database_name: String, view_name: String) -> GeorgeResult<Arc<RwLock<View>>> {
+        match self.database_map().read().unwrap().get(&database_name) {
+            Some(database) => database.read().unwrap().view(view_name),
+            None => Err(Errs::database_no_exist_error()),
+        }
+    }
+
+    fn index_create(
         &self,
         database_name: String,
         view_name: String,
@@ -362,19 +334,6 @@ impl TMaster for Master {
         )
     }
 
-    /// 插入数据，如果存在则返回已存在<p><p>
-    ///
-    /// ###Params
-    ///
-    /// view_name 视图名称<p><p>
-    ///
-    /// key string
-    ///
-    /// value 当前结果value信息<p><p>
-    ///
-    /// ###Return
-    ///
-    /// IndexResult<()>
     fn put_disk(
         &self,
         database_name: String,
@@ -388,19 +347,6 @@ impl TMaster for Master {
             .put(view_name, key, value)
     }
 
-    /// 插入数据，无论存在与否都会插入或更新数据<p><p>
-    ///
-    /// ###Params
-    ///
-    /// view_name 视图名称<p><p>
-    ///
-    /// key string
-    ///
-    /// value 当前结果value信息<p><p>
-    ///
-    /// ###Return
-    ///
-    /// IndexResult<()>
     fn set_disk(
         &self,
         database_name: String,
@@ -414,17 +360,6 @@ impl TMaster for Master {
             .set(view_name, key, value)
     }
 
-    /// 获取数据，返回存储对象<p><p>
-    ///
-    /// ###Params
-    ///
-    /// view_name 视图名称
-    ///
-    /// key string
-    ///
-    /// ###Return
-    ///
-    /// Seed value信息
     fn get_disk(
         &self,
         database_name: String,
@@ -437,19 +372,6 @@ impl TMaster for Master {
             .get(view_name, INDEX_DISK, key)
     }
 
-    /// 获取数据，返回存储对象<p><p>
-    ///
-    /// ###Params
-    ///
-    /// view_name 视图名称
-    ///
-    /// index_name 索引名称
-    ///
-    /// key string
-    ///
-    /// ###Return
-    ///
-    /// Seed value信息
     fn get_disk_by_index(
         &self,
         database_name: String,
@@ -463,17 +385,6 @@ impl TMaster for Master {
             .get(view_name, index_name.as_str(), key)
     }
 
-    /// 删除数据<p><p>
-    ///
-    /// ###Params
-    ///
-    /// view_name 视图名称<p><p>
-    ///
-    /// key string
-    ///
-    /// ###Return
-    ///
-    /// IndexResult<()>
     fn remove_disk(
         &self,
         database_name: String,
@@ -486,9 +397,6 @@ impl TMaster for Master {
             .remove(view_name, key)
     }
 
-    /// 条件检索
-    ///
-    /// selector_json_bytes 选择器字节数组，自定义转换策略
     fn select_disk(
         &self,
         database_name: String,
@@ -501,9 +409,6 @@ impl TMaster for Master {
             .select(view_name, constraint_json_bytes)
     }
 
-    /// 条件删除
-    ///
-    /// selector_json_bytes 选择器字节数组，自定义转换策略
     fn delete_disk(
         &self,
         database_name: String,
@@ -516,126 +421,34 @@ impl TMaster for Master {
             .delete(view_name, constraint_json_bytes)
     }
 
-    /// 插入数据，如果存在则返回已存在<p><p>
-    ///
-    /// ###Params
-    ///
-    /// key string
-    ///
-    /// value 当前结果value信息<p><p>
-    ///
-    /// ###Return
-    ///
-    /// IndexResult<()>
     fn put_memory_default(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
         self.page_default()?.read().unwrap().put(key, value)
     }
 
-    /// 插入数据，无论存在与否都会插入或更新数据<p><p>
-    ///
-    /// ###Params
-    ///
-    /// view_name 视图名称<p><p>
-    ///
-    /// key string
-    ///
-    /// value 当前结果value信息<p><p>
-    ///
-    /// ###Return
-    ///
-    /// IndexResult<()>
     fn set_memory_default(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
         self.page_default()?.read().unwrap().set(key, value)
     }
 
-    /// 获取数据，返回存储对象<p><p>
-    ///
-    /// ###Params
-    ///
-    /// view_name 视图名称
-    ///
-    /// key string
-    ///
-    /// ###Return
-    ///
-    /// Seed value信息
     fn get_memory_default(&self, key: String) -> GeorgeResult<Vec<u8>> {
         self.page_default()?.read().unwrap().get(key)
     }
 
-    /// 删除数据<p><p>
-    ///
-    /// ###Params
-    ///
-    /// view_name 视图名称
-    ///
-    /// key string
-    ///
-    /// ###Return
-    ///
-    /// Seed value信息
     fn remove_memory_default(&self, key: String) -> GeorgeResult<()> {
         self.page_default()?.read().unwrap().remove(key)
     }
 
-    /// 插入数据，如果存在则返回已存在<p><p>
-    ///
-    /// ###Params
-    ///
-    /// key string
-    ///
-    /// value 当前结果value信息<p><p>
-    ///
-    /// ###Return
-    ///
-    /// IndexResult<()>
     fn put_memory(&self, page_name: String, key: String, value: Vec<u8>) -> GeorgeResult<()> {
         self.page(page_name)?.read().unwrap().put(key, value)
     }
 
-    /// 插入数据，无论存在与否都会插入或更新数据<p><p>
-    ///
-    /// ###Params
-    ///
-    /// view_name 视图名称<p><p>
-    ///
-    /// key string
-    ///
-    /// value 当前结果value信息<p><p>
-    ///
-    /// ###Return
-    ///
-    /// IndexResult<()>
     fn set_memory(&self, page_name: String, key: String, value: Vec<u8>) -> GeorgeResult<()> {
         self.page(page_name)?.read().unwrap().set(key, value)
     }
 
-    /// 获取数据，返回存储对象<p><p>
-    ///
-    /// ###Params
-    ///
-    /// view_name 视图名称
-    ///
-    /// key string
-    ///
-    /// ###Return
-    ///
-    /// Seed value信息
     fn get_memory(&self, page_name: String, key: String) -> GeorgeResult<Vec<u8>> {
         self.page(page_name)?.read().unwrap().get(key)
     }
 
-    /// 删除数据<p><p>
-    ///
-    /// ###Params
-    ///
-    /// view_name 视图名称
-    ///
-    /// key string
-    ///
-    /// ###Return
-    ///
-    /// Seed value信息
     fn remove_memory(&self, page_name: String, key: String) -> GeorgeResult<()> {
         self.page(page_name)?.read().unwrap().remove(key)
     }

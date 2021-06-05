@@ -17,7 +17,7 @@
 #![allow(trivial_casts)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `src/protos/chain/peer.proto`
+//! Generated file from `chain/peer.proto`
 
 /// Generated files are compatible only with the same version
 /// of protobuf runtime.
@@ -565,14 +565,14 @@ impl ::protobuf::reflect::ProtobufValue for PeerPolicy {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x1bsrc/protos/chain/peer.proto\x12\x05chain\"X\n\x04Peer\x12\x0e\n\
-    \x02id\x18\x01\x20\x01(\tR\x02id\x12\x12\n\x04host\x18\x02\x20\x01(\tR\
-    \x04host\x12\x12\n\x04port\x18\x03\x20\x01(\rR\x04port\x12\x18\n\x07gene\
-    sis\x18\x04\x20\x01(\x08R\x07genesis\"n\n\nPeerPolicy\x12\x0e\n\x02id\
-    \x18\x01\x20\x01(\tR\x02id\x12\x1c\n\tconsensus\x18\x02\x20\x01(\x08R\tc\
-    onsensus\x12\x1a\n\x08contract\x18\x03\x20\x01(\x08R\x08contract\x12\x16\
-    \n\x06ledger\x18\x04\x20\x01(\x08R\x06ledgerBP\n\x20cn.aberic.george.pro\
-    tocols.chainB\tPeerProtoZ!github.com/george/protocols/chainb\x06proto3\
+    \n\x10chain/peer.proto\x12\x05chain\"X\n\x04Peer\x12\x0e\n\x02id\x18\x01\
+    \x20\x01(\tR\x02id\x12\x12\n\x04host\x18\x02\x20\x01(\tR\x04host\x12\x12\
+    \n\x04port\x18\x03\x20\x01(\rR\x04port\x12\x18\n\x07genesis\x18\x04\x20\
+    \x01(\x08R\x07genesis\"n\n\nPeerPolicy\x12\x0e\n\x02id\x18\x01\x20\x01(\
+    \tR\x02id\x12\x1c\n\tconsensus\x18\x02\x20\x01(\x08R\tconsensus\x12\x1a\
+    \n\x08contract\x18\x03\x20\x01(\x08R\x08contract\x12\x16\n\x06ledger\x18\
+    \x04\x20\x01(\x08R\x06ledgerBP\n\x20cn.aberic.george.protocols.chainB\tP\
+    eerProtoZ!github.com/george/protocols/chainb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

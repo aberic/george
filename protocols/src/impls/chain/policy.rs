@@ -17,7 +17,7 @@
 #![allow(trivial_casts)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `src/protos/chain/policy.proto`
+//! Generated file from `chain/policy.proto`
 
 /// Generated files are compatible only with the same version
 /// of protobuf runtime.
@@ -520,15 +520,15 @@ impl ::protobuf::reflect::ProtobufValue for Policy {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x1dsrc/protos/chain/policy.proto\x12\x05chain\"y\n\nFoundation\x12\
-    \x18\n\x07timeout\x18\x01\x20\x01(\rR\x07timeout\x12\x1d\n\nblock_size\
-    \x18\x02\x20\x01(\rR\tblockSize\x12\x19\n\x08tx_count\x18\x03\x20\x01(\r\
-    R\x07txCount\x12\x17\n\x07tx_size\x18\x04\x20\x01(\rR\x06txSize\"a\n\rUp\
-    gradePolicy\x12)\n\x08contract\x18\x01\x20\x01(\x0e2\r.chain.PolicyR\x08\
-    contract\x12%\n\x06ledger\x18\x02\x20\x01(\x0e2\r.chain.PolicyR\x06ledge\
-    r*(\n\x06Policy\x12\x07\n\x03Any\x10\0\x12\x0c\n\x08Majority\x10\x01\x12\
-    \x07\n\x03All\x10\x02BR\n\x20cn.aberic.george.protocols.chainB\x0bPolicy\
-    ProtoZ!github.com/george/protocols/chainb\x06proto3\
+    \n\x12chain/policy.proto\x12\x05chain\"y\n\nFoundation\x12\x18\n\x07time\
+    out\x18\x01\x20\x01(\rR\x07timeout\x12\x1d\n\nblock_size\x18\x02\x20\x01\
+    (\rR\tblockSize\x12\x19\n\x08tx_count\x18\x03\x20\x01(\rR\x07txCount\x12\
+    \x17\n\x07tx_size\x18\x04\x20\x01(\rR\x06txSize\"a\n\rUpgradePolicy\x12)\
+    \n\x08contract\x18\x01\x20\x01(\x0e2\r.chain.PolicyR\x08contract\x12%\n\
+    \x06ledger\x18\x02\x20\x01(\x0e2\r.chain.PolicyR\x06ledger*(\n\x06Policy\
+    \x12\x07\n\x03Any\x10\0\x12\x0c\n\x08Majority\x10\x01\x12\x07\n\x03All\
+    \x10\x02BR\n\x20cn.aberic.george.protocols.chainB\x0bPolicyProtoZ!github\
+    .com/george/protocols/chainb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

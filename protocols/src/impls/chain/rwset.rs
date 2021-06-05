@@ -17,7 +17,7 @@
 #![allow(trivial_casts)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `src/protos/chain/rwset.proto`
+//! Generated file from `chain/rwset.proto`
 
 /// Generated files are compatible only with the same version
 /// of protobuf runtime.
@@ -503,11 +503,11 @@ impl ::protobuf::reflect::ProtobufValue for WriteKey {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x1csrc/protos/chain/rwset.proto\x12\x05chain\"*\n\x05RWSet\x12!\n\x0c\
-    block_number\x18\x01\x20\x01(\x04R\x0bblockNumber\"\x1b\n\x07ReadKey\x12\
-    \x10\n\x03key\x18\x01\x20\x01(\tR\x03key\"\x1c\n\x08WriteKey\x12\x10\n\
-    \x03key\x18\x01\x20\x01(\tR\x03keyBQ\n\x20cn.aberic.george.protocols.cha\
-    inB\nRWSetProtoZ!github.com/george/protocols/chainb\x06proto3\
+    \n\x11chain/rwset.proto\x12\x05chain\"*\n\x05RWSet\x12!\n\x0cblock_numbe\
+    r\x18\x01\x20\x01(\x04R\x0bblockNumber\"\x1b\n\x07ReadKey\x12\x10\n\x03k\
+    ey\x18\x01\x20\x01(\tR\x03key\"\x1c\n\x08WriteKey\x12\x10\n\x03key\x18\
+    \x01\x20\x01(\tR\x03keyBQ\n\x20cn.aberic.george.protocols.chainB\nRWSetP\
+    rotoZ!github.com/george/protocols/chainb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

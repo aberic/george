@@ -20,9 +20,9 @@ option java_outer_classname = "GenesisProto";
 
 package chain;
 
-import "src/protos/chain/organization.proto";
-import "src/protos/chain/policy.proto";
-import "src/protos/chain/sign.proto";
+import "chain/organization.proto";
+import "chain/policy.proto";
+import "chain/sign.proto";
 
 // 创世区块配置对象
 message GenesisConfig {

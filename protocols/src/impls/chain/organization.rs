@@ -17,7 +17,7 @@
 #![allow(trivial_casts)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `src/protos/chain/organization.proto`
+//! Generated file from `chain/organization.proto`
 
 /// Generated files are compatible only with the same version
 /// of protobuf runtime.
@@ -712,18 +712,18 @@ impl ::protobuf::reflect::ProtobufValue for OrganizationPolicy {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n#src/protos/chain/organization.proto\x12\x05chain\x1a\x1bsrc/protos/ch\
-    ain/peer.proto\"\x9c\x01\n\x0cOrganization\x12\x0e\n\x02id\x18\x01\x20\
-    \x01(\tR\x02id\x12\x12\n\x04name\x18\x02\x20\x01(\tR\x04name\x12\x0e\n\
-    \x02pk\x18\x03\x20\x01(\tR\x02pk\x12\x1b\n\troot_cert\x18\x04\x20\x01(\t\
-    R\x08rootCert\x12!\n\x05peers\x18\x05\x20\x03(\x0b2\x0b.chain.PeerR\x05p\
-    eers\x12\x18\n\x07genesis\x18\x06\x20\x01(\x08R\x07genesis\"\x9f\x01\n\
-    \x12OrganizationPolicy\x12\x0e\n\x02id\x18\x01\x20\x01(\tR\x02id\x12\x1c\
-    \n\tconsensus\x18\x02\x20\x01(\x08R\tconsensus\x12\x1a\n\x08contract\x18\
-    \x03\x20\x01(\x08R\x08contract\x12\x16\n\x06ledger\x18\x04\x20\x01(\x08R\
-    \x06ledger\x12'\n\x05peers\x18\x05\x20\x03(\x0b2\x11.chain.PeerPolicyR\
-    \x05peersBX\n\x20cn.aberic.george.protocols.chainB\x11OrganizationProtoZ\
-    !github.com/george/protocols/chainb\x06proto3\
+    \n\x18chain/organization.proto\x12\x05chain\x1a\x10chain/peer.proto\"\
+    \x9c\x01\n\x0cOrganization\x12\x0e\n\x02id\x18\x01\x20\x01(\tR\x02id\x12\
+    \x12\n\x04name\x18\x02\x20\x01(\tR\x04name\x12\x0e\n\x02pk\x18\x03\x20\
+    \x01(\tR\x02pk\x12\x1b\n\troot_cert\x18\x04\x20\x01(\tR\x08rootCert\x12!\
+    \n\x05peers\x18\x05\x20\x03(\x0b2\x0b.chain.PeerR\x05peers\x12\x18\n\x07\
+    genesis\x18\x06\x20\x01(\x08R\x07genesis\"\x9f\x01\n\x12OrganizationPoli\
+    cy\x12\x0e\n\x02id\x18\x01\x20\x01(\tR\x02id\x12\x1c\n\tconsensus\x18\
+    \x02\x20\x01(\x08R\tconsensus\x12\x1a\n\x08contract\x18\x03\x20\x01(\x08\
+    R\x08contract\x12\x16\n\x06ledger\x18\x04\x20\x01(\x08R\x06ledger\x12'\n\
+    \x05peers\x18\x05\x20\x03(\x0b2\x11.chain.PeerPolicyR\x05peersBX\n\x20cn\
+    .aberic.george.protocols.chainB\x11OrganizationProtoZ!github.com/george/\
+    protocols/chainb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

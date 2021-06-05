@@ -17,7 +17,7 @@
 #![allow(trivial_casts)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `src/protos/chain/genesis.proto`
+//! Generated file from `chain/genesis.proto`
 
 /// Generated files are compatible only with the same version
 /// of protobuf runtime.
@@ -572,17 +572,16 @@ impl ::protobuf::reflect::ProtobufValue for Genesis {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x1esrc/protos/chain/genesis.proto\x12\x05chain\x1a#src/protos/chain/o\
-    rganization.proto\x1a\x1dsrc/protos/chain/policy.proto\x1a\x1bsrc/protos\
-    /chain/sign.proto\"\x8e\x01\n\rGenesisConfig\x12(\n\x07genesis\x18\x01\
-    \x20\x01(\x0b2\x0e.chain.GenesisR\x07genesis\x12%\n\x06signet\x18\x02\
-    \x20\x01(\x0b2\r.chain.SignetR\x06signet\x12,\n\nsignet_pre\x18\x03\x20\
-    \x01(\x0b2\r.chain.SignetR\tsignetPre\"\x9e\x01\n\x07Genesis\x129\n\rorg\
-    anizations\x18\x01\x20\x03(\x0b2\x13.chain.OrganizationR\rorganizations\
-    \x121\n\nfoundation\x18\x02\x20\x01(\x0b2\x11.chain.FoundationR\nfoundat\
-    ion\x12%\n\x06policy\x18\x03\x20\x01(\x0e2\r.chain.PolicyR\x06policyBS\n\
-    \x20cn.aberic.george.protocols.chainB\x0cGenesisProtoZ!github.com/george\
-    /protocols/chainb\x06proto3\
+    \n\x13chain/genesis.proto\x12\x05chain\x1a\x18chain/organization.proto\
+    \x1a\x12chain/policy.proto\x1a\x10chain/sign.proto\"\x8e\x01\n\rGenesisC\
+    onfig\x12(\n\x07genesis\x18\x01\x20\x01(\x0b2\x0e.chain.GenesisR\x07gene\
+    sis\x12%\n\x06signet\x18\x02\x20\x01(\x0b2\r.chain.SignetR\x06signet\x12\
+    ,\n\nsignet_pre\x18\x03\x20\x01(\x0b2\r.chain.SignetR\tsignetPre\"\x9e\
+    \x01\n\x07Genesis\x129\n\rorganizations\x18\x01\x20\x03(\x0b2\x13.chain.\
+    OrganizationR\rorganizations\x121\n\nfoundation\x18\x02\x20\x01(\x0b2\
+    \x11.chain.FoundationR\nfoundation\x12%\n\x06policy\x18\x03\x20\x01(\x0e\
+    2\r.chain.PolicyR\x06policyBS\n\x20cn.aberic.george.protocols.chainB\x0c\
+    GenesisProtoZ!github.com/george/protocols/chainb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

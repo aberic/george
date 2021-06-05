@@ -20,7 +20,7 @@ option java_outer_classname = "ServiceProto";
 
 package chain;
 
-import "src/protos/chain/block.proto";
+import "chain/block.proto";
 
 service Blocks {
   rpc add(Block) returns (Response);

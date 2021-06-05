@@ -17,7 +17,7 @@
 #![allow(trivial_casts)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `src/protos/chain/block.proto`
+//! Generated file from `chain/block.proto`
 
 /// Generated files are compatible only with the same version
 /// of protobuf runtime.
@@ -1409,24 +1409,23 @@ impl ::protobuf::reflect::ProtobufValue for BlockInfo {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x1csrc/protos/chain/block.proto\x12\x05chain\x1a\x1fgoogle/protobuf/t\
-    imestamp.proto\x1a\"src/protos/chain/transaction.proto\x1a\x1bsrc/protos\
-    /chain/sign.proto\"\x8b\x01\n\x05Block\x12*\n\x06header\x18\x01\x20\x01(\
-    \x0b2\x12.chain.BlockHeaderR\x06header\x12$\n\x04data\x18\x02\x20\x01(\
-    \x0b2\x10.chain.BlockDataR\x04data\x120\n\x08metadata\x18\x03\x20\x01(\
-    \x0b2\x14.chain.BlockMetadataR\x08metadata\"\x8d\x01\n\x0bBlockHeader\
-    \x12\x16\n\x06number\x18\x01\x20\x01(\x04R\x06number\x12\x18\n\x07preHas\
-    h\x18\x02\x20\x01(\tR\x07preHash\x12\x12\n\x04hash\x18\x03\x20\x01(\tR\
-    \x04hash\x128\n\ttimestamp\x18\x04\x20\x01(\x0b2\x1a.google.protobuf.Tim\
-    estampR\ttimestamp\"\x1f\n\tBlockData\x12\x12\n\x04data\x18\x01\x20\x01(\
-    \x0cR\x04data\"z\n\rBlockMetadata\x12\x16\n\x06length\x18\x01\x20\x01(\r\
-    R\x06length\x12*\n\x05index\x18\x02\x20\x01(\x0b2\x14.chain.PreBlockInde\
-    xR\x05index\x12%\n\x06signer\x18\x03\x20\x01(\x0b2\r.chain.SignerR\x06si\
-    gner\"3\n\rPreBlockIndex\x12\x0e\n\x02no\x18\x01\x20\x01(\rR\x02no\x12\
-    \x12\n\x04seek\x18\x02\x20\x01(\rR\x04seek\"A\n\tBlockInfo\x124\n\x0btra\
-    nsaction\x18\x01\x20\x01(\x0b2\x12.chain.TransactionR\x0btransactionBQ\n\
-    \x20cn.aberic.george.protocols.chainB\nBlockProtoZ!github.com/george/pro\
-    tocols/chainb\x06proto3\
+    \n\x11chain/block.proto\x12\x05chain\x1a\x1fgoogle/protobuf/timestamp.pr\
+    oto\x1a\x17chain/transaction.proto\x1a\x10chain/sign.proto\"\x8b\x01\n\
+    \x05Block\x12*\n\x06header\x18\x01\x20\x01(\x0b2\x12.chain.BlockHeaderR\
+    \x06header\x12$\n\x04data\x18\x02\x20\x01(\x0b2\x10.chain.BlockDataR\x04\
+    data\x120\n\x08metadata\x18\x03\x20\x01(\x0b2\x14.chain.BlockMetadataR\
+    \x08metadata\"\x8d\x01\n\x0bBlockHeader\x12\x16\n\x06number\x18\x01\x20\
+    \x01(\x04R\x06number\x12\x18\n\x07preHash\x18\x02\x20\x01(\tR\x07preHash\
+    \x12\x12\n\x04hash\x18\x03\x20\x01(\tR\x04hash\x128\n\ttimestamp\x18\x04\
+    \x20\x01(\x0b2\x1a.google.protobuf.TimestampR\ttimestamp\"\x1f\n\tBlockD\
+    ata\x12\x12\n\x04data\x18\x01\x20\x01(\x0cR\x04data\"z\n\rBlockMetadata\
+    \x12\x16\n\x06length\x18\x01\x20\x01(\rR\x06length\x12*\n\x05index\x18\
+    \x02\x20\x01(\x0b2\x14.chain.PreBlockIndexR\x05index\x12%\n\x06signer\
+    \x18\x03\x20\x01(\x0b2\r.chain.SignerR\x06signer\"3\n\rPreBlockIndex\x12\
+    \x0e\n\x02no\x18\x01\x20\x01(\rR\x02no\x12\x12\n\x04seek\x18\x02\x20\x01\
+    (\rR\x04seek\"A\n\tBlockInfo\x124\n\x0btransaction\x18\x01\x20\x01(\x0b2\
+    \x12.chain.TransactionR\x0btransactionBQ\n\x20cn.aberic.george.protocols\
+    .chainB\nBlockProtoZ!github.com/george/protocols/chainb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

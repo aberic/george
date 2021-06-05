@@ -17,7 +17,7 @@
 #![allow(trivial_casts)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `src/protos/db/index.proto`
+//! Generated file from `db/index.proto`
 
 /// Generated files are compatible only with the same version
 /// of protobuf runtime.
@@ -906,23 +906,22 @@ impl ::protobuf::reflect::ProtobufValue for KeyType {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x19src/protos/db/index.proto\x12\x02db\x1a\x1fgoogle/protobuf/timesta\
-    mp.proto\"\xea\x01\n\x05Index\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04n\
-    ame\x12\"\n\x06engine\x18\x02\x20\x01(\x0e2\n.db.EngineR\x06engine\x12\
-    \x18\n\x07primary\x18\x03\x20\x01(\x08R\x07primary\x12\x16\n\x06unique\
-    \x18\x04\x20\x01(\x08R\x06unique\x12\x12\n\x04null\x18\x05\x20\x01(\x08R\
-    \x04null\x12&\n\x08key_type\x18\x06\x20\x01(\x0e2\x0b.db.KeyTypeR\x07key\
-    Type\x12;\n\x0bcreate_time\x18\x07\x20\x01(\x0b2\x1a.google.protobuf.Tim\
-    estampR\ncreateTime\"0\n\tIndexList\x12#\n\x07indexes\x18\x01\x20\x03(\
-    \x0b2\t.db.IndexR\x07indexes\"T\n\x10RequestIndexList\x12#\n\rdatabase_n\
-    ame\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tview_name\x18\x02\x20\
-    \x01(\tR\x08viewName*D\n\x06Engine\x12\x08\n\x04None\x10\0\x12\r\n\tIncr\
-    ement\x10\x01\x12\x0c\n\x08Sequence\x10\x02\x12\x08\n\x04Disk\x10\x03\
-    \x12\t\n\x05Block\x10\x04*M\n\x07KeyType\x12\n\n\x06String\x10\0\x12\x08\
-    \n\x04UInt\x10\x01\x12\x07\n\x03Int\x10\x02\x12\t\n\x05Float\x10\x03\x12\
-    \x08\n\x04Bool\x10\x04\x12\x0e\n\nNonsupport\x10\x05BK\n\x1dcn.aberic.ge\
-    orge.protocols.dbB\nIndexProtoZ\x1egithub.com/george/protocols/dbb\x06pr\
-    oto3\
+    \n\x0edb/index.proto\x12\x02db\x1a\x1fgoogle/protobuf/timestamp.proto\"\
+    \xea\x01\n\x05Index\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04name\x12\"\
+    \n\x06engine\x18\x02\x20\x01(\x0e2\n.db.EngineR\x06engine\x12\x18\n\x07p\
+    rimary\x18\x03\x20\x01(\x08R\x07primary\x12\x16\n\x06unique\x18\x04\x20\
+    \x01(\x08R\x06unique\x12\x12\n\x04null\x18\x05\x20\x01(\x08R\x04null\x12\
+    &\n\x08key_type\x18\x06\x20\x01(\x0e2\x0b.db.KeyTypeR\x07keyType\x12;\n\
+    \x0bcreate_time\x18\x07\x20\x01(\x0b2\x1a.google.protobuf.TimestampR\ncr\
+    eateTime\"0\n\tIndexList\x12#\n\x07indexes\x18\x01\x20\x03(\x0b2\t.db.In\
+    dexR\x07indexes\"T\n\x10RequestIndexList\x12#\n\rdatabase_name\x18\x01\
+    \x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tview_name\x18\x02\x20\x01(\tR\
+    \x08viewName*D\n\x06Engine\x12\x08\n\x04None\x10\0\x12\r\n\tIncrement\
+    \x10\x01\x12\x0c\n\x08Sequence\x10\x02\x12\x08\n\x04Disk\x10\x03\x12\t\n\
+    \x05Block\x10\x04*M\n\x07KeyType\x12\n\n\x06String\x10\0\x12\x08\n\x04UI\
+    nt\x10\x01\x12\x07\n\x03Int\x10\x02\x12\t\n\x05Float\x10\x03\x12\x08\n\
+    \x04Bool\x10\x04\x12\x0e\n\nNonsupport\x10\x05BK\n\x1dcn.aberic.george.p\
+    rotocols.dbB\nIndexProtoZ\x1egithub.com/george/protocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;
