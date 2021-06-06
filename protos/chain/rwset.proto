@@ -1,0 +1,47 @@
+/*
+ * Copyright (c) 2020. Aberic - All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+option go_package = "github.com/george/protocols/chain";
+option java_package = "cn.aberic.george.protocols.chain";
+option java_outer_classname = "RWSetProto";
+
+package chain;
+
+// 读写集信息属于每笔交易中的属性
+//
+// 在任一区块中，来自各个节点交易中都包含了该笔交易提交时本地最大区块编号，该区块编号为本次交易的基准编号
+//
+// 即当前交易成立条件是在本次出块交易都小于等于该基准编号为前提
+//
+// 假如一次出块中打包了两笔交易T1和T2，T1的基准区块编号为5，T2的基准区块编号为6，则无论T1执行了任何操作都无效
+//
+// 假如一次出块中打包了两笔交易T1和T2，T1和T2的基准区块编号都是5，按照交易接收时间排序，接收越早的交易排在前面。假定T1的接受时间小于T2，即无论
+// T1的提交时间是否大于T2都会优先处理T1的数据，提交时间只针对节点自身做校验使用，没有事实依据。T1如果对k1进行了写操作，那么T2及后续的交易中将无
+// 法执行有关读k1的操作，即后续交易中所有与读k1相关的交易都被置为无效
+message RWSet {
+  // 基准区块编号，从创世区块起始到当前区块的升序序号，创世区块编号为0
+  uint64 block_number = 1;
+}
+
+// 读key
+message ReadKey {
+  string key = 1;
+}
+
+// 写key
+message WriteKey {
+  string key = 1;
+}

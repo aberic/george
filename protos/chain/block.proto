@@ -1,0 +1,80 @@
+/*
+ * Copyright (c) 2020. Aberic - All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+option go_package = "github.com/george/protocols/chain";
+option java_package = "cn.aberic.george.protocols.chain";
+option java_outer_classname = "BlockProto";
+
+package chain;
+
+import "google/protobuf/timestamp.proto";
+import "chain/transaction.proto";
+import "chain/sign.proto";
+
+// 区块结构，该结构为节点出块、校验、共享以及同步等通用结构，最终会存储在指定的 block file 文件中
+//
+// 该结构与一般意义上的区块类似，包括了区块头和区块数据，区块头包括该区块链的一些基本信息，区块数据则是区块同步、校验、共享的状态信息
+//
+// 区块数据会被存储在区块文件中，在区块文件中存储信息来自 metadata ，即在区块文件中读取任一区块内容，首先读取该区块的 metadata 信息，在该信息
+// 中定义了待读取区块字节长度，且能够追溯上一区块坐标
+message Block {
+  BlockHeader header = 1;
+  BlockData data = 2;
+  BlockMetadata metadata = 3;
+}
+
+// 区块头
+message BlockHeader {
+  // 区块编号，从创世区块起始到当前区块的升序序号，创世区块编号为0
+  uint64 number = 1;
+  // 上一区块hash
+  string preHash = 2;
+  // 当前区块hash，hash值来自区块数据中交易的默克尔树
+  string hash = 3;
+  // 区块打包时间
+  google.protobuf.Timestamp timestamp = 4;
+}
+
+// 区块体
+message BlockData {
+  bytes data = 1;
+}
+
+// 区块元数据，记录区块存储信息和上下游数据索引
+//
+// 包含自身区块长度4字节+上一区块文件编号4字节+上一区块所属文件下标4字节=12字节
+message BlockMetadata {
+  // 区块所在文件中字节数组长度
+  uint32 length = 1;
+  // 上一区块索引，所在文件起始下标，如果该值大于当前文件索引，则表示上一区块在上一区块文件中
+  PreBlockIndex index = 2;
+  // 对当前区块hash进行sm2签名的信息，签名者为出块共识节点，如o1
+  Signer signer = 3;
+}
+
+// 上一区块索引，记录上一区块存储数据索引
+message PreBlockIndex {
+  // 区块所在文件编号
+  uint32 no = 1;
+  // 区块所在文件起始位置，所在文件起始下标
+  uint32 seek = 2;
+}
+
+// 区块数据信息
+message BlockInfo {
+  // 交易对象
+  Transaction transaction = 1;
+}
