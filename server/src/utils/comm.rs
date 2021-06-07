@@ -12,17 +12,11 @@
  * limitations under the License.
  */
 
-use crate::utils::Comm;
-use comm::errors::GeorgeResult;
-use comm::Time;
-use db::task::traits::TMaster;
-use db::task::{Database, View};
-use db::Task;
-use grpc::{Error, GrpcMessageError, Result, ServerResponseUnarySink};
 use protobuf::well_known_types::Timestamp;
-use protocols::impls::db::service::Response;
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+
+use comm::Time;
+
+use crate::utils::Comm;
 
 impl Comm {
     pub fn time_2_grpc_timestamp(time: Time) -> Timestamp {
@@ -30,17 +24,5 @@ impl Comm {
         timestamp.set_seconds(time.sec());
         timestamp.set_nanos(time.nanos());
         timestamp
-    }
-
-    pub fn view_map(
-        task: Arc<Task>,
-        database_name: &str,
-    ) -> Option<Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>>> {
-        let db_map = task.database_map();
-        let db_map_r = db_map.read().unwrap();
-        match db_map_r.get(database_name) {
-            Some(db) => Some(db.read().unwrap().view_map()),
-            None => None,
-        }
     }
 }

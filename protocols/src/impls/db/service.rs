@@ -263,29 +263,47 @@ impl ::protobuf::reflect::ProtobufValue for Response {
 
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\x10db/service.proto\x12\x02db\x1a\rdb/page.proto\x1a\x11db/database.p\
-    roto\x1a\rdb/view.proto\x1a\x0edb/index.proto\"\t\n\x07Request\"\n\n\x08\
-    Response2\x85\x02\n\x0bPageService\x12\"\n\x05pages\x12\x0b.db.Request\
-    \x1a\x0c.db.PageList\x122\n\x0bpage_create\x12\x15.db.RequestPageCreate\
-    \x1a\x0c.db.Response\x122\n\x0bpage_modify\x12\x15.db.RequestPageModify\
-    \x1a\x0c.db.Response\x126\n\tpage_info\x12\x13.db.RequestPageInfo\x1a\
-    \x14.db.ResponsePageInfo\x122\n\x0bpage_remove\x12\x15.db.RequestPageRem\
-    ove\x1a\x0c.db.Response2\xb5\x02\n\x0fDatabaseService\x12*\n\tdatabases\
-    \x12\x0b.db.Request\x1a\x10.db.DatabaseList\x12:\n\x0fdatabase_create\
-    \x12\x19.db.RequestDatabaseCreate\x1a\x0c.db.Response\x12:\n\x0fdatabase\
-    _modify\x12\x19.db.RequestDatabaseModify\x1a\x0c.db.Response\x12B\n\rdat\
-    abase_info\x12\x17.db.RequestDatabaseInfo\x1a\x18.db.ResponseDatabaseInf\
-    o\x12:\n\x0fdatabase_remove\x12\x19.db.RequestDatabaseRemove\x1a\x0c.db.\
-    Response2\x81\x03\n\x0bViewService\x12*\n\x05views\x12\x13.db.RequestVie\
-    wList\x1a\x0c.db.ViewList\x122\n\x0bview_create\x12\x15.db.RequestViewCr\
-    eate\x1a\x0c.db.Response\x122\n\x0bview_modify\x12\x15.db.RequestViewMod\
-    ify\x1a\x0c.db.Response\x126\n\tview_info\x12\x13.db.RequestViewInfo\x1a\
-    \x14.db.ResponseViewInfo\x122\n\x0bview_remove\x12\x15.db.RequestViewRem\
-    ove\x1a\x0c.db.Response\x124\n\x0cview_archive\x12\x16.db.RequestViewArc\
-    hive\x1a\x0c.db.Response\x12<\n\x0bview_record\x12\x15.db.RequestViewRec\
-    ord\x1a\x16.db.ResponseViewRecord2>\n\x0cIndexService\x12.\n\x07indexes\
-    \x12\x14.db.RequestIndexList\x1a\r.db.IndexListBM\n\x1dcn.aberic.george.\
-    protocols.dbB\x0cServiceProtoZ\x1egithub.com/george/protocols/dbb\x06pro\
-    to3\
+    roto\x1a\rdb/view.proto\x1a\x0edb/index.proto\x1a\rdb/disk.proto\x1a\x0f\
+    db/memory.proto\"\t\n\x07Request\"\n\n\x08Response2\x85\x02\n\x0bPageSer\
+    vice\x12\"\n\x05pages\x12\x0b.db.Request\x1a\x0c.db.PageList\x122\n\x0bp\
+    age_create\x12\x15.db.RequestPageCreate\x1a\x0c.db.Response\x122\n\x0bpa\
+    ge_modify\x12\x15.db.RequestPageModify\x1a\x0c.db.Response\x126\n\tpage_\
+    info\x12\x13.db.RequestPageInfo\x1a\x14.db.ResponsePageInfo\x122\n\x0bpa\
+    ge_remove\x12\x15.db.RequestPageRemove\x1a\x0c.db.Response2\xb5\x02\n\
+    \x0fDatabaseService\x12*\n\tdatabases\x12\x0b.db.Request\x1a\x10.db.Data\
+    baseList\x12:\n\x0fdatabase_create\x12\x19.db.RequestDatabaseCreate\x1a\
+    \x0c.db.Response\x12:\n\x0fdatabase_modify\x12\x19.db.RequestDatabaseMod\
+    ify\x1a\x0c.db.Response\x12B\n\rdatabase_info\x12\x17.db.RequestDatabase\
+    Info\x1a\x18.db.ResponseDatabaseInfo\x12:\n\x0fdatabase_remove\x12\x19.d\
+    b.RequestDatabaseRemove\x1a\x0c.db.Response2\x81\x03\n\x0bViewService\
+    \x12*\n\x05views\x12\x13.db.RequestViewList\x1a\x0c.db.ViewList\x122\n\
+    \x0bview_create\x12\x15.db.RequestViewCreate\x1a\x0c.db.Response\x122\n\
+    \x0bview_modify\x12\x15.db.RequestViewModify\x1a\x0c.db.Response\x126\n\
+    \tview_info\x12\x13.db.RequestViewInfo\x1a\x14.db.ResponseViewInfo\x122\
+    \n\x0bview_remove\x12\x15.db.RequestViewRemove\x1a\x0c.db.Response\x124\
+    \n\x0cview_archive\x12\x16.db.RequestViewArchive\x1a\x0c.db.Response\x12\
+    <\n\x0bview_record\x12\x15.db.RequestViewRecord\x1a\x16.db.ResponseViewR\
+    ecord2\xaf\x01\n\x0cIndexService\x12.\n\x07indexes\x12\x14.db.RequestInd\
+    exList\x1a\r.db.IndexList\x124\n\x0cindex_create\x12\x16.db.RequestIndex\
+    Create\x1a\x0c.db.Response\x129\n\nindex_info\x12\x14.db.RequestIndexInf\
+    o\x1a\x15.db.ResponseIndexInfo2\xec\x02\n\x0bDiskService\x12(\n\x03put\
+    \x12\x13.db.RequestDiskInto\x1a\x0c.db.Response\x12(\n\x03set\x12\x13.db\
+    .RequestDiskInto\x1a\x0c.db.Response\x12.\n\x03get\x12\x12.db.RequestDis\
+    kOut\x1a\x13.db.ResponseDiskOut\x128\n\x0cget_by_index\x12\x13.db.Reques\
+    tDiskIOut\x1a\x13.db.ResponseDiskOut\x12-\n\x06remove\x12\x15.db.Request\
+    DiskRemove\x1a\x0c.db.Response\x127\n\x06select\x12\x15.db.RequestDiskSe\
+    lect\x1a\x16.db.ResponseDiskSelect\x127\n\x06delete\x12\x15.db.RequestDi\
+    skDelete\x1a\x16.db.ResponseDiskDelete2\xae\x03\n\rMemoryService\x12*\n\
+    \x03put\x12\x15.db.RequestMemoryInto\x1a\x0c.db.Response\x12*\n\x03set\
+    \x12\x15.db.RequestMemoryInto\x1a\x0c.db.Response\x122\n\x03get\x12\x14.\
+    db.RequestMemoryOut\x1a\x15.db.ResponseMemoryOut\x12/\n\x06remove\x12\
+    \x17.db.RequestMemoryRemove\x1a\x0c.db.Response\x123\n\x0bput_by_page\
+    \x12\x16.db.RequestMemoryPInto\x1a\x0c.db.Response\x123\n\x0bset_by_page\
+    \x12\x16.db.RequestMemoryPInto\x1a\x0c.db.Response\x12<\n\x0bget_by_page\
+    \x12\x15.db.RequestMemoryPOut\x1a\x16.db.ResponseMemoryPOut\x128\n\x0ere\
+    move_by_page\x12\x18.db.RequestMemoryPRemove\x1a\x0c.db.ResponseBM\n\x1d\
+    cn.aberic.george.protocols.dbB\x0cServiceProtoZ\x1egithub.com/george/pro\
+    tocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

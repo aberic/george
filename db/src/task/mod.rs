@@ -29,7 +29,7 @@ use crate::utils::deploy::GLOBAL_CONFIG;
 use crate::utils::enums::{Engine, KeyType};
 
 mod database;
-mod engine;
+pub mod engine;
 mod index;
 mod ledger;
 pub mod master;

@@ -31,7 +31,7 @@ pub(super) mod increment;
 pub(super) mod memory;
 pub(super) mod merkle;
 pub(super) mod sequence;
-pub(super) mod traits;
+pub mod traits;
 
 /// 检查值有效性
 fn check(

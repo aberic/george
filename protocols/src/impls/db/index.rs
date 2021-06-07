@@ -782,6 +782,842 @@ impl ::protobuf::reflect::ProtobufValue for RequestIndexList {
     }
 }
 
+#[derive(PartialEq,Clone,Default)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+pub struct RequestIndexCreate {
+    // message fields
+    pub database_name: ::std::string::String,
+    pub view_name: ::std::string::String,
+    pub name: ::std::string::String,
+    pub engine: Engine,
+    pub primary: bool,
+    pub unique: bool,
+    pub null: bool,
+    pub key_type: KeyType,
+    // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a RequestIndexCreate {
+    fn default() -> &'a RequestIndexCreate {
+        <RequestIndexCreate as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl RequestIndexCreate {
+    pub fn new() -> RequestIndexCreate {
+        ::std::default::Default::default()
+    }
+
+    // string database_name = 1;
+
+
+    pub fn get_database_name(&self) -> &str {
+        &self.database_name
+    }
+    pub fn clear_database_name(&mut self) {
+        self.database_name.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_database_name(&mut self, v: ::std::string::String) {
+        self.database_name = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_database_name(&mut self) -> &mut ::std::string::String {
+        &mut self.database_name
+    }
+
+    // Take field
+    pub fn take_database_name(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.database_name, ::std::string::String::new())
+    }
+
+    // string view_name = 2;
+
+
+    pub fn get_view_name(&self) -> &str {
+        &self.view_name
+    }
+    pub fn clear_view_name(&mut self) {
+        self.view_name.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_view_name(&mut self, v: ::std::string::String) {
+        self.view_name = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_view_name(&mut self) -> &mut ::std::string::String {
+        &mut self.view_name
+    }
+
+    // Take field
+    pub fn take_view_name(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.view_name, ::std::string::String::new())
+    }
+
+    // string name = 3;
+
+
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+    pub fn clear_name(&mut self) {
+        self.name.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_name(&mut self, v: ::std::string::String) {
+        self.name = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_name(&mut self) -> &mut ::std::string::String {
+        &mut self.name
+    }
+
+    // Take field
+    pub fn take_name(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.name, ::std::string::String::new())
+    }
+
+    // .db.Engine engine = 4;
+
+
+    pub fn get_engine(&self) -> Engine {
+        self.engine
+    }
+    pub fn clear_engine(&mut self) {
+        self.engine = Engine::None;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_engine(&mut self, v: Engine) {
+        self.engine = v;
+    }
+
+    // bool primary = 5;
+
+
+    pub fn get_primary(&self) -> bool {
+        self.primary
+    }
+    pub fn clear_primary(&mut self) {
+        self.primary = false;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_primary(&mut self, v: bool) {
+        self.primary = v;
+    }
+
+    // bool unique = 6;
+
+
+    pub fn get_unique(&self) -> bool {
+        self.unique
+    }
+    pub fn clear_unique(&mut self) {
+        self.unique = false;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_unique(&mut self, v: bool) {
+        self.unique = v;
+    }
+
+    // bool null = 7;
+
+
+    pub fn get_null(&self) -> bool {
+        self.null
+    }
+    pub fn clear_null(&mut self) {
+        self.null = false;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_null(&mut self, v: bool) {
+        self.null = v;
+    }
+
+    // .db.KeyType key_type = 8;
+
+
+    pub fn get_key_type(&self) -> KeyType {
+        self.key_type
+    }
+    pub fn clear_key_type(&mut self) {
+        self.key_type = KeyType::String;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_key_type(&mut self, v: KeyType) {
+        self.key_type = v;
+    }
+}
+
+impl ::protobuf::Message for RequestIndexCreate {
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.database_name)?;
+                },
+                2 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.view_name)?;
+                },
+                3 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.name)?;
+                },
+                4 => {
+                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.engine, 4, &mut self.unknown_fields)?
+                },
+                5 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_bool()?;
+                    self.primary = tmp;
+                },
+                6 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_bool()?;
+                    self.unique = tmp;
+                },
+                7 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_bool()?;
+                    self.null = tmp;
+                },
+                8 => {
+                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.key_type, 8, &mut self.unknown_fields)?
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if !self.database_name.is_empty() {
+            my_size += ::protobuf::rt::string_size(1, &self.database_name);
+        }
+        if !self.view_name.is_empty() {
+            my_size += ::protobuf::rt::string_size(2, &self.view_name);
+        }
+        if !self.name.is_empty() {
+            my_size += ::protobuf::rt::string_size(3, &self.name);
+        }
+        if self.engine != Engine::None {
+            my_size += ::protobuf::rt::enum_size(4, self.engine);
+        }
+        if self.primary != false {
+            my_size += 2;
+        }
+        if self.unique != false {
+            my_size += 2;
+        }
+        if self.null != false {
+            my_size += 2;
+        }
+        if self.key_type != KeyType::String {
+            my_size += ::protobuf::rt::enum_size(8, self.key_type);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if !self.database_name.is_empty() {
+            os.write_string(1, &self.database_name)?;
+        }
+        if !self.view_name.is_empty() {
+            os.write_string(2, &self.view_name)?;
+        }
+        if !self.name.is_empty() {
+            os.write_string(3, &self.name)?;
+        }
+        if self.engine != Engine::None {
+            os.write_enum(4, ::protobuf::ProtobufEnum::value(&self.engine))?;
+        }
+        if self.primary != false {
+            os.write_bool(5, self.primary)?;
+        }
+        if self.unique != false {
+            os.write_bool(6, self.unique)?;
+        }
+        if self.null != false {
+            os.write_bool(7, self.null)?;
+        }
+        if self.key_type != KeyType::String {
+            os.write_enum(8, ::protobuf::ProtobufEnum::value(&self.key_type))?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> RequestIndexCreate {
+        RequestIndexCreate::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
+        descriptor.get(|| {
+            let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "database_name",
+                |m: &RequestIndexCreate| { &m.database_name },
+                |m: &mut RequestIndexCreate| { &mut m.database_name },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "view_name",
+                |m: &RequestIndexCreate| { &m.view_name },
+                |m: &mut RequestIndexCreate| { &mut m.view_name },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "name",
+                |m: &RequestIndexCreate| { &m.name },
+                |m: &mut RequestIndexCreate| { &mut m.name },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<Engine>>(
+                "engine",
+                |m: &RequestIndexCreate| { &m.engine },
+                |m: &mut RequestIndexCreate| { &mut m.engine },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBool>(
+                "primary",
+                |m: &RequestIndexCreate| { &m.primary },
+                |m: &mut RequestIndexCreate| { &mut m.primary },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBool>(
+                "unique",
+                |m: &RequestIndexCreate| { &m.unique },
+                |m: &mut RequestIndexCreate| { &mut m.unique },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBool>(
+                "null",
+                |m: &RequestIndexCreate| { &m.null },
+                |m: &mut RequestIndexCreate| { &mut m.null },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<KeyType>>(
+                "key_type",
+                |m: &RequestIndexCreate| { &m.key_type },
+                |m: &mut RequestIndexCreate| { &mut m.key_type },
+            ));
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<RequestIndexCreate>(
+                "RequestIndexCreate",
+                fields,
+                file_descriptor_proto()
+            )
+        })
+    }
+
+    fn default_instance() -> &'static RequestIndexCreate {
+        static instance: ::protobuf::rt::LazyV2<RequestIndexCreate> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(RequestIndexCreate::new)
+    }
+}
+
+impl ::protobuf::Clear for RequestIndexCreate {
+    fn clear(&mut self) {
+        self.database_name.clear();
+        self.view_name.clear();
+        self.name.clear();
+        self.engine = Engine::None;
+        self.primary = false;
+        self.unique = false;
+        self.null = false;
+        self.key_type = KeyType::String;
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for RequestIndexCreate {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for RequestIndexCreate {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+pub struct RequestIndexInfo {
+    // message fields
+    pub database_name: ::std::string::String,
+    pub view_name: ::std::string::String,
+    pub name: ::std::string::String,
+    // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a RequestIndexInfo {
+    fn default() -> &'a RequestIndexInfo {
+        <RequestIndexInfo as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl RequestIndexInfo {
+    pub fn new() -> RequestIndexInfo {
+        ::std::default::Default::default()
+    }
+
+    // string database_name = 1;
+
+
+    pub fn get_database_name(&self) -> &str {
+        &self.database_name
+    }
+    pub fn clear_database_name(&mut self) {
+        self.database_name.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_database_name(&mut self, v: ::std::string::String) {
+        self.database_name = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_database_name(&mut self) -> &mut ::std::string::String {
+        &mut self.database_name
+    }
+
+    // Take field
+    pub fn take_database_name(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.database_name, ::std::string::String::new())
+    }
+
+    // string view_name = 2;
+
+
+    pub fn get_view_name(&self) -> &str {
+        &self.view_name
+    }
+    pub fn clear_view_name(&mut self) {
+        self.view_name.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_view_name(&mut self, v: ::std::string::String) {
+        self.view_name = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_view_name(&mut self) -> &mut ::std::string::String {
+        &mut self.view_name
+    }
+
+    // Take field
+    pub fn take_view_name(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.view_name, ::std::string::String::new())
+    }
+
+    // string name = 3;
+
+
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+    pub fn clear_name(&mut self) {
+        self.name.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_name(&mut self, v: ::std::string::String) {
+        self.name = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_name(&mut self) -> &mut ::std::string::String {
+        &mut self.name
+    }
+
+    // Take field
+    pub fn take_name(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.name, ::std::string::String::new())
+    }
+}
+
+impl ::protobuf::Message for RequestIndexInfo {
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.database_name)?;
+                },
+                2 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.view_name)?;
+                },
+                3 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.name)?;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if !self.database_name.is_empty() {
+            my_size += ::protobuf::rt::string_size(1, &self.database_name);
+        }
+        if !self.view_name.is_empty() {
+            my_size += ::protobuf::rt::string_size(2, &self.view_name);
+        }
+        if !self.name.is_empty() {
+            my_size += ::protobuf::rt::string_size(3, &self.name);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if !self.database_name.is_empty() {
+            os.write_string(1, &self.database_name)?;
+        }
+        if !self.view_name.is_empty() {
+            os.write_string(2, &self.view_name)?;
+        }
+        if !self.name.is_empty() {
+            os.write_string(3, &self.name)?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> RequestIndexInfo {
+        RequestIndexInfo::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
+        descriptor.get(|| {
+            let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "database_name",
+                |m: &RequestIndexInfo| { &m.database_name },
+                |m: &mut RequestIndexInfo| { &mut m.database_name },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "view_name",
+                |m: &RequestIndexInfo| { &m.view_name },
+                |m: &mut RequestIndexInfo| { &mut m.view_name },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "name",
+                |m: &RequestIndexInfo| { &m.name },
+                |m: &mut RequestIndexInfo| { &mut m.name },
+            ));
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<RequestIndexInfo>(
+                "RequestIndexInfo",
+                fields,
+                file_descriptor_proto()
+            )
+        })
+    }
+
+    fn default_instance() -> &'static RequestIndexInfo {
+        static instance: ::protobuf::rt::LazyV2<RequestIndexInfo> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(RequestIndexInfo::new)
+    }
+}
+
+impl ::protobuf::Clear for RequestIndexInfo {
+    fn clear(&mut self) {
+        self.database_name.clear();
+        self.view_name.clear();
+        self.name.clear();
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for RequestIndexInfo {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for RequestIndexInfo {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+pub struct ResponseIndexInfo {
+    // message fields
+    pub index: ::protobuf::SingularPtrField<Index>,
+    // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a ResponseIndexInfo {
+    fn default() -> &'a ResponseIndexInfo {
+        <ResponseIndexInfo as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl ResponseIndexInfo {
+    pub fn new() -> ResponseIndexInfo {
+        ::std::default::Default::default()
+    }
+
+    // .db.Index index = 1;
+
+
+    pub fn get_index(&self) -> &Index {
+        self.index.as_ref().unwrap_or_else(|| <Index as ::protobuf::Message>::default_instance())
+    }
+    pub fn clear_index(&mut self) {
+        self.index.clear();
+    }
+
+    pub fn has_index(&self) -> bool {
+        self.index.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_index(&mut self, v: Index) {
+        self.index = ::protobuf::SingularPtrField::some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_index(&mut self) -> &mut Index {
+        if self.index.is_none() {
+            self.index.set_default();
+        }
+        self.index.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_index(&mut self) -> Index {
+        self.index.take().unwrap_or_else(|| Index::new())
+    }
+}
+
+impl ::protobuf::Message for ResponseIndexInfo {
+    fn is_initialized(&self) -> bool {
+        for v in &self.index {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.index)?;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if let Some(ref v) = self.index.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if let Some(ref v) = self.index.as_ref() {
+            os.write_tag(1, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> ResponseIndexInfo {
+        ResponseIndexInfo::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
+        descriptor.get(|| {
+            let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Index>>(
+                "index",
+                |m: &ResponseIndexInfo| { &m.index },
+                |m: &mut ResponseIndexInfo| { &mut m.index },
+            ));
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<ResponseIndexInfo>(
+                "ResponseIndexInfo",
+                fields,
+                file_descriptor_proto()
+            )
+        })
+    }
+
+    fn default_instance() -> &'static ResponseIndexInfo {
+        static instance: ::protobuf::rt::LazyV2<ResponseIndexInfo> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(ResponseIndexInfo::new)
+    }
+}
+
+impl ::protobuf::Clear for ResponseIndexInfo {
+    fn clear(&mut self) {
+        self.index.clear();
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for ResponseIndexInfo {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for ResponseIndexInfo {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
 #[derive(Clone,PartialEq,Eq,Debug,Hash)]
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub enum Engine {
@@ -916,12 +1752,23 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     eateTime\"0\n\tIndexList\x12#\n\x07indexes\x18\x01\x20\x03(\x0b2\t.db.In\
     dexR\x07indexes\"T\n\x10RequestIndexList\x12#\n\rdatabase_name\x18\x01\
     \x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tview_name\x18\x02\x20\x01(\tR\
-    \x08viewName*D\n\x06Engine\x12\x08\n\x04None\x10\0\x12\r\n\tIncrement\
-    \x10\x01\x12\x0c\n\x08Sequence\x10\x02\x12\x08\n\x04Disk\x10\x03\x12\t\n\
-    \x05Block\x10\x04*M\n\x07KeyType\x12\n\n\x06String\x10\0\x12\x08\n\x04UI\
-    nt\x10\x01\x12\x07\n\x03Int\x10\x02\x12\t\n\x05Float\x10\x03\x12\x08\n\
-    \x04Bool\x10\x04\x12\x0e\n\nNonsupport\x10\x05BK\n\x1dcn.aberic.george.p\
-    rotocols.dbB\nIndexProtoZ\x1egithub.com/george/protocols/dbb\x06proto3\
+    \x08viewName\"\xfc\x01\n\x12RequestIndexCreate\x12#\n\rdatabase_name\x18\
+    \x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tview_name\x18\x02\x20\x01(\t\
+    R\x08viewName\x12\x12\n\x04name\x18\x03\x20\x01(\tR\x04name\x12\"\n\x06e\
+    ngine\x18\x04\x20\x01(\x0e2\n.db.EngineR\x06engine\x12\x18\n\x07primary\
+    \x18\x05\x20\x01(\x08R\x07primary\x12\x16\n\x06unique\x18\x06\x20\x01(\
+    \x08R\x06unique\x12\x12\n\x04null\x18\x07\x20\x01(\x08R\x04null\x12&\n\
+    \x08key_type\x18\x08\x20\x01(\x0e2\x0b.db.KeyTypeR\x07keyType\"h\n\x10Re\
+    questIndexInfo\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\
+    \x12\x1b\n\tview_name\x18\x02\x20\x01(\tR\x08viewName\x12\x12\n\x04name\
+    \x18\x03\x20\x01(\tR\x04name\"4\n\x11ResponseIndexInfo\x12\x1f\n\x05inde\
+    x\x18\x01\x20\x01(\x0b2\t.db.IndexR\x05index*D\n\x06Engine\x12\x08\n\x04\
+    None\x10\0\x12\r\n\tIncrement\x10\x01\x12\x0c\n\x08Sequence\x10\x02\x12\
+    \x08\n\x04Disk\x10\x03\x12\t\n\x05Block\x10\x04*M\n\x07KeyType\x12\n\n\
+    \x06String\x10\0\x12\x08\n\x04UInt\x10\x01\x12\x07\n\x03Int\x10\x02\x12\
+    \t\n\x05Float\x10\x03\x12\x08\n\x04Bool\x10\x04\x12\x0e\n\nNonsupport\
+    \x10\x05BK\n\x1dcn.aberic.george.protocols.dbB\nIndexProtoZ\x1egithub.co\
+    m/george/protocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

@@ -12,9 +12,11 @@
  * limitations under the License.
  */
 pub mod database;
+pub mod disk;
 pub mod enums;
 pub mod index;
 pub mod master;
+pub mod memory;
 pub mod page;
 pub mod service;
 pub mod service_grpc;

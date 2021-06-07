@@ -26,6 +26,7 @@ use comm::Time;
 use ge::utils::enums::Tag;
 use ge::{Ge, GeFactory};
 
+use crate::task::engine::traits::TIndex;
 use crate::task::rich::Expectation;
 use crate::task::traits::TMaster;
 use crate::task::{Database, Master};
@@ -244,6 +245,13 @@ impl TMaster for Master {
         }
     }
 
+    fn view_map(
+        &self,
+        database_name: String,
+    ) -> GeorgeResult<Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>>> {
+        Ok(self.database(database_name)?.read().unwrap().view_map())
+    }
+
     fn view_create(
         &self,
         database_name: String,
@@ -251,14 +259,11 @@ impl TMaster for Master {
         comment: String,
         with_increment: bool,
     ) -> GeorgeResult<()> {
-        match self.database_map().read().unwrap().get(&database_name) {
-            Some(database_lock) => {
-                let database = database_lock.read().unwrap();
-                database.create_view(view_name, comment, with_increment)?;
-            }
-            None => return Err(Errs::database_no_exist_error()),
-        }
-        Ok(())
+        self.database(database_name)?.read().unwrap().create_view(
+            view_name,
+            comment,
+            with_increment,
+        )
     }
 
     fn view_modify(
@@ -268,13 +273,11 @@ impl TMaster for Master {
         view_new_name: String,
         comment: String,
     ) -> GeorgeResult<()> {
-        match self.database_map().read().unwrap().get(&database_name) {
-            Some(database_lock) => {
-                let database = database_lock.write().unwrap();
-                database.modify_view(view_name, view_new_name, comment)
-            }
-            None => return Err(Errs::database_no_exist_error()),
-        }
+        self.database(database_name)?.write().unwrap().modify_view(
+            view_name,
+            view_new_name,
+            comment,
+        )
     }
 
     fn view_archive(
@@ -302,17 +305,29 @@ impl TMaster for Master {
     }
 
     fn view_remove(&self, database_name: String, view_name: String) -> GeorgeResult<()> {
-        match self.database_map().read().unwrap().get(&database_name) {
-            Some(database) => database.read().unwrap().remove_view(view_name),
-            None => Err(Errs::database_no_exist_error()),
-        }
+        self.database(database_name)?
+            .read()
+            .unwrap()
+            .remove_view(view_name)
     }
 
     fn view(&self, database_name: String, view_name: String) -> GeorgeResult<Arc<RwLock<View>>> {
-        match self.database_map().read().unwrap().get(&database_name) {
-            Some(database) => database.read().unwrap().view(view_name),
-            None => Err(Errs::database_no_exist_error()),
-        }
+        self.database(database_name)?
+            .read()
+            .unwrap()
+            .view(view_name)
+    }
+
+    fn index_map(
+        &self,
+        database_name: String,
+        view_name: String,
+    ) -> GeorgeResult<Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>> {
+        Ok(self
+            .view(database_name, view_name)?
+            .read()
+            .unwrap()
+            .index_map())
     }
 
     fn index_create(
@@ -320,18 +335,29 @@ impl TMaster for Master {
         database_name: String,
         view_name: String,
         index_name: String,
-        index_type: Engine,
+        engine: Engine,
         key_type: KeyType,
         primary: bool,
         unique: bool,
         null: bool,
     ) -> GeorgeResult<()> {
-        let database = self.database(database_name)?;
-        let database_read = database.read().unwrap();
-        let view = database_read.view(view_name)?;
-        view.clone().read().unwrap().create_index(
-            view, index_name, index_type, key_type, primary, unique, null,
-        )
+        let view = self.view(database_name, view_name)?;
+        view.clone()
+            .read()
+            .unwrap()
+            .create_index(view, index_name, engine, key_type, primary, unique, null)
+    }
+
+    fn index(
+        &self,
+        database_name: String,
+        view_name: String,
+        name: String,
+    ) -> GeorgeResult<Arc<dyn TIndex>> {
+        self.view(database_name, view_name)?
+            .read()
+            .unwrap()
+            .index(&name)
     }
 
     fn put_disk(

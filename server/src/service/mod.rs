@@ -13,6 +13,8 @@
  */
 
 pub mod database;
+pub mod disk;
 pub mod index;
+pub mod memory;
 pub mod page;
 pub mod view;

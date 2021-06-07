@@ -12,9 +12,7 @@
  * limitations under the License.
  */
 
-use std::collections::hash_map::RandomState;
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use grpc::{
     Error, GrpcMessageError, Result, ServerHandlerContext, ServerRequestSingle,
@@ -46,8 +44,8 @@ impl ViewService for ViewServer {
     ) -> Result<()> {
         let mut list = ViewList::new();
         let mut views: RepeatedField<View> = RepeatedField::new();
-        match Comm::view_map(self.task.clone(), req.message.get_database_name()) {
-            Some(view_map) => {
+        match self.task.view_map(req.message.database_name) {
+            Ok(view_map) => {
                 let view_map_r = view_map.read().unwrap();
                 for view in view_map_r.values() {
                     let view_r = view.read().unwrap();
@@ -57,10 +55,10 @@ impl ViewService for ViewServer {
                     view_item.set_create_time(Comm::time_2_grpc_timestamp(view_r.create_time()));
                     views.push(view_item);
                 }
+                list.set_views(views);
             }
             _ => {}
         }
-        list.set_views(views);
         resp.finish(list)
     }
 
@@ -72,9 +70,10 @@ impl ViewService for ViewServer {
     ) -> Result<()> {
         let response = Response::new();
         match self.task.view_create(
-            req.message.get_database_name().to_string(),
-            req.message.get_name().to_string(),
-            req.message.get_comment().to_string(),
+            req.message.database_name,
+            req.message.name,
+            req.message.comment,
+            req.message.with_increment,
         ) {
             Ok(()) => resp.finish(response),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
@@ -113,7 +112,7 @@ impl ViewService for ViewServer {
     ) -> Result<()> {
         let mut info = ResponseViewInfo::new();
         let mut item = View::new();
-        match self.task.view(req.message.name, req.message.name) {
+        match self.task.view(req.message.database_name, req.message.name) {
             Ok(res) => {
                 let item_r = res.read().unwrap();
                 item.set_name(item_r.name());

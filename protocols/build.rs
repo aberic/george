@@ -49,6 +49,8 @@ fn init_db() {
     ps_block.push("db/page.proto");
     ps_block.push("db/service.proto");
     ps_block.push("db/view.proto");
+    ps_block.push("db/disk.proto");
+    ps_block.push("db/memory.proto");
     protoc_rust_grpc::Codegen::new()
         .out_dir("src/impls/db")
         .inputs(ps_block)

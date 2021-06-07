@@ -53,6 +53,41 @@ message RequestIndexList {
   string view_name = 2;
 }
 
+// 请求新建视图
+message RequestIndexCreate {
+  // 数据库名称
+  string database_name = 1;
+  // 视图名称
+  string view_name = 2;
+  // 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
+  string name = 3;
+  // 存储引擎类型
+  Engine engine = 4;
+  // 是否主键，主键也是唯一索引，即默认列表依赖索引
+  bool primary = 5;
+  // 是否唯一索引
+  bool  unique = 6;
+  // 是否允许为空
+  bool null = 7;
+  // 索引值类型
+  KeyType key_type = 8;
+}
+
+// 请求视图信息
+message RequestIndexInfo {
+  // 数据库名称
+  string database_name = 1;
+  // 视图名称
+  string view_name = 2;
+  // 名称
+  string name = 3;
+}
+
+// 请求视图信息
+message ResponseIndexInfo {
+  Index index = 1;
+}
+
 // 存储引擎类型
 enum Engine{
   // 占位

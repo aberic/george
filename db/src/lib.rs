@@ -21,6 +21,7 @@ use comm::errors::GeorgeResult;
 use comm::{Env, Time};
 use logs::LogModule;
 
+use crate::task::engine::traits::TIndex;
 use crate::task::rich::Expectation;
 use crate::task::traits::TMaster;
 use crate::task::{Database, Master, Page, View, GLOBAL_THREAD_POOL};
@@ -149,6 +150,13 @@ impl TMaster for Task {
         self.master.database(database_name)
     }
 
+    fn view_map(
+        &self,
+        database_name: String,
+    ) -> GeorgeResult<Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>>> {
+        self.master.view_map(database_name)
+    }
+
     fn view_create(
         &self,
         database_name: String,
@@ -198,12 +206,20 @@ impl TMaster for Task {
         self.master.view(database_name, view_name)
     }
 
+    fn index_map(
+        &self,
+        database_name: String,
+        view_name: String,
+    ) -> GeorgeResult<Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>> {
+        self.master.index_map(database_name, view_name)
+    }
+
     fn index_create(
         &self,
         database_name: String,
         view_name: String,
         index_name: String,
-        index_type: Engine,
+        engine: Engine,
         key_type: KeyType,
         primary: bool,
         unique: bool,
@@ -213,12 +229,21 @@ impl TMaster for Task {
             database_name,
             view_name,
             index_name,
-            index_type,
+            engine,
             key_type,
             primary,
             unique,
             null,
         )
+    }
+
+    fn index(
+        &self,
+        database_name: String,
+        view_name: String,
+        name: String,
+    ) -> GeorgeResult<Arc<dyn TIndex>> {
+        self.master.index(database_name, view_name, name)
     }
 
     fn put_disk(

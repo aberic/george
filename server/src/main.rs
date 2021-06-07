@@ -48,3 +48,8 @@ fn main() {
         thread::park();
     }
 }
+
+#[test]
+fn test() {
+    println!("test!");
+}

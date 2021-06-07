@@ -20,6 +20,7 @@ use serde::__private::fmt::Debug;
 use comm::errors::GeorgeResult;
 use comm::Time;
 
+use crate::task::engine::traits::TIndex;
 use crate::task::rich::Expectation;
 use crate::task::{Database, Page, View};
 use crate::utils::enums::{Engine, KeyType};
@@ -79,6 +80,12 @@ pub trait TMaster {
     /// 根据库name获取库
     fn database(&self, database_name: String) -> GeorgeResult<Arc<RwLock<Database>>>;
 
+    /// 视图集合
+    fn view_map(
+        &self,
+        database_name: String,
+    ) -> GeorgeResult<Arc<RwLock<HashMap<String, Arc<RwLock<View>>>>>>;
+
     /// 创建视图
     ///
     /// ##param
@@ -130,6 +137,13 @@ pub trait TMaster {
     /// 根据视图name获取视图
     fn view(&self, database_name: String, view_name: String) -> GeorgeResult<Arc<RwLock<View>>>;
 
+    /// 索引集合
+    fn index_map(
+        &self,
+        database_name: String,
+        view_name: String,
+    ) -> GeorgeResult<Arc<RwLock<HashMap<String, Arc<dyn TIndex>>>>>;
+
     /// 在指定库及视图中创建索引
     ///
     /// 该索引需要定义ID，此外索引所表达的字段组成内容也是必须的，并通过primary判断索引类型，具体传参参考如下定义：<p><p>
@@ -154,6 +168,14 @@ pub trait TMaster {
         unique: bool,
         null: bool,
     ) -> GeorgeResult<()>;
+
+    /// 根据索引name获取索引
+    fn index(
+        &self,
+        database_name: String,
+        view_name: String,
+        name: String,
+    ) -> GeorgeResult<Arc<dyn TIndex>>;
 
     /// 插入数据，如果存在则返回已存在<p><p>
     ///

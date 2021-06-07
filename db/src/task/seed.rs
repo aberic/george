@@ -44,7 +44,7 @@ pub struct IndexPolicy {
 }
 
 impl IndexPolicy {
-    pub fn create(
+    pub(crate) fn create(
         key: String,
         index_type: Engine,
         node_filepath: String,
@@ -59,7 +59,7 @@ impl IndexPolicy {
         }
     }
 
-    pub fn create_custom(
+    pub(crate) fn create_custom(
         key: String,
         node_filepath: String,
         seek: u64,
@@ -82,7 +82,7 @@ impl IndexPolicy {
 /// 封装方法函数
 impl Seed {
     /// 新建seed
-    pub fn create(form: Arc<dyn TForm>, key: String, value: Vec<u8>) -> Arc<RwLock<Seed>> {
+    pub(crate) fn create(form: Arc<dyn TForm>, key: String, value: Vec<u8>) -> Arc<RwLock<Seed>> {
         Arc::new(RwLock::new(Seed {
             real: DataReal {
                 increment: 0,
@@ -95,7 +95,7 @@ impl Seed {
     }
 
     /// 新建seed
-    pub fn create_cus(
+    pub(crate) fn create_cus(
         form: Arc<dyn TForm>,
         key: String,
         increment: u64,

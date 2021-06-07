@@ -24,6 +24,8 @@ import "db/page.proto";
 import "db/database.proto";
 import "db/view.proto";
 import "db/index.proto";
+import "db/disk.proto";
+import "db/memory.proto";
 
 service PageService {
   rpc pages(Request) returns (PageList);
@@ -53,6 +55,30 @@ service ViewService {
 
 service IndexService {
   rpc indexes(RequestIndexList) returns (IndexList);
+  rpc index_create(RequestIndexCreate) returns (Response);
+  rpc index_info(RequestIndexInfo) returns (ResponseIndexInfo);
+}
+
+service DiskService {
+  rpc put(RequestDiskInto) returns (Response);
+  rpc set(RequestDiskInto) returns (Response);
+  rpc get(RequestDiskOut) returns (ResponseDiskOut);
+  rpc get_by_index(RequestDiskIOut) returns (ResponseDiskOut);
+  rpc remove(RequestDiskRemove) returns (Response);
+  rpc select(RequestDiskSelect) returns (ResponseDiskSelect);
+  rpc delete(RequestDiskDelete) returns (ResponseDiskDelete);
+}
+
+service MemoryService {
+  rpc put(RequestMemoryInto) returns (Response);
+  rpc set(RequestMemoryInto) returns (Response);
+  rpc get(RequestMemoryOut) returns (ResponseMemoryOut);
+  rpc remove(RequestMemoryRemove) returns (Response);
+  rpc put_by_page(RequestMemoryPInto) returns (Response);
+  rpc set_by_page(RequestMemoryPInto) returns (Response);
+  rpc get_by_page(RequestMemoryPOut) returns (ResponseMemoryPOut);
+  rpc remove_by_page(RequestMemoryPRemove) returns (Response);
+
 }
 
 message Request {}

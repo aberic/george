@@ -110,7 +110,7 @@ impl View {
     }
 
     /// 获取索引
-    fn index(&self, index_name: &str) -> GeorgeResult<Arc<dyn TIndex>> {
+    pub fn index(&self, index_name: &str) -> GeorgeResult<Arc<dyn TIndex>> {
         match self.index_map().read().unwrap().get(index_name) {
             Some(idx) => Ok(idx.clone()),
             None => Err(Errs::string(format!("index {} doesn't found", index_name))),
@@ -224,7 +224,7 @@ impl View {
         &self,
         view: Arc<RwLock<View>>,
         index_name: String,
-        index_type: Engine,
+        engine: Engine,
         key_type: KeyType,
         primary: bool,
         unique: bool,
@@ -235,9 +235,7 @@ impl View {
         }
         self.index_map().write().unwrap().insert(
             index_name.clone(),
-            IndexDefault::create(
-                view, index_name, index_type, primary, unique, null, key_type,
-            )?,
+            IndexDefault::create(view, index_name, engine, primary, unique, null, key_type)?,
         );
         Ok(())
     }

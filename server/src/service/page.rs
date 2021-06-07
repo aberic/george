@@ -67,10 +67,10 @@ impl PageService for PageServer {
         resp: ServerResponseUnarySink<Response>,
     ) -> Result<()> {
         match self.task.page_create(
-            req.message.get_name().to_string(),
-            req.message.get_comment().to_string(),
-            req.message.get_size(),
-            req.message.get_period(),
+            req.message.name,
+            req.message.comment,
+            req.message.size,
+            req.message.period,
         ) {
             Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
