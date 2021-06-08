@@ -15,51 +15,30 @@
 use std::sync::Arc;
 use std::thread;
 
+use clap::{App, Arg, ArgMatches};
+
 use db::Task;
-use deploy::Init;
+use deploy::{Builder, Init};
 use protocols::impls::db::service_grpc::{
     DatabaseServiceServer, DiskServiceServer, IndexServiceServer, MemoryServiceServer,
     PageServiceServer, ViewServiceServer,
 };
 
+use crate::cmd::Command;
 use crate::service::database::DatabaseServer;
 use crate::service::disk::DiskServer;
 use crate::service::index::IndexServer;
 use crate::service::memory::MemoryServer;
 use crate::service::page::PageServer;
 use crate::service::view::ViewServer;
+use crate::service::Server;
 
+mod cmd;
 pub mod service;
 mod utils;
 
 fn main() {
-    let init = Init::from("server/src/example/conf.yaml").expect("Task new failed!");
-    let task = Arc::new(Task::new(init).expect("Task new failed!"));
-    let mut server = grpc::ServerBuilder::new_plain();
-    server.http.set_port(9000);
-    // server.http.set_cpu_pool_threads(4);
-    server.add_service(PageServiceServer::new_service_def(PageServer {
-        task: task.clone(),
-    }));
-    server.add_service(DatabaseServiceServer::new_service_def(DatabaseServer {
-        task: task.clone(),
-    }));
-    server.add_service(ViewServiceServer::new_service_def(ViewServer {
-        task: task.clone(),
-    }));
-    server.add_service(IndexServiceServer::new_service_def(IndexServer {
-        task: task.clone(),
-    }));
-    server.add_service(DiskServiceServer::new_service_def(DiskServer {
-        task: task.clone(),
-    }));
-    server.add_service(MemoryServiceServer::new_service_def(MemoryServer {
-        task: task.clone(),
-    }));
-    let _server = server.build().expect("Could not start server");
-    loop {
-        thread::park();
-    }
+    Command::init();
 }
 
 #[test]

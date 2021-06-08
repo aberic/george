@@ -19,3 +19,4 @@ deploy = { path = "../deploy", version = "0.1.0" }
 protocols = { path = "../protocols", version = "0.1.0" }
 grpc = "0.8.3"
 protobuf = "~2.18.2"
+clap = "~2.32"

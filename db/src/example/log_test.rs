@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020. Aberic - All Rights Reserved.
+ * Copyright (c) 2021. Aberic - All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ mod test {
         };
         module.set_log(vec![LogModule {
             name: "mod1".to_string(),
-            pkg: "logs::examples::log_test::log_test_mod".to_string(),
+            pkg: "logs::example::log_test::log_test_mod".to_string(),
             level: LevelFilter::Trace,
             additive: true,
             dir: "".to_string(),

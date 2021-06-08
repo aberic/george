@@ -46,6 +46,14 @@ impl Init {
         self.conf.log()?.log_dir
     }
 
+    pub fn port_unwrap(&self) -> u16 {
+        self.conf
+            .server()
+            .unwrap()
+            .port
+            .expect("It's not gonna happen!")
+    }
+
     pub fn db_unwrap(&self) -> ConfigDB {
         self.conf.db().expect("It's not gonna happen!")
     }

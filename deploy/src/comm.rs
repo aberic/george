@@ -12,35 +12,4 @@
  * limitations under the License.
  */
 
-use deploy::Builder;
-
-pub(crate) struct Config {
-    host: String,
-    port: u16,
-}
-
-impl Config {
-    pub(crate) fn new(host: String, port: u16) -> Self {
-        Config { host, port }
-    }
-
-    pub(crate) fn version(&self) -> &str {
-        Builder::version()
-    }
-
-    pub(crate) fn author(&self) -> &str {
-        Builder::author()
-    }
-
-    pub(crate) fn about(&self) -> &str {
-        Builder::author()
-    }
-
-    pub(crate) fn host(&self) -> &str {
-        self.host.as_str()
-    }
-
-    pub(crate) fn port(&self) -> u16 {
-        self.port
-    }
-}
+pub const DEPLOY_START_CONFIG_FILEPATH: &str = "server/src/example/conf.yaml";

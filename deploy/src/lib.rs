@@ -15,6 +15,8 @@
 use logs::LogModule;
 use serde::{Deserialize, Serialize};
 
+mod builder;
+pub mod comm;
 mod conf;
 mod conf_test;
 mod config;
@@ -22,6 +24,8 @@ mod db;
 mod init;
 mod log;
 mod server;
+
+pub struct Builder;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Init {

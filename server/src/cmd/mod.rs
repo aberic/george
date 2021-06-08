@@ -11,36 +11,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+mod command;
+mod restart;
+mod start;
+mod status;
+mod stop;
 
-use deploy::Builder;
-
-pub(crate) struct Config {
-    host: String,
-    port: u16,
-}
-
-impl Config {
-    pub(crate) fn new(host: String, port: u16) -> Self {
-        Config { host, port }
-    }
-
-    pub(crate) fn version(&self) -> &str {
-        Builder::version()
-    }
-
-    pub(crate) fn author(&self) -> &str {
-        Builder::author()
-    }
-
-    pub(crate) fn about(&self) -> &str {
-        Builder::author()
-    }
-
-    pub(crate) fn host(&self) -> &str {
-        self.host.as_str()
-    }
-
-    pub(crate) fn port(&self) -> u16 {
-        self.port
-    }
-}
+pub struct Command;
+pub struct Start;
+pub struct Restart;
+pub struct Stop;
+pub struct Status;

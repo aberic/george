@@ -12,9 +12,63 @@
  * limitations under the License.
  */
 
+use crate::service::database::DatabaseServer;
+use crate::service::disk::DiskServer;
+use crate::service::index::IndexServer;
+use crate::service::memory::MemoryServer;
+use crate::service::page::PageServer;
+use crate::service::view::ViewServer;
+use db::Task;
+use deploy::Init;
+use protocols::impls::db::service_grpc::{
+    DatabaseServiceServer, DiskServiceServer, IndexServiceServer, MemoryServiceServer,
+    PageServiceServer, ViewServiceServer,
+};
+use std::path::Path;
+use std::sync::Arc;
+use std::thread;
+
 pub mod database;
 pub mod disk;
 pub mod index;
 pub mod memory;
 pub mod page;
 pub mod view;
+
+pub struct Server;
+
+impl Server {
+    /// filepath e.g: `server/src/example/conf.yaml`
+    pub fn start<P: AsRef<Path>>(filepath: P) {
+        let init = Init::from(filepath).expect("Task new failed!");
+        let task = Arc::new(Task::new(init.clone()).expect("Task new failed!"));
+        let mut server = grpc::ServerBuilder::new_plain();
+        server.http.set_port(init.port_unwrap());
+        server.http.conf.no_delay = Some(true);
+        server.http.conf.thread_name = Some("george-server".to_string());
+        server.http.conf.reuse_port = Some(true);
+        // server.http.set_cpu_pool_threads(4);
+        server.add_service(PageServiceServer::new_service_def(PageServer {
+            task: task.clone(),
+        }));
+        server.add_service(DatabaseServiceServer::new_service_def(DatabaseServer {
+            task: task.clone(),
+        }));
+        server.add_service(ViewServiceServer::new_service_def(ViewServer {
+            task: task.clone(),
+        }));
+        server.add_service(IndexServiceServer::new_service_def(IndexServer {
+            task: task.clone(),
+        }));
+        server.add_service(DiskServiceServer::new_service_def(DiskServer {
+            task: task.clone(),
+        }));
+        server.add_service(MemoryServiceServer::new_service_def(MemoryServer {
+            task: task.clone(),
+        }));
+        let _server = server.build().expect("Could not start server");
+        loop {
+            thread::park();
+        }
+    }
+}

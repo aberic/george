@@ -26,7 +26,7 @@ use crate::task::{Database, Master, Page, View, GLOBAL_THREAD_POOL};
 use crate::utils::deploy::GLOBAL_CONFIG;
 use crate::utils::enums::{Engine, KeyType};
 
-mod examples;
+mod example;
 pub mod task;
 pub mod utils;
 
@@ -37,7 +37,7 @@ pub struct Task {
 
 impl Task {
     pub fn default() -> GeorgeResult<Task> {
-        let init = Init::from("src/examples/conf.yaml").unwrap();
+        let init = Init::from("src/example/conf.yaml").unwrap();
         GLOBAL_CONFIG.write().unwrap().init(init.db_unwrap());
         log::info!("config & log init success!");
         GLOBAL_THREAD_POOL.init();

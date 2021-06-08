@@ -12,35 +12,22 @@
  * limitations under the License.
  */
 
-use deploy::Builder;
+use crate::Builder;
 
-pub(crate) struct Config {
-    host: String,
-    port: u16,
-}
+const VERSION: &str = "0.1";
+const AUTHOR: &str = "aberic";
+const ABOUT: &str = "General Database";
 
-impl Config {
-    pub(crate) fn new(host: String, port: u16) -> Self {
-        Config { host, port }
+impl Builder {
+    pub fn version() -> &'static str {
+        VERSION
     }
 
-    pub(crate) fn version(&self) -> &str {
-        Builder::version()
+    pub fn author() -> &'static str {
+        AUTHOR
     }
 
-    pub(crate) fn author(&self) -> &str {
-        Builder::author()
-    }
-
-    pub(crate) fn about(&self) -> &str {
-        Builder::author()
-    }
-
-    pub(crate) fn host(&self) -> &str {
-        self.host.as_str()
-    }
-
-    pub(crate) fn port(&self) -> u16 {
-        self.port
+    pub fn about() -> &'static str {
+        ABOUT
     }
 }
