@@ -1,0 +1,6 @@
+config:
+  db:
+    data_dir: src/test/george # DataFileName Lily服务数据默认存储目录名
+    thread_count: 100 # ThreadCount 线程数
+  server:
+    port: 9219 # 服务端口号

@@ -15,18 +15,15 @@
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
-use log::LevelFilter;
-
 use comm::errors::GeorgeResult;
-use comm::{Env, Time};
-use logs::LogModule;
+use comm::Time;
+use deploy::{Init, LogPolicy};
 
 use crate::task::engine::traits::TIndex;
 use crate::task::rich::Expectation;
 use crate::task::traits::TMaster;
 use crate::task::{Database, Master, Page, View, GLOBAL_THREAD_POOL};
-use crate::utils::comm::GEORGE_DB_CONFIG;
-use crate::utils::deploy::{init_config, GLOBAL_CONFIG};
+use crate::utils::deploy::GLOBAL_CONFIG;
 use crate::utils::enums::{Engine, KeyType};
 
 mod examples;
@@ -39,53 +36,30 @@ pub struct Task {
 }
 
 impl Task {
-    pub fn new() -> Task {
-        init_config(Env::get(GEORGE_DB_CONFIG, "src/examples/conf.yaml"));
-        init_log();
+    pub fn default() -> GeorgeResult<Task> {
+        let init = Init::from("src/examples/conf.yaml").unwrap();
+        GLOBAL_CONFIG.write().unwrap().init(init.db_unwrap());
         log::info!("config & log init success!");
         GLOBAL_THREAD_POOL.init();
         log::info!("thread pool init success!");
-        Task {
-            master: Master::generate(),
-        }
+        Ok(Task {
+            master: Master::generate()?,
+        })
     }
-}
 
-fn init_log() {
-    let module_main = log_module_main();
-    let module_record = LogModule {
-        name: "exec".to_string(),
-        pkg: "db::task::master".to_string(),
-        level: LevelFilter::Info,
-        additive: true,
-        dir: format!("{}/{}", module_main.dir, "records"),
-        file_max_size: module_main.file_max_size,
-        file_max_count: module_main.file_max_count,
-    };
-    module_main.set_log(vec![module_record]);
-}
-
-fn log_module_main() -> LogModule {
-    let config = GLOBAL_CONFIG.read().unwrap();
-    LogModule {
-        name: String::from("db"),
-        pkg: "".to_string(),
-        level: log_level(config.log_level()),
-        additive: true,
-        dir: config.log_dir(),
-        file_max_size: config.log_file_max_size(),
-        file_max_count: config.log_file_max_count(),
-    }
-}
-
-fn log_level(level: String) -> LevelFilter {
-    match level.to_lowercase().as_str() {
-        "trace" => LevelFilter::Trace,
-        "debug" => LevelFilter::Debug,
-        "info" => LevelFilter::Info,
-        "warn" => LevelFilter::Warn,
-        "error" => LevelFilter::Error,
-        _ => LevelFilter::Off,
+    pub fn new(init: Init) -> GeorgeResult<Task> {
+        GLOBAL_CONFIG.write().unwrap().init(init.db_unwrap());
+        init.add_log_policy(LogPolicy::new(
+            format!("{}/{}", init.log_dir_unwrap(), "records"),
+            "exec".to_string(),
+            "db::task::master".to_string(),
+        ));
+        log::info!("config & log init success!");
+        GLOBAL_THREAD_POOL.init();
+        log::info!("thread pool init success!");
+        Ok(Task {
+            master: Master::generate()?,
+        })
     }
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020. Aberic - All Rights Reserved.
+ * Copyright (c) 2021. Aberic - All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -11,19 +11,3 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#[cfg(test)]
-mod test {
-    use crate::utils::deploy::GLOBAL_CONFIG;
-    use deploy::ConfigDB;
-
-    #[test]
-    fn init_test() {
-        let conf = GLOBAL_CONFIG
-            .write()
-            .unwrap()
-            .init(ConfigDB::new("db/src/test/george".to_string(), 100));
-        println!("conf = {:#?}", conf);
-        println!("GLOBAL_CONFIG = {:#?}", GLOBAL_CONFIG);
-    }
-}

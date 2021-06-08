@@ -12,22 +12,29 @@
  * limitations under the License.
  */
 
-use crate::service::database::DatabaseServer;
-use crate::service::index::IndexServer;
-use crate::service::page::PageServer;
-use crate::service::view::ViewServer;
-use db::Task;
-use protocols::impls::db::service_grpc::{
-    DatabaseServiceServer, IndexServiceServer, PageServiceServer, ViewServiceServer,
-};
 use std::sync::Arc;
 use std::thread;
+
+use db::Task;
+use deploy::Init;
+use protocols::impls::db::service_grpc::{
+    DatabaseServiceServer, DiskServiceServer, IndexServiceServer, MemoryServiceServer,
+    PageServiceServer, ViewServiceServer,
+};
+
+use crate::service::database::DatabaseServer;
+use crate::service::disk::DiskServer;
+use crate::service::index::IndexServer;
+use crate::service::memory::MemoryServer;
+use crate::service::page::PageServer;
+use crate::service::view::ViewServer;
 
 pub mod service;
 mod utils;
 
 fn main() {
-    let task = Arc::new(Task::new());
+    let init = Init::from("server/src/example/conf.yaml").expect("Task new failed!");
+    let task = Arc::new(Task::new(init).expect("Task new failed!"));
     let mut server = grpc::ServerBuilder::new_plain();
     server.http.set_port(9000);
     // server.http.set_cpu_pool_threads(4);
@@ -41,6 +48,12 @@ fn main() {
         task: task.clone(),
     }));
     server.add_service(IndexServiceServer::new_service_def(IndexServer {
+        task: task.clone(),
+    }));
+    server.add_service(DiskServiceServer::new_service_def(DiskServer {
+        task: task.clone(),
+    }));
+    server.add_service(MemoryServiceServer::new_service_def(MemoryServer {
         task: task.clone(),
     }));
     let _server = server.build().expect("Could not start server");

@@ -12,6 +12,8 @@
  * limitations under the License.
  */
 
+use serde::{Deserialize, Serialize};
+
 use crate::utils::enums::{Engine, KeyType};
 
 pub mod comm;
@@ -32,3 +34,14 @@ pub trait EnumHandler {
 }
 
 pub struct Paths;
+
+/// 服务基础配置信息，优先读取环境变量中的结果<p>
+///
+/// 该配置信息可通过指定路径的文件中进行读取，文件格式支持yaml
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct Config {
+    /// 服务数据存储路径
+    pub data_dir: String,
+    /// 限制打开文件描述符次数
+    pub thread_count: usize,
+}

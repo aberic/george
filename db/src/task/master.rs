@@ -22,9 +22,10 @@ use comm::errors::{Errs, GeorgeResult};
 use comm::io::dir::DirHandler;
 use comm::io::file::FilerHandler;
 use comm::io::{Dir, Filer};
-use comm::Time;
+use comm::strings::StringHandler;
+use comm::{Strings, Time};
 use ge::utils::enums::Tag;
-use ge::{Ge, GeFactory};
+use ge::GeFactory;
 
 use crate::task::engine::traits::TIndex;
 use crate::task::rich::Expectation;
@@ -50,27 +51,20 @@ impl Master {
     }
 
     /// 生成Master
-    pub(crate) fn generate() -> Self {
+    pub(crate) fn generate() -> GeorgeResult<Self> {
         // 尝试创建数据根目录，有则什么也不做，无则创建
         Dir::mk_uncheck(Paths::data_path()).expect("create data path failed!");
         // 启动文件
         let bootstrap_file_path = Paths::bootstrap_filepath();
         let init: bool;
         let duration: Duration;
-        let ge: Arc<dyn Ge>;
         if Filer::exist(bootstrap_file_path.clone()) {
-            ge = GeFactory {}
-                .recovery(Tag::Bootstrap, bootstrap_file_path.clone())
-                .expect("recovery ge failed!");
-            let description = ge
-                .description_content_bytes()
-                .expect("recovery description failed!");
-            duration = Duration::nanoseconds(
-                String::from_utf8(description)
-                    .expect("description bytes to string failed!")
-                    .parse::<i64>()
-                    .unwrap(),
-            );
+            let ge = GeFactory {}.recovery(Tag::Bootstrap, bootstrap_file_path.clone())?;
+            let description = ge.description_content_bytes()?;
+            match Strings::from_utf8(description)?.parse::<i64>() {
+                Ok(res) => duration = Duration::nanoseconds(res),
+                Err(err) => return Err(Errs::strs("duration parse i64", err)),
+            }
             init = false;
         } else {
             let now: NaiveDateTime = Local::now().naive_local();
@@ -83,9 +77,7 @@ impl Master {
                     .as_bytes()
                     .to_vec(),
             );
-            GeFactory {}
-                .create(Tag::Bootstrap, bootstrap_file_path.clone(), description)
-                .expect("create ge failed!");
+            GeFactory {}.create(Tag::Bootstrap, bootstrap_file_path.clone(), description)?;
             init = true;
         }
 
@@ -99,20 +91,20 @@ impl Master {
             default_page_name: DEFAULT_NAME.to_string(),
             pages: Arc::new(Default::default()),
             databases: Default::default(),
-            create_time: Time::from(duration),
+            create_time,
         };
         if init {
             log::info!("initialize new data");
-            master.init().expect("initialize failed!");
+            master.init()?;
         } else {
             log::info!("recovery exist data from bootstrap");
             log::debug!(
                 "recovery exist data from bootstrap file {}",
                 bootstrap_file_path
             );
-            master.recovery().expect("recovery failed!");
+            master.recovery()?;
         }
-        master
+        Ok(master)
     }
 
     fn exist_database(&self, database_name: String) -> bool {

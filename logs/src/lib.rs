@@ -32,6 +32,7 @@ mod examples;
 pub mod macros;
 mod macros_test;
 
+#[derive(Debug, PartialEq, Clone)]
 pub struct LogModule {
     /// 输出日志模块名称
     pub name: String,

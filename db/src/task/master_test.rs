@@ -39,7 +39,7 @@ mod test {
 
             #[test]
             fn test() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 // database_create_test
                 let database_name = "database_create_base_test";
                 create_database(task.clone(), database_name);
@@ -100,14 +100,14 @@ mod test {
 
             #[test]
             fn database_create_test() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 create_database(task.clone(), "database_create_test");
                 database_map(task);
             }
 
             #[test]
             fn database_modify_test() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 create_database(task.clone(), "database_modify_test1");
                 modify_database(
                     task.clone(),
@@ -119,7 +119,7 @@ mod test {
 
             #[test]
             fn view_create_test() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 create_view_with_increment(
                     task.clone(),
                     "database_view_create_test",
@@ -130,7 +130,7 @@ mod test {
 
             #[test]
             fn view_modify_test() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 create_view_with_increment(
                     task.clone(),
                     "database_view_modify_test",
@@ -147,7 +147,7 @@ mod test {
 
             #[test]
             fn view_archive_test() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 create_view_with_increment(
                     task.clone(),
                     "database_view_archive_test",
@@ -164,7 +164,7 @@ mod test {
 
             #[test]
             fn view_record_test() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 view_record(
                     task.clone(),
                     "database_view_archive_test",
@@ -175,7 +175,7 @@ mod test {
 
             #[test]
             fn database_map_test() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 database_map(task);
             }
         }
@@ -190,7 +190,7 @@ mod test {
 
             #[test]
             fn memory_test1() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let key1 = "a";
                 let key2 = "b";
                 let key3 = "c";
@@ -210,7 +210,7 @@ mod test {
 
             #[test]
             fn memory_test2() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let page_name = "page_test2";
                 create_page(task.clone(), page_name);
                 let key1 = "a";
@@ -245,7 +245,7 @@ mod test {
 
             #[test]
             fn index_with_sequence() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let database_name = "database_index_sequence_test";
                 let view_name = "view_index_test";
                 let index_name = "age";
@@ -293,7 +293,7 @@ mod test {
 
             #[test]
             fn index_with_increment() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let database_name = "database_index_test";
                 let view_name = "view_index_test";
                 create_view_with_increment(task.clone(), database_name, view_name);
@@ -333,7 +333,7 @@ mod test {
 
             #[test]
             fn put_set_get_test() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let database_name = "database_disk_base_test";
                 let view_name = "view_disk_base_test";
                 create_view_with_increment(task.clone(), database_name, view_name);
@@ -379,7 +379,7 @@ mod test {
 
             #[test]
             fn put_get_1000_test() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let database_name = "database_disk_base_test";
                 let view_name = "view_disk_base_test";
                 let mut pos = 1;
@@ -416,7 +416,7 @@ mod test {
 
             #[test]
             fn increment_test() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let database_name = "database_increment_base_test";
                 let view_name = "view_increment_base_test";
                 create_view_with_increment(task.clone(), database_name, view_name);
@@ -451,7 +451,7 @@ mod test {
 
             #[test]
             fn increment_test_after() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let database_name = "database_increment_base_test";
                 let view_name = "view_increment_base_test";
                 put(
@@ -530,7 +530,7 @@ mod test {
 
             #[test]
             fn increment_test_delete() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let database_name = "database_increment_base_test";
                 let view_name = "view_increment_base_test";
                 del(task.clone(), database_name, view_name, "2", 2);
@@ -620,7 +620,7 @@ mod test {
 
             #[test]
             fn select_disk_prepare() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let database_name = "database_select_base_test";
                 let view_name = "view_base_test";
                 let index_name_disk = "age";
@@ -667,7 +667,7 @@ mod test {
 
             #[test]
             fn select_disk_get_by_index() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let database_name = "database_select_base_test";
                 let view_name = "view_base_test";
                 let index_name = "age";
@@ -709,7 +709,7 @@ mod test {
 
             #[test]
             fn select_sequence_get_by_index() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let database_name = "database_select_base_test";
                 let view_name = "view_base_test";
                 let index_name = "height";
@@ -751,7 +751,7 @@ mod test {
 
             #[test]
             fn select_increment_get_by_index() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let database_name = "database_select_base_test";
                 let view_name = "view_base_test";
                 get_by_index(
@@ -806,7 +806,7 @@ mod test {
 
             #[test]
             fn select_increment_left() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let database_name = "database_select_base_test";
                 let view_name = "view_base_test";
                 let cond_str0 = r#"
@@ -836,7 +836,7 @@ mod test {
 
             #[test]
             fn select_disk_left() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let database_name = "database_select_base_test";
                 let view_name = "view_base_test";
                 let cond_str0 = r#"
@@ -876,7 +876,7 @@ mod test {
 
             #[test]
             fn select_disk_right() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let database_name = "database_select_base_test";
                 let view_name = "view_base_test";
                 let cond_str0 = r#"
@@ -916,7 +916,7 @@ mod test {
 
             #[test]
             fn select_sequence_left() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let database_name = "database_select_base_test";
                 let view_name = "view_base_test";
                 let cond_str0 = r#"
@@ -956,7 +956,7 @@ mod test {
 
             #[test]
             fn select_sequence_right() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let database_name = "database_select_base_test";
                 let view_name = "view_base_test";
                 let cond_str0 = r#"
@@ -996,7 +996,7 @@ mod test {
 
             #[test]
             fn select_delete_increment() {
-                let task = Task::new();
+                let task = Task::default().unwrap();
                 let database_name = "database_select_base_test";
                 let view_name = "view_base_test";
                 let cond_str0 = r#"

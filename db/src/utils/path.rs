@@ -104,30 +104,24 @@ impl Paths {
 
 /// 数据根目录 /var/lib/georgedb/data
 fn data_path() -> String {
-    format!("{}/data", GLOBAL_CONFIG.read().unwrap().data_dir.clone(),)
+    format!("{}/data", GLOBAL_CONFIG.read().unwrap().data_dir(),)
 }
 
 /// 缓存页根目录 /var/lib/georgedb/data/page
 fn data_page_path() -> String {
-    format!(
-        "{}/data/page",
-        GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
-    )
+    format!("{}/data/page", GLOBAL_CONFIG.read().unwrap().data_dir(),)
 }
 
 /// 库根目录 /var/lib/georgedb/data/database
 fn data_database_path() -> String {
-    format!(
-        "{}/data/database",
-        GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
-    )
+    format!("{}/data/database", GLOBAL_CONFIG.read().unwrap().data_dir(),)
 }
 
 /// 缓存页根目录 /var/lib/georgedb/data/page/page_name
 fn page_path(page_name: String) -> String {
     format!(
         "{}/data/page/{}",
-        GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
+        GLOBAL_CONFIG.read().unwrap().data_dir(),
         page_name
     )
 }
@@ -136,7 +130,7 @@ fn page_path(page_name: String) -> String {
 fn database_path(database_name: String) -> String {
     format!(
         "{}/data/database/{}",
-        GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
+        GLOBAL_CONFIG.read().unwrap().data_dir(),
         database_name
     )
 }
@@ -145,7 +139,7 @@ fn database_path(database_name: String) -> String {
 fn view_path(database_name: String, view_name: String) -> String {
     format!(
         "{}/data/database/{}/{}",
-        GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
+        GLOBAL_CONFIG.read().unwrap().data_dir(),
         database_name,
         view_name
     )
@@ -155,7 +149,7 @@ fn view_path(database_name: String, view_name: String) -> String {
 fn index_path(database_name: String, view_name: String, index_name: String) -> String {
     format!(
         "{}/data/database/{}/{}/{}",
-        GLOBAL_CONFIG.read().unwrap().data_dir.clone(),
+        GLOBAL_CONFIG.read().unwrap().data_dir(),
         database_name,
         view_name,
         index_name

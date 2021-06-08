@@ -41,8 +41,7 @@ pub mod traits;
 mod view;
 
 pub(super) static GLOBAL_THREAD_POOL: Lazy<ThreadPool> = Lazy::new(|| {
-    let config = GLOBAL_CONFIG.read().unwrap();
-    let worker_threads = config.thread_count;
+    let worker_threads = GLOBAL_CONFIG.read().unwrap().thread_count();
     log::info!("thread pool intent to start {} threads", worker_threads);
     ThreadPool::new(worker_threads).expect("thread pool new failed!")
 });
