@@ -128,7 +128,7 @@ impl LogModule {
             .appenders(appenders)
             .loggers(loggers)
             .build(root.build(self.level()))
-            .unwrap();
+            .expect("config build failed!");
     }
 
     /// 初始化日志
@@ -143,10 +143,9 @@ impl LogModule {
     ///
     /// log_level 日志级别(debug/info/warn/Error/panic/fatal)
     pub fn set_log(&self, modules: Vec<LogModule>) {
-        // log4rs::init_file("src/log4rs.yaml", Default::default()).unwrap();
         GLOBAL_LOG
             .write()
-            .unwrap()
+            .expect("global log write failed!")
             .handle
             .set_config(self.config(modules))
     }
@@ -169,10 +168,10 @@ pub static GLOBAL_LOG: Lazy<RwLock<LogHandle>> = Lazy::new(|| {
         file_max_count: 0,
     };
     let handle = LogHandle {
-        handle: log4rs::init_config(module.config_default()).unwrap(),
+        handle: log4rs::init_config(module.config_default()).expect("log init config failed!"),
         // production: false,
     };
-    fs::remove_dir_all("./wonder_log_test_rm").unwrap();
+    fs::remove_dir_all("./wonder_log_test_rm").expect("fs remove dir failed!");
     RwLock::new(handle)
 });
 
@@ -188,7 +187,7 @@ pub fn set_log_test() {
     };
     GLOBAL_LOG
         .write()
-        .unwrap()
+        .expect("global log write failed!")
         .handle
         .set_config(module.config(vec![]))
 }
@@ -213,9 +212,9 @@ fn rolling_appender(
                             &*format!("{}/{}{}", dir, module_name, "-log-{}.log"),
                             file_max_count,
                         )
-                        .unwrap(),
+                        .expect("fixed window roller build failed!"),
                 ),
             )),
         )
-        .unwrap()
+        .expect("rolling file appender build failed!")
 }

@@ -46,6 +46,7 @@ mod test {
             format!("{}/{}", init.log_main.dir, "records"),
             "test".to_string(),
             "deploy".to_string(),
+            true,
         ));
         log::debug!("test");
         log::info!("test");

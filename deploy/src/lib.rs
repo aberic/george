@@ -74,6 +74,8 @@ pub struct LogPolicy {
     name: String,
     /// 日志截取包名，如：`db::task::master`
     pkg: String,
+    /// 是否在主日志文件中同步记录
+    additive: bool,
 }
 
 ///  数据库配置信息，优先读取环境变量中的结果<p>

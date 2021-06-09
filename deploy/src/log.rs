@@ -53,7 +53,13 @@ impl LogPolicy {
     /// * dir 日志文件目录
     /// * name 日志文件名
     /// * pkg 日志截取包名，如：`db::task::master`
-    pub fn new(dir: String, name: String, pkg: String) -> LogPolicy {
-        LogPolicy { dir, name, pkg }
+    /// * additive 是否在主日志文件中同步记录
+    pub fn new(dir: String, name: String, pkg: String, additive: bool) -> LogPolicy {
+        LogPolicy {
+            dir,
+            name,
+            pkg,
+            additive,
+        }
     }
 }

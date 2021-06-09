@@ -75,7 +75,7 @@ fn add_log(log_main: LogModule, log_policy: LogPolicy) {
         name: log_policy.name,
         pkg: log_policy.pkg,
         level: log_main.level,
-        additive: log_main.additive,
+        additive: log_policy.additive,
         dir: log_policy.dir,
         file_max_size: log_main.file_max_size,
         file_max_count: log_main.file_max_count,

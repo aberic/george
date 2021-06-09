@@ -35,9 +35,9 @@ impl Command {
 
 fn match_value(matches: ArgMatches) {
     if matches.is_present("start") {
-        Start::matches(matches)
+        Start::matches(matches.subcommand_matches("start").unwrap())
     } else if matches.is_present("restart") {
-        Restart::matches(matches)
+        Restart::matches(matches.subcommand_matches("restart").unwrap())
     } else if matches.is_present("stop") {
         Stop::matches()
     } else if matches.is_present("status") {

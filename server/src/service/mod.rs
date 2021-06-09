@@ -19,7 +19,7 @@ use crate::service::memory::MemoryServer;
 use crate::service::page::PageServer;
 use crate::service::view::ViewServer;
 use db::Task;
-use deploy::Init;
+use deploy::{Init, LogPolicy};
 use protocols::impls::db::service_grpc::{
     DatabaseServiceServer, DiskServiceServer, IndexServiceServer, MemoryServiceServer,
     PageServiceServer, ViewServiceServer,
@@ -40,8 +40,17 @@ pub struct Server;
 impl Server {
     /// filepath e.g: `server/src/example/conf.yaml`
     pub fn start<P: AsRef<Path>>(filepath: P) {
-        let init = Init::from(filepath).expect("Task new failed!");
-        let task = Arc::new(Task::new(init.clone()).expect("Task new failed!"));
+        let init: Init;
+        match Init::from(filepath) {
+            Ok(res) => init = res,
+            Err(err) => panic!("Init from failed! {}", err),
+        }
+        log_policy(init.clone());
+        let task: Arc<Task>;
+        match Task::new(init.clone()) {
+            Ok(res) => task = Arc::new(res),
+            Err(err) => panic!("Task new failed! {}", err),
+        }
         let mut server = grpc::ServerBuilder::new_plain();
         server.http.set_port(init.port_unwrap());
         server.http.conf.no_delay = Some(true);
@@ -71,4 +80,25 @@ impl Server {
             thread::park();
         }
     }
+}
+
+fn log_policy(init: Init) {
+    init.add_log_policy(LogPolicy::new(
+        format!("{}/net", init.log_dir_unwrap()),
+        "http".to_string(),
+        "httpbis::server".to_string(),
+        false,
+    ));
+    init.add_log_policy(LogPolicy::new(
+        format!("{}/net", init.log_dir_unwrap()),
+        "http".to_string(),
+        "httpbis::server::handler_paths".to_string(),
+        false,
+    ));
+    init.add_log_policy(LogPolicy::new(
+        format!("{}/net", init.log_dir_unwrap()),
+        "http".to_string(),
+        "httpbis::server::conn".to_string(),
+        false,
+    ));
 }

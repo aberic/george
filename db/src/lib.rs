@@ -53,6 +53,7 @@ impl Task {
             format!("{}/{}", init.log_dir_unwrap(), "records"),
             "exec".to_string(),
             "db::task::master".to_string(),
+            true,
         ));
         log::info!("config & log init success!");
         GLOBAL_THREAD_POOL.init();

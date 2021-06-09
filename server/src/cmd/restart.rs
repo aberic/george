@@ -30,7 +30,7 @@ impl Restart {
             )
     }
 
-    pub fn matches(matches: ArgMatches) {
+    pub fn matches(matches: &ArgMatches) {
         if let Some(res) = matches.value_of("file") {
             println!("restart file out: {}", res);
         } else {
