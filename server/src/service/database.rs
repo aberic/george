@@ -15,7 +15,7 @@
 use std::sync::Arc;
 
 use grpc::{
-    Error, GrpcMessageError, Result, ServerHandlerContext, ServerRequestSingle,
+    Error, GrpcMessageError, GrpcStatus, Result, ServerHandlerContext, ServerRequestSingle,
     ServerResponseUnarySink,
 };
 use protobuf::RepeatedField;
@@ -26,10 +26,11 @@ use protocols::impls::db::database::{
     Database, DatabaseList, RequestDatabaseCreate, RequestDatabaseInfo, RequestDatabaseModify,
     RequestDatabaseRemove, ResponseDatabaseInfo,
 };
-use protocols::impls::db::service::{Request, Response};
+use protocols::impls::db::service::Request;
 use protocols::impls::db::service_grpc::DatabaseService;
 
 use crate::utils::Comm;
+use protocols::impls::db::response::Response;
 
 pub(crate) struct DatabaseServer {
     pub(crate) task: Arc<Task>,
@@ -71,7 +72,7 @@ impl DatabaseService for DatabaseServer {
         ) {
             Ok(()) => resp.finish(response),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -90,7 +91,7 @@ impl DatabaseService for DatabaseServer {
         {
             Ok(()) => resp.finish(response),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -114,7 +115,7 @@ impl DatabaseService for DatabaseServer {
                 resp.finish(info)
             }
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -129,7 +130,7 @@ impl DatabaseService for DatabaseServer {
         match self.task.database_remove(req.message.name) {
             Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }

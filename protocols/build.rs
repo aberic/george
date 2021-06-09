@@ -43,6 +43,7 @@ fn init_chain() {
 
 fn init_db() {
     let mut ps_block: Vec<&str> = vec![];
+    ps_block.push("db/response.proto");
     ps_block.push("db/user.proto");
     ps_block.push("db/database.proto");
     ps_block.push("db/index.proto");
@@ -52,6 +53,7 @@ fn init_db() {
     ps_block.push("db/view.proto");
     ps_block.push("db/disk.proto");
     ps_block.push("db/memory.proto");
+    ps_block.push("db/parse.proto");
     protoc_rust_grpc::Codegen::new()
         .out_dir("src/impls/db")
         .inputs(ps_block)

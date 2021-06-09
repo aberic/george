@@ -15,7 +15,7 @@
 use std::sync::Arc;
 
 use grpc::{
-    Error, GrpcMessageError, Result, ServerHandlerContext, ServerRequestSingle,
+    Error, GrpcMessageError, GrpcStatus, Result, ServerHandlerContext, ServerRequestSingle,
     ServerResponseUnarySink,
 };
 use protobuf::RepeatedField;
@@ -26,10 +26,10 @@ use protocols::impls::db::index::{
     Engine, Index, IndexList, KeyType, RequestIndexCreate, RequestIndexInfo, RequestIndexList,
     ResponseIndexInfo,
 };
+use protocols::impls::db::response::Response;
 use protocols::impls::db::service_grpc::IndexService;
 
 use crate::utils::Comm;
-use protocols::impls::db::service::Response;
 
 pub(crate) struct IndexServer {
     pub(crate) task: Arc<Task>,
@@ -87,7 +87,7 @@ impl IndexService for IndexServer {
         ) {
             Ok(()) => resp.finish(response),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -118,7 +118,7 @@ impl IndexService for IndexServer {
                 resp.finish(info)
             }
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }

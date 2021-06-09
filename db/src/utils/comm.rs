@@ -22,7 +22,8 @@ use comm::Json;
 
 use crate::utils::enums::KeyType;
 
-pub const DEFAULT_NAME: &str = "sys";
+pub const DATABASE_SYS_NAME: &str = "sys";
+pub const VIEW_USER_NAME: &str = "user";
 pub const DEFAULT_COMMENT: &str = "system default";
 
 /// 默认KV存储索引

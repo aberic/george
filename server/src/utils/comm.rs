@@ -17,6 +17,7 @@ use protobuf::well_known_types::Timestamp;
 use comm::Time;
 
 use crate::utils::Comm;
+use protocols::impls::db;
 
 impl Comm {
     pub fn time_2_grpc_timestamp(time: Time) -> Timestamp {
@@ -24,5 +25,18 @@ impl Comm {
         timestamp.set_seconds(time.sec());
         timestamp.set_nanos(time.nanos());
         timestamp
+    }
+
+    pub fn success_db() -> db::response::Response {
+        let mut response = db::response::Response::new();
+        response.set_status(db::response::Status::Ok);
+        response
+    }
+
+    pub fn failed_db_custom(msg: String) -> db::response::Response {
+        let mut response = db::response::Response::new();
+        response.set_status(db::response::Status::Custom);
+        response.set_msg_err(msg);
+        response
     }
 }

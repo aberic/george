@@ -11,3 +11,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+use crate::service::{Parse, User};
+
+mod command;
+pub mod config;
+mod options;
+mod scan;
+
+pub(crate) struct Command;
+pub(crate) struct Options;
+pub(crate) struct Scan;
+
+pub(crate) struct Config {
+    user: User,
+    parse: Parse,
+}

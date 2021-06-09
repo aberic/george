@@ -12,28 +12,10 @@
  * limitations under the License.
  */
 
-use std::sync::Arc;
-use std::thread;
-
-use clap::{App, Arg, ArgMatches};
-
-use db::Task;
-use deploy::{Builder, Init};
-use protocols::impls::db::service_grpc::{
-    DatabaseServiceServer, DiskServiceServer, IndexServiceServer, MemoryServiceServer,
-    PageServiceServer, ViewServiceServer,
-};
-
 use crate::cmd::Command;
-use crate::service::database::DatabaseServer;
-use crate::service::disk::DiskServer;
-use crate::service::index::IndexServer;
-use crate::service::memory::MemoryServer;
-use crate::service::page::PageServer;
-use crate::service::view::ViewServer;
-use crate::service::Server;
 
 mod cmd;
+mod parse;
 pub mod service;
 mod utils;
 

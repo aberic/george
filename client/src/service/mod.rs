@@ -11,3 +11,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+use protocols::impls::db::service_grpc::{ParseServiceClient, UserServiceClient};
+
+mod parse;
+mod user;
+
+pub(crate) struct User {
+    client: UserServiceClient,
+}
+
+pub(crate) struct Parse {
+    client: ParseServiceClient,
+}

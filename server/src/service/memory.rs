@@ -15,14 +15,14 @@
 use db::task::traits::TMaster;
 use db::Task;
 use grpc::{
-    Error, GrpcMessageError, Result, ServerHandlerContext, ServerRequestSingle,
+    Error, GrpcMessageError, GrpcStatus, Result, ServerHandlerContext, ServerRequestSingle,
     ServerResponseUnarySink,
 };
 use protocols::impls::db::memory::{
     RequestMemoryInto, RequestMemoryOut, RequestMemoryPInto, RequestMemoryPOut,
     RequestMemoryPRemove, RequestMemoryRemove, ResponseMemoryOut, ResponseMemoryPOut,
 };
-use protocols::impls::db::service::Response;
+use protocols::impls::db::response::Response;
 use protocols::impls::db::service_grpc::MemoryService;
 use std::sync::Arc;
 
@@ -43,7 +43,7 @@ impl MemoryService for MemoryServer {
         {
             Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -61,7 +61,7 @@ impl MemoryService for MemoryServer {
         {
             Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -80,7 +80,7 @@ impl MemoryService for MemoryServer {
                 resp.finish(response)
             }
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -95,7 +95,7 @@ impl MemoryService for MemoryServer {
         match self.task.remove_memory_default(req.message.key) {
             Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -113,7 +113,7 @@ impl MemoryService for MemoryServer {
         {
             Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -131,7 +131,7 @@ impl MemoryService for MemoryServer {
         {
             Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -150,7 +150,7 @@ impl MemoryService for MemoryServer {
                 resp.finish(response)
             }
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -168,7 +168,7 @@ impl MemoryService for MemoryServer {
         {
             Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }

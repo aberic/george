@@ -15,14 +15,14 @@
 use std::sync::Arc;
 
 use grpc::{
-    Error, GrpcMessageError, Result, ServerHandlerContext, ServerRequestSingle,
+    Error, GrpcMessageError, GrpcStatus, Result, ServerHandlerContext, ServerRequestSingle,
     ServerResponseUnarySink,
 };
 use protobuf::RepeatedField;
 
 use db::task::traits::{TForm, TMaster};
 use db::Task;
-use protocols::impls::db::service::Response;
+use protocols::impls::db::response::Response;
 use protocols::impls::db::service_grpc::ViewService;
 use protocols::impls::db::view::{
     RequestViewArchive, RequestViewCreate, RequestViewInfo, RequestViewList, RequestViewModify,
@@ -77,7 +77,7 @@ impl ViewService for ViewServer {
         ) {
             Ok(()) => resp.finish(response),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -98,7 +98,7 @@ impl ViewService for ViewServer {
         ) {
             Ok(()) => resp.finish(response),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -122,7 +122,7 @@ impl ViewService for ViewServer {
                 resp.finish(info)
             }
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -140,7 +140,7 @@ impl ViewService for ViewServer {
         {
             Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -159,7 +159,7 @@ impl ViewService for ViewServer {
         ) {
             Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -183,7 +183,7 @@ impl ViewService for ViewServer {
                 resp.finish(response)
             }
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }

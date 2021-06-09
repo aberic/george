@@ -11,3 +11,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+use crate::cmd::{Config, Scan};
+use crate::service::{Parse, User};
+use comm::errors::GeorgeResult;
+
+impl Config {
+    pub(crate) fn new(remote: &str, port: u16) -> Self {
+        let user = User::new(remote, port);
+        let parse = Parse::new(remote, port);
+        Config { user, parse }
+    }
+
+    pub(crate) fn login(&self, name: String, pass: String) -> GeorgeResult<()> {
+        self.user.login(name, pass)
+    }
+
+    pub(crate) fn scan(&self) {
+        Scan::run(&self.parse)
+    }
+}

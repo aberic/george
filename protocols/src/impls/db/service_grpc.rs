@@ -22,7 +22,7 @@
 // server interface
 
 pub trait UserService {
-    fn login(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::user::RequestLogin>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn login(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::user::RequestLogin>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 }
 
 // client
@@ -40,7 +40,7 @@ impl ::grpc::ClientStub for UserServiceClient {
 }
 
 impl UserServiceClient {
-    pub fn login(&self, o: ::grpc::RequestOptions, req: super::user::RequestLogin) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn login(&self, o: ::grpc::RequestOptions, req: super::user::RequestLogin) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.UserService/login"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -80,16 +80,75 @@ impl UserServiceServer {
 
 // server interface
 
+pub trait ParseService {
+    fn parse(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::parse::RequestParse>, resp: ::grpc::ServerResponseUnarySink<super::parse::ResponseParse>) -> ::grpc::Result<()>;
+}
+
+// client
+
+pub struct ParseServiceClient {
+    grpc_client: ::std::sync::Arc<::grpc::Client>,
+}
+
+impl ::grpc::ClientStub for ParseServiceClient {
+    fn with_client(grpc_client: ::std::sync::Arc<::grpc::Client>) -> Self {
+        ParseServiceClient {
+            grpc_client: grpc_client,
+        }
+    }
+}
+
+impl ParseServiceClient {
+    pub fn parse(&self, o: ::grpc::RequestOptions, req: super::parse::RequestParse) -> ::grpc::SingleResponse<super::parse::ResponseParse> {
+        let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+            name: ::grpc::rt::StringOrStatic::Static("/db.ParseService/parse"),
+            streaming: ::grpc::rt::GrpcStreaming::Unary,
+            req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+            resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+        });
+        self.grpc_client.call_unary(o, req, descriptor)
+    }
+}
+
+// server
+
+pub struct ParseServiceServer;
+
+
+impl ParseServiceServer {
+    pub fn new_service_def<H : ParseService + 'static + Sync + Send + 'static>(handler: H) -> ::grpc::rt::ServerServiceDefinition {
+        let handler_arc = ::std::sync::Arc::new(handler);
+        ::grpc::rt::ServerServiceDefinition::new("/db.ParseService",
+            vec![
+                ::grpc::rt::ServerMethod::new(
+                    ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+                        name: ::grpc::rt::StringOrStatic::Static("/db.ParseService/parse"),
+                        streaming: ::grpc::rt::GrpcStreaming::Unary,
+                        req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+                        resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+                    }),
+                    {
+                        let handler_copy = handler_arc.clone();
+                        ::grpc::rt::MethodHandlerUnary::new(move |ctx, req, resp| (*handler_copy).parse(ctx, req, resp))
+                    },
+                ),
+            ],
+        )
+    }
+}
+
+// server interface
+
 pub trait PageService {
     fn pages(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::service::Request>, resp: ::grpc::ServerResponseUnarySink<super::page::PageList>) -> ::grpc::Result<()>;
 
-    fn page_create(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::page::RequestPageCreate>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn page_create(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::page::RequestPageCreate>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
-    fn page_modify(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::page::RequestPageModify>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn page_modify(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::page::RequestPageModify>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
     fn page_info(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::page::RequestPageInfo>, resp: ::grpc::ServerResponseUnarySink<super::page::ResponsePageInfo>) -> ::grpc::Result<()>;
 
-    fn page_remove(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::page::RequestPageRemove>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn page_remove(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::page::RequestPageRemove>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 }
 
 // client
@@ -117,7 +176,7 @@ impl PageServiceClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn page_create(&self, o: ::grpc::RequestOptions, req: super::page::RequestPageCreate) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn page_create(&self, o: ::grpc::RequestOptions, req: super::page::RequestPageCreate) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.PageService/page_create"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -127,7 +186,7 @@ impl PageServiceClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn page_modify(&self, o: ::grpc::RequestOptions, req: super::page::RequestPageModify) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn page_modify(&self, o: ::grpc::RequestOptions, req: super::page::RequestPageModify) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.PageService/page_modify"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -147,7 +206,7 @@ impl PageServiceClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn page_remove(&self, o: ::grpc::RequestOptions, req: super::page::RequestPageRemove) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn page_remove(&self, o: ::grpc::RequestOptions, req: super::page::RequestPageRemove) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.PageService/page_remove"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -238,13 +297,13 @@ impl PageServiceServer {
 pub trait DatabaseService {
     fn databases(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::service::Request>, resp: ::grpc::ServerResponseUnarySink<super::database::DatabaseList>) -> ::grpc::Result<()>;
 
-    fn database_create(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::database::RequestDatabaseCreate>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn database_create(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::database::RequestDatabaseCreate>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
-    fn database_modify(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::database::RequestDatabaseModify>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn database_modify(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::database::RequestDatabaseModify>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
     fn database_info(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::database::RequestDatabaseInfo>, resp: ::grpc::ServerResponseUnarySink<super::database::ResponseDatabaseInfo>) -> ::grpc::Result<()>;
 
-    fn database_remove(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::database::RequestDatabaseRemove>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn database_remove(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::database::RequestDatabaseRemove>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 }
 
 // client
@@ -272,7 +331,7 @@ impl DatabaseServiceClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn database_create(&self, o: ::grpc::RequestOptions, req: super::database::RequestDatabaseCreate) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn database_create(&self, o: ::grpc::RequestOptions, req: super::database::RequestDatabaseCreate) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.DatabaseService/database_create"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -282,7 +341,7 @@ impl DatabaseServiceClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn database_modify(&self, o: ::grpc::RequestOptions, req: super::database::RequestDatabaseModify) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn database_modify(&self, o: ::grpc::RequestOptions, req: super::database::RequestDatabaseModify) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.DatabaseService/database_modify"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -302,7 +361,7 @@ impl DatabaseServiceClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn database_remove(&self, o: ::grpc::RequestOptions, req: super::database::RequestDatabaseRemove) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn database_remove(&self, o: ::grpc::RequestOptions, req: super::database::RequestDatabaseRemove) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.DatabaseService/database_remove"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -393,15 +452,15 @@ impl DatabaseServiceServer {
 pub trait ViewService {
     fn views(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::view::RequestViewList>, resp: ::grpc::ServerResponseUnarySink<super::view::ViewList>) -> ::grpc::Result<()>;
 
-    fn view_create(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::view::RequestViewCreate>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn view_create(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::view::RequestViewCreate>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
-    fn view_modify(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::view::RequestViewModify>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn view_modify(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::view::RequestViewModify>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
     fn view_info(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::view::RequestViewInfo>, resp: ::grpc::ServerResponseUnarySink<super::view::ResponseViewInfo>) -> ::grpc::Result<()>;
 
-    fn view_remove(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::view::RequestViewRemove>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn view_remove(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::view::RequestViewRemove>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
-    fn view_archive(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::view::RequestViewArchive>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn view_archive(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::view::RequestViewArchive>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
     fn view_record(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::view::RequestViewRecord>, resp: ::grpc::ServerResponseUnarySink<super::view::ResponseViewRecord>) -> ::grpc::Result<()>;
 }
@@ -431,7 +490,7 @@ impl ViewServiceClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn view_create(&self, o: ::grpc::RequestOptions, req: super::view::RequestViewCreate) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn view_create(&self, o: ::grpc::RequestOptions, req: super::view::RequestViewCreate) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.ViewService/view_create"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -441,7 +500,7 @@ impl ViewServiceClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn view_modify(&self, o: ::grpc::RequestOptions, req: super::view::RequestViewModify) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn view_modify(&self, o: ::grpc::RequestOptions, req: super::view::RequestViewModify) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.ViewService/view_modify"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -461,7 +520,7 @@ impl ViewServiceClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn view_remove(&self, o: ::grpc::RequestOptions, req: super::view::RequestViewRemove) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn view_remove(&self, o: ::grpc::RequestOptions, req: super::view::RequestViewRemove) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.ViewService/view_remove"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -471,7 +530,7 @@ impl ViewServiceClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn view_archive(&self, o: ::grpc::RequestOptions, req: super::view::RequestViewArchive) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn view_archive(&self, o: ::grpc::RequestOptions, req: super::view::RequestViewArchive) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.ViewService/view_archive"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -596,7 +655,7 @@ impl ViewServiceServer {
 pub trait IndexService {
     fn indexes(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::index::RequestIndexList>, resp: ::grpc::ServerResponseUnarySink<super::index::IndexList>) -> ::grpc::Result<()>;
 
-    fn index_create(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::index::RequestIndexCreate>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn index_create(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::index::RequestIndexCreate>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
     fn index_info(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::index::RequestIndexInfo>, resp: ::grpc::ServerResponseUnarySink<super::index::ResponseIndexInfo>) -> ::grpc::Result<()>;
 }
@@ -626,7 +685,7 @@ impl IndexServiceClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn index_create(&self, o: ::grpc::RequestOptions, req: super::index::RequestIndexCreate) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn index_create(&self, o: ::grpc::RequestOptions, req: super::index::RequestIndexCreate) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.IndexService/index_create"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -701,15 +760,15 @@ impl IndexServiceServer {
 // server interface
 
 pub trait DiskService {
-    fn put(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::disk::RequestDiskInto>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn put(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::disk::RequestDiskInto>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
-    fn set(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::disk::RequestDiskInto>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn set(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::disk::RequestDiskInto>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
     fn get(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::disk::RequestDiskOut>, resp: ::grpc::ServerResponseUnarySink<super::disk::ResponseDiskOut>) -> ::grpc::Result<()>;
 
     fn get_by_index(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::disk::RequestDiskIOut>, resp: ::grpc::ServerResponseUnarySink<super::disk::ResponseDiskOut>) -> ::grpc::Result<()>;
 
-    fn remove(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::disk::RequestDiskRemove>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn remove(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::disk::RequestDiskRemove>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
     fn select(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::disk::RequestDiskSelect>, resp: ::grpc::ServerResponseUnarySink<super::disk::ResponseDiskSelect>) -> ::grpc::Result<()>;
 
@@ -731,7 +790,7 @@ impl ::grpc::ClientStub for DiskServiceClient {
 }
 
 impl DiskServiceClient {
-    pub fn put(&self, o: ::grpc::RequestOptions, req: super::disk::RequestDiskInto) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn put(&self, o: ::grpc::RequestOptions, req: super::disk::RequestDiskInto) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.DiskService/put"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -741,7 +800,7 @@ impl DiskServiceClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn set(&self, o: ::grpc::RequestOptions, req: super::disk::RequestDiskInto) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn set(&self, o: ::grpc::RequestOptions, req: super::disk::RequestDiskInto) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.DiskService/set"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -771,7 +830,7 @@ impl DiskServiceClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn remove(&self, o: ::grpc::RequestOptions, req: super::disk::RequestDiskRemove) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn remove(&self, o: ::grpc::RequestOptions, req: super::disk::RequestDiskRemove) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.DiskService/remove"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -904,21 +963,21 @@ impl DiskServiceServer {
 // server interface
 
 pub trait MemoryService {
-    fn put(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::memory::RequestMemoryInto>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn put(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::memory::RequestMemoryInto>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
-    fn set(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::memory::RequestMemoryInto>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn set(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::memory::RequestMemoryInto>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
     fn get(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::memory::RequestMemoryOut>, resp: ::grpc::ServerResponseUnarySink<super::memory::ResponseMemoryOut>) -> ::grpc::Result<()>;
 
-    fn remove(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::memory::RequestMemoryRemove>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn remove(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::memory::RequestMemoryRemove>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
-    fn put_by_page(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::memory::RequestMemoryPInto>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn put_by_page(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::memory::RequestMemoryPInto>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
-    fn set_by_page(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::memory::RequestMemoryPInto>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn set_by_page(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::memory::RequestMemoryPInto>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
     fn get_by_page(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::memory::RequestMemoryPOut>, resp: ::grpc::ServerResponseUnarySink<super::memory::ResponseMemoryPOut>) -> ::grpc::Result<()>;
 
-    fn remove_by_page(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::memory::RequestMemoryPRemove>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn remove_by_page(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::memory::RequestMemoryPRemove>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 }
 
 // client
@@ -936,7 +995,7 @@ impl ::grpc::ClientStub for MemoryServiceClient {
 }
 
 impl MemoryServiceClient {
-    pub fn put(&self, o: ::grpc::RequestOptions, req: super::memory::RequestMemoryInto) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn put(&self, o: ::grpc::RequestOptions, req: super::memory::RequestMemoryInto) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.MemoryService/put"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -946,7 +1005,7 @@ impl MemoryServiceClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn set(&self, o: ::grpc::RequestOptions, req: super::memory::RequestMemoryInto) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn set(&self, o: ::grpc::RequestOptions, req: super::memory::RequestMemoryInto) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.MemoryService/set"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -966,7 +1025,7 @@ impl MemoryServiceClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn remove(&self, o: ::grpc::RequestOptions, req: super::memory::RequestMemoryRemove) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn remove(&self, o: ::grpc::RequestOptions, req: super::memory::RequestMemoryRemove) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.MemoryService/remove"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -976,7 +1035,7 @@ impl MemoryServiceClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn put_by_page(&self, o: ::grpc::RequestOptions, req: super::memory::RequestMemoryPInto) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn put_by_page(&self, o: ::grpc::RequestOptions, req: super::memory::RequestMemoryPInto) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.MemoryService/put_by_page"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -986,7 +1045,7 @@ impl MemoryServiceClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn set_by_page(&self, o: ::grpc::RequestOptions, req: super::memory::RequestMemoryPInto) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn set_by_page(&self, o: ::grpc::RequestOptions, req: super::memory::RequestMemoryPInto) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.MemoryService/set_by_page"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -1006,7 +1065,7 @@ impl MemoryServiceClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn remove_by_page(&self, o: ::grpc::RequestOptions, req: super::memory::RequestMemoryPRemove) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn remove_by_page(&self, o: ::grpc::RequestOptions, req: super::memory::RequestMemoryPRemove) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.MemoryService/remove_by_page"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,

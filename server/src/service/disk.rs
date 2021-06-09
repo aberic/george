@@ -15,7 +15,7 @@
 use std::sync::Arc;
 
 use grpc::{
-    Error, GrpcMessageError, Result, ServerHandlerContext, ServerRequestSingle,
+    Error, GrpcMessageError, GrpcStatus, Result, ServerHandlerContext, ServerRequestSingle,
     ServerResponseUnarySink,
 };
 
@@ -26,7 +26,7 @@ use protocols::impls::db::disk::{
     RequestDiskDelete, RequestDiskIOut, RequestDiskInto, RequestDiskOut, RequestDiskRemove,
     RequestDiskSelect, ResponseDiskDelete, ResponseDiskOut, ResponseDiskSelect,
 };
-use protocols::impls::db::service::Response;
+use protocols::impls::db::response::Response;
 use protocols::impls::db::service_grpc::DiskService;
 
 pub(crate) struct DiskServer {
@@ -48,7 +48,7 @@ impl DiskService for DiskServer {
         ) {
             Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -68,7 +68,7 @@ impl DiskService for DiskServer {
         ) {
             Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -91,7 +91,7 @@ impl DiskService for DiskServer {
                 resp.finish(response)
             }
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -115,7 +115,7 @@ impl DiskService for DiskServer {
                 resp.finish(response)
             }
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -134,7 +134,7 @@ impl DiskService for DiskServer {
         ) {
             Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -161,7 +161,7 @@ impl DiskService for DiskServer {
                 resp.finish(response)
             }
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -188,7 +188,7 @@ impl DiskService for DiskServer {
                 resp.finish(response)
             }
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }

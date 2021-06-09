@@ -15,7 +15,7 @@
 use std::sync::Arc;
 
 use grpc::{
-    Error, GrpcMessageError, Result, ServerHandlerContext, ServerRequestSingle,
+    Error, GrpcMessageError, GrpcStatus, Result, ServerHandlerContext, ServerRequestSingle,
     ServerResponseUnarySink,
 };
 use protobuf::RepeatedField;
@@ -26,7 +26,8 @@ use protocols::impls::db::page::{
     Page, PageList, RequestPageCreate, RequestPageInfo, RequestPageModify, RequestPageRemove,
     ResponsePageInfo,
 };
-use protocols::impls::db::service::{Request, Response};
+use protocols::impls::db::response::Response;
+use protocols::impls::db::service::Request;
 use protocols::impls::db::service_grpc::PageService;
 
 use crate::utils::Comm;
@@ -74,7 +75,7 @@ impl PageService for PageServer {
         ) {
             Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -92,7 +93,7 @@ impl PageService for PageServer {
         {
             Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -118,7 +119,7 @@ impl PageService for PageServer {
                 resp.finish(info)
             }
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }
@@ -133,7 +134,7 @@ impl PageService for PageServer {
         match self.task.page_remove(req.message.name) {
             Ok(()) => resp.finish(Response::new()),
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: 0,
+                grpc_status: GrpcStatus::Ok as i32,
                 grpc_message: err.to_string(),
             })),
         }

@@ -11,3 +11,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+use crate::parse::Parse;
+use comm::errors::GeorgeResult;
+use db::Task;
+use std::sync::Arc;
+
+impl Parse {
+    pub fn analysis(_task: Arc<Task>, scan: String) -> GeorgeResult<Vec<u8>> {
+        Ok(scan.as_bytes().to_vec())
+    }
+}

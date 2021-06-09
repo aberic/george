@@ -15,16 +15,11 @@
 use crate::cmd::Start;
 use crate::service::Server;
 use clap::{App, Arg, ArgMatches, SubCommand};
-use comm::errors::{Errs, GeorgeResult};
 use comm::io::file::FilerHandler;
 use comm::io::Filer;
 use deploy::comm::DEPLOY_START_CONFIG_FILEPATH;
 use deploy::Builder;
-use std::ffi::OsStr;
-use std::io::Error;
-use std::process::{Child, Command, Output};
 use tokio::sync::mpsc;
-use tokio::sync::mpsc::Sender;
 
 impl Start {
     pub fn subcommand() -> App<'static, 'static> {
@@ -91,9 +86,7 @@ async fn server_start(filepath: String) {
     });
 
     println!("send finish...");
-    let mut pid: u32 = 0;
-    let mut errs: String = "".to_string();
-    while let Some(message) = receiver.recv().await {
+    while let Some(_) = receiver.recv().await {
         println!("success!");
     }
 }

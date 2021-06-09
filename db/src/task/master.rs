@@ -32,24 +32,11 @@ use crate::task::rich::Expectation;
 use crate::task::traits::TMaster;
 use crate::task::{Database, Master};
 use crate::task::{Page, View};
-use crate::utils::comm::{DEFAULT_COMMENT, DEFAULT_NAME, INDEX_DISK};
+use crate::utils::comm::{DATABASE_SYS_NAME, DEFAULT_COMMENT, INDEX_DISK, VIEW_USER_NAME};
 use crate::utils::enums::{Engine, KeyType};
 use crate::utils::Paths;
 
 impl Master {
-    /// 初始化
-    fn init(&self) -> GeorgeResult<()> {
-        log::info!("bootstrap init!");
-        self.page_create(DEFAULT_NAME.to_string(), DEFAULT_COMMENT.to_string(), 0, 0)?;
-        self.database_create(DEFAULT_NAME.to_string(), DEFAULT_COMMENT.to_string())?;
-        self.view_create(
-            DEFAULT_NAME.to_string(),
-            DEFAULT_NAME.to_string(),
-            DEFAULT_COMMENT.to_string(),
-            true,
-        )
-    }
-
     /// 生成Master
     pub(crate) fn generate() -> GeorgeResult<Self> {
         // 尝试创建数据根目录，有则什么也不做，无则创建
@@ -88,7 +75,7 @@ impl Master {
         );
 
         let master = Master {
-            default_page_name: DEFAULT_NAME.to_string(),
+            default_page_name: DATABASE_SYS_NAME.to_string(),
             pages: Arc::new(Default::default()),
             databases: Default::default(),
             create_time,
@@ -105,6 +92,30 @@ impl Master {
             master.recovery()?;
         }
         Ok(master)
+    }
+
+    /// 初始化
+    fn init(&self) -> GeorgeResult<()> {
+        log::info!("bootstrap init!");
+        self.page_create(
+            DATABASE_SYS_NAME.to_string(),
+            DEFAULT_COMMENT.to_string(),
+            0,
+            0,
+        )?;
+        self.database_create(DATABASE_SYS_NAME.to_string(), DEFAULT_COMMENT.to_string())?;
+        self.view_create(
+            DATABASE_SYS_NAME.to_string(),
+            VIEW_USER_NAME.to_string(),
+            DEFAULT_COMMENT.to_string(),
+            true,
+        )?;
+        self.put_disk(
+            DATABASE_SYS_NAME.to_string(),
+            VIEW_USER_NAME.to_string(),
+            "admin".to_string(),
+            "admin#123".as_bytes().to_vec(),
+        )
     }
 
     fn exist_database(&self, database_name: String) -> bool {
