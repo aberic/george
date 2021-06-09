@@ -20,12 +20,17 @@ option java_outer_classname = "ServiceProto";
 
 package db;
 
+import "db/user.proto";
 import "db/page.proto";
 import "db/database.proto";
 import "db/view.proto";
 import "db/index.proto";
 import "db/disk.proto";
 import "db/memory.proto";
+
+service UserService {
+  rpc login(RequestLogin) returns (Response);
+}
 
 service PageService {
   rpc pages(Request) returns (PageList);

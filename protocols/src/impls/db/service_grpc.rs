@@ -21,6 +21,65 @@
 
 // server interface
 
+pub trait UserService {
+    fn login(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::user::RequestLogin>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+}
+
+// client
+
+pub struct UserServiceClient {
+    grpc_client: ::std::sync::Arc<::grpc::Client>,
+}
+
+impl ::grpc::ClientStub for UserServiceClient {
+    fn with_client(grpc_client: ::std::sync::Arc<::grpc::Client>) -> Self {
+        UserServiceClient {
+            grpc_client: grpc_client,
+        }
+    }
+}
+
+impl UserServiceClient {
+    pub fn login(&self, o: ::grpc::RequestOptions, req: super::user::RequestLogin) -> ::grpc::SingleResponse<super::service::Response> {
+        let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+            name: ::grpc::rt::StringOrStatic::Static("/db.UserService/login"),
+            streaming: ::grpc::rt::GrpcStreaming::Unary,
+            req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+            resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+        });
+        self.grpc_client.call_unary(o, req, descriptor)
+    }
+}
+
+// server
+
+pub struct UserServiceServer;
+
+
+impl UserServiceServer {
+    pub fn new_service_def<H : UserService + 'static + Sync + Send + 'static>(handler: H) -> ::grpc::rt::ServerServiceDefinition {
+        let handler_arc = ::std::sync::Arc::new(handler);
+        ::grpc::rt::ServerServiceDefinition::new("/db.UserService",
+            vec![
+                ::grpc::rt::ServerMethod::new(
+                    ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+                        name: ::grpc::rt::StringOrStatic::Static("/db.UserService/login"),
+                        streaming: ::grpc::rt::GrpcStreaming::Unary,
+                        req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+                        resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+                    }),
+                    {
+                        let handler_copy = handler_arc.clone();
+                        ::grpc::rt::MethodHandlerUnary::new(move |ctx, req, resp| (*handler_copy).login(ctx, req, resp))
+                    },
+                ),
+            ],
+        )
+    }
+}
+
+// server interface
+
 pub trait PageService {
     fn pages(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::service::Request>, resp: ::grpc::ServerResponseUnarySink<super::page::PageList>) -> ::grpc::Result<()>;
 

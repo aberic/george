@@ -43,6 +43,7 @@ fn init_chain() {
 
 fn init_db() {
     let mut ps_block: Vec<&str> = vec![];
+    ps_block.push("db/user.proto");
     ps_block.push("db/database.proto");
     ps_block.push("db/index.proto");
     ps_block.push("db/master.proto");

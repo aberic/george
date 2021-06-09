@@ -20,4 +20,5 @@ pub mod memory;
 pub mod page;
 pub mod service;
 pub mod service_grpc;
+pub mod user;
 pub mod view;
