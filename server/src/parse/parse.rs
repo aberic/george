@@ -12,13 +12,34 @@
  * limitations under the License.
  */
 
-use crate::parse::Parse;
-use comm::errors::GeorgeResult;
+use crate::parse::{Delete, Get, Insert, Parse, Put, Select, Set, Show};
+use crate::utils::Comm;
+use comm::errors::{Errs, GeorgeResult};
 use db::Task;
 use std::sync::Arc;
 
 impl Parse {
-    pub fn analysis(_task: Arc<Task>, scan: String) -> GeorgeResult<Vec<u8>> {
-        Ok(scan.as_bytes().to_vec())
+    pub fn analysis(task: Arc<Task>, scan: String) -> GeorgeResult<Vec<u8>> {
+        log::info!("command scan: {}", scan);
+        let parse = Comm::parse_str(scan);
+        log::info!("command parse: {}", parse);
+        let mut vss = Comm::split_str(parse.clone());
+        if vss.len() == 0 {
+            return Err(Errs::string(format!("error command with '{}'", parse)));
+        }
+        let intent = vss[0].as_str();
+        match intent {
+            "show" => Show::analysis(task, vss),
+            "put" => Put::analysis(task, vss),
+            "set" => Set::analysis(task, vss),
+            "insert" => Insert::analysis(task, vss),
+            "get" => Get::analysis(task, vss),
+            "select" => Select::analysis(task, vss),
+            "delete" => Delete::analysis(task, vss),
+            _ => Err(Errs::string(format!(
+                "command not support prefix {} in '{}'",
+                intent, parse
+            ))),
+        }
     }
 }

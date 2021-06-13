@@ -27,6 +27,7 @@
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct RequestParse {
     // message fields
+    pub used: ::std::string::String,
     pub scan_str: ::std::string::String,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
@@ -46,7 +47,33 @@ impl RequestParse {
         ::std::default::Default::default()
     }
 
-    // string scan_str = 1;
+    // string used = 1;
+
+
+    pub fn get_used(&self) -> &str {
+        &self.used
+    }
+    pub fn clear_used(&mut self) {
+        self.used.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_used(&mut self, v: ::std::string::String) {
+        self.used = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_used(&mut self) -> &mut ::std::string::String {
+        &mut self.used
+    }
+
+    // Take field
+    pub fn take_used(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.used, ::std::string::String::new())
+    }
+
+    // string scan_str = 2;
 
 
     pub fn get_scan_str(&self) -> &str {
@@ -83,6 +110,9 @@ impl ::protobuf::Message for RequestParse {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 1 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.used)?;
+                },
+                2 => {
                     ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.scan_str)?;
                 },
                 _ => {
@@ -97,8 +127,11 @@ impl ::protobuf::Message for RequestParse {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
+        if !self.used.is_empty() {
+            my_size += ::protobuf::rt::string_size(1, &self.used);
+        }
         if !self.scan_str.is_empty() {
-            my_size += ::protobuf::rt::string_size(1, &self.scan_str);
+            my_size += ::protobuf::rt::string_size(2, &self.scan_str);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -106,8 +139,11 @@ impl ::protobuf::Message for RequestParse {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if !self.used.is_empty() {
+            os.write_string(1, &self.used)?;
+        }
         if !self.scan_str.is_empty() {
-            os.write_string(1, &self.scan_str)?;
+            os.write_string(2, &self.scan_str)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -148,6 +184,11 @@ impl ::protobuf::Message for RequestParse {
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
             fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "used",
+                |m: &RequestParse| { &m.used },
+                |m: &mut RequestParse| { &mut m.used },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
                 "scan_str",
                 |m: &RequestParse| { &m.scan_str },
                 |m: &mut RequestParse| { &mut m.scan_str },
@@ -168,6 +209,7 @@ impl ::protobuf::Message for RequestParse {
 
 impl ::protobuf::Clear for RequestParse {
     fn clear(&mut self) {
+        self.used.clear();
         self.scan_str.clear();
         self.unknown_fields.clear();
     }
@@ -421,12 +463,13 @@ impl ::protobuf::reflect::ProtobufValue for ResponseParse {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x0edb/parse.proto\x12\x02db\x1a\x11db/response.proto\")\n\x0cRequestP\
-    arse\x12\x19\n\x08scan_str\x18\x01\x20\x01(\tR\x07scanStr\"^\n\rResponse\
-    Parse\x12\"\n\x06status\x18\x01\x20\x01(\x0e2\n.db.StatusR\x06status\x12\
-    \x17\n\x07msg_err\x18\x02\x20\x01(\tR\x06msgErr\x12\x10\n\x03res\x18\x03\
-    \x20\x01(\x0cR\x03resBK\n\x1dcn.aberic.george.protocols.dbB\nParseProtoZ\
-    \x1egithub.com/george/protocols/dbb\x06proto3\
+    \n\x0edb/parse.proto\x12\x02db\x1a\x11db/response.proto\"=\n\x0cRequestP\
+    arse\x12\x12\n\x04used\x18\x01\x20\x01(\tR\x04used\x12\x19\n\x08scan_str\
+    \x18\x02\x20\x01(\tR\x07scanStr\"^\n\rResponseParse\x12\"\n\x06status\
+    \x18\x01\x20\x01(\x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\
+    \x02\x20\x01(\tR\x06msgErr\x12\x10\n\x03res\x18\x03\x20\x01(\x0cR\x03res\
+    BK\n\x1dcn.aberic.george.protocols.dbB\nParseProtoZ\x1egithub.com/george\
+    /protocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

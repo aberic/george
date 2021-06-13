@@ -58,7 +58,8 @@ impl IndexService for IndexServer {
                     index_item.set_unique(index.unique());
                     index_item.set_null(index.null());
                     index_item.set_key_type(self.key_type(index.key_type()));
-                    index_item.set_create_time(Comm::time_2_grpc_timestamp(index.create_time()));
+                    index_item
+                        .set_create_time(Comm::proto_time_2_grpc_timestamp(index.create_time()));
                     indexes.push(index_item);
                 }
                 list.set_indexes(indexes);
@@ -113,7 +114,7 @@ impl IndexService for IndexServer {
                 item.set_primary(res.primary());
                 item.set_unique(res.unique());
                 item.set_null(res.null());
-                item.set_create_time(Comm::time_2_grpc_timestamp(res.create_time()));
+                item.set_create_time(Comm::proto_time_2_grpc_timestamp(res.create_time()));
                 info.set_index(item);
                 resp.finish(info)
             }

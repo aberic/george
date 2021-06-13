@@ -12,6 +12,27 @@
  * limitations under the License.
  */
 
+mod delete;
+mod get;
+mod insert;
 mod parse;
+mod put;
+mod select;
+mod set;
+mod show;
 
 pub struct Parse;
+
+pub struct Show;
+
+pub struct Put;
+
+pub struct Set;
+
+pub struct Insert;
+
+pub struct Get;
+
+pub struct Select;
+
+pub struct Delete;

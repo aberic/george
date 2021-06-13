@@ -54,7 +54,7 @@ impl PageService for PageServer {
             page_item.set_comment(page_r.comment());
             page_item.set_size(page_r.size());
             page_item.set_period(page_r.period());
-            page_item.set_create_time(Comm::time_2_grpc_timestamp(page_r.create_time()));
+            page_item.set_create_time(Comm::proto_time_2_grpc_timestamp(page_r.create_time()));
             pages.push(page_item);
         }
         list.set_pages(pages);
@@ -114,7 +114,7 @@ impl PageService for PageServer {
                 item.set_comment(item_r.comment());
                 item.set_size(item_r.size());
                 item.set_period(item_r.period());
-                item.set_create_time(Comm::time_2_grpc_timestamp(item_r.create_time()));
+                item.set_create_time(Comm::proto_time_2_grpc_timestamp(item_r.create_time()));
                 info.set_page(item);
                 resp.finish(info)
             }

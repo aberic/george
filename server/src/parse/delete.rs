@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020. Aberic - All Rights Reserved.
+ * Copyright (c) 2021. Aberic - All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,28 +12,14 @@
  * limitations under the License.
  */
 
-syntax = "proto3";
+use crate::parse::Delete;
+use comm::errors::GeorgeResult;
+use db::Task;
+use std::str::Split;
+use std::sync::Arc;
 
-option go_package = "github.com/george/protocols/db";
-option java_package = "cn.aberic.george.protocols.db";
-option java_outer_classname = "ParseProto";
-
-package db;
-
-import "db/response.proto";
-
-// 请求解析扫描内容
-message RequestParse {
-  // 使用database/page/ledger
-  string used = 1;
-  // 输入内容
-  string scan_str = 2;
-}
-
-// 返回解析扫描结果
-message ResponseParse {
-  Status status = 1;
-  string msg_err = 2;
-  // 输入内容
-  bytes res = 3;
+impl Delete {
+    pub fn analysis(_task: Arc<Task>, _vss: Vec<String>) -> GeorgeResult<Vec<u8>> {
+        unimplemented!()
+    }
 }

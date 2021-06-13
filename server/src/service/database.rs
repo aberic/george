@@ -52,7 +52,7 @@ impl DatabaseService for DatabaseServer {
             let mut database = Database::new();
             database.set_name(db_r.name());
             database.set_comment(db_r.comment());
-            database.set_create_time(Comm::time_2_grpc_timestamp(db_r.create_time()));
+            database.set_create_time(Comm::proto_time_2_grpc_timestamp(db_r.create_time()));
             databases.push(database);
         }
         list.set_databases(databases);
@@ -110,7 +110,7 @@ impl DatabaseService for DatabaseServer {
                 let item_r = res.read().unwrap();
                 item.set_name(item_r.name());
                 item.set_comment(item_r.comment());
-                item.set_create_time(Comm::time_2_grpc_timestamp(item_r.create_time()));
+                item.set_create_time(Comm::proto_time_2_grpc_timestamp(item_r.create_time()));
                 info.set_database(item);
                 resp.finish(info)
             }

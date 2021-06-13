@@ -52,7 +52,8 @@ impl ViewService for ViewServer {
                     let mut view_item = View::new();
                     view_item.set_name(view_r.name());
                     view_item.set_comment(view_r.comment());
-                    view_item.set_create_time(Comm::time_2_grpc_timestamp(view_r.create_time()));
+                    view_item
+                        .set_create_time(Comm::proto_time_2_grpc_timestamp(view_r.create_time()));
                     views.push(view_item);
                 }
                 list.set_views(views);
@@ -117,7 +118,7 @@ impl ViewService for ViewServer {
                 let item_r = res.read().unwrap();
                 item.set_name(item_r.name());
                 item.set_comment(item_r.comment());
-                item.set_create_time(Comm::time_2_grpc_timestamp(item_r.create_time()));
+                item.set_create_time(Comm::proto_time_2_grpc_timestamp(item_r.create_time()));
                 info.set_view(item);
                 resp.finish(info)
             }
@@ -179,7 +180,7 @@ impl ViewService for ViewServer {
             Ok((filepath, create_time)) => {
                 let mut response = ResponseViewRecord::new();
                 response.set_filepath(filepath);
-                response.set_time(Comm::time_2_grpc_timestamp(create_time));
+                response.set_time(Comm::proto_time_2_grpc_timestamp(create_time));
                 resp.finish(response)
             }
             Err(err) => Err(Error::GrpcMessage(GrpcMessageError {

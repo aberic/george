@@ -13,6 +13,7 @@
  */
 
 use crate::cmd::Command;
+use crate::service::Server;
 
 mod cmd;
 mod parse;
@@ -20,7 +21,8 @@ pub mod service;
 mod utils;
 
 fn main() {
-    Command::init();
+    // Command::init();
+    Server::start("server/src/example/conf.yaml")
 }
 
 #[test]

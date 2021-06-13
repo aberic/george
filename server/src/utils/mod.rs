@@ -13,5 +13,6 @@
  */
 
 mod comm;
+mod comm_test;
 
 pub struct Comm;

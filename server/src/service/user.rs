@@ -44,16 +44,16 @@ impl UserService for UserServer {
             Ok(res) => match String::from_utf8(res) {
                 Ok(res) => {
                     if res.eq(&req.message.pass) {
-                        resp.finish(Comm::success_db())
+                        resp.finish(Comm::proto_success_db())
                     } else {
-                        resp.finish(Comm::failed_db_custom(
+                        resp.finish(Comm::proto_failed_db_custom(
                             "user is not exist or pass is wrong!".to_string(),
                         ))
                     }
                 }
-                Err(err) => resp.finish(Comm::failed_db_custom(err.to_string())),
+                Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
             },
-            Err(err) => resp.finish(Comm::failed_db_custom(err.to_string())),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 }
