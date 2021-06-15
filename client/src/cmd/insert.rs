@@ -12,14 +12,11 @@
  * limitations under the License.
  */
 
-use crate::cmd::Insert;
+use crate::cmd::{Config, Insert};
 use comm::errors::GeorgeResult;
-use db::Task;
-use std::str::Split;
-use std::sync::Arc;
 
 impl Insert {
-    pub fn analysis(_task: Arc<Task>, used: String, _vss: Vec<String>) -> GeorgeResult<Vec<u8>> {
+    pub(crate) fn analysis(config: &Config, used: String, _vss: Vec<String>) -> GeorgeResult<()> {
         unimplemented!()
     }
 }

@@ -13,17 +13,17 @@
  */
 
 use crate::cmd::{Config, Delete, Get, Insert, Put, Select, Set, Show};
-use crate::service::{Parse, User};
-use crate::utils::Comm;
+use crate::service::{Database, User};
 use comm::errors::{Errs, GeorgeResult};
+use protocols::impls::utils::Comm;
 use std::io;
 use std::io::Write;
 
 impl Config {
     pub(crate) fn new(remote: &str, port: u16) -> Self {
         let user = User::new(remote, port);
-        let parse = Parse::new(remote, port);
-        Config { user, parse }
+        let database = Database::new(remote, port);
+        Config { user, database }
     }
 
     pub(crate) fn login(&self, name: String, pass: String) -> GeorgeResult<()> {
@@ -52,12 +52,7 @@ impl Config {
                 }
                 all_str.push_str(new_str.as_str());
                 match self.parse(used.clone(), all_str.clone()) {
-                    Ok(res) => match String::from_utf8(res) {
-                        Ok(res) => {
-                            println!("{}", res);
-                        }
-                        Err(err) => println!("error: {}", err),
-                    },
+                    Ok(()) => {}
                     Err(err) => println!("error: {}", err),
                 }
                 print!("george->: ");
@@ -70,7 +65,7 @@ impl Config {
         }
     }
 
-    pub(crate) fn parse(&self, used: String, scan_str: String) -> GeorgeResult<Vec<u8>> {
+    pub(crate) fn parse(&self, used: String, scan: String) -> GeorgeResult<()> {
         let parse = Comm::parse_str(scan);
         log::info!("command used {} parse: {}", used, parse);
         let mut vss = Comm::split_str(parse.clone());
@@ -79,15 +74,15 @@ impl Config {
         }
         let intent = vss[0].as_str();
         match intent {
-            "show" => Show::analysis(task, used, vss),
-            "put" => Put::analysis(task, used, vss),
-            "set" => Set::analysis(task, used, vss),
-            "insert" => Insert::analysis(task, used, vss),
-            "get" => Get::analysis(task, used, vss),
-            "select" => Select::analysis(task, used, vss),
-            "delete" => Delete::analysis(task, used, vss),
+            "show" => Show::analysis(&self, used, vss),
+            "put" => Put::analysis(&self, used, vss),
+            "set" => Set::analysis(&self, used, vss),
+            "insert" => Insert::analysis(&self, used, vss),
+            "get" => Get::analysis(&self, used, vss),
+            "select" => Select::analysis(&self, used, vss),
+            "delete" => Delete::analysis(&self, used, vss),
             _ => Err(Errs::string(format!(
-                "command not support prefix {} in '{}'",
+                "command do not support prefix {} in '{}'",
                 intent, parse
             ))),
         }

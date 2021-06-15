@@ -29,8 +29,7 @@ use protocols::impls::db::page::{
 use protocols::impls::db::response::Response;
 use protocols::impls::db::service::Request;
 use protocols::impls::db::service_grpc::PageService;
-
-use crate::utils::Comm;
+use protocols::impls::utils::Comm;
 
 pub(crate) struct PageServer {
     pub(crate) task: Arc<Task>,

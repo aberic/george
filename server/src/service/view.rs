@@ -28,8 +28,7 @@ use protocols::impls::db::view::{
     RequestViewArchive, RequestViewCreate, RequestViewInfo, RequestViewList, RequestViewModify,
     RequestViewRecord, RequestViewRemove, ResponseViewInfo, ResponseViewRecord, View, ViewList,
 };
-
-use crate::utils::Comm;
+use protocols::impls::utils::Comm;
 
 pub(crate) struct ViewServer {
     pub(crate) task: Arc<Task>,

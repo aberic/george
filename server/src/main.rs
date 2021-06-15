@@ -17,7 +17,6 @@ use crate::service::Server;
 
 mod cmd;
 pub mod service;
-mod utils;
 
 fn main() {
     // Command::init();

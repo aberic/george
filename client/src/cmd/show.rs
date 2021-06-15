@@ -16,27 +16,49 @@ use std::str::Split;
 use std::sync::Arc;
 
 use comm::errors::{Errs, GeorgeResult};
-use db::Task;
 
-use crate::cmd::Show;
+use crate::cmd::{Config, Show};
+use cli_table::format::Justify;
+use cli_table::{print_stdout, Cell, Style, Table};
+use protocols::impls::utils::Comm;
 
 impl Show {
-    pub fn analysis(task: Arc<Task>, used: String, vss: Vec<String>) -> GeorgeResult<Vec<u8>> {
+    pub(crate) fn analysis(config: &Config, used: String, vss: Vec<String>) -> GeorgeResult<()> {
         let intent = vss[1].as_str();
         match intent {
             "databases" => {
-                let ds = DatabaseServer { task };
-                let list = ds.database_list();
-                match list.write_to_bytes() {
-                    Ok(v8s) => Ok(v8s),
-                    Err(err) => Err(Errs::strs("struct write_to_bytes", err)),
+                let db_list = config.database.databases()?;
+                let list = db_list.databases;
+                let mut table = vec![];
+                for db in list.iter() {
+                    table.push(vec![
+                        db.get_name().cell(),
+                        db.get_comment().cell(),
+                        Comm::proto_grpc_timestamp_2_time(db.get_create_time().seconds)
+                            .to_string("%Y-%m-%d %H:%M:%S")
+                            .cell()
+                            .justify(Justify::Right),
+                    ])
+                }
+                match print_stdout(
+                    table
+                        .table()
+                        .title(vec![
+                            "Name".cell().bold(true),
+                            "Comment".cell().bold(true),
+                            "Create Time".cell().bold(true),
+                        ])
+                        .bold(true),
+                ) {
+                    Ok(()) => Ok(()),
+                    Err(err) => Err(Errs::strs("print stdout", err)),
                 }
             }
-            "pages" => Ok("show pages success!".as_bytes().to_vec()),
-            "ledgers" => Ok("show ledgers success!".as_bytes().to_vec()),
-            "views" => Ok("show views success!".as_bytes().to_vec()),
+            "pages" => Err(Errs::str("no support pages now!")),
+            "ledgers" => Err(Errs::str("no support ledgers now!")),
+            "views" => Err(Errs::str("no support views now!")),
             _ => Err(Errs::string(format!(
-                "command not support prefix {}",
+                "command do not support prefix {}",
                 intent
             ))),
         }

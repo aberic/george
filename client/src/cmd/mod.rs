@@ -16,7 +16,7 @@ use std::sync::Arc;
 
 use db::Task;
 
-use crate::service::{Parse, User};
+use crate::service::{Database, User};
 
 mod command;
 pub mod config;
@@ -49,5 +49,5 @@ pub(crate) struct Delete;
 
 pub(crate) struct Config {
     user: User,
-    parse: Parse,
+    database: Database,
 }

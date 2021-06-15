@@ -26,11 +26,10 @@ use protocols::impls::db::database::{
     Database, DatabaseList, RequestDatabaseCreate, RequestDatabaseInfo, RequestDatabaseModify,
     RequestDatabaseRemove, ResponseDatabaseInfo,
 };
+use protocols::impls::db::response::{Response, Status};
 use protocols::impls::db::service::Request;
 use protocols::impls::db::service_grpc::DatabaseService;
-
-use crate::utils::Comm;
-use protocols::impls::db::response::{Response, Status};
+use protocols::impls::utils::Comm;
 
 pub(crate) struct DatabaseServer {
     pub(crate) task: Arc<Task>,

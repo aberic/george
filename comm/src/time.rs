@@ -28,6 +28,12 @@ impl Time {
         Time { duration }
     }
 
+    pub fn from_secs(secs: i64) -> Self {
+        Time {
+            duration: Duration::seconds(secs),
+        }
+    }
+
     /// Formats the combined date and time with the specified format string.
     /// See the [`format::strftime` module](../format/strftime/index.html)
     /// on the supported escape sequences.
@@ -76,17 +82,21 @@ impl Time {
         self.duration.clone()
     }
 
-    pub fn sec(&self) -> i64 {
+    pub fn secs_nanos(&self) -> (i64, i32) {
+        (self.secs(), self.nanos() as i32)
+    }
+
+    pub fn secs(&self) -> i64 {
         self.duration.num_seconds()
     }
 
     pub fn sec_string(&self) -> String {
-        self.sec().to_string()
+        self.secs().to_string()
     }
 
-    pub fn nanos(&self) -> i32 {
+    pub fn nanos(&self) -> i64 {
         match self.duration.num_nanoseconds() {
-            Some(nano) => nano as i32,
+            Some(nano) => nano,
             None => 0,
         }
     }

@@ -14,7 +14,7 @@
 
 #[cfg(test)]
 mod comm {
-    use crate::utils::Comm;
+    use crate::impls::utils::Comm;
 
     #[test]
     fn test_parse() {

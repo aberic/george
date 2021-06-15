@@ -15,13 +15,12 @@
 use futures::executor;
 use grpc::ClientStubExt;
 
+use comm::errors::{Errs, GeorgeResult};
+use protocols::impls::db::database::DatabaseList;
+use protocols::impls::db::service::Request;
 use protocols::impls::db::service_grpc::DatabaseServiceClient;
-use protocols::impls::db::user::RequestLogin;
 
 use crate::service::Database;
-use comm::errors::{Errs, GeorgeResult};
-use protocols::impls::db::response::Status;
-use protocols::impls::db::service::Request;
 
 impl Database {
     pub(crate) fn new(remote: &str, port: u16) -> Database {
@@ -32,7 +31,7 @@ impl Database {
 }
 
 impl Database {
-    pub(crate) fn databases(&self, name: String, pass: String) -> GeorgeResult<()> {
+    pub(crate) fn databases(&self) -> GeorgeResult<DatabaseList> {
         let mut req = Request::new();
         let resp = self
             .client
@@ -40,14 +39,8 @@ impl Database {
             .join_metadata_result();
         let resp = executor::block_on(resp);
         match resp {
-            Ok((_m, resp, _md)) => match resp.status {
-                Status::Ok => Ok(()),
-                _ => Err(Errs::string(format!(
-                    "login failed! status: {:#?}, msg: {}",
-                    resp.status, resp.msg_err
-                ))),
-            },
-            Err(err) => Err(Errs::strs("login failed!", err)),
+            Ok((_m, resp, _md)) => Ok(resp),
+            Err(err) => Err(Errs::strs("databases failed!", err)),
         }
     }
 }

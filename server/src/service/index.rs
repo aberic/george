@@ -28,8 +28,7 @@ use protocols::impls::db::index::{
 };
 use protocols::impls::db::response::Response;
 use protocols::impls::db::service_grpc::IndexService;
-
-use crate::utils::Comm;
+use protocols::impls::utils::Comm;
 
 pub(crate) struct IndexServer {
     pub(crate) task: Arc<Task>,
