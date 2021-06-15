@@ -12,14 +12,14 @@
  * limitations under the License.
  */
 
-use crate::parse::Get;
+use crate::cmd::Set;
 use comm::errors::GeorgeResult;
 use db::Task;
 use std::str::Split;
 use std::sync::Arc;
 
-impl Get {
-    pub fn analysis(_task: Arc<Task>, _vss: Vec<String>) -> GeorgeResult<Vec<u8>> {
+impl Set {
+    pub fn analysis(_task: Arc<Task>, used: String, _vss: Vec<String>) -> GeorgeResult<Vec<u8>> {
         unimplemented!()
     }
 }

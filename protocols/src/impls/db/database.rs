@@ -1118,6 +1118,8 @@ impl ::protobuf::reflect::ProtobufValue for RequestDatabaseInfo {
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct ResponseDatabaseInfo {
     // message fields
+    pub status: super::response::Status,
+    pub msg_err: ::std::string::String,
     pub database: ::protobuf::SingularPtrField<Database>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
@@ -1135,6 +1137,47 @@ impl<'a> ::std::default::Default for &'a ResponseDatabaseInfo {
 impl ResponseDatabaseInfo {
     pub fn new() -> ResponseDatabaseInfo {
         ::std::default::Default::default()
+    }
+
+    // .db.Status status = 1;
+
+
+    pub fn get_status(&self) -> super::response::Status {
+        self.status
+    }
+    pub fn clear_status(&mut self) {
+        self.status = super::response::Status::Ok;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_status(&mut self, v: super::response::Status) {
+        self.status = v;
+    }
+
+    // string msg_err = 2;
+
+
+    pub fn get_msg_err(&self) -> &str {
+        &self.msg_err
+    }
+    pub fn clear_msg_err(&mut self) {
+        self.msg_err.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_msg_err(&mut self, v: ::std::string::String) {
+        self.msg_err = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_msg_err(&mut self) -> &mut ::std::string::String {
+        &mut self.msg_err
+    }
+
+    // Take field
+    pub fn take_msg_err(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.msg_err, ::std::string::String::new())
     }
 
     // .db.Database database = 3;
@@ -1185,6 +1228,12 @@ impl ::protobuf::Message for ResponseDatabaseInfo {
         while !is.eof()? {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
+                1 => {
+                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.status, 1, &mut self.unknown_fields)?
+                },
+                2 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.msg_err)?;
+                },
                 3 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.database)?;
                 },
@@ -1200,6 +1249,12 @@ impl ::protobuf::Message for ResponseDatabaseInfo {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
+        if self.status != super::response::Status::Ok {
+            my_size += ::protobuf::rt::enum_size(1, self.status);
+        }
+        if !self.msg_err.is_empty() {
+            my_size += ::protobuf::rt::string_size(2, &self.msg_err);
+        }
         if let Some(ref v) = self.database.as_ref() {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
@@ -1210,6 +1265,12 @@ impl ::protobuf::Message for ResponseDatabaseInfo {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.status != super::response::Status::Ok {
+            os.write_enum(1, ::protobuf::ProtobufEnum::value(&self.status))?;
+        }
+        if !self.msg_err.is_empty() {
+            os.write_string(2, &self.msg_err)?;
+        }
         if let Some(ref v) = self.database.as_ref() {
             os.write_tag(3, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
@@ -1253,6 +1314,16 @@ impl ::protobuf::Message for ResponseDatabaseInfo {
         static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<super::response::Status>>(
+                "status",
+                |m: &ResponseDatabaseInfo| { &m.status },
+                |m: &mut ResponseDatabaseInfo| { &mut m.status },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "msg_err",
+                |m: &ResponseDatabaseInfo| { &m.msg_err },
+                |m: &mut ResponseDatabaseInfo| { &mut m.msg_err },
+            ));
             fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Database>>(
                 "database",
                 |m: &ResponseDatabaseInfo| { &m.database },
@@ -1274,6 +1345,8 @@ impl ::protobuf::Message for ResponseDatabaseInfo {
 
 impl ::protobuf::Clear for ResponseDatabaseInfo {
     fn clear(&mut self) {
+        self.status = super::response::Status::Ok;
+        self.msg_err.clear();
         self.database.clear();
         self.unknown_fields.clear();
     }
@@ -1455,21 +1528,23 @@ impl ::protobuf::reflect::ProtobufValue for RequestDatabaseRemove {
 
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\x11db/database.proto\x12\x02db\x1a\x1fgoogle/protobuf/timestamp.proto\
-    \x1a\rdb/view.proto\"\x95\x01\n\x08Database\x12\x12\n\x04name\x18\x01\
-    \x20\x01(\tR\x04name\x12\x18\n\x07comment\x18\x02\x20\x01(\tR\x07comment\
-    \x12;\n\x0bcreate_time\x18\x03\x20\x01(\x0b2\x1a.google.protobuf.Timesta\
-    mpR\ncreateTime\x12\x1e\n\x05views\x18\x04\x20\x03(\x0b2\x08.db.ViewR\
-    \x05views\":\n\x0cDatabaseList\x12*\n\tdatabases\x18\x01\x20\x03(\x0b2\
-    \x0c.db.DatabaseR\tdatabases\"E\n\x15RequestDatabaseCreate\x12\x12\n\x04\
-    name\x18\x01\x20\x01(\tR\x04name\x12\x18\n\x07comment\x18\x02\x20\x01(\t\
-    R\x07comment\"`\n\x15RequestDatabaseModify\x12\x12\n\x04name\x18\x01\x20\
-    \x01(\tR\x04name\x12\x19\n\x08name_new\x18\x02\x20\x01(\tR\x07nameNew\
-    \x12\x18\n\x07comment\x18\x03\x20\x01(\tR\x07comment\")\n\x13RequestData\
-    baseInfo\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04name\"@\n\x14ResponseD\
-    atabaseInfo\x12(\n\x08database\x18\x03\x20\x01(\x0b2\x0c.db.DatabaseR\
-    \x08database\"+\n\x15RequestDatabaseRemove\x12\x12\n\x04name\x18\x01\x20\
-    \x01(\tR\x04nameBN\n\x1dcn.aberic.george.protocols.dbB\rDatabaseProtoZ\
-    \x1egithub.com/george/protocols/dbb\x06proto3\
+    \x1a\rdb/view.proto\x1a\x11db/response.proto\"\x95\x01\n\x08Database\x12\
+    \x12\n\x04name\x18\x01\x20\x01(\tR\x04name\x12\x18\n\x07comment\x18\x02\
+    \x20\x01(\tR\x07comment\x12;\n\x0bcreate_time\x18\x03\x20\x01(\x0b2\x1a.\
+    google.protobuf.TimestampR\ncreateTime\x12\x1e\n\x05views\x18\x04\x20\
+    \x03(\x0b2\x08.db.ViewR\x05views\":\n\x0cDatabaseList\x12*\n\tdatabases\
+    \x18\x01\x20\x03(\x0b2\x0c.db.DatabaseR\tdatabases\"E\n\x15RequestDataba\
+    seCreate\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04name\x12\x18\n\x07comm\
+    ent\x18\x02\x20\x01(\tR\x07comment\"`\n\x15RequestDatabaseModify\x12\x12\
+    \n\x04name\x18\x01\x20\x01(\tR\x04name\x12\x19\n\x08name_new\x18\x02\x20\
+    \x01(\tR\x07nameNew\x12\x18\n\x07comment\x18\x03\x20\x01(\tR\x07comment\
+    \")\n\x13RequestDatabaseInfo\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04na\
+    me\"}\n\x14ResponseDatabaseInfo\x12\"\n\x06status\x18\x01\x20\x01(\x0e2\
+    \n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\x02\x20\x01(\tR\x06msgE\
+    rr\x12(\n\x08database\x18\x03\x20\x01(\x0b2\x0c.db.DatabaseR\x08database\
+    \"+\n\x15RequestDatabaseRemove\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04\
+    nameBN\n\x1dcn.aberic.george.protocols.dbB\rDatabaseProtoZ\x1egithub.com\
+    /george/protocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

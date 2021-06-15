@@ -17,7 +17,6 @@ pub mod index;
 pub mod master;
 pub mod memory;
 pub mod page;
-pub mod parse;
 pub mod response;
 pub mod service;
 pub mod service_grpc;

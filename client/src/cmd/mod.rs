@@ -12,16 +12,40 @@
  * limitations under the License.
  */
 
+use std::sync::Arc;
+
+use db::Task;
+
 use crate::service::{Parse, User};
 
 mod command;
 pub mod config;
+mod delete;
+mod get;
+mod insert;
 mod options;
-mod scan;
+mod put;
+mod select;
+mod set;
+mod show;
 
 pub(crate) struct Command;
+
 pub(crate) struct Options;
-pub(crate) struct Scan;
+
+pub(crate) struct Show;
+
+pub(crate) struct Put;
+
+pub(crate) struct Set;
+
+pub(crate) struct Insert;
+
+pub(crate) struct Get;
+
+pub(crate) struct Select;
+
+pub(crate) struct Delete;
 
 pub(crate) struct Config {
     user: User,

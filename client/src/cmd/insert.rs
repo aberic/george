@@ -12,14 +12,14 @@
  * limitations under the License.
  */
 
-use crate::parse::Insert;
+use crate::cmd::Insert;
 use comm::errors::GeorgeResult;
 use db::Task;
 use std::str::Split;
 use std::sync::Arc;
 
 impl Insert {
-    pub fn analysis(_task: Arc<Task>, _vss: Vec<String>) -> GeorgeResult<Vec<u8>> {
+    pub fn analysis(_task: Arc<Task>, used: String, _vss: Vec<String>) -> GeorgeResult<Vec<u8>> {
         unimplemented!()
     }
 }

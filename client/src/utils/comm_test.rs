@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021. Aberic - All Rights Reserved.
+ * Copyright (c) 2020. Aberic - All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,14 +12,17 @@
  * limitations under the License.
  */
 
-use crate::parse::Set;
-use comm::errors::GeorgeResult;
-use db::Task;
-use std::str::Split;
-use std::sync::Arc;
+#[cfg(test)]
+mod comm {
+    use crate::utils::Comm;
 
-impl Set {
-    pub fn analysis(_task: Arc<Task>, _vss: Vec<String>) -> GeorgeResult<Vec<u8>> {
-        unimplemented!()
+    #[test]
+    fn test_parse() {
+        let t1 = "   asd   asd asd\n
+        \n
+        asd  asd  asd\n
+           "
+        .to_string();
+        println!("res = {}", Comm::parse_str(t1))
     }
 }

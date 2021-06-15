@@ -16,6 +16,7 @@ use crate::cmd::Command;
 
 mod cmd;
 mod service;
+mod utils;
 
 fn main() {
     Command::init()

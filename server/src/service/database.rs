@@ -30,7 +30,7 @@ use protocols::impls::db::service::Request;
 use protocols::impls::db::service_grpc::DatabaseService;
 
 use crate::utils::Comm;
-use protocols::impls::db::response::Response;
+use protocols::impls::db::response::{Response, Status};
 
 pub(crate) struct DatabaseServer {
     pub(crate) task: Arc<Task>,
@@ -103,7 +103,7 @@ impl DatabaseService for DatabaseServer {
         req: ServerRequestSingle<RequestDatabaseInfo>,
         resp: ServerResponseUnarySink<ResponseDatabaseInfo>,
     ) -> Result<()> {
-        let mut info = ResponseDatabaseInfo::new();
+        let mut response = ResponseDatabaseInfo::new();
         let mut item = Database::new();
         match self.task.database(req.message.name) {
             Ok(res) => {
@@ -111,14 +111,15 @@ impl DatabaseService for DatabaseServer {
                 item.set_name(item_r.name());
                 item.set_comment(item_r.comment());
                 item.set_create_time(Comm::proto_time_2_grpc_timestamp(item_r.create_time()));
-                info.set_database(item);
-                resp.finish(info)
+                response.set_status(Status::Ok);
+                response.set_database(item);
             }
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Err(err) => {
+                response.set_status(Status::Custom);
+                response.set_msg_err(err.to_string());
+            }
         }
+        resp.finish(response)
     }
 
     fn database_remove(
