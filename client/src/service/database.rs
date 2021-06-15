@@ -15,39 +15,39 @@
 use futures::executor;
 use grpc::ClientStubExt;
 
-use protocols::impls::db::service_grpc::ParseServiceClient;
+use protocols::impls::db::service_grpc::DatabaseServiceClient;
+use protocols::impls::db::user::RequestLogin;
 
-use crate::service::Parse;
+use crate::service::Database;
 use comm::errors::{Errs, GeorgeResult};
-use protocols::impls::db::parse::RequestParse;
 use protocols::impls::db::response::Status;
+use protocols::impls::db::service::Request;
 
-impl Parse {
-    pub(crate) fn new(remote: &str, port: u16) -> Parse {
-        Parse {
-            client: ParseServiceClient::new_plain(remote, port, Default::default()).unwrap(),
+impl Database {
+    pub(crate) fn new(remote: &str, port: u16) -> Database {
+        Database {
+            client: DatabaseServiceClient::new_plain(remote, port, Default::default()).unwrap(),
         }
     }
 }
 
-impl Parse {
-    pub(crate) fn scan(&self, scan_str: String) -> GeorgeResult<Vec<u8>> {
-        let mut req = RequestParse::new();
-        req.set_scan_str(scan_str);
+impl Database {
+    pub(crate) fn databases(&self, name: String, pass: String) -> GeorgeResult<()> {
+        let mut req = Request::new();
         let resp = self
             .client
-            .parse(grpc::RequestOptions::new(), req)
+            .databases(grpc::RequestOptions::new(), req)
             .join_metadata_result();
         let resp = executor::block_on(resp);
         match resp {
             Ok((_m, resp, _md)) => match resp.status {
-                Status::Ok => Ok(resp.res),
+                Status::Ok => Ok(()),
                 _ => Err(Errs::string(format!(
-                    "parse failed! status: {:#?}, msg: {}",
+                    "login failed! status: {:#?}, msg: {}",
                     resp.status, resp.msg_err
                 ))),
             },
-            Err(err) => Err(Errs::strs("parse failed!", err)),
+            Err(err) => Err(Errs::strs("login failed!", err)),
         }
     }
 }

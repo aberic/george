@@ -28,14 +28,9 @@ import "db/index.proto";
 import "db/disk.proto";
 import "db/memory.proto";
 import "db/response.proto";
-import "db/parse.proto";
 
 service UserService {
   rpc login(RequestLogin) returns (Response);
-}
-
-service ParseService {
-  rpc parse(RequestParse) returns (ResponseParse);
 }
 
 service PageService {

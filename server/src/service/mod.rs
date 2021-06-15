@@ -17,25 +17,23 @@ use crate::service::disk::DiskServer;
 use crate::service::index::IndexServer;
 use crate::service::memory::MemoryServer;
 use crate::service::page::PageServer;
-use crate::service::parse::ParseServer;
 use crate::service::user::UserServer;
 use crate::service::view::ViewServer;
 use db::Task;
 use deploy::{Init, LogPolicy};
 use protocols::impls::db::service_grpc::{
     DatabaseServiceServer, DiskServiceServer, IndexServiceServer, MemoryServiceServer,
-    PageServiceServer, ParseServiceServer, UserServiceServer, ViewServiceServer,
+    PageServiceServer, UserServiceServer, ViewServiceServer,
 };
 use std::path::Path;
 use std::sync::Arc;
 use std::thread;
 
-mod database;
+pub mod database;
 mod disk;
 mod index;
 mod memory;
 mod page;
-mod parse;
 mod user;
 mod view;
 
@@ -61,9 +59,6 @@ impl Server {
         server.http.conf.thread_name = Some("george-server".to_string());
         server.http.conf.reuse_port = Some(true);
         // server.http.set_cpu_pool_threads(4);
-        server.add_service(ParseServiceServer::new_service_def(ParseServer {
-            task: task.clone(),
-        }));
         server.add_service(UserServiceServer::new_service_def(UserServer {
             task: task.clone(),
         }));

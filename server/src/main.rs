@@ -16,7 +16,6 @@ use crate::cmd::Command;
 use crate::service::Server;
 
 mod cmd;
-mod parse;
 pub mod service;
 mod utils;
 

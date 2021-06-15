@@ -22,6 +22,7 @@ package db;
 
 import "google/protobuf/timestamp.proto";
 import "db/view.proto";
+import "db/response.proto";
 
 // 数据库
 message Database {
@@ -65,6 +66,8 @@ message RequestDatabaseInfo {
 
 // 请求数据库信息
 message ResponseDatabaseInfo {
+  Status status = 1;
+  string msg_err = 2;
   Database database = 3;
 }
 

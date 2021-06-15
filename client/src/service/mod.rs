@@ -12,15 +12,15 @@
  * limitations under the License.
  */
 
-use protocols::impls::db::service_grpc::{ParseServiceClient, UserServiceClient};
+use protocols::impls::db::service_grpc::{DatabaseServiceClient, UserServiceClient};
 
-mod parse;
+mod database;
 mod user;
 
 pub(crate) struct User {
     client: UserServiceClient,
 }
 
-pub(crate) struct Parse {
-    client: ParseServiceClient,
+pub(crate) struct Database {
+    client: DatabaseServiceClient,
 }

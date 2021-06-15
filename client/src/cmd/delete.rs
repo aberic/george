@@ -12,14 +12,16 @@
  * limitations under the License.
  */
 
-use crate::parse::Put;
-use comm::errors::GeorgeResult;
-use db::Task;
 use std::str::Split;
 use std::sync::Arc;
 
-impl Put {
-    pub fn analysis(_task: Arc<Task>, _vss: Vec<String>) -> GeorgeResult<Vec<u8>> {
+use comm::errors::GeorgeResult;
+use db::Task;
+
+use crate::cmd::Delete;
+
+impl Delete {
+    pub fn analysis(_task: Arc<Task>, used: String, _vss: Vec<String>) -> GeorgeResult<Vec<u8>> {
         unimplemented!()
     }
 }
