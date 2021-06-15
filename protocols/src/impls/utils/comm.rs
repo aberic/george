@@ -16,16 +16,19 @@ use protobuf::well_known_types::Timestamp;
 
 use comm::Time;
 
-use crate::utils::Comm;
-use protocols::impls::db;
-use std::str::Split;
+use crate::impls::db;
+use crate::impls::utils::Comm;
 
 impl Comm {
     pub fn proto_time_2_grpc_timestamp(time: Time) -> Timestamp {
         let mut timestamp = Timestamp::new();
-        timestamp.set_seconds(time.sec());
-        timestamp.set_nanos(time.nanos());
+        let (secs, nanos) = time.secs_nanos();
+        timestamp.set_seconds(secs);
+        timestamp.set_nanos(nanos);
         timestamp
+    }
+    pub fn proto_grpc_timestamp_2_time(secs: i64) -> Time {
+        Time::from_secs(secs)
     }
 
     pub fn proto_success_db() -> db::response::Response {
