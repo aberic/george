@@ -1445,6 +1445,8 @@ impl ::protobuf::reflect::ProtobufValue for RequestIndexInfo {
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct ResponseIndexInfo {
     // message fields
+    pub status: super::response::Status,
+    pub msg_err: ::std::string::String,
     pub index: ::protobuf::SingularPtrField<Index>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
@@ -1464,7 +1466,48 @@ impl ResponseIndexInfo {
         ::std::default::Default::default()
     }
 
-    // .db.Index index = 1;
+    // .db.Status status = 1;
+
+
+    pub fn get_status(&self) -> super::response::Status {
+        self.status
+    }
+    pub fn clear_status(&mut self) {
+        self.status = super::response::Status::Ok;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_status(&mut self, v: super::response::Status) {
+        self.status = v;
+    }
+
+    // string msg_err = 2;
+
+
+    pub fn get_msg_err(&self) -> &str {
+        &self.msg_err
+    }
+    pub fn clear_msg_err(&mut self) {
+        self.msg_err.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_msg_err(&mut self, v: ::std::string::String) {
+        self.msg_err = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_msg_err(&mut self) -> &mut ::std::string::String {
+        &mut self.msg_err
+    }
+
+    // Take field
+    pub fn take_msg_err(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.msg_err, ::std::string::String::new())
+    }
+
+    // .db.Index index = 3;
 
 
     pub fn get_index(&self) -> &Index {
@@ -1513,6 +1556,12 @@ impl ::protobuf::Message for ResponseIndexInfo {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 1 => {
+                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.status, 1, &mut self.unknown_fields)?
+                },
+                2 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.msg_err)?;
+                },
+                3 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.index)?;
                 },
                 _ => {
@@ -1527,6 +1576,12 @@ impl ::protobuf::Message for ResponseIndexInfo {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
+        if self.status != super::response::Status::Ok {
+            my_size += ::protobuf::rt::enum_size(1, self.status);
+        }
+        if !self.msg_err.is_empty() {
+            my_size += ::protobuf::rt::string_size(2, &self.msg_err);
+        }
         if let Some(ref v) = self.index.as_ref() {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
@@ -1537,8 +1592,14 @@ impl ::protobuf::Message for ResponseIndexInfo {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.status != super::response::Status::Ok {
+            os.write_enum(1, ::protobuf::ProtobufEnum::value(&self.status))?;
+        }
+        if !self.msg_err.is_empty() {
+            os.write_string(2, &self.msg_err)?;
+        }
         if let Some(ref v) = self.index.as_ref() {
-            os.write_tag(1, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_tag(3, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
         }
@@ -1580,6 +1641,16 @@ impl ::protobuf::Message for ResponseIndexInfo {
         static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<super::response::Status>>(
+                "status",
+                |m: &ResponseIndexInfo| { &m.status },
+                |m: &mut ResponseIndexInfo| { &mut m.status },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "msg_err",
+                |m: &ResponseIndexInfo| { &m.msg_err },
+                |m: &mut ResponseIndexInfo| { &mut m.msg_err },
+            ));
             fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Index>>(
                 "index",
                 |m: &ResponseIndexInfo| { &m.index },
@@ -1601,6 +1672,8 @@ impl ::protobuf::Message for ResponseIndexInfo {
 
 impl ::protobuf::Clear for ResponseIndexInfo {
     fn clear(&mut self) {
+        self.status = super::response::Status::Ok;
+        self.msg_err.clear();
         self.index.clear();
         self.unknown_fields.clear();
     }
@@ -1742,33 +1815,35 @@ impl ::protobuf::reflect::ProtobufValue for KeyType {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x0edb/index.proto\x12\x02db\x1a\x1fgoogle/protobuf/timestamp.proto\"\
-    \xea\x01\n\x05Index\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04name\x12\"\
-    \n\x06engine\x18\x02\x20\x01(\x0e2\n.db.EngineR\x06engine\x12\x18\n\x07p\
-    rimary\x18\x03\x20\x01(\x08R\x07primary\x12\x16\n\x06unique\x18\x04\x20\
-    \x01(\x08R\x06unique\x12\x12\n\x04null\x18\x05\x20\x01(\x08R\x04null\x12\
-    &\n\x08key_type\x18\x06\x20\x01(\x0e2\x0b.db.KeyTypeR\x07keyType\x12;\n\
-    \x0bcreate_time\x18\x07\x20\x01(\x0b2\x1a.google.protobuf.TimestampR\ncr\
-    eateTime\"0\n\tIndexList\x12#\n\x07indexes\x18\x01\x20\x03(\x0b2\t.db.In\
-    dexR\x07indexes\"T\n\x10RequestIndexList\x12#\n\rdatabase_name\x18\x01\
-    \x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tview_name\x18\x02\x20\x01(\tR\
-    \x08viewName\"\xfc\x01\n\x12RequestIndexCreate\x12#\n\rdatabase_name\x18\
+    \n\x0edb/index.proto\x12\x02db\x1a\x1fgoogle/protobuf/timestamp.proto\
+    \x1a\x11db/response.proto\"\xea\x01\n\x05Index\x12\x12\n\x04name\x18\x01\
+    \x20\x01(\tR\x04name\x12\"\n\x06engine\x18\x02\x20\x01(\x0e2\n.db.Engine\
+    R\x06engine\x12\x18\n\x07primary\x18\x03\x20\x01(\x08R\x07primary\x12\
+    \x16\n\x06unique\x18\x04\x20\x01(\x08R\x06unique\x12\x12\n\x04null\x18\
+    \x05\x20\x01(\x08R\x04null\x12&\n\x08key_type\x18\x06\x20\x01(\x0e2\x0b.\
+    db.KeyTypeR\x07keyType\x12;\n\x0bcreate_time\x18\x07\x20\x01(\x0b2\x1a.g\
+    oogle.protobuf.TimestampR\ncreateTime\"0\n\tIndexList\x12#\n\x07indexes\
+    \x18\x01\x20\x03(\x0b2\t.db.IndexR\x07indexes\"T\n\x10RequestIndexList\
+    \x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tvi\
+    ew_name\x18\x02\x20\x01(\tR\x08viewName\"\xfc\x01\n\x12RequestIndexCreat\
+    e\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tv\
+    iew_name\x18\x02\x20\x01(\tR\x08viewName\x12\x12\n\x04name\x18\x03\x20\
+    \x01(\tR\x04name\x12\"\n\x06engine\x18\x04\x20\x01(\x0e2\n.db.EngineR\
+    \x06engine\x12\x18\n\x07primary\x18\x05\x20\x01(\x08R\x07primary\x12\x16\
+    \n\x06unique\x18\x06\x20\x01(\x08R\x06unique\x12\x12\n\x04null\x18\x07\
+    \x20\x01(\x08R\x04null\x12&\n\x08key_type\x18\x08\x20\x01(\x0e2\x0b.db.K\
+    eyTypeR\x07keyType\"h\n\x10RequestIndexInfo\x12#\n\rdatabase_name\x18\
     \x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tview_name\x18\x02\x20\x01(\t\
-    R\x08viewName\x12\x12\n\x04name\x18\x03\x20\x01(\tR\x04name\x12\"\n\x06e\
-    ngine\x18\x04\x20\x01(\x0e2\n.db.EngineR\x06engine\x12\x18\n\x07primary\
-    \x18\x05\x20\x01(\x08R\x07primary\x12\x16\n\x06unique\x18\x06\x20\x01(\
-    \x08R\x06unique\x12\x12\n\x04null\x18\x07\x20\x01(\x08R\x04null\x12&\n\
-    \x08key_type\x18\x08\x20\x01(\x0e2\x0b.db.KeyTypeR\x07keyType\"h\n\x10Re\
-    questIndexInfo\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\
-    \x12\x1b\n\tview_name\x18\x02\x20\x01(\tR\x08viewName\x12\x12\n\x04name\
-    \x18\x03\x20\x01(\tR\x04name\"4\n\x11ResponseIndexInfo\x12\x1f\n\x05inde\
-    x\x18\x01\x20\x01(\x0b2\t.db.IndexR\x05index*D\n\x06Engine\x12\x08\n\x04\
-    None\x10\0\x12\r\n\tIncrement\x10\x01\x12\x0c\n\x08Sequence\x10\x02\x12\
-    \x08\n\x04Disk\x10\x03\x12\t\n\x05Block\x10\x04*M\n\x07KeyType\x12\n\n\
-    \x06String\x10\0\x12\x08\n\x04UInt\x10\x01\x12\x07\n\x03Int\x10\x02\x12\
-    \t\n\x05Float\x10\x03\x12\x08\n\x04Bool\x10\x04\x12\x0e\n\nNonsupport\
-    \x10\x05BK\n\x1dcn.aberic.george.protocols.dbB\nIndexProtoZ\x1egithub.co\
-    m/george/protocols/dbb\x06proto3\
+    R\x08viewName\x12\x12\n\x04name\x18\x03\x20\x01(\tR\x04name\"q\n\x11Resp\
+    onseIndexInfo\x12\"\n\x06status\x18\x01\x20\x01(\x0e2\n.db.StatusR\x06st\
+    atus\x12\x17\n\x07msg_err\x18\x02\x20\x01(\tR\x06msgErr\x12\x1f\n\x05ind\
+    ex\x18\x03\x20\x01(\x0b2\t.db.IndexR\x05index*D\n\x06Engine\x12\x08\n\
+    \x04None\x10\0\x12\r\n\tIncrement\x10\x01\x12\x0c\n\x08Sequence\x10\x02\
+    \x12\x08\n\x04Disk\x10\x03\x12\t\n\x05Block\x10\x04*M\n\x07KeyType\x12\n\
+    \n\x06String\x10\0\x12\x08\n\x04UInt\x10\x01\x12\x07\n\x03Int\x10\x02\
+    \x12\t\n\x05Float\x10\x03\x12\x08\n\x04Bool\x10\x04\x12\x0e\n\nNonsuppor\
+    t\x10\x05BK\n\x1dcn.aberic.george.protocols.dbB\nIndexProtoZ\x1egithub.c\
+    om/george/protocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

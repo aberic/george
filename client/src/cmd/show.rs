@@ -12,9 +12,6 @@
  * limitations under the License.
  */
 
-use std::str::Split;
-use std::sync::Arc;
-
 use comm::errors::{Errs, GeorgeResult};
 
 use crate::cmd::{Config, Show};
@@ -23,11 +20,20 @@ use cli_table::{print_stdout, Cell, Style, Table};
 use protocols::impls::utils::Comm;
 
 impl Show {
-    pub(crate) fn analysis(config: &Config, used: String, vss: Vec<String>) -> GeorgeResult<()> {
+    pub(crate) fn analysis(
+        config: &Config,
+        used: String,
+        scan: String,
+        vss: Vec<String>,
+    ) -> GeorgeResult<()> {
+        if vss.len() < 2 {
+            return Err(Errs::string(format!("error command with '{}'", scan)));
+        }
         let intent = vss[1].as_str();
         match intent {
             "databases" => {
-                let db_list = config.database.databases()?;
+                // show databases;
+                let db_list = config.database.list()?;
                 let list = db_list.databases;
                 let mut table = vec![];
                 for db in list.iter() {
@@ -54,9 +60,146 @@ impl Show {
                     Err(err) => Err(Errs::strs("print stdout", err)),
                 }
             }
-            "pages" => Err(Errs::str("no support pages now!")),
+            "pages" => {
+                // show pages;
+                let page_list = config.page.list()?;
+                let list = page_list.pages;
+                let mut table = vec![];
+                for page in list.iter() {
+                    table.push(vec![
+                        page.get_name().cell(),
+                        page.get_comment().cell(),
+                        page.get_size().cell(),
+                        page.get_period().cell(),
+                        Comm::proto_grpc_timestamp_2_time(page.get_create_time().seconds)
+                            .to_string("%Y-%m-%d %H:%M:%S")
+                            .cell()
+                            .justify(Justify::Right),
+                    ])
+                }
+                match print_stdout(
+                    table
+                        .table()
+                        .title(vec![
+                            "Name".cell().bold(true),
+                            "Comment".cell().bold(true),
+                            "Size".cell().bold(true),
+                            "Period".cell().bold(true),
+                            "Create Time".cell().bold(true),
+                        ])
+                        .bold(true),
+                ) {
+                    Ok(()) => Ok(()),
+                    Err(err) => Err(Errs::strs("print stdout", err)),
+                }
+            }
             "ledgers" => Err(Errs::str("no support ledgers now!")),
-            "views" => Err(Errs::str("no support views now!")),
+            "views" => {
+                // show views;
+                if used.is_empty() {
+                    return Err(Errs::str(
+                        "database name not defined, please use `use [database/page/ledger] [database]` first!",
+                    ));
+                }
+                let view_list = config.view.list(used)?;
+                let list = view_list.views;
+                let mut table = vec![];
+                for view in list.iter() {
+                    table.push(vec![
+                        view.get_name().cell(),
+                        view.get_comment().cell(),
+                        Comm::proto_grpc_timestamp_2_time(view.get_create_time().seconds)
+                            .to_string("%Y-%m-%d %H:%M:%S")
+                            .cell(),
+                        view.get_indexes().len().cell().justify(Justify::Right),
+                    ])
+                }
+                match print_stdout(
+                    table
+                        .table()
+                        .title(vec![
+                            "Name".cell().bold(true),
+                            "Comment".cell().bold(true),
+                            "Create Time".cell().bold(true),
+                            "Index Count".cell().bold(true),
+                        ])
+                        .bold(true),
+                ) {
+                    Ok(()) => Ok(()),
+                    Err(err) => Err(Errs::strs("print stdout", err)),
+                }
+            }
+            "indexes" => {
+                // show indexes from [view];
+                if vss.len() < 4 {
+                    return Err(Errs::string(format!("error command with '{}'", scan)));
+                }
+                if used.is_empty() {
+                    return Err(Errs::str(
+                        "database name not defined, please use `use [database/page/ledger] [database]` first!",
+                    ));
+                }
+                if vss[2].ne("from") {
+                    return Err(Errs::string(format!("error command with '{}'", scan)));
+                }
+                let view_name = vss[3].clone();
+                let mut view_exist = false;
+                match config.view.list(used.clone()) {
+                    Ok(list) => {
+                        for view in list.views.iter() {
+                            if view_name.eq(view.get_name()) {
+                                view_exist = true
+                            }
+                        }
+                    }
+                    _ => {
+                        return Err(Errs::string(format!(
+                            "no view matched {} in {}!",
+                            view_name, used
+                        )))
+                    }
+                }
+                if !view_exist {
+                    return Err(Errs::string(format!(
+                        "no view matched {} in {}!",
+                        view_name, used
+                    )));
+                }
+                let index_list = config.index.list(used, view_name)?;
+                let list = index_list.indexes;
+                let mut table = vec![];
+                for index in list.iter() {
+                    table.push(vec![
+                        index.get_name().cell(),
+                        index.get_unique().cell(),
+                        index.get_primary().cell(),
+                        index.get_null().cell(),
+                        Comm::key_type_str(index.get_key_type()).cell(),
+                        Comm::engine_str(index.get_engine()).cell(),
+                        Comm::proto_grpc_timestamp_2_time(index.get_create_time().seconds)
+                            .to_string("%Y-%m-%d %H:%M:%S")
+                            .cell()
+                            .justify(Justify::Right),
+                    ])
+                }
+                match print_stdout(
+                    table
+                        .table()
+                        .title(vec![
+                            "Name".cell().bold(true),
+                            "Unique".cell().bold(true),
+                            "Primary".cell().bold(true),
+                            "Null".cell().bold(true),
+                            "Key Type".cell().bold(true),
+                            "Engine".cell().bold(true),
+                            "Create Time".cell().bold(true),
+                        ])
+                        .bold(true),
+                ) {
+                    Ok(()) => Ok(()),
+                    Err(err) => Err(Errs::strs("print stdout", err)),
+                }
+            }
             _ => Err(Errs::string(format!(
                 "command do not support prefix {}",
                 intent

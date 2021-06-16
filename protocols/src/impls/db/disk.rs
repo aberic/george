@@ -849,6 +849,8 @@ impl ::protobuf::reflect::ProtobufValue for RequestDiskIOut {
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct ResponseDiskOut {
     // message fields
+    pub status: super::response::Status,
+    pub msg_err: ::std::string::String,
     pub value: ::std::vec::Vec<u8>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
@@ -868,7 +870,48 @@ impl ResponseDiskOut {
         ::std::default::Default::default()
     }
 
-    // bytes value = 1;
+    // .db.Status status = 1;
+
+
+    pub fn get_status(&self) -> super::response::Status {
+        self.status
+    }
+    pub fn clear_status(&mut self) {
+        self.status = super::response::Status::Ok;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_status(&mut self, v: super::response::Status) {
+        self.status = v;
+    }
+
+    // string msg_err = 2;
+
+
+    pub fn get_msg_err(&self) -> &str {
+        &self.msg_err
+    }
+    pub fn clear_msg_err(&mut self) {
+        self.msg_err.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_msg_err(&mut self, v: ::std::string::String) {
+        self.msg_err = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_msg_err(&mut self) -> &mut ::std::string::String {
+        &mut self.msg_err
+    }
+
+    // Take field
+    pub fn take_msg_err(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.msg_err, ::std::string::String::new())
+    }
+
+    // bytes value = 3;
 
 
     pub fn get_value(&self) -> &[u8] {
@@ -905,6 +948,12 @@ impl ::protobuf::Message for ResponseDiskOut {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 1 => {
+                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.status, 1, &mut self.unknown_fields)?
+                },
+                2 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.msg_err)?;
+                },
+                3 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.value)?;
                 },
                 _ => {
@@ -919,8 +968,14 @@ impl ::protobuf::Message for ResponseDiskOut {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
+        if self.status != super::response::Status::Ok {
+            my_size += ::protobuf::rt::enum_size(1, self.status);
+        }
+        if !self.msg_err.is_empty() {
+            my_size += ::protobuf::rt::string_size(2, &self.msg_err);
+        }
         if !self.value.is_empty() {
-            my_size += ::protobuf::rt::bytes_size(1, &self.value);
+            my_size += ::protobuf::rt::bytes_size(3, &self.value);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -928,8 +983,14 @@ impl ::protobuf::Message for ResponseDiskOut {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.status != super::response::Status::Ok {
+            os.write_enum(1, ::protobuf::ProtobufEnum::value(&self.status))?;
+        }
+        if !self.msg_err.is_empty() {
+            os.write_string(2, &self.msg_err)?;
+        }
         if !self.value.is_empty() {
-            os.write_bytes(1, &self.value)?;
+            os.write_bytes(3, &self.value)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -969,6 +1030,16 @@ impl ::protobuf::Message for ResponseDiskOut {
         static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<super::response::Status>>(
+                "status",
+                |m: &ResponseDiskOut| { &m.status },
+                |m: &mut ResponseDiskOut| { &mut m.status },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "msg_err",
+                |m: &ResponseDiskOut| { &m.msg_err },
+                |m: &mut ResponseDiskOut| { &mut m.msg_err },
+            ));
             fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
                 "value",
                 |m: &ResponseDiskOut| { &m.value },
@@ -990,6 +1061,8 @@ impl ::protobuf::Message for ResponseDiskOut {
 
 impl ::protobuf::Clear for ResponseDiskOut {
     fn clear(&mut self) {
+        self.status = super::response::Status::Ok;
+        self.msg_err.clear();
         self.value.clear();
         self.unknown_fields.clear();
     }
@@ -1503,11 +1576,9 @@ impl ::protobuf::reflect::ProtobufValue for RequestDiskSelect {
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct ResponseDiskSelect {
     // message fields
-    pub total: u64,
-    pub count: u64,
-    pub index_name: ::std::string::String,
-    pub asc: bool,
-    pub values: ::protobuf::RepeatedField<::std::vec::Vec<u8>>,
+    pub status: super::response::Status,
+    pub msg_err: ::std::string::String,
+    pub selected: ::protobuf::SingularPtrField<DiskSelected>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -1523,6 +1594,258 @@ impl<'a> ::std::default::Default for &'a ResponseDiskSelect {
 
 impl ResponseDiskSelect {
     pub fn new() -> ResponseDiskSelect {
+        ::std::default::Default::default()
+    }
+
+    // .db.Status status = 1;
+
+
+    pub fn get_status(&self) -> super::response::Status {
+        self.status
+    }
+    pub fn clear_status(&mut self) {
+        self.status = super::response::Status::Ok;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_status(&mut self, v: super::response::Status) {
+        self.status = v;
+    }
+
+    // string msg_err = 2;
+
+
+    pub fn get_msg_err(&self) -> &str {
+        &self.msg_err
+    }
+    pub fn clear_msg_err(&mut self) {
+        self.msg_err.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_msg_err(&mut self, v: ::std::string::String) {
+        self.msg_err = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_msg_err(&mut self) -> &mut ::std::string::String {
+        &mut self.msg_err
+    }
+
+    // Take field
+    pub fn take_msg_err(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.msg_err, ::std::string::String::new())
+    }
+
+    // .db.DiskSelected selected = 3;
+
+
+    pub fn get_selected(&self) -> &DiskSelected {
+        self.selected.as_ref().unwrap_or_else(|| <DiskSelected as ::protobuf::Message>::default_instance())
+    }
+    pub fn clear_selected(&mut self) {
+        self.selected.clear();
+    }
+
+    pub fn has_selected(&self) -> bool {
+        self.selected.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_selected(&mut self, v: DiskSelected) {
+        self.selected = ::protobuf::SingularPtrField::some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_selected(&mut self) -> &mut DiskSelected {
+        if self.selected.is_none() {
+            self.selected.set_default();
+        }
+        self.selected.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_selected(&mut self) -> DiskSelected {
+        self.selected.take().unwrap_or_else(|| DiskSelected::new())
+    }
+}
+
+impl ::protobuf::Message for ResponseDiskSelect {
+    fn is_initialized(&self) -> bool {
+        for v in &self.selected {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.status, 1, &mut self.unknown_fields)?
+                },
+                2 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.msg_err)?;
+                },
+                3 => {
+                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.selected)?;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if self.status != super::response::Status::Ok {
+            my_size += ::protobuf::rt::enum_size(1, self.status);
+        }
+        if !self.msg_err.is_empty() {
+            my_size += ::protobuf::rt::string_size(2, &self.msg_err);
+        }
+        if let Some(ref v) = self.selected.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.status != super::response::Status::Ok {
+            os.write_enum(1, ::protobuf::ProtobufEnum::value(&self.status))?;
+        }
+        if !self.msg_err.is_empty() {
+            os.write_string(2, &self.msg_err)?;
+        }
+        if let Some(ref v) = self.selected.as_ref() {
+            os.write_tag(3, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> ResponseDiskSelect {
+        ResponseDiskSelect::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
+        descriptor.get(|| {
+            let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<super::response::Status>>(
+                "status",
+                |m: &ResponseDiskSelect| { &m.status },
+                |m: &mut ResponseDiskSelect| { &mut m.status },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "msg_err",
+                |m: &ResponseDiskSelect| { &m.msg_err },
+                |m: &mut ResponseDiskSelect| { &mut m.msg_err },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<DiskSelected>>(
+                "selected",
+                |m: &ResponseDiskSelect| { &m.selected },
+                |m: &mut ResponseDiskSelect| { &mut m.selected },
+            ));
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<ResponseDiskSelect>(
+                "ResponseDiskSelect",
+                fields,
+                file_descriptor_proto()
+            )
+        })
+    }
+
+    fn default_instance() -> &'static ResponseDiskSelect {
+        static instance: ::protobuf::rt::LazyV2<ResponseDiskSelect> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(ResponseDiskSelect::new)
+    }
+}
+
+impl ::protobuf::Clear for ResponseDiskSelect {
+    fn clear(&mut self) {
+        self.status = super::response::Status::Ok;
+        self.msg_err.clear();
+        self.selected.clear();
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for ResponseDiskSelect {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for ResponseDiskSelect {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+pub struct DiskSelected {
+    // message fields
+    pub total: u64,
+    pub count: u64,
+    pub index_name: ::std::string::String,
+    pub asc: bool,
+    pub values: ::protobuf::RepeatedField<::std::vec::Vec<u8>>,
+    // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a DiskSelected {
+    fn default() -> &'a DiskSelected {
+        <DiskSelected as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl DiskSelected {
+    pub fn new() -> DiskSelected {
         ::std::default::Default::default()
     }
 
@@ -1623,7 +1946,7 @@ impl ResponseDiskSelect {
     }
 }
 
-impl ::protobuf::Message for ResponseDiskSelect {
+impl ::protobuf::Message for DiskSelected {
     fn is_initialized(&self) -> bool {
         true
     }
@@ -1737,8 +2060,8 @@ impl ::protobuf::Message for ResponseDiskSelect {
         Self::descriptor_static()
     }
 
-    fn new() -> ResponseDiskSelect {
-        ResponseDiskSelect::new()
+    fn new() -> DiskSelected {
+        DiskSelected::new()
     }
 
     fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
@@ -1747,44 +2070,44 @@ impl ::protobuf::Message for ResponseDiskSelect {
             let mut fields = ::std::vec::Vec::new();
             fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
                 "total",
-                |m: &ResponseDiskSelect| { &m.total },
-                |m: &mut ResponseDiskSelect| { &mut m.total },
+                |m: &DiskSelected| { &m.total },
+                |m: &mut DiskSelected| { &mut m.total },
             ));
             fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
                 "count",
-                |m: &ResponseDiskSelect| { &m.count },
-                |m: &mut ResponseDiskSelect| { &mut m.count },
+                |m: &DiskSelected| { &m.count },
+                |m: &mut DiskSelected| { &mut m.count },
             ));
             fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
                 "index_name",
-                |m: &ResponseDiskSelect| { &m.index_name },
-                |m: &mut ResponseDiskSelect| { &mut m.index_name },
+                |m: &DiskSelected| { &m.index_name },
+                |m: &mut DiskSelected| { &mut m.index_name },
             ));
             fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBool>(
                 "asc",
-                |m: &ResponseDiskSelect| { &m.asc },
-                |m: &mut ResponseDiskSelect| { &mut m.asc },
+                |m: &DiskSelected| { &m.asc },
+                |m: &mut DiskSelected| { &mut m.asc },
             ));
             fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
                 "values",
-                |m: &ResponseDiskSelect| { &m.values },
-                |m: &mut ResponseDiskSelect| { &mut m.values },
+                |m: &DiskSelected| { &m.values },
+                |m: &mut DiskSelected| { &mut m.values },
             ));
-            ::protobuf::reflect::MessageDescriptor::new_pb_name::<ResponseDiskSelect>(
-                "ResponseDiskSelect",
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<DiskSelected>(
+                "DiskSelected",
                 fields,
                 file_descriptor_proto()
             )
         })
     }
 
-    fn default_instance() -> &'static ResponseDiskSelect {
-        static instance: ::protobuf::rt::LazyV2<ResponseDiskSelect> = ::protobuf::rt::LazyV2::INIT;
-        instance.get(ResponseDiskSelect::new)
+    fn default_instance() -> &'static DiskSelected {
+        static instance: ::protobuf::rt::LazyV2<DiskSelected> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(DiskSelected::new)
     }
 }
 
-impl ::protobuf::Clear for ResponseDiskSelect {
+impl ::protobuf::Clear for DiskSelected {
     fn clear(&mut self) {
         self.total = 0;
         self.count = 0;
@@ -1795,13 +2118,13 @@ impl ::protobuf::Clear for ResponseDiskSelect {
     }
 }
 
-impl ::std::fmt::Debug for ResponseDiskSelect {
+impl ::std::fmt::Debug for DiskSelected {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         ::protobuf::text_format::fmt(self, f)
     }
 }
 
-impl ::protobuf::reflect::ProtobufValue for ResponseDiskSelect {
+impl ::protobuf::reflect::ProtobufValue for DiskSelected {
     fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
         ::protobuf::reflect::ReflectValueRef::Message(self)
     }
@@ -2057,11 +2380,9 @@ impl ::protobuf::reflect::ProtobufValue for RequestDiskDelete {
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct ResponseDiskDelete {
     // message fields
-    pub total: u64,
-    pub count: u64,
-    pub index_name: ::std::string::String,
-    pub asc: bool,
-    pub values: ::protobuf::RepeatedField<::std::vec::Vec<u8>>,
+    pub status: super::response::Status,
+    pub msg_err: ::std::string::String,
+    pub deleted: ::protobuf::SingularPtrField<DiskDeleted>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -2077,6 +2398,258 @@ impl<'a> ::std::default::Default for &'a ResponseDiskDelete {
 
 impl ResponseDiskDelete {
     pub fn new() -> ResponseDiskDelete {
+        ::std::default::Default::default()
+    }
+
+    // .db.Status status = 1;
+
+
+    pub fn get_status(&self) -> super::response::Status {
+        self.status
+    }
+    pub fn clear_status(&mut self) {
+        self.status = super::response::Status::Ok;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_status(&mut self, v: super::response::Status) {
+        self.status = v;
+    }
+
+    // string msg_err = 2;
+
+
+    pub fn get_msg_err(&self) -> &str {
+        &self.msg_err
+    }
+    pub fn clear_msg_err(&mut self) {
+        self.msg_err.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_msg_err(&mut self, v: ::std::string::String) {
+        self.msg_err = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_msg_err(&mut self) -> &mut ::std::string::String {
+        &mut self.msg_err
+    }
+
+    // Take field
+    pub fn take_msg_err(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.msg_err, ::std::string::String::new())
+    }
+
+    // .db.DiskDeleted deleted = 3;
+
+
+    pub fn get_deleted(&self) -> &DiskDeleted {
+        self.deleted.as_ref().unwrap_or_else(|| <DiskDeleted as ::protobuf::Message>::default_instance())
+    }
+    pub fn clear_deleted(&mut self) {
+        self.deleted.clear();
+    }
+
+    pub fn has_deleted(&self) -> bool {
+        self.deleted.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_deleted(&mut self, v: DiskDeleted) {
+        self.deleted = ::protobuf::SingularPtrField::some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_deleted(&mut self) -> &mut DiskDeleted {
+        if self.deleted.is_none() {
+            self.deleted.set_default();
+        }
+        self.deleted.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_deleted(&mut self) -> DiskDeleted {
+        self.deleted.take().unwrap_or_else(|| DiskDeleted::new())
+    }
+}
+
+impl ::protobuf::Message for ResponseDiskDelete {
+    fn is_initialized(&self) -> bool {
+        for v in &self.deleted {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.status, 1, &mut self.unknown_fields)?
+                },
+                2 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.msg_err)?;
+                },
+                3 => {
+                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.deleted)?;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if self.status != super::response::Status::Ok {
+            my_size += ::protobuf::rt::enum_size(1, self.status);
+        }
+        if !self.msg_err.is_empty() {
+            my_size += ::protobuf::rt::string_size(2, &self.msg_err);
+        }
+        if let Some(ref v) = self.deleted.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.status != super::response::Status::Ok {
+            os.write_enum(1, ::protobuf::ProtobufEnum::value(&self.status))?;
+        }
+        if !self.msg_err.is_empty() {
+            os.write_string(2, &self.msg_err)?;
+        }
+        if let Some(ref v) = self.deleted.as_ref() {
+            os.write_tag(3, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> ResponseDiskDelete {
+        ResponseDiskDelete::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
+        descriptor.get(|| {
+            let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<super::response::Status>>(
+                "status",
+                |m: &ResponseDiskDelete| { &m.status },
+                |m: &mut ResponseDiskDelete| { &mut m.status },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "msg_err",
+                |m: &ResponseDiskDelete| { &m.msg_err },
+                |m: &mut ResponseDiskDelete| { &mut m.msg_err },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<DiskDeleted>>(
+                "deleted",
+                |m: &ResponseDiskDelete| { &m.deleted },
+                |m: &mut ResponseDiskDelete| { &mut m.deleted },
+            ));
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<ResponseDiskDelete>(
+                "ResponseDiskDelete",
+                fields,
+                file_descriptor_proto()
+            )
+        })
+    }
+
+    fn default_instance() -> &'static ResponseDiskDelete {
+        static instance: ::protobuf::rt::LazyV2<ResponseDiskDelete> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(ResponseDiskDelete::new)
+    }
+}
+
+impl ::protobuf::Clear for ResponseDiskDelete {
+    fn clear(&mut self) {
+        self.status = super::response::Status::Ok;
+        self.msg_err.clear();
+        self.deleted.clear();
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for ResponseDiskDelete {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for ResponseDiskDelete {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+pub struct DiskDeleted {
+    // message fields
+    pub total: u64,
+    pub count: u64,
+    pub index_name: ::std::string::String,
+    pub asc: bool,
+    pub values: ::protobuf::RepeatedField<::std::vec::Vec<u8>>,
+    // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a DiskDeleted {
+    fn default() -> &'a DiskDeleted {
+        <DiskDeleted as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl DiskDeleted {
+    pub fn new() -> DiskDeleted {
         ::std::default::Default::default()
     }
 
@@ -2177,7 +2750,7 @@ impl ResponseDiskDelete {
     }
 }
 
-impl ::protobuf::Message for ResponseDiskDelete {
+impl ::protobuf::Message for DiskDeleted {
     fn is_initialized(&self) -> bool {
         true
     }
@@ -2291,8 +2864,8 @@ impl ::protobuf::Message for ResponseDiskDelete {
         Self::descriptor_static()
     }
 
-    fn new() -> ResponseDiskDelete {
-        ResponseDiskDelete::new()
+    fn new() -> DiskDeleted {
+        DiskDeleted::new()
     }
 
     fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
@@ -2301,44 +2874,44 @@ impl ::protobuf::Message for ResponseDiskDelete {
             let mut fields = ::std::vec::Vec::new();
             fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
                 "total",
-                |m: &ResponseDiskDelete| { &m.total },
-                |m: &mut ResponseDiskDelete| { &mut m.total },
+                |m: &DiskDeleted| { &m.total },
+                |m: &mut DiskDeleted| { &mut m.total },
             ));
             fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
                 "count",
-                |m: &ResponseDiskDelete| { &m.count },
-                |m: &mut ResponseDiskDelete| { &mut m.count },
+                |m: &DiskDeleted| { &m.count },
+                |m: &mut DiskDeleted| { &mut m.count },
             ));
             fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
                 "index_name",
-                |m: &ResponseDiskDelete| { &m.index_name },
-                |m: &mut ResponseDiskDelete| { &mut m.index_name },
+                |m: &DiskDeleted| { &m.index_name },
+                |m: &mut DiskDeleted| { &mut m.index_name },
             ));
             fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBool>(
                 "asc",
-                |m: &ResponseDiskDelete| { &m.asc },
-                |m: &mut ResponseDiskDelete| { &mut m.asc },
+                |m: &DiskDeleted| { &m.asc },
+                |m: &mut DiskDeleted| { &mut m.asc },
             ));
             fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
                 "values",
-                |m: &ResponseDiskDelete| { &m.values },
-                |m: &mut ResponseDiskDelete| { &mut m.values },
+                |m: &DiskDeleted| { &m.values },
+                |m: &mut DiskDeleted| { &mut m.values },
             ));
-            ::protobuf::reflect::MessageDescriptor::new_pb_name::<ResponseDiskDelete>(
-                "ResponseDiskDelete",
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<DiskDeleted>(
+                "DiskDeleted",
                 fields,
                 file_descriptor_proto()
             )
         })
     }
 
-    fn default_instance() -> &'static ResponseDiskDelete {
-        static instance: ::protobuf::rt::LazyV2<ResponseDiskDelete> = ::protobuf::rt::LazyV2::INIT;
-        instance.get(ResponseDiskDelete::new)
+    fn default_instance() -> &'static DiskDeleted {
+        static instance: ::protobuf::rt::LazyV2<DiskDeleted> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(DiskDeleted::new)
     }
 }
 
-impl ::protobuf::Clear for ResponseDiskDelete {
+impl ::protobuf::Clear for DiskDeleted {
     fn clear(&mut self) {
         self.total = 0;
         self.count = 0;
@@ -2349,48 +2922,56 @@ impl ::protobuf::Clear for ResponseDiskDelete {
     }
 }
 
-impl ::std::fmt::Debug for ResponseDiskDelete {
+impl ::std::fmt::Debug for DiskDeleted {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         ::protobuf::text_format::fmt(self, f)
     }
 }
 
-impl ::protobuf::reflect::ProtobufValue for ResponseDiskDelete {
+impl ::protobuf::reflect::ProtobufValue for DiskDeleted {
     fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
         ::protobuf::reflect::ReflectValueRef::Message(self)
     }
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\rdb/disk.proto\x12\x02db\"{\n\x0fRequestDiskInto\x12#\n\rdatabase_nam\
-    e\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tview_name\x18\x02\x20\
-    \x01(\tR\x08viewName\x12\x10\n\x03key\x18\x03\x20\x01(\tR\x03key\x12\x14\
-    \n\x05value\x18\x04\x20\x01(\x0cR\x05value\"d\n\x0eRequestDiskOut\x12#\n\
-    \rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tview_name\
-    \x18\x02\x20\x01(\tR\x08viewName\x12\x10\n\x03key\x18\x03\x20\x01(\tR\
-    \x03key\"\x84\x01\n\x0fRequestDiskIOut\x12#\n\rdatabase_name\x18\x01\x20\
-    \x01(\tR\x0cdatabaseName\x12\x1b\n\tview_name\x18\x02\x20\x01(\tR\x08vie\
-    wName\x12\x1d\n\nindex_name\x18\x03\x20\x01(\tR\tindexName\x12\x10\n\x03\
-    key\x18\x04\x20\x01(\tR\x03key\"'\n\x0fResponseDiskOut\x12\x14\n\x05valu\
-    e\x18\x01\x20\x01(\x0cR\x05value\"g\n\x11RequestDiskRemove\x12#\n\rdatab\
-    ase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tview_name\x18\
-    \x02\x20\x01(\tR\x08viewName\x12\x10\n\x03key\x18\x03\x20\x01(\tR\x03key\
-    \"\x89\x01\n\x11RequestDiskSelect\x12#\n\rdatabase_name\x18\x01\x20\x01(\
-    \tR\x0cdatabaseName\x12\x1b\n\tview_name\x18\x02\x20\x01(\tR\x08viewName\
+    \n\rdb/disk.proto\x12\x02db\x1a\x11db/response.proto\"{\n\x0fRequestDisk\
+    Into\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\n\
+    \tview_name\x18\x02\x20\x01(\tR\x08viewName\x12\x10\n\x03key\x18\x03\x20\
+    \x01(\tR\x03key\x12\x14\n\x05value\x18\x04\x20\x01(\x0cR\x05value\"d\n\
+    \x0eRequestDiskOut\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabase\
+    Name\x12\x1b\n\tview_name\x18\x02\x20\x01(\tR\x08viewName\x12\x10\n\x03k\
+    ey\x18\x03\x20\x01(\tR\x03key\"\x84\x01\n\x0fRequestDiskIOut\x12#\n\rdat\
+    abase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tview_name\x18\
+    \x02\x20\x01(\tR\x08viewName\x12\x1d\n\nindex_name\x18\x03\x20\x01(\tR\t\
+    indexName\x12\x10\n\x03key\x18\x04\x20\x01(\tR\x03key\"d\n\x0fResponseDi\
+    skOut\x12\"\n\x06status\x18\x01\x20\x01(\x0e2\n.db.StatusR\x06status\x12\
+    \x17\n\x07msg_err\x18\x02\x20\x01(\tR\x06msgErr\x12\x14\n\x05value\x18\
+    \x03\x20\x01(\x0cR\x05value\"g\n\x11RequestDiskRemove\x12#\n\rdatabase_n\
+    ame\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tview_name\x18\x02\x20\
+    \x01(\tR\x08viewName\x12\x10\n\x03key\x18\x03\x20\x01(\tR\x03key\"\x89\
+    \x01\n\x11RequestDiskSelect\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\
+    \x0cdatabaseName\x12\x1b\n\tview_name\x18\x02\x20\x01(\tR\x08viewName\
     \x122\n\x15constraint_json_bytes\x18\x03\x20\x01(\x0cR\x13constraintJson\
-    Bytes\"\x89\x01\n\x12ResponseDiskSelect\x12\x14\n\x05total\x18\x01\x20\
+    Bytes\"\x7f\n\x12ResponseDiskSelect\x12\"\n\x06status\x18\x01\x20\x01(\
+    \x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\x02\x20\x01(\tR\
+    \x06msgErr\x12,\n\x08selected\x18\x03\x20\x01(\x0b2\x10.db.DiskSelectedR\
+    \x08selected\"\x83\x01\n\x0cDiskSelected\x12\x14\n\x05total\x18\x01\x20\
     \x01(\x04R\x05total\x12\x14\n\x05count\x18\x02\x20\x01(\x04R\x05count\
     \x12\x1d\n\nindex_name\x18\x03\x20\x01(\tR\tindexName\x12\x10\n\x03asc\
     \x18\x04\x20\x01(\x08R\x03asc\x12\x16\n\x06values\x18\x06\x20\x03(\x0cR\
     \x06values\"\x89\x01\n\x11RequestDiskDelete\x12#\n\rdatabase_name\x18\
     \x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tview_name\x18\x02\x20\x01(\t\
     R\x08viewName\x122\n\x15constraint_json_bytes\x18\x03\x20\x01(\x0cR\x13c\
-    onstraintJsonBytes\"\x89\x01\n\x12ResponseDiskDelete\x12\x14\n\x05total\
-    \x18\x01\x20\x01(\x04R\x05total\x12\x14\n\x05count\x18\x02\x20\x01(\x04R\
-    \x05count\x12\x1d\n\nindex_name\x18\x03\x20\x01(\tR\tindexName\x12\x10\n\
-    \x03asc\x18\x04\x20\x01(\x08R\x03asc\x12\x16\n\x06values\x18\x06\x20\x03\
-    (\x0cR\x06valuesBJ\n\x1dcn.aberic.george.protocols.dbB\tDiskProtoZ\x1egi\
-    thub.com/george/protocols/dbb\x06proto3\
+    onstraintJsonBytes\"|\n\x12ResponseDiskDelete\x12\"\n\x06status\x18\x01\
+    \x20\x01(\x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\x02\x20\
+    \x01(\tR\x06msgErr\x12)\n\x07deleted\x18\x03\x20\x01(\x0b2\x0f.db.DiskDe\
+    letedR\x07deleted\"\x82\x01\n\x0bDiskDeleted\x12\x14\n\x05total\x18\x01\
+    \x20\x01(\x04R\x05total\x12\x14\n\x05count\x18\x02\x20\x01(\x04R\x05coun\
+    t\x12\x1d\n\nindex_name\x18\x03\x20\x01(\tR\tindexName\x12\x10\n\x03asc\
+    \x18\x04\x20\x01(\x08R\x03asc\x12\x16\n\x06values\x18\x06\x20\x03(\x0cR\
+    \x06valuesBJ\n\x1dcn.aberic.george.protocols.dbB\tDiskProtoZ\x1egithub.c\
+    om/george/protocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

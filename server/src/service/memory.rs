@@ -14,16 +14,14 @@
 
 use db::task::traits::TMaster;
 use db::Task;
-use grpc::{
-    Error, GrpcMessageError, GrpcStatus, Result, ServerHandlerContext, ServerRequestSingle,
-    ServerResponseUnarySink,
-};
+use grpc::{Result, ServerHandlerContext, ServerRequestSingle, ServerResponseUnarySink};
 use protocols::impls::db::memory::{
     RequestMemoryInto, RequestMemoryOut, RequestMemoryPInto, RequestMemoryPOut,
     RequestMemoryPRemove, RequestMemoryRemove, ResponseMemoryOut, ResponseMemoryPOut,
 };
-use protocols::impls::db::response::Response;
+use protocols::impls::db::response::{Response, Status};
 use protocols::impls::db::service_grpc::MemoryService;
+use protocols::impls::utils::Comm;
 use std::sync::Arc;
 
 pub(crate) struct MemoryServer {
@@ -41,11 +39,8 @@ impl MemoryService for MemoryServer {
             .task
             .put_memory_default(req.message.key, req.message.value)
         {
-            Ok(()) => resp.finish(Response::new()),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 
@@ -59,11 +54,8 @@ impl MemoryService for MemoryServer {
             .task
             .set_memory_default(req.message.key, req.message.value)
         {
-            Ok(()) => resp.finish(Response::new()),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 
@@ -73,17 +65,18 @@ impl MemoryService for MemoryServer {
         req: ServerRequestSingle<RequestMemoryOut>,
         resp: ServerResponseUnarySink<ResponseMemoryOut>,
     ) -> Result<()> {
+        let mut response = ResponseMemoryOut::new();
         match self.task.get_memory_default(req.message.key) {
             Ok(res) => {
-                let mut response = ResponseMemoryOut::new();
                 response.set_value(res);
-                resp.finish(response)
+                response.set_status(Status::Ok);
             }
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Err(err) => {
+                response.set_status(Status::Custom);
+                response.set_msg_err(err.to_string());
+            }
         }
+        resp.finish(response)
     }
 
     fn remove(
@@ -93,11 +86,8 @@ impl MemoryService for MemoryServer {
         resp: ServerResponseUnarySink<Response>,
     ) -> Result<()> {
         match self.task.remove_memory_default(req.message.key) {
-            Ok(()) => resp.finish(Response::new()),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 
@@ -111,11 +101,8 @@ impl MemoryService for MemoryServer {
             .task
             .put_memory(req.message.page_name, req.message.key, req.message.value)
         {
-            Ok(()) => resp.finish(Response::new()),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 
@@ -129,11 +116,8 @@ impl MemoryService for MemoryServer {
             .task
             .set_memory(req.message.page_name, req.message.key, req.message.value)
         {
-            Ok(()) => resp.finish(Response::new()),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 
@@ -143,17 +127,18 @@ impl MemoryService for MemoryServer {
         req: ServerRequestSingle<RequestMemoryPOut>,
         resp: ServerResponseUnarySink<ResponseMemoryPOut>,
     ) -> Result<()> {
+        let mut response = ResponseMemoryPOut::new();
         match self.task.get_memory(req.message.page_name, req.message.key) {
             Ok(res) => {
-                let mut response = ResponseMemoryPOut::new();
                 response.set_value(res);
-                resp.finish(response)
+                response.set_status(Status::Ok);
             }
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Err(err) => {
+                response.set_status(Status::Custom);
+                response.set_msg_err(err.to_string());
+            }
         }
+        resp.finish(response)
     }
 
     fn remove_by_page(
@@ -166,11 +151,8 @@ impl MemoryService for MemoryServer {
             .task
             .remove_memory(req.message.page_name, req.message.key)
         {
-            Ok(()) => resp.finish(Response::new()),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 }

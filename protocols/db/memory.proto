@@ -20,25 +20,29 @@ option java_outer_classname = "MemoryProto";
 
 package db;
 
+import "db/response.proto";
+
 // 请求插入数据
 message RequestMemoryInto {
-  string key = 3;
-  bytes value = 4;
+  string key = 1;
+  bytes value = 2;
 }
 
 // 请求获取数据
 message RequestMemoryOut {
-  string key = 3;
+  string key = 1;
 }
 
 // 返回获取数据
 message ResponseMemoryOut {
-  bytes value = 1;
+  Status status = 1;
+  string msg_err = 2;
+  bytes value = 3;
 }
 
 // 请求删除数据
 message RequestMemoryRemove {
-  string key = 2;
+  string key = 1;
 }
 
 // 请求插入数据
@@ -52,20 +56,20 @@ message RequestMemoryPInto {
 // 请求获取数据
 message RequestMemoryPOut {
   // 缓存页名称
-  string page_name = 2;
-  string key = 3;
+  string page_name = 1;
+  string key = 2;
 }
 
 // 返回获取数据
 message ResponseMemoryPOut {
-  // 缓存页名称
-  string page_name = 2;
-  bytes value = 1;
+  Status status = 1;
+  string msg_err = 2;
+  bytes value = 3;
 }
 
 // 请求删除数据
 message RequestMemoryPRemove {
   // 缓存页名称
-  string page_name = 2;
-  string key = 3;
+  string page_name = 1;
+  string key = 2;
 }

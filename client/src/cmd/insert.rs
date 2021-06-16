@@ -16,7 +16,7 @@ use crate::cmd::{Config, Insert};
 use comm::errors::GeorgeResult;
 
 impl Insert {
-    pub(crate) fn analysis(config: &Config, used: String, _vss: Vec<String>) -> GeorgeResult<()> {
+    pub(crate) fn analysis(_config: &Config, _used: String, _vss: Vec<String>) -> GeorgeResult<()> {
         unimplemented!()
     }
 }

@@ -186,7 +186,10 @@ impl View {
     }
 
     /// 视图变更
-    pub(crate) fn modify(&mut self, name: String, comment: String) -> GeorgeResult<()> {
+    pub(crate) fn modify(&mut self, name: String, mut comment: String) -> GeorgeResult<()> {
+        if comment.is_empty() {
+            comment = self.comment();
+        }
         let time = Time::now();
         let view_path_new = Paths::view_path(self.database_name(), name.clone());
         let pigeonhole = Pigeonhole::create(0, view_path_new.clone(), time);

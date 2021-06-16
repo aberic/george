@@ -21,6 +21,7 @@ option java_outer_classname = "PageProto";
 package db;
 
 import "google/protobuf/timestamp.proto";
+import "db/response.proto";
 
 // 缓存页
 message Page {
@@ -68,6 +69,8 @@ message RequestPageInfo {
 
 // 请求缓存页信息
 message ResponsePageInfo {
+  Status status = 1;
+  string msg_err = 2;
   Page page = 3;
 }
 

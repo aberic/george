@@ -14,19 +14,17 @@
 
 use std::sync::Arc;
 
-use grpc::{
-    Error, GrpcMessageError, GrpcStatus, Result, ServerHandlerContext, ServerRequestSingle,
-    ServerResponseUnarySink,
-};
+use grpc::{Result, ServerHandlerContext, ServerRequestSingle, ServerResponseUnarySink};
 use protobuf::RepeatedField;
 
 use db::task::traits::{TForm, TMaster};
 use db::Task;
-use protocols::impls::db::response::Response;
+use protocols::impls::db::response::{Response, Status};
 use protocols::impls::db::service_grpc::ViewService;
 use protocols::impls::db::view::{
     RequestViewArchive, RequestViewCreate, RequestViewInfo, RequestViewList, RequestViewModify,
     RequestViewRecord, RequestViewRemove, ResponseViewInfo, ResponseViewRecord, View, ViewList,
+    ViewRecord,
 };
 use protocols::impls::utils::Comm;
 
@@ -35,7 +33,7 @@ pub(crate) struct ViewServer {
 }
 
 impl ViewService for ViewServer {
-    fn views(
+    fn list(
         &self,
         _o: ServerHandlerContext,
         req: ServerRequestSingle<RequestViewList>,
@@ -62,55 +60,47 @@ impl ViewService for ViewServer {
         resp.finish(list)
     }
 
-    fn view_create(
+    fn create(
         &self,
         _o: ServerHandlerContext,
         req: ServerRequestSingle<RequestViewCreate>,
         resp: ServerResponseUnarySink<Response>,
     ) -> Result<()> {
-        let response = Response::new();
         match self.task.view_create(
             req.message.database_name,
             req.message.name,
             req.message.comment,
             req.message.with_increment,
         ) {
-            Ok(()) => resp.finish(response),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 
-    fn view_modify(
+    fn modify(
         &self,
         _o: ServerHandlerContext,
         req: ServerRequestSingle<RequestViewModify>,
         resp: ServerResponseUnarySink<Response>,
     ) -> Result<()> {
-        let response = Response::new();
         match self.task.view_modify(
             req.message.database_name,
             req.message.name,
             req.message.name_new,
             req.message.comment,
         ) {
-            Ok(()) => resp.finish(response),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 
-    fn view_info(
+    fn info(
         &self,
         _o: ServerHandlerContext,
         req: ServerRequestSingle<RequestViewInfo>,
         resp: ServerResponseUnarySink<ResponseViewInfo>,
     ) -> Result<()> {
-        let mut info = ResponseViewInfo::new();
+        let mut response = ResponseViewInfo::new();
         let mut item = View::new();
         match self.task.view(req.message.database_name, req.message.name) {
             Ok(res) => {
@@ -118,17 +108,18 @@ impl ViewService for ViewServer {
                 item.set_name(item_r.name());
                 item.set_comment(item_r.comment());
                 item.set_create_time(Comm::proto_time_2_grpc_timestamp(item_r.create_time()));
-                info.set_view(item);
-                resp.finish(info)
+                response.set_view(item);
+                response.set_status(Status::Ok);
             }
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Err(err) => {
+                response.set_status(Status::Custom);
+                response.set_msg_err(err.to_string());
+            }
         }
+        resp.finish(response)
     }
 
-    fn view_remove(
+    fn remove(
         &self,
         _o: ServerHandlerContext,
         req: ServerRequestSingle<RequestViewRemove>,
@@ -138,15 +129,12 @@ impl ViewService for ViewServer {
             .task
             .view_remove(req.message.database_name, req.message.name)
         {
-            Ok(()) => resp.finish(Response::new()),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 
-    fn view_archive(
+    fn archive(
         &self,
         _o: ServerHandlerContext,
         req: ServerRequestSingle<RequestViewArchive>,
@@ -157,35 +145,35 @@ impl ViewService for ViewServer {
             req.message.name,
             req.message.archive_file_path,
         ) {
-            Ok(()) => resp.finish(Response::new()),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 
-    fn view_record(
+    fn record(
         &self,
         _o: ServerHandlerContext,
         req: ServerRequestSingle<RequestViewRecord>,
         resp: ServerResponseUnarySink<ResponseViewRecord>,
     ) -> Result<()> {
+        let mut response = ResponseViewRecord::new();
         match self.task.view_record(
             req.message.database_name,
             req.message.name,
             req.message.version as u16,
         ) {
             Ok((filepath, create_time)) => {
-                let mut response = ResponseViewRecord::new();
-                response.set_filepath(filepath);
-                response.set_time(Comm::proto_time_2_grpc_timestamp(create_time));
-                resp.finish(response)
+                let mut record = ViewRecord::new();
+                record.set_filepath(filepath);
+                record.set_time(Comm::proto_time_2_grpc_timestamp(create_time));
+                response.set_record(record);
+                response.set_status(Status::Ok);
             }
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Err(err) => {
+                response.set_status(Status::Custom);
+                response.set_msg_err(err.to_string());
+            }
         }
+        resp.finish(response)
     }
 }

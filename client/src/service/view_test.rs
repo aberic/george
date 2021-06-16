@@ -12,12 +12,13 @@
  * limitations under the License.
  */
 
-use comm::errors::GeorgeResult;
+#[cfg(test)]
+mod view {
+    use crate::service::View;
 
-use crate::cmd::{Config, Delete};
-
-impl Delete {
-    pub(crate) fn analysis(_config: &Config, _used: String, _vss: Vec<String>) -> GeorgeResult<()> {
-        unimplemented!()
+    #[test]
+    fn list() {
+        let view = View::new("127.0.0.1", 9219);
+        println!("views {:#?}", view.list("sys".to_string()))
     }
 }

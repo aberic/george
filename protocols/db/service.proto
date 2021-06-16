@@ -34,35 +34,35 @@ service UserService {
 }
 
 service PageService {
-  rpc pages(Request) returns (PageList);
-  rpc page_create(RequestPageCreate) returns (Response);
-  rpc page_modify(RequestPageModify) returns (Response);
-  rpc page_info(RequestPageInfo) returns (ResponsePageInfo);
-  rpc page_remove(RequestPageRemove) returns (Response);
+  rpc list(Request) returns (PageList);
+  rpc create(RequestPageCreate) returns (Response);
+  rpc modify(RequestPageModify) returns (Response);
+  rpc info(RequestPageInfo) returns (ResponsePageInfo);
+  rpc remove(RequestPageRemove) returns (Response);
 }
 
 service DatabaseService {
-  rpc databases(Request) returns (DatabaseList);
-  rpc database_create(RequestDatabaseCreate) returns (Response);
-  rpc database_modify(RequestDatabaseModify) returns (Response);
-  rpc database_info(RequestDatabaseInfo) returns (ResponseDatabaseInfo);
-  rpc database_remove(RequestDatabaseRemove) returns (Response);
+  rpc list(Request) returns (DatabaseList);
+  rpc create(RequestDatabaseCreate) returns (Response);
+  rpc modify(RequestDatabaseModify) returns (Response);
+  rpc info(RequestDatabaseInfo) returns (ResponseDatabaseInfo);
+  rpc remove(RequestDatabaseRemove) returns (Response);
 }
 
 service ViewService {
-  rpc views(RequestViewList) returns (ViewList);
-  rpc view_create(RequestViewCreate) returns (Response);
-  rpc view_modify(RequestViewModify) returns (Response);
-  rpc view_info(RequestViewInfo) returns (ResponseViewInfo);
-  rpc view_remove(RequestViewRemove) returns (Response);
-  rpc view_archive(RequestViewArchive) returns (Response);
-  rpc view_record(RequestViewRecord) returns (ResponseViewRecord);
+  rpc list(RequestViewList) returns (ViewList);
+  rpc create(RequestViewCreate) returns (Response);
+  rpc modify(RequestViewModify) returns (Response);
+  rpc info(RequestViewInfo) returns (ResponseViewInfo);
+  rpc remove(RequestViewRemove) returns (Response);
+  rpc archive(RequestViewArchive) returns (Response);
+  rpc record(RequestViewRecord) returns (ResponseViewRecord);
 }
 
 service IndexService {
-  rpc indexes(RequestIndexList) returns (IndexList);
-  rpc index_create(RequestIndexCreate) returns (Response);
-  rpc index_info(RequestIndexInfo) returns (ResponseIndexInfo);
+  rpc list(RequestIndexList) returns (IndexList);
+  rpc create(RequestIndexCreate) returns (Response);
+  rpc info(RequestIndexInfo) returns (ResponseIndexInfo);
 }
 
 service DiskService {
@@ -84,7 +84,6 @@ service MemoryService {
   rpc set_by_page(RequestMemoryPInto) returns (Response);
   rpc get_by_page(RequestMemoryPOut) returns (ResponseMemoryPOut);
   rpc remove_by_page(RequestMemoryPRemove) returns (Response);
-
 }
 
 message Request {}

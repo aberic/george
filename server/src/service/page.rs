@@ -14,10 +14,7 @@
 
 use std::sync::Arc;
 
-use grpc::{
-    Error, GrpcMessageError, GrpcStatus, Result, ServerHandlerContext, ServerRequestSingle,
-    ServerResponseUnarySink,
-};
+use grpc::{Result, ServerHandlerContext, ServerRequestSingle, ServerResponseUnarySink};
 use protobuf::RepeatedField;
 
 use db::task::traits::TMaster;
@@ -26,7 +23,7 @@ use protocols::impls::db::page::{
     Page, PageList, RequestPageCreate, RequestPageInfo, RequestPageModify, RequestPageRemove,
     ResponsePageInfo,
 };
-use protocols::impls::db::response::Response;
+use protocols::impls::db::response::{Response, Status};
 use protocols::impls::db::service::Request;
 use protocols::impls::db::service_grpc::PageService;
 use protocols::impls::utils::Comm;
@@ -36,7 +33,7 @@ pub(crate) struct PageServer {
 }
 
 impl PageService for PageServer {
-    fn pages(
+    fn list(
         &self,
         _o: ServerHandlerContext,
         _req: ServerRequestSingle<Request>,
@@ -60,7 +57,7 @@ impl PageService for PageServer {
         resp.finish(list)
     }
 
-    fn page_create(
+    fn create(
         &self,
         _o: ServerHandlerContext,
         req: ServerRequestSingle<RequestPageCreate>,
@@ -72,15 +69,12 @@ impl PageService for PageServer {
             req.message.size,
             req.message.period,
         ) {
-            Ok(()) => resp.finish(Response::new()),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 
-    fn page_modify(
+    fn modify(
         &self,
         _o: ServerHandlerContext,
         req: ServerRequestSingle<RequestPageModify>,
@@ -90,21 +84,18 @@ impl PageService for PageServer {
             .task
             .page_modify(req.message.name, req.message.name_new)
         {
-            Ok(()) => resp.finish(Response::new()),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 
-    fn page_info(
+    fn info(
         &self,
         _o: ServerHandlerContext,
         req: ServerRequestSingle<RequestPageInfo>,
         resp: ServerResponseUnarySink<ResponsePageInfo>,
     ) -> Result<()> {
-        let mut info = ResponsePageInfo::new();
+        let mut response = ResponsePageInfo::new();
         let mut item = Page::new();
         match self.task.page(req.message.name) {
             Ok(res) => {
@@ -114,28 +105,26 @@ impl PageService for PageServer {
                 item.set_size(item_r.size());
                 item.set_period(item_r.period());
                 item.set_create_time(Comm::proto_time_2_grpc_timestamp(item_r.create_time()));
-                info.set_page(item);
-                resp.finish(info)
+                response.set_page(item);
+                response.set_status(Status::Ok);
             }
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Err(err) => {
+                response.set_status(Status::Custom);
+                response.set_msg_err(err.to_string());
+            }
         }
+        resp.finish(response)
     }
 
-    fn page_remove(
+    fn remove(
         &self,
         _o: ServerHandlerContext,
         req: ServerRequestSingle<RequestPageRemove>,
         resp: ServerResponseUnarySink<Response>,
     ) -> Result<()> {
         match self.task.page_remove(req.message.name) {
-            Ok(()) => resp.finish(Response::new()),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 }

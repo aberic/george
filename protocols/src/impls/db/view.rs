@@ -1441,6 +1441,8 @@ impl ::protobuf::reflect::ProtobufValue for RequestViewInfo {
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct ResponseViewInfo {
     // message fields
+    pub status: super::response::Status,
+    pub msg_err: ::std::string::String,
     pub view: ::protobuf::SingularPtrField<View>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
@@ -1460,7 +1462,48 @@ impl ResponseViewInfo {
         ::std::default::Default::default()
     }
 
-    // .db.View view = 1;
+    // .db.Status status = 1;
+
+
+    pub fn get_status(&self) -> super::response::Status {
+        self.status
+    }
+    pub fn clear_status(&mut self) {
+        self.status = super::response::Status::Ok;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_status(&mut self, v: super::response::Status) {
+        self.status = v;
+    }
+
+    // string msg_err = 2;
+
+
+    pub fn get_msg_err(&self) -> &str {
+        &self.msg_err
+    }
+    pub fn clear_msg_err(&mut self) {
+        self.msg_err.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_msg_err(&mut self, v: ::std::string::String) {
+        self.msg_err = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_msg_err(&mut self) -> &mut ::std::string::String {
+        &mut self.msg_err
+    }
+
+    // Take field
+    pub fn take_msg_err(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.msg_err, ::std::string::String::new())
+    }
+
+    // .db.View view = 3;
 
 
     pub fn get_view(&self) -> &View {
@@ -1509,6 +1552,12 @@ impl ::protobuf::Message for ResponseViewInfo {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 1 => {
+                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.status, 1, &mut self.unknown_fields)?
+                },
+                2 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.msg_err)?;
+                },
+                3 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.view)?;
                 },
                 _ => {
@@ -1523,6 +1572,12 @@ impl ::protobuf::Message for ResponseViewInfo {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
+        if self.status != super::response::Status::Ok {
+            my_size += ::protobuf::rt::enum_size(1, self.status);
+        }
+        if !self.msg_err.is_empty() {
+            my_size += ::protobuf::rt::string_size(2, &self.msg_err);
+        }
         if let Some(ref v) = self.view.as_ref() {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
@@ -1533,8 +1588,14 @@ impl ::protobuf::Message for ResponseViewInfo {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.status != super::response::Status::Ok {
+            os.write_enum(1, ::protobuf::ProtobufEnum::value(&self.status))?;
+        }
+        if !self.msg_err.is_empty() {
+            os.write_string(2, &self.msg_err)?;
+        }
         if let Some(ref v) = self.view.as_ref() {
-            os.write_tag(1, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_tag(3, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
         }
@@ -1576,6 +1637,16 @@ impl ::protobuf::Message for ResponseViewInfo {
         static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<super::response::Status>>(
+                "status",
+                |m: &ResponseViewInfo| { &m.status },
+                |m: &mut ResponseViewInfo| { &mut m.status },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "msg_err",
+                |m: &ResponseViewInfo| { &m.msg_err },
+                |m: &mut ResponseViewInfo| { &mut m.msg_err },
+            ));
             fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<View>>(
                 "view",
                 |m: &ResponseViewInfo| { &m.view },
@@ -1597,6 +1668,8 @@ impl ::protobuf::Message for ResponseViewInfo {
 
 impl ::protobuf::Clear for ResponseViewInfo {
     fn clear(&mut self) {
+        self.status = super::response::Status::Ok;
+        self.msg_err.clear();
         self.view.clear();
         self.unknown_fields.clear();
     }
@@ -2307,8 +2380,9 @@ impl ::protobuf::reflect::ProtobufValue for RequestViewRecord {
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct ResponseViewRecord {
     // message fields
-    pub filepath: ::std::string::String,
-    pub time: ::protobuf::SingularPtrField<::protobuf::well_known_types::Timestamp>,
+    pub status: super::response::Status,
+    pub msg_err: ::std::string::String,
+    pub record: ::protobuf::SingularPtrField<ViewRecord>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -2324,6 +2398,255 @@ impl<'a> ::std::default::Default for &'a ResponseViewRecord {
 
 impl ResponseViewRecord {
     pub fn new() -> ResponseViewRecord {
+        ::std::default::Default::default()
+    }
+
+    // .db.Status status = 1;
+
+
+    pub fn get_status(&self) -> super::response::Status {
+        self.status
+    }
+    pub fn clear_status(&mut self) {
+        self.status = super::response::Status::Ok;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_status(&mut self, v: super::response::Status) {
+        self.status = v;
+    }
+
+    // string msg_err = 2;
+
+
+    pub fn get_msg_err(&self) -> &str {
+        &self.msg_err
+    }
+    pub fn clear_msg_err(&mut self) {
+        self.msg_err.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_msg_err(&mut self, v: ::std::string::String) {
+        self.msg_err = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_msg_err(&mut self) -> &mut ::std::string::String {
+        &mut self.msg_err
+    }
+
+    // Take field
+    pub fn take_msg_err(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.msg_err, ::std::string::String::new())
+    }
+
+    // .db.ViewRecord record = 3;
+
+
+    pub fn get_record(&self) -> &ViewRecord {
+        self.record.as_ref().unwrap_or_else(|| <ViewRecord as ::protobuf::Message>::default_instance())
+    }
+    pub fn clear_record(&mut self) {
+        self.record.clear();
+    }
+
+    pub fn has_record(&self) -> bool {
+        self.record.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_record(&mut self, v: ViewRecord) {
+        self.record = ::protobuf::SingularPtrField::some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_record(&mut self) -> &mut ViewRecord {
+        if self.record.is_none() {
+            self.record.set_default();
+        }
+        self.record.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_record(&mut self) -> ViewRecord {
+        self.record.take().unwrap_or_else(|| ViewRecord::new())
+    }
+}
+
+impl ::protobuf::Message for ResponseViewRecord {
+    fn is_initialized(&self) -> bool {
+        for v in &self.record {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.status, 1, &mut self.unknown_fields)?
+                },
+                2 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.msg_err)?;
+                },
+                3 => {
+                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.record)?;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if self.status != super::response::Status::Ok {
+            my_size += ::protobuf::rt::enum_size(1, self.status);
+        }
+        if !self.msg_err.is_empty() {
+            my_size += ::protobuf::rt::string_size(2, &self.msg_err);
+        }
+        if let Some(ref v) = self.record.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.status != super::response::Status::Ok {
+            os.write_enum(1, ::protobuf::ProtobufEnum::value(&self.status))?;
+        }
+        if !self.msg_err.is_empty() {
+            os.write_string(2, &self.msg_err)?;
+        }
+        if let Some(ref v) = self.record.as_ref() {
+            os.write_tag(3, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> ResponseViewRecord {
+        ResponseViewRecord::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
+        descriptor.get(|| {
+            let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<super::response::Status>>(
+                "status",
+                |m: &ResponseViewRecord| { &m.status },
+                |m: &mut ResponseViewRecord| { &mut m.status },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "msg_err",
+                |m: &ResponseViewRecord| { &m.msg_err },
+                |m: &mut ResponseViewRecord| { &mut m.msg_err },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<ViewRecord>>(
+                "record",
+                |m: &ResponseViewRecord| { &m.record },
+                |m: &mut ResponseViewRecord| { &mut m.record },
+            ));
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<ResponseViewRecord>(
+                "ResponseViewRecord",
+                fields,
+                file_descriptor_proto()
+            )
+        })
+    }
+
+    fn default_instance() -> &'static ResponseViewRecord {
+        static instance: ::protobuf::rt::LazyV2<ResponseViewRecord> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(ResponseViewRecord::new)
+    }
+}
+
+impl ::protobuf::Clear for ResponseViewRecord {
+    fn clear(&mut self) {
+        self.status = super::response::Status::Ok;
+        self.msg_err.clear();
+        self.record.clear();
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for ResponseViewRecord {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for ResponseViewRecord {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+pub struct ViewRecord {
+    // message fields
+    pub filepath: ::std::string::String,
+    pub time: ::protobuf::SingularPtrField<::protobuf::well_known_types::Timestamp>,
+    // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a ViewRecord {
+    fn default() -> &'a ViewRecord {
+        <ViewRecord as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl ViewRecord {
+    pub fn new() -> ViewRecord {
         ::std::default::Default::default()
     }
 
@@ -2387,7 +2710,7 @@ impl ResponseViewRecord {
     }
 }
 
-impl ::protobuf::Message for ResponseViewRecord {
+impl ::protobuf::Message for ViewRecord {
     fn is_initialized(&self) -> bool {
         for v in &self.time {
             if !v.is_initialized() {
@@ -2470,8 +2793,8 @@ impl ::protobuf::Message for ResponseViewRecord {
         Self::descriptor_static()
     }
 
-    fn new() -> ResponseViewRecord {
-        ResponseViewRecord::new()
+    fn new() -> ViewRecord {
+        ViewRecord::new()
     }
 
     fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
@@ -2480,29 +2803,29 @@ impl ::protobuf::Message for ResponseViewRecord {
             let mut fields = ::std::vec::Vec::new();
             fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
                 "filepath",
-                |m: &ResponseViewRecord| { &m.filepath },
-                |m: &mut ResponseViewRecord| { &mut m.filepath },
+                |m: &ViewRecord| { &m.filepath },
+                |m: &mut ViewRecord| { &mut m.filepath },
             ));
             fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<::protobuf::well_known_types::Timestamp>>(
                 "time",
-                |m: &ResponseViewRecord| { &m.time },
-                |m: &mut ResponseViewRecord| { &mut m.time },
+                |m: &ViewRecord| { &m.time },
+                |m: &mut ViewRecord| { &mut m.time },
             ));
-            ::protobuf::reflect::MessageDescriptor::new_pb_name::<ResponseViewRecord>(
-                "ResponseViewRecord",
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<ViewRecord>(
+                "ViewRecord",
                 fields,
                 file_descriptor_proto()
             )
         })
     }
 
-    fn default_instance() -> &'static ResponseViewRecord {
-        static instance: ::protobuf::rt::LazyV2<ResponseViewRecord> = ::protobuf::rt::LazyV2::INIT;
-        instance.get(ResponseViewRecord::new)
+    fn default_instance() -> &'static ViewRecord {
+        static instance: ::protobuf::rt::LazyV2<ViewRecord> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(ViewRecord::new)
     }
 }
 
-impl ::protobuf::Clear for ResponseViewRecord {
+impl ::protobuf::Clear for ViewRecord {
     fn clear(&mut self) {
         self.filepath.clear();
         self.time.clear();
@@ -2510,13 +2833,13 @@ impl ::protobuf::Clear for ResponseViewRecord {
     }
 }
 
-impl ::std::fmt::Debug for ResponseViewRecord {
+impl ::std::fmt::Debug for ViewRecord {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         ::protobuf::text_format::fmt(self, f)
     }
 }
 
-impl ::protobuf::reflect::ProtobufValue for ResponseViewRecord {
+impl ::protobuf::reflect::ProtobufValue for ViewRecord {
     fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
         ::protobuf::reflect::ReflectValueRef::Message(self)
     }
@@ -2524,33 +2847,38 @@ impl ::protobuf::reflect::ProtobufValue for ResponseViewRecord {
 
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\rdb/view.proto\x12\x02db\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\
-    \x0edb/index.proto\"\x96\x01\n\x04View\x12\x12\n\x04name\x18\x01\x20\x01\
-    (\tR\x04name\x12\x18\n\x07comment\x18\x02\x20\x01(\tR\x07comment\x12;\n\
-    \x0bcreate_time\x18\x03\x20\x01(\x0b2\x1a.google.protobuf.TimestampR\ncr\
-    eateTime\x12#\n\x07indexes\x18\x04\x20\x03(\x0b2\t.db.IndexR\x07indexes\
-    \"*\n\x08ViewList\x12\x1e\n\x05views\x18\x01\x20\x03(\x0b2\x08.db.ViewR\
-    \x05views\"6\n\x0fRequestViewList\x12#\n\rdatabase_name\x18\x01\x20\x01(\
-    \tR\x0cdatabaseName\"\x8d\x01\n\x11RequestViewCreate\x12#\n\rdatabase_na\
-    me\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x12\n\x04name\x18\x02\x20\x01\
-    (\tR\x04name\x12\x18\n\x07comment\x18\x03\x20\x01(\tR\x07comment\x12%\n\
-    \x0ewith_increment\x18\x04\x20\x01(\x08R\rwithIncrement\"\x81\x01\n\x11R\
-    equestViewModify\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseNa\
-    me\x12\x12\n\x04name\x18\x02\x20\x01(\tR\x04name\x12\x19\n\x08name_new\
-    \x18\x03\x20\x01(\tR\x07nameNew\x12\x18\n\x07comment\x18\x04\x20\x01(\tR\
-    \x07comment\"J\n\x0fRequestViewInfo\x12#\n\rdatabase_name\x18\x01\x20\
-    \x01(\tR\x0cdatabaseName\x12\x12\n\x04name\x18\x02\x20\x01(\tR\x04name\"\
-    0\n\x10ResponseViewInfo\x12\x1c\n\x04view\x18\x01\x20\x01(\x0b2\x08.db.V\
-    iewR\x04view\"L\n\x11RequestViewRemove\x12#\n\rdatabase_name\x18\x01\x20\
-    \x01(\tR\x0cdatabaseName\x12\x12\n\x04name\x18\x02\x20\x01(\tR\x04name\"\
-    y\n\x12RequestViewArchive\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cd\
-    atabaseName\x12\x12\n\x04name\x18\x02\x20\x01(\tR\x04name\x12*\n\x11arch\
-    ive_file_path\x18\x03\x20\x01(\tR\x0farchiveFilePath\"f\n\x11RequestView\
-    Record\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x12\
-    \n\x04name\x18\x02\x20\x01(\tR\x04name\x12\x18\n\x07version\x18\x03\x20\
-    \x01(\rR\x07version\"`\n\x12ResponseViewRecord\x12\x1a\n\x08filepath\x18\
-    \x01\x20\x01(\tR\x08filepath\x12.\n\x04time\x18\x02\x20\x01(\x0b2\x1a.go\
-    ogle.protobuf.TimestampR\x04timeBJ\n\x1dcn.aberic.george.protocols.dbB\t\
-    ViewProtoZ\x1egithub.com/george/protocols/dbb\x06proto3\
+    \x0edb/index.proto\x1a\x11db/response.proto\"\x96\x01\n\x04View\x12\x12\
+    \n\x04name\x18\x01\x20\x01(\tR\x04name\x12\x18\n\x07comment\x18\x02\x20\
+    \x01(\tR\x07comment\x12;\n\x0bcreate_time\x18\x03\x20\x01(\x0b2\x1a.goog\
+    le.protobuf.TimestampR\ncreateTime\x12#\n\x07indexes\x18\x04\x20\x03(\
+    \x0b2\t.db.IndexR\x07indexes\"*\n\x08ViewList\x12\x1e\n\x05views\x18\x01\
+    \x20\x03(\x0b2\x08.db.ViewR\x05views\"6\n\x0fRequestViewList\x12#\n\rdat\
+    abase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\"\x8d\x01\n\x11RequestVie\
+    wCreate\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\
+    \x12\n\x04name\x18\x02\x20\x01(\tR\x04name\x12\x18\n\x07comment\x18\x03\
+    \x20\x01(\tR\x07comment\x12%\n\x0ewith_increment\x18\x04\x20\x01(\x08R\r\
+    withIncrement\"\x81\x01\n\x11RequestViewModify\x12#\n\rdatabase_name\x18\
+    \x01\x20\x01(\tR\x0cdatabaseName\x12\x12\n\x04name\x18\x02\x20\x01(\tR\
+    \x04name\x12\x19\n\x08name_new\x18\x03\x20\x01(\tR\x07nameNew\x12\x18\n\
+    \x07comment\x18\x04\x20\x01(\tR\x07comment\"J\n\x0fRequestViewInfo\x12#\
+    \n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x12\n\x04name\
+    \x18\x02\x20\x01(\tR\x04name\"m\n\x10ResponseViewInfo\x12\"\n\x06status\
+    \x18\x01\x20\x01(\x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\
+    \x02\x20\x01(\tR\x06msgErr\x12\x1c\n\x04view\x18\x03\x20\x01(\x0b2\x08.d\
+    b.ViewR\x04view\"L\n\x11RequestViewRemove\x12#\n\rdatabase_name\x18\x01\
+    \x20\x01(\tR\x0cdatabaseName\x12\x12\n\x04name\x18\x02\x20\x01(\tR\x04na\
+    me\"y\n\x12RequestViewArchive\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\
+    \x0cdatabaseName\x12\x12\n\x04name\x18\x02\x20\x01(\tR\x04name\x12*\n\
+    \x11archive_file_path\x18\x03\x20\x01(\tR\x0farchiveFilePath\"f\n\x11Req\
+    uestViewRecord\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\
+    \x12\x12\n\x04name\x18\x02\x20\x01(\tR\x04name\x12\x18\n\x07version\x18\
+    \x03\x20\x01(\rR\x07version\"y\n\x12ResponseViewRecord\x12\"\n\x06status\
+    \x18\x01\x20\x01(\x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\
+    \x02\x20\x01(\tR\x06msgErr\x12&\n\x06record\x18\x03\x20\x01(\x0b2\x0e.db\
+    .ViewRecordR\x06record\"X\n\nViewRecord\x12\x1a\n\x08filepath\x18\x01\
+    \x20\x01(\tR\x08filepath\x12.\n\x04time\x18\x02\x20\x01(\x0b2\x1a.google\
+    .protobuf.TimestampR\x04timeBJ\n\x1dcn.aberic.george.protocols.dbB\tView\
+    ProtoZ\x1egithub.com/george/protocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

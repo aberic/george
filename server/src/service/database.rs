@@ -14,21 +14,23 @@
 
 use std::sync::Arc;
 
-use grpc::{
-    Error, GrpcMessageError, GrpcStatus, Result, ServerHandlerContext, ServerRequestSingle,
-    ServerResponseUnarySink,
-};
-use protobuf::RepeatedField;
+use grpc::{Result, ServerHandlerContext, ServerRequestSingle, ServerResponseUnarySink};
+use protobuf::{RepeatedField, SingularPtrField};
 
-use db::task::traits::TMaster;
+use crate::service::index::IndexServer;
+use crate::service::Enums;
+use db::task::traits::{TForm, TMaster};
 use db::Task;
+use protobuf::well_known_types::Timestamp;
 use protocols::impls::db::database::{
     Database, DatabaseList, RequestDatabaseCreate, RequestDatabaseInfo, RequestDatabaseModify,
     RequestDatabaseRemove, ResponseDatabaseInfo,
 };
+use protocols::impls::db::index::Index;
 use protocols::impls::db::response::{Response, Status};
 use protocols::impls::db::service::Request;
 use protocols::impls::db::service_grpc::DatabaseService;
+use protocols::impls::db::view::View;
 use protocols::impls::utils::Comm;
 
 pub(crate) struct DatabaseServer {
@@ -36,7 +38,7 @@ pub(crate) struct DatabaseServer {
 }
 
 impl DatabaseService for DatabaseServer {
-    fn databases(
+    fn list(
         &self,
         _o: ServerHandlerContext,
         _req: ServerRequestSingle<Request>,
@@ -58,45 +60,37 @@ impl DatabaseService for DatabaseServer {
         resp.finish(list)
     }
 
-    fn database_create(
+    fn create(
         &self,
         _o: ServerHandlerContext,
         req: ServerRequestSingle<RequestDatabaseCreate>,
         resp: ServerResponseUnarySink<Response>,
     ) -> Result<()> {
-        let response = Response::new();
         match self.task.database_create(
             req.message.get_name().to_string(),
             req.message.get_comment().to_string(),
         ) {
-            Ok(()) => resp.finish(response),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 
-    fn database_modify(
+    fn modify(
         &self,
         _o: ServerHandlerContext,
         req: ServerRequestSingle<RequestDatabaseModify>,
         resp: ServerResponseUnarySink<Response>,
     ) -> Result<()> {
-        let response = Response::new();
         match self
             .task
             .database_modify(req.message.name, req.message.name_new, req.message.comment)
         {
-            Ok(()) => resp.finish(response),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 
-    fn database_info(
+    fn info(
         &self,
         _o: ServerHandlerContext,
         req: ServerRequestSingle<RequestDatabaseInfo>,
@@ -110,6 +104,41 @@ impl DatabaseService for DatabaseServer {
                 item.set_name(item_r.name());
                 item.set_comment(item_r.comment());
                 item.set_create_time(Comm::proto_time_2_grpc_timestamp(item_r.create_time()));
+                let views = item_r.view_map();
+                let views_r = views.read().unwrap();
+                let mut views: RepeatedField<View> = RepeatedField::new();
+                for (_name, view) in views_r.iter() {
+                    let view_r = view.read().unwrap();
+                    let indexes = view_r.index_map();
+                    let indexes_r = indexes.read().unwrap();
+                    let mut indexes: RepeatedField<Index> = RepeatedField::new();
+                    for (_name, index) in indexes_r.iter() {
+                        indexes.push(Index {
+                            name: index.name(),
+                            engine: Enums::db_2_engine(index.engine()),
+                            primary: index.primary(),
+                            unique: index.unique(),
+                            null: index.null(),
+                            key_type: Enums::db_2_key_type(index.key_type()),
+                            create_time: SingularPtrField::some(Comm::proto_time_2_grpc_timestamp(
+                                index.create_time(),
+                            )),
+                            unknown_fields: Default::default(),
+                            cached_size: Default::default(),
+                        })
+                    }
+                    views.push(View {
+                        name: view_r.name(),
+                        comment: view_r.comment(),
+                        create_time: SingularPtrField::some(Comm::proto_time_2_grpc_timestamp(
+                            view_r.create_time(),
+                        )),
+                        indexes,
+                        unknown_fields: Default::default(),
+                        cached_size: Default::default(),
+                    })
+                }
+                item.set_views(views);
                 response.set_status(Status::Ok);
                 response.set_database(item);
             }
@@ -121,18 +150,15 @@ impl DatabaseService for DatabaseServer {
         resp.finish(response)
     }
 
-    fn database_remove(
+    fn remove(
         &self,
         _o: ServerHandlerContext,
         req: ServerRequestSingle<RequestDatabaseRemove>,
         resp: ServerResponseUnarySink<Response>,
     ) -> Result<()> {
         match self.task.database_remove(req.message.name) {
-            Ok(()) => resp.finish(Response::new()),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 }

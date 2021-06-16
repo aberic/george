@@ -12,16 +12,14 @@
  * limitations under the License.
  */
 
-use std::sync::Arc;
-
-use db::Task;
-
-use crate::service::{Database, User};
+use crate::service::{Database, Disk, Index, Memory, Page, User, View};
 
 mod command;
 pub mod config;
+mod create;
 mod delete;
 mod get;
+mod info;
 mod insert;
 mod options;
 mod put;
@@ -34,6 +32,10 @@ pub(crate) struct Command;
 pub(crate) struct Options;
 
 pub(crate) struct Show;
+
+pub(crate) struct Info;
+
+pub(crate) struct Create;
 
 pub(crate) struct Put;
 
@@ -50,4 +52,9 @@ pub(crate) struct Delete;
 pub(crate) struct Config {
     user: User,
     database: Database,
+    page: Page,
+    view: View,
+    index: Index,
+    disk: Disk,
+    memory: Memory,
 }

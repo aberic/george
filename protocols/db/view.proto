@@ -22,6 +22,7 @@ package db;
 
 import "google/protobuf/timestamp.proto";
 import "db/index.proto";
+import "db/response.proto";
 
 // 视图
 message View {
@@ -80,7 +81,9 @@ message RequestViewInfo {
 
 // 请求视图信息
 message ResponseViewInfo {
-  View view = 1;
+  Status status = 1;
+  string msg_err = 2;
+  View view = 3;
 }
 
 // 请求视图信息删除
@@ -113,6 +116,14 @@ message RequestViewRecord {
 
 // 指定归档版本信息
 message ResponseViewRecord {
+  Status status = 1;
+  string msg_err = 2;
+  // 归档版本信息
+  ViewRecord record = 3;
+}
+
+// 指定归档版本信息
+message ViewRecord {
   // 当前归档版本文件所处路径
   string filepath = 1;
   // 归档时间

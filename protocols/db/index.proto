@@ -21,6 +21,7 @@ option java_outer_classname = "IndexProto";
 package db;
 
 import "google/protobuf/timestamp.proto";
+import "db/response.proto";
 
 // 索引
 message Index {
@@ -85,7 +86,9 @@ message RequestIndexInfo {
 
 // 请求视图信息
 message ResponseIndexInfo {
-  Index index = 1;
+  Status status = 1;
+  string msg_err = 2;
+  Index index = 3;
 }
 
 // 存储引擎类型

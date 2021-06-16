@@ -1167,6 +1167,8 @@ impl ::protobuf::reflect::ProtobufValue for RequestPageInfo {
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct ResponsePageInfo {
     // message fields
+    pub status: super::response::Status,
+    pub msg_err: ::std::string::String,
     pub page: ::protobuf::SingularPtrField<Page>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
@@ -1184,6 +1186,47 @@ impl<'a> ::std::default::Default for &'a ResponsePageInfo {
 impl ResponsePageInfo {
     pub fn new() -> ResponsePageInfo {
         ::std::default::Default::default()
+    }
+
+    // .db.Status status = 1;
+
+
+    pub fn get_status(&self) -> super::response::Status {
+        self.status
+    }
+    pub fn clear_status(&mut self) {
+        self.status = super::response::Status::Ok;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_status(&mut self, v: super::response::Status) {
+        self.status = v;
+    }
+
+    // string msg_err = 2;
+
+
+    pub fn get_msg_err(&self) -> &str {
+        &self.msg_err
+    }
+    pub fn clear_msg_err(&mut self) {
+        self.msg_err.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_msg_err(&mut self, v: ::std::string::String) {
+        self.msg_err = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_msg_err(&mut self) -> &mut ::std::string::String {
+        &mut self.msg_err
+    }
+
+    // Take field
+    pub fn take_msg_err(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.msg_err, ::std::string::String::new())
     }
 
     // .db.Page page = 3;
@@ -1234,6 +1277,12 @@ impl ::protobuf::Message for ResponsePageInfo {
         while !is.eof()? {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
+                1 => {
+                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.status, 1, &mut self.unknown_fields)?
+                },
+                2 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.msg_err)?;
+                },
                 3 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.page)?;
                 },
@@ -1249,6 +1298,12 @@ impl ::protobuf::Message for ResponsePageInfo {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
+        if self.status != super::response::Status::Ok {
+            my_size += ::protobuf::rt::enum_size(1, self.status);
+        }
+        if !self.msg_err.is_empty() {
+            my_size += ::protobuf::rt::string_size(2, &self.msg_err);
+        }
         if let Some(ref v) = self.page.as_ref() {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
@@ -1259,6 +1314,12 @@ impl ::protobuf::Message for ResponsePageInfo {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.status != super::response::Status::Ok {
+            os.write_enum(1, ::protobuf::ProtobufEnum::value(&self.status))?;
+        }
+        if !self.msg_err.is_empty() {
+            os.write_string(2, &self.msg_err)?;
+        }
         if let Some(ref v) = self.page.as_ref() {
             os.write_tag(3, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
@@ -1302,6 +1363,16 @@ impl ::protobuf::Message for ResponsePageInfo {
         static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<super::response::Status>>(
+                "status",
+                |m: &ResponsePageInfo| { &m.status },
+                |m: &mut ResponsePageInfo| { &mut m.status },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "msg_err",
+                |m: &ResponsePageInfo| { &m.msg_err },
+                |m: &mut ResponsePageInfo| { &mut m.msg_err },
+            ));
             fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Page>>(
                 "page",
                 |m: &ResponsePageInfo| { &m.page },
@@ -1323,6 +1394,8 @@ impl ::protobuf::Message for ResponsePageInfo {
 
 impl ::protobuf::Clear for ResponsePageInfo {
     fn clear(&mut self) {
+        self.status = super::response::Status::Ok;
+        self.msg_err.clear();
         self.page.clear();
         self.unknown_fields.clear();
     }
@@ -1503,22 +1576,24 @@ impl ::protobuf::reflect::ProtobufValue for RequestPageRemove {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\rdb/page.proto\x12\x02db\x1a\x1fgoogle/protobuf/timestamp.proto\"\x9d\
-    \x01\n\x04Page\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04name\x12\x18\n\
-    \x07comment\x18\x02\x20\x01(\tR\x07comment\x12\x12\n\x04size\x18\x03\x20\
-    \x01(\x04R\x04size\x12\x16\n\x06period\x18\x04\x20\x01(\rR\x06period\x12\
-    ;\n\x0bcreate_time\x18\x05\x20\x01(\x0b2\x1a.google.protobuf.TimestampR\
-    \ncreateTime\"*\n\x08PageList\x12\x1e\n\x05pages\x18\x01\x20\x03(\x0b2\
-    \x08.db.PageR\x05pages\"m\n\x11RequestPageCreate\x12\x12\n\x04name\x18\
-    \x01\x20\x01(\tR\x04name\x12\x18\n\x07comment\x18\x02\x20\x01(\tR\x07com\
-    ment\x12\x12\n\x04size\x18\x03\x20\x01(\x04R\x04size\x12\x16\n\x06period\
-    \x18\x04\x20\x01(\rR\x06period\"B\n\x11RequestPageModify\x12\x12\n\x04na\
-    me\x18\x01\x20\x01(\tR\x04name\x12\x19\n\x08name_new\x18\x02\x20\x01(\tR\
-    \x07nameNew\"%\n\x0fRequestPageInfo\x12\x12\n\x04name\x18\x01\x20\x01(\t\
-    R\x04name\"0\n\x10ResponsePageInfo\x12\x1c\n\x04page\x18\x03\x20\x01(\
-    \x0b2\x08.db.PageR\x04page\"'\n\x11RequestPageRemove\x12\x12\n\x04name\
-    \x18\x01\x20\x01(\tR\x04nameBJ\n\x1dcn.aberic.george.protocols.dbB\tPage\
-    ProtoZ\x1egithub.com/george/protocols/dbb\x06proto3\
+    \n\rdb/page.proto\x12\x02db\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\
+    \x11db/response.proto\"\x9d\x01\n\x04Page\x12\x12\n\x04name\x18\x01\x20\
+    \x01(\tR\x04name\x12\x18\n\x07comment\x18\x02\x20\x01(\tR\x07comment\x12\
+    \x12\n\x04size\x18\x03\x20\x01(\x04R\x04size\x12\x16\n\x06period\x18\x04\
+    \x20\x01(\rR\x06period\x12;\n\x0bcreate_time\x18\x05\x20\x01(\x0b2\x1a.g\
+    oogle.protobuf.TimestampR\ncreateTime\"*\n\x08PageList\x12\x1e\n\x05page\
+    s\x18\x01\x20\x03(\x0b2\x08.db.PageR\x05pages\"m\n\x11RequestPageCreate\
+    \x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04name\x12\x18\n\x07comment\x18\
+    \x02\x20\x01(\tR\x07comment\x12\x12\n\x04size\x18\x03\x20\x01(\x04R\x04s\
+    ize\x12\x16\n\x06period\x18\x04\x20\x01(\rR\x06period\"B\n\x11RequestPag\
+    eModify\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04name\x12\x19\n\x08name_\
+    new\x18\x02\x20\x01(\tR\x07nameNew\"%\n\x0fRequestPageInfo\x12\x12\n\x04\
+    name\x18\x01\x20\x01(\tR\x04name\"m\n\x10ResponsePageInfo\x12\"\n\x06sta\
+    tus\x18\x01\x20\x01(\x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\
+    \x18\x02\x20\x01(\tR\x06msgErr\x12\x1c\n\x04page\x18\x03\x20\x01(\x0b2\
+    \x08.db.PageR\x04page\"'\n\x11RequestPageRemove\x12\x12\n\x04name\x18\
+    \x01\x20\x01(\tR\x04nameBJ\n\x1dcn.aberic.george.protocols.dbB\tPageProt\
+    oZ\x1egithub.com/george/protocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

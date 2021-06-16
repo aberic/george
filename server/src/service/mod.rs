@@ -21,6 +21,7 @@ use crate::service::user::UserServer;
 use crate::service::view::ViewServer;
 use db::Task;
 use deploy::{Init, LogPolicy};
+use protocols::impls::db::index::{Engine, KeyType};
 use protocols::impls::db::service_grpc::{
     DatabaseServiceServer, DiskServiceServer, IndexServiceServer, MemoryServiceServer,
     PageServiceServer, UserServiceServer, ViewServiceServer,
@@ -106,4 +107,50 @@ fn log_policy(init: Init) {
         "httpbis::server::conn".to_string(),
         false,
     ));
+}
+
+pub(crate) struct Enums;
+
+impl Enums {
+    pub(crate) fn db_2_engine(e: db::utils::enums::Engine) -> Engine {
+        match e {
+            db::utils::enums::Engine::None => Engine::None,
+            db::utils::enums::Engine::Disk => Engine::Disk,
+            db::utils::enums::Engine::Sequence => Engine::Sequence,
+            db::utils::enums::Engine::Block => Engine::Block,
+            db::utils::enums::Engine::Increment => Engine::Increment,
+        }
+    }
+
+    pub(crate) fn engine_2_db(e: Engine) -> db::utils::enums::Engine {
+        match e {
+            Engine::None => db::utils::enums::Engine::None,
+            Engine::Disk => db::utils::enums::Engine::Disk,
+            Engine::Sequence => db::utils::enums::Engine::Sequence,
+            Engine::Block => db::utils::enums::Engine::Block,
+            Engine::Increment => db::utils::enums::Engine::Increment,
+        }
+    }
+
+    pub(crate) fn db_2_key_type(e: db::utils::enums::KeyType) -> KeyType {
+        match e {
+            db::utils::enums::KeyType::None => KeyType::Nonsupport,
+            db::utils::enums::KeyType::String => KeyType::String,
+            db::utils::enums::KeyType::UInt => KeyType::UInt,
+            db::utils::enums::KeyType::Int => KeyType::Int,
+            db::utils::enums::KeyType::Bool => KeyType::Bool,
+            db::utils::enums::KeyType::Float => KeyType::Float,
+        }
+    }
+
+    pub(crate) fn key_type_2_db(e: KeyType) -> db::utils::enums::KeyType {
+        match e {
+            KeyType::Nonsupport => db::utils::enums::KeyType::None,
+            KeyType::String => db::utils::enums::KeyType::String,
+            KeyType::UInt => db::utils::enums::KeyType::UInt,
+            KeyType::Int => db::utils::enums::KeyType::Int,
+            KeyType::Bool => db::utils::enums::KeyType::Bool,
+            KeyType::Float => db::utils::enums::KeyType::Float,
+        }
+    }
 }

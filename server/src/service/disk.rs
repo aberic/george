@@ -14,20 +14,18 @@
 
 use std::sync::Arc;
 
-use grpc::{
-    Error, GrpcMessageError, GrpcStatus, Result, ServerHandlerContext, ServerRequestSingle,
-    ServerResponseUnarySink,
-};
+use grpc::{Result, ServerHandlerContext, ServerRequestSingle, ServerResponseUnarySink};
 
 use db::task::traits::TMaster;
 use db::Task;
 use protobuf::RepeatedField;
 use protocols::impls::db::disk::{
-    RequestDiskDelete, RequestDiskIOut, RequestDiskInto, RequestDiskOut, RequestDiskRemove,
-    RequestDiskSelect, ResponseDiskDelete, ResponseDiskOut, ResponseDiskSelect,
+    DiskDeleted, DiskSelected, RequestDiskDelete, RequestDiskIOut, RequestDiskInto, RequestDiskOut,
+    RequestDiskRemove, RequestDiskSelect, ResponseDiskDelete, ResponseDiskOut, ResponseDiskSelect,
 };
-use protocols::impls::db::response::Response;
+use protocols::impls::db::response::{Response, Status};
 use protocols::impls::db::service_grpc::DiskService;
+use protocols::impls::utils::Comm;
 
 pub(crate) struct DiskServer {
     pub(crate) task: Arc<Task>,
@@ -46,11 +44,8 @@ impl DiskService for DiskServer {
             req.message.key,
             req.message.value,
         ) {
-            Ok(()) => resp.finish(Response::new()),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 
@@ -66,11 +61,8 @@ impl DiskService for DiskServer {
             req.message.key,
             req.message.value,
         ) {
-            Ok(()) => resp.finish(Response::new()),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 
@@ -80,21 +72,22 @@ impl DiskService for DiskServer {
         req: ServerRequestSingle<RequestDiskOut>,
         resp: ServerResponseUnarySink<ResponseDiskOut>,
     ) -> Result<()> {
+        let mut response = ResponseDiskOut::new();
         match self.task.get_disk(
             req.message.database_name,
             req.message.view_name,
             req.message.key,
         ) {
             Ok(v8s) => {
-                let mut response = ResponseDiskOut::new();
                 response.set_value(v8s);
-                resp.finish(response)
+                response.set_status(Status::Ok);
             }
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Err(err) => {
+                response.set_status(Status::Custom);
+                response.set_msg_err(err.to_string());
+            }
         }
+        resp.finish(response)
     }
 
     fn get_by_index(
@@ -103,6 +96,7 @@ impl DiskService for DiskServer {
         req: ServerRequestSingle<RequestDiskIOut>,
         resp: ServerResponseUnarySink<ResponseDiskOut>,
     ) -> Result<()> {
+        let mut response = ResponseDiskOut::new();
         match self.task.get_disk_by_index(
             req.message.database_name,
             req.message.view_name,
@@ -110,15 +104,15 @@ impl DiskService for DiskServer {
             req.message.key,
         ) {
             Ok(v8s) => {
-                let mut response = ResponseDiskOut::new();
                 response.set_value(v8s);
-                resp.finish(response)
+                response.set_status(Status::Ok);
             }
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Err(err) => {
+                response.set_status(Status::Custom);
+                response.set_msg_err(err.to_string());
+            }
         }
+        resp.finish(response)
     }
 
     fn remove(
@@ -132,11 +126,8 @@ impl DiskService for DiskServer {
             req.message.view_name,
             req.message.key,
         ) {
-            Ok(()) => resp.finish(Response::new()),
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Ok(()) => resp.finish(Comm::proto_success_db()),
+            Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
     }
 
@@ -146,25 +137,28 @@ impl DiskService for DiskServer {
         req: ServerRequestSingle<RequestDiskSelect>,
         resp: ServerResponseUnarySink<ResponseDiskSelect>,
     ) -> Result<()> {
+        let mut response = ResponseDiskSelect::new();
         match self.task.select_disk(
             req.message.database_name,
             req.message.view_name,
             req.message.constraint_json_bytes,
         ) {
             Ok(exp) => {
-                let mut response = ResponseDiskSelect::new();
-                response.set_total(exp.total);
-                response.set_count(exp.count);
-                response.set_index_name(exp.index_name);
-                response.set_asc(exp.asc);
-                response.set_values(RepeatedField::from(exp.values));
-                resp.finish(response)
+                let mut selected = DiskSelected::new();
+                selected.set_total(exp.total);
+                selected.set_count(exp.count);
+                selected.set_index_name(exp.index_name);
+                selected.set_asc(exp.asc);
+                selected.set_values(RepeatedField::from(exp.values));
+                response.set_selected(selected);
+                response.set_status(Status::Ok);
             }
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Err(err) => {
+                response.set_status(Status::Custom);
+                response.set_msg_err(err.to_string());
+            }
         }
+        resp.finish(response)
     }
 
     fn delete(
@@ -173,24 +167,27 @@ impl DiskService for DiskServer {
         req: ServerRequestSingle<RequestDiskDelete>,
         resp: ServerResponseUnarySink<ResponseDiskDelete>,
     ) -> Result<()> {
+        let mut response = ResponseDiskDelete::new();
         match self.task.delete_disk(
             req.message.database_name,
             req.message.view_name,
             req.message.constraint_json_bytes,
         ) {
             Ok(exp) => {
-                let mut response = ResponseDiskDelete::new();
-                response.set_total(exp.total);
-                response.set_count(exp.count);
-                response.set_index_name(exp.index_name);
-                response.set_asc(exp.asc);
-                response.set_values(RepeatedField::from(exp.values));
-                resp.finish(response)
+                let mut deleted = DiskDeleted::new();
+                deleted.set_total(exp.total);
+                deleted.set_count(exp.count);
+                deleted.set_index_name(exp.index_name);
+                deleted.set_asc(exp.asc);
+                deleted.set_values(RepeatedField::from(exp.values));
+                response.set_deleted(deleted);
+                response.set_status(Status::Ok);
             }
-            Err(err) => Err(Error::GrpcMessage(GrpcMessageError {
-                grpc_status: GrpcStatus::Ok as i32,
-                grpc_message: err.to_string(),
-            })),
+            Err(err) => {
+                response.set_status(Status::Custom);
+                response.set_msg_err(err.to_string());
+            }
         }
+        resp.finish(response)
     }
 }

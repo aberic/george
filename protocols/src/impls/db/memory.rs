@@ -47,7 +47,7 @@ impl RequestMemoryInto {
         ::std::default::Default::default()
     }
 
-    // string key = 3;
+    // string key = 1;
 
 
     pub fn get_key(&self) -> &str {
@@ -73,7 +73,7 @@ impl RequestMemoryInto {
         ::std::mem::replace(&mut self.key, ::std::string::String::new())
     }
 
-    // bytes value = 4;
+    // bytes value = 2;
 
 
     pub fn get_value(&self) -> &[u8] {
@@ -109,10 +109,10 @@ impl ::protobuf::Message for RequestMemoryInto {
         while !is.eof()? {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
-                3 => {
+                1 => {
                     ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.key)?;
                 },
-                4 => {
+                2 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.value)?;
                 },
                 _ => {
@@ -128,10 +128,10 @@ impl ::protobuf::Message for RequestMemoryInto {
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
         if !self.key.is_empty() {
-            my_size += ::protobuf::rt::string_size(3, &self.key);
+            my_size += ::protobuf::rt::string_size(1, &self.key);
         }
         if !self.value.is_empty() {
-            my_size += ::protobuf::rt::bytes_size(4, &self.value);
+            my_size += ::protobuf::rt::bytes_size(2, &self.value);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -140,10 +140,10 @@ impl ::protobuf::Message for RequestMemoryInto {
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
         if !self.key.is_empty() {
-            os.write_string(3, &self.key)?;
+            os.write_string(1, &self.key)?;
         }
         if !self.value.is_empty() {
-            os.write_bytes(4, &self.value)?;
+            os.write_bytes(2, &self.value)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -250,7 +250,7 @@ impl RequestMemoryOut {
         ::std::default::Default::default()
     }
 
-    // string key = 3;
+    // string key = 1;
 
 
     pub fn get_key(&self) -> &str {
@@ -286,7 +286,7 @@ impl ::protobuf::Message for RequestMemoryOut {
         while !is.eof()? {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
-                3 => {
+                1 => {
                     ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.key)?;
                 },
                 _ => {
@@ -302,7 +302,7 @@ impl ::protobuf::Message for RequestMemoryOut {
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
         if !self.key.is_empty() {
-            my_size += ::protobuf::rt::string_size(3, &self.key);
+            my_size += ::protobuf::rt::string_size(1, &self.key);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -311,7 +311,7 @@ impl ::protobuf::Message for RequestMemoryOut {
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
         if !self.key.is_empty() {
-            os.write_string(3, &self.key)?;
+            os.write_string(1, &self.key)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -393,6 +393,8 @@ impl ::protobuf::reflect::ProtobufValue for RequestMemoryOut {
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct ResponseMemoryOut {
     // message fields
+    pub status: super::response::Status,
+    pub msg_err: ::std::string::String,
     pub value: ::std::vec::Vec<u8>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
@@ -412,7 +414,48 @@ impl ResponseMemoryOut {
         ::std::default::Default::default()
     }
 
-    // bytes value = 1;
+    // .db.Status status = 1;
+
+
+    pub fn get_status(&self) -> super::response::Status {
+        self.status
+    }
+    pub fn clear_status(&mut self) {
+        self.status = super::response::Status::Ok;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_status(&mut self, v: super::response::Status) {
+        self.status = v;
+    }
+
+    // string msg_err = 2;
+
+
+    pub fn get_msg_err(&self) -> &str {
+        &self.msg_err
+    }
+    pub fn clear_msg_err(&mut self) {
+        self.msg_err.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_msg_err(&mut self, v: ::std::string::String) {
+        self.msg_err = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_msg_err(&mut self) -> &mut ::std::string::String {
+        &mut self.msg_err
+    }
+
+    // Take field
+    pub fn take_msg_err(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.msg_err, ::std::string::String::new())
+    }
+
+    // bytes value = 3;
 
 
     pub fn get_value(&self) -> &[u8] {
@@ -449,6 +492,12 @@ impl ::protobuf::Message for ResponseMemoryOut {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 1 => {
+                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.status, 1, &mut self.unknown_fields)?
+                },
+                2 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.msg_err)?;
+                },
+                3 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.value)?;
                 },
                 _ => {
@@ -463,8 +512,14 @@ impl ::protobuf::Message for ResponseMemoryOut {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
+        if self.status != super::response::Status::Ok {
+            my_size += ::protobuf::rt::enum_size(1, self.status);
+        }
+        if !self.msg_err.is_empty() {
+            my_size += ::protobuf::rt::string_size(2, &self.msg_err);
+        }
         if !self.value.is_empty() {
-            my_size += ::protobuf::rt::bytes_size(1, &self.value);
+            my_size += ::protobuf::rt::bytes_size(3, &self.value);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -472,8 +527,14 @@ impl ::protobuf::Message for ResponseMemoryOut {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.status != super::response::Status::Ok {
+            os.write_enum(1, ::protobuf::ProtobufEnum::value(&self.status))?;
+        }
+        if !self.msg_err.is_empty() {
+            os.write_string(2, &self.msg_err)?;
+        }
         if !self.value.is_empty() {
-            os.write_bytes(1, &self.value)?;
+            os.write_bytes(3, &self.value)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -513,6 +574,16 @@ impl ::protobuf::Message for ResponseMemoryOut {
         static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<super::response::Status>>(
+                "status",
+                |m: &ResponseMemoryOut| { &m.status },
+                |m: &mut ResponseMemoryOut| { &mut m.status },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "msg_err",
+                |m: &ResponseMemoryOut| { &m.msg_err },
+                |m: &mut ResponseMemoryOut| { &mut m.msg_err },
+            ));
             fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
                 "value",
                 |m: &ResponseMemoryOut| { &m.value },
@@ -534,6 +605,8 @@ impl ::protobuf::Message for ResponseMemoryOut {
 
 impl ::protobuf::Clear for ResponseMemoryOut {
     fn clear(&mut self) {
+        self.status = super::response::Status::Ok;
+        self.msg_err.clear();
         self.value.clear();
         self.unknown_fields.clear();
     }
@@ -574,7 +647,7 @@ impl RequestMemoryRemove {
         ::std::default::Default::default()
     }
 
-    // string key = 2;
+    // string key = 1;
 
 
     pub fn get_key(&self) -> &str {
@@ -610,7 +683,7 @@ impl ::protobuf::Message for RequestMemoryRemove {
         while !is.eof()? {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
-                2 => {
+                1 => {
                     ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.key)?;
                 },
                 _ => {
@@ -626,7 +699,7 @@ impl ::protobuf::Message for RequestMemoryRemove {
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
         if !self.key.is_empty() {
-            my_size += ::protobuf::rt::string_size(2, &self.key);
+            my_size += ::protobuf::rt::string_size(1, &self.key);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -635,7 +708,7 @@ impl ::protobuf::Message for RequestMemoryRemove {
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
         if !self.key.is_empty() {
-            os.write_string(2, &self.key)?;
+            os.write_string(1, &self.key)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -983,7 +1056,7 @@ impl RequestMemoryPOut {
         ::std::default::Default::default()
     }
 
-    // string page_name = 2;
+    // string page_name = 1;
 
 
     pub fn get_page_name(&self) -> &str {
@@ -1009,7 +1082,7 @@ impl RequestMemoryPOut {
         ::std::mem::replace(&mut self.page_name, ::std::string::String::new())
     }
 
-    // string key = 3;
+    // string key = 2;
 
 
     pub fn get_key(&self) -> &str {
@@ -1045,10 +1118,10 @@ impl ::protobuf::Message for RequestMemoryPOut {
         while !is.eof()? {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
-                2 => {
+                1 => {
                     ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.page_name)?;
                 },
-                3 => {
+                2 => {
                     ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.key)?;
                 },
                 _ => {
@@ -1064,10 +1137,10 @@ impl ::protobuf::Message for RequestMemoryPOut {
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
         if !self.page_name.is_empty() {
-            my_size += ::protobuf::rt::string_size(2, &self.page_name);
+            my_size += ::protobuf::rt::string_size(1, &self.page_name);
         }
         if !self.key.is_empty() {
-            my_size += ::protobuf::rt::string_size(3, &self.key);
+            my_size += ::protobuf::rt::string_size(2, &self.key);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -1076,10 +1149,10 @@ impl ::protobuf::Message for RequestMemoryPOut {
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
         if !self.page_name.is_empty() {
-            os.write_string(2, &self.page_name)?;
+            os.write_string(1, &self.page_name)?;
         }
         if !self.key.is_empty() {
-            os.write_string(3, &self.key)?;
+            os.write_string(2, &self.key)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -1167,7 +1240,8 @@ impl ::protobuf::reflect::ProtobufValue for RequestMemoryPOut {
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct ResponseMemoryPOut {
     // message fields
-    pub page_name: ::std::string::String,
+    pub status: super::response::Status,
+    pub msg_err: ::std::string::String,
     pub value: ::std::vec::Vec<u8>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
@@ -1187,33 +1261,48 @@ impl ResponseMemoryPOut {
         ::std::default::Default::default()
     }
 
-    // string page_name = 2;
+    // .db.Status status = 1;
 
 
-    pub fn get_page_name(&self) -> &str {
-        &self.page_name
+    pub fn get_status(&self) -> super::response::Status {
+        self.status
     }
-    pub fn clear_page_name(&mut self) {
-        self.page_name.clear();
+    pub fn clear_status(&mut self) {
+        self.status = super::response::Status::Ok;
     }
 
     // Param is passed by value, moved
-    pub fn set_page_name(&mut self, v: ::std::string::String) {
-        self.page_name = v;
+    pub fn set_status(&mut self, v: super::response::Status) {
+        self.status = v;
+    }
+
+    // string msg_err = 2;
+
+
+    pub fn get_msg_err(&self) -> &str {
+        &self.msg_err
+    }
+    pub fn clear_msg_err(&mut self) {
+        self.msg_err.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_msg_err(&mut self, v: ::std::string::String) {
+        self.msg_err = v;
     }
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_page_name(&mut self) -> &mut ::std::string::String {
-        &mut self.page_name
+    pub fn mut_msg_err(&mut self) -> &mut ::std::string::String {
+        &mut self.msg_err
     }
 
     // Take field
-    pub fn take_page_name(&mut self) -> ::std::string::String {
-        ::std::mem::replace(&mut self.page_name, ::std::string::String::new())
+    pub fn take_msg_err(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.msg_err, ::std::string::String::new())
     }
 
-    // bytes value = 1;
+    // bytes value = 3;
 
 
     pub fn get_value(&self) -> &[u8] {
@@ -1249,10 +1338,13 @@ impl ::protobuf::Message for ResponseMemoryPOut {
         while !is.eof()? {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
-                2 => {
-                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.page_name)?;
-                },
                 1 => {
+                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.status, 1, &mut self.unknown_fields)?
+                },
+                2 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.msg_err)?;
+                },
+                3 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.value)?;
                 },
                 _ => {
@@ -1267,11 +1359,14 @@ impl ::protobuf::Message for ResponseMemoryPOut {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        if !self.page_name.is_empty() {
-            my_size += ::protobuf::rt::string_size(2, &self.page_name);
+        if self.status != super::response::Status::Ok {
+            my_size += ::protobuf::rt::enum_size(1, self.status);
+        }
+        if !self.msg_err.is_empty() {
+            my_size += ::protobuf::rt::string_size(2, &self.msg_err);
         }
         if !self.value.is_empty() {
-            my_size += ::protobuf::rt::bytes_size(1, &self.value);
+            my_size += ::protobuf::rt::bytes_size(3, &self.value);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -1279,11 +1374,14 @@ impl ::protobuf::Message for ResponseMemoryPOut {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
-        if !self.page_name.is_empty() {
-            os.write_string(2, &self.page_name)?;
+        if self.status != super::response::Status::Ok {
+            os.write_enum(1, ::protobuf::ProtobufEnum::value(&self.status))?;
+        }
+        if !self.msg_err.is_empty() {
+            os.write_string(2, &self.msg_err)?;
         }
         if !self.value.is_empty() {
-            os.write_bytes(1, &self.value)?;
+            os.write_bytes(3, &self.value)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -1323,10 +1421,15 @@ impl ::protobuf::Message for ResponseMemoryPOut {
         static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<super::response::Status>>(
+                "status",
+                |m: &ResponseMemoryPOut| { &m.status },
+                |m: &mut ResponseMemoryPOut| { &mut m.status },
+            ));
             fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
-                "page_name",
-                |m: &ResponseMemoryPOut| { &m.page_name },
-                |m: &mut ResponseMemoryPOut| { &mut m.page_name },
+                "msg_err",
+                |m: &ResponseMemoryPOut| { &m.msg_err },
+                |m: &mut ResponseMemoryPOut| { &mut m.msg_err },
             ));
             fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
                 "value",
@@ -1349,7 +1452,8 @@ impl ::protobuf::Message for ResponseMemoryPOut {
 
 impl ::protobuf::Clear for ResponseMemoryPOut {
     fn clear(&mut self) {
-        self.page_name.clear();
+        self.status = super::response::Status::Ok;
+        self.msg_err.clear();
         self.value.clear();
         self.unknown_fields.clear();
     }
@@ -1391,7 +1495,7 @@ impl RequestMemoryPRemove {
         ::std::default::Default::default()
     }
 
-    // string page_name = 2;
+    // string page_name = 1;
 
 
     pub fn get_page_name(&self) -> &str {
@@ -1417,7 +1521,7 @@ impl RequestMemoryPRemove {
         ::std::mem::replace(&mut self.page_name, ::std::string::String::new())
     }
 
-    // string key = 3;
+    // string key = 2;
 
 
     pub fn get_key(&self) -> &str {
@@ -1453,10 +1557,10 @@ impl ::protobuf::Message for RequestMemoryPRemove {
         while !is.eof()? {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
-                2 => {
+                1 => {
                     ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.page_name)?;
                 },
-                3 => {
+                2 => {
                     ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.key)?;
                 },
                 _ => {
@@ -1472,10 +1576,10 @@ impl ::protobuf::Message for RequestMemoryPRemove {
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
         if !self.page_name.is_empty() {
-            my_size += ::protobuf::rt::string_size(2, &self.page_name);
+            my_size += ::protobuf::rt::string_size(1, &self.page_name);
         }
         if !self.key.is_empty() {
-            my_size += ::protobuf::rt::string_size(3, &self.key);
+            my_size += ::protobuf::rt::string_size(2, &self.key);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -1484,10 +1588,10 @@ impl ::protobuf::Message for RequestMemoryPRemove {
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
         if !self.page_name.is_empty() {
-            os.write_string(2, &self.page_name)?;
+            os.write_string(1, &self.page_name)?;
         }
         if !self.key.is_empty() {
-            os.write_string(3, &self.key)?;
+            os.write_string(2, &self.key)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -1572,21 +1676,24 @@ impl ::protobuf::reflect::ProtobufValue for RequestMemoryPRemove {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x0fdb/memory.proto\x12\x02db\";\n\x11RequestMemoryInto\x12\x10\n\x03k\
-    ey\x18\x03\x20\x01(\tR\x03key\x12\x14\n\x05value\x18\x04\x20\x01(\x0cR\
-    \x05value\"$\n\x10RequestMemoryOut\x12\x10\n\x03key\x18\x03\x20\x01(\tR\
-    \x03key\")\n\x11ResponseMemoryOut\x12\x14\n\x05value\x18\x01\x20\x01(\
-    \x0cR\x05value\"'\n\x13RequestMemoryRemove\x12\x10\n\x03key\x18\x02\x20\
-    \x01(\tR\x03key\"Y\n\x12RequestMemoryPInto\x12\x1b\n\tpage_name\x18\x01\
-    \x20\x01(\tR\x08pageName\x12\x10\n\x03key\x18\x02\x20\x01(\tR\x03key\x12\
-    \x14\n\x05value\x18\x03\x20\x01(\x0cR\x05value\"B\n\x11RequestMemoryPOut\
-    \x12\x1b\n\tpage_name\x18\x02\x20\x01(\tR\x08pageName\x12\x10\n\x03key\
-    \x18\x03\x20\x01(\tR\x03key\"G\n\x12ResponseMemoryPOut\x12\x1b\n\tpage_n\
-    ame\x18\x02\x20\x01(\tR\x08pageName\x12\x14\n\x05value\x18\x01\x20\x01(\
-    \x0cR\x05value\"E\n\x14RequestMemoryPRemove\x12\x1b\n\tpage_name\x18\x02\
-    \x20\x01(\tR\x08pageName\x12\x10\n\x03key\x18\x03\x20\x01(\tR\x03keyBL\n\
-    \x1dcn.aberic.george.protocols.dbB\x0bMemoryProtoZ\x1egithub.com/george/\
-    protocols/dbb\x06proto3\
+    \n\x0fdb/memory.proto\x12\x02db\x1a\x11db/response.proto\";\n\x11Request\
+    MemoryInto\x12\x10\n\x03key\x18\x01\x20\x01(\tR\x03key\x12\x14\n\x05valu\
+    e\x18\x02\x20\x01(\x0cR\x05value\"$\n\x10RequestMemoryOut\x12\x10\n\x03k\
+    ey\x18\x01\x20\x01(\tR\x03key\"f\n\x11ResponseMemoryOut\x12\"\n\x06statu\
+    s\x18\x01\x20\x01(\x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\
+    \x02\x20\x01(\tR\x06msgErr\x12\x14\n\x05value\x18\x03\x20\x01(\x0cR\x05v\
+    alue\"'\n\x13RequestMemoryRemove\x12\x10\n\x03key\x18\x01\x20\x01(\tR\
+    \x03key\"Y\n\x12RequestMemoryPInto\x12\x1b\n\tpage_name\x18\x01\x20\x01(\
+    \tR\x08pageName\x12\x10\n\x03key\x18\x02\x20\x01(\tR\x03key\x12\x14\n\
+    \x05value\x18\x03\x20\x01(\x0cR\x05value\"B\n\x11RequestMemoryPOut\x12\
+    \x1b\n\tpage_name\x18\x01\x20\x01(\tR\x08pageName\x12\x10\n\x03key\x18\
+    \x02\x20\x01(\tR\x03key\"g\n\x12ResponseMemoryPOut\x12\"\n\x06status\x18\
+    \x01\x20\x01(\x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\x02\
+    \x20\x01(\tR\x06msgErr\x12\x14\n\x05value\x18\x03\x20\x01(\x0cR\x05value\
+    \"E\n\x14RequestMemoryPRemove\x12\x1b\n\tpage_name\x18\x01\x20\x01(\tR\
+    \x08pageName\x12\x10\n\x03key\x18\x02\x20\x01(\tR\x03keyBL\n\x1dcn.aberi\
+    c.george.protocols.dbB\x0bMemoryProtoZ\x1egithub.com/george/protocols/db\
+    b\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

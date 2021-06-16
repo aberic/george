@@ -16,26 +16,25 @@ use futures::executor;
 use grpc::ClientStubExt;
 
 use comm::errors::{Errs, GeorgeResult};
-use protocols::impls::db::database::{
-    DatabaseList, RequestDatabaseCreate, RequestDatabaseInfo, RequestDatabaseModify,
-    RequestDatabaseRemove,
+use protocols::impls::db::page::{
+    PageList, RequestPageCreate, RequestPageInfo, RequestPageModify, RequestPageRemove,
 };
 use protocols::impls::db::response::Status;
 use protocols::impls::db::service::Request;
-use protocols::impls::db::service_grpc::DatabaseServiceClient;
+use protocols::impls::db::service_grpc::PageServiceClient;
 
-use crate::service::{Database, Tools};
+use crate::service::{Page, Tools};
 
-impl Database {
-    pub(crate) fn new(remote: &str, port: u16) -> Database {
-        Database {
-            client: DatabaseServiceClient::new_plain(remote, port, Default::default()).unwrap(),
+impl Page {
+    pub(crate) fn new(remote: &str, port: u16) -> Page {
+        Page {
+            client: PageServiceClient::new_plain(remote, port, Default::default()).unwrap(),
         }
     }
 }
 
-impl Database {
-    pub(crate) fn list(&self) -> GeorgeResult<DatabaseList> {
+impl Page {
+    pub(crate) fn list(&self) -> GeorgeResult<PageList> {
         let req = Request::new();
         let resp = self
             .client
@@ -44,12 +43,12 @@ impl Database {
         let resp = executor::block_on(resp);
         match resp {
             Ok((_m, resp, _md)) => Ok(resp),
-            Err(err) => Err(Errs::strs("database list failed!", err)),
+            Err(err) => Err(Errs::strs("page list failed!", err)),
         }
     }
 
     pub(crate) fn create(&self, name: String, comment: String) -> GeorgeResult<()> {
-        let mut req = RequestDatabaseCreate::new();
+        let mut req = RequestPageCreate::new();
         req.set_name(name);
         req.set_comment(comment);
         let resp = self
@@ -62,15 +61,12 @@ impl Database {
                 Status::Ok => Ok(()),
                 _ => Err(Tools::response_err(resp)),
             },
-            Err(err) => Err(Errs::strs("database create failed!", err)),
+            Err(err) => Err(Errs::strs("page create failed!", err)),
         }
     }
 
-    pub(crate) fn info(
-        &self,
-        name: String,
-    ) -> GeorgeResult<protocols::impls::db::database::Database> {
-        let mut req = RequestDatabaseInfo::new();
+    pub(crate) fn info(&self, name: String) -> GeorgeResult<protocols::impls::db::page::Page> {
+        let mut req = RequestPageInfo::new();
         req.set_name(name);
         let resp = self
             .client
@@ -78,20 +74,14 @@ impl Database {
             .join_metadata_result();
         let resp = executor::block_on(resp);
         match resp {
-            Ok((_m, resp, _md)) => Ok(resp.database.unwrap()),
-            Err(err) => Err(Errs::strs("database info failed!", err)),
+            Ok((_m, resp, _md)) => Ok(resp.page.unwrap()),
+            Err(err) => Err(Errs::strs("page info failed!", err)),
         }
     }
 
-    pub(crate) fn modify(
-        &self,
-        name: String,
-        comment: String,
-        name_new: String,
-    ) -> GeorgeResult<()> {
-        let mut req = RequestDatabaseModify::new();
+    pub(crate) fn modify(&self, name: String, name_new: String) -> GeorgeResult<()> {
+        let mut req = RequestPageModify::new();
         req.set_name(name);
-        req.set_comment(comment);
         req.set_name_new(name_new);
         let resp = self
             .client
@@ -103,12 +93,12 @@ impl Database {
                 Status::Ok => Ok(()),
                 _ => Err(Tools::response_err(resp)),
             },
-            Err(err) => Err(Errs::strs("database modify failed!", err)),
+            Err(err) => Err(Errs::strs("page modify failed!", err)),
         }
     }
 
     pub(crate) fn remove(&self, name: String) -> GeorgeResult<()> {
-        let mut req = RequestDatabaseRemove::new();
+        let mut req = RequestPageRemove::new();
         req.set_name(name);
         let resp = self
             .client
@@ -120,7 +110,7 @@ impl Database {
                 Status::Ok => Ok(()),
                 _ => Err(Tools::response_err(resp)),
             },
-            Err(err) => Err(Errs::strs("database remove failed!", err)),
+            Err(err) => Err(Errs::strs("page remove failed!", err)),
         }
     }
 }

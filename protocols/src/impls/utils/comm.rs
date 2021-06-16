@@ -17,6 +17,7 @@ use protobuf::well_known_types::Timestamp;
 use comm::Time;
 
 use crate::impls::db;
+use crate::impls::db::index::{Engine, KeyType};
 use crate::impls::utils::Comm;
 
 impl Comm {
@@ -44,8 +45,34 @@ impl Comm {
         response
     }
 
+    pub fn key_type_str(key_type: KeyType) -> String {
+        match key_type {
+            KeyType::String => "String".to_string(),
+            KeyType::Int => "Int".to_string(),
+            KeyType::Float => "Float".to_string(),
+            KeyType::Bool => "Bool".to_string(),
+            KeyType::UInt => "UInt".to_string(),
+            KeyType::Nonsupport => "Nonsupport".to_string(),
+        }
+    }
+
+    pub fn engine_str(engine: Engine) -> String {
+        match engine {
+            Engine::None => "None".to_string(),
+            Engine::Disk => "Disk".to_string(),
+            Engine::Increment => "Increment".to_string(),
+            Engine::Block => "Block".to_string(),
+            Engine::Sequence => "Sequence".to_string(),
+        }
+    }
+
+    pub fn trim_str(str: String) -> String {
+        trim_str(str)
+    }
+
     pub fn parse_str(str: String) -> String {
-        trim_parse(str)
+        let str = trim_str(str);
+        str[0..str.len() - 1].to_string()
     }
 
     pub fn split_str(str: String) -> Vec<String> {
@@ -60,8 +87,14 @@ impl Comm {
     }
 }
 
+fn trim_str(str: String) -> String {
+    let str = str.to_lowercase();
+    trim_parse(str)
+}
+
 fn trim_parse(str: String) -> String {
     let str = trim_n(str);
+    let str = trim_t(str);
     match str.strip_suffix(" ") {
         Some(str) => match str.strip_prefix(" ") {
             Some(str) => str.to_string(),
@@ -79,7 +112,7 @@ fn trim_n(str: String) -> String {
         let str = str.replace("\n", " ");
         trim_n(str)
     } else {
-        trim_t(str)
+        str.to_string()
     }
 }
 

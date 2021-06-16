@@ -12,10 +12,21 @@
  * limitations under the License.
  */
 
-use protocols::impls::db::service_grpc::{DatabaseServiceClient, UserServiceClient};
+use comm::errors::{Errs, GeorgeError};
+use protocols::impls::db::response::{Response, Status};
+use protocols::impls::db::service_grpc::{
+    DatabaseServiceClient, DiskServiceClient, IndexServiceClient, MemoryServiceClient,
+    PageServiceClient, UserServiceClient, ViewServiceClient,
+};
 
 mod database;
+mod disk;
+mod index;
+mod memory;
+mod page;
 mod user;
+mod view;
+mod view_test;
 
 pub(crate) struct User {
     client: UserServiceClient,
@@ -23,4 +34,36 @@ pub(crate) struct User {
 
 pub(crate) struct Database {
     client: DatabaseServiceClient,
+}
+
+pub(crate) struct Page {
+    client: PageServiceClient,
+}
+
+pub(crate) struct View {
+    client: ViewServiceClient,
+}
+
+pub(crate) struct Index {
+    client: IndexServiceClient,
+}
+
+pub(crate) struct Disk {
+    client: DiskServiceClient,
+}
+
+pub(crate) struct Memory {
+    client: MemoryServiceClient,
+}
+
+pub(crate) struct Tools;
+
+impl Tools {
+    fn response_err(resp: Response) -> GeorgeError {
+        Tools::response_cus(resp.status, resp.msg_err)
+    }
+
+    fn response_cus(status: Status, msg_err: String) -> GeorgeError {
+        Errs::string(format!("status {:#?}, error msg: {}", status, msg_err))
+    }
 }
