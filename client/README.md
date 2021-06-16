@@ -22,7 +22,7 @@ create database test1 tt1;
 
 #### 显示数据库信息命令如下：
 ```shell
-info database sys;
+inspect database sys;
 ```
 ---
 
@@ -43,7 +43,7 @@ create page test1 tt1;
 
 #### 显示缓存页信息命令如下：
 ```shell
-info page sys;
+inspect page sys;
 ```
 ---
 

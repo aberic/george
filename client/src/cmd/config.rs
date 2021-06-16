@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-use crate::cmd::{Config, Create, Delete, Get, Info, Insert, Put, Select, Set, Show};
+use crate::cmd::{Config, Create, Delete, Get, Insert, Inspect, Put, Select, Set, Show};
 use crate::service::{Database, Disk, Index, Memory, Page, User, View};
 use comm::errors::{Errs, GeorgeError, GeorgeResult};
 use protocols::impls::db::database::DatabaseList;
@@ -136,7 +136,7 @@ impl Config {
         let intent = vss[0].as_str();
         match intent {
             "show" => Show::analysis(&self, used, scan, vss),
-            "info" => Info::analysis(&self, used, vss),
+            "inspect" => Inspect::analysis(&self, used, vss),
             "create" => Create::analysis(&self, used, vss),
             "put" => Put::analysis(&self, used, vss),
             "set" => Set::analysis(&self, used, vss),

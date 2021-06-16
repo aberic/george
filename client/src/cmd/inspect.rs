@@ -14,12 +14,12 @@
 
 use comm::errors::{Errs, GeorgeResult};
 
-use crate::cmd::{Config, Info};
+use crate::cmd::{Config, Inspect};
 use cli_table::format::Justify;
 use cli_table::{print_stdout, Cell, Style, Table};
 use protocols::impls::utils::Comm;
 
-impl Info {
+impl Inspect {
     pub(crate) fn analysis(config: &Config, _used: String, vss: Vec<String>) -> GeorgeResult<()> {
         let intent = vss[1].as_str();
         match intent {

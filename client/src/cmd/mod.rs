@@ -19,8 +19,8 @@ pub mod config;
 mod create;
 mod delete;
 mod get;
-mod info;
 mod insert;
+mod inspect;
 mod options;
 mod put;
 mod select;
@@ -33,7 +33,7 @@ pub(crate) struct Options;
 
 pub(crate) struct Show;
 
-pub(crate) struct Info;
+pub(crate) struct Inspect;
 
 pub(crate) struct Create;
 
