@@ -217,6 +217,24 @@ impl Pigeonhole {
         }
     }
 
+    /// 更新归档版本
+    ///
+    /// * filepath 新归档版本文件所处路径
+    pub(crate) fn update(&mut self, filepath: String) {
+        // 新归档版本，旧版本+1，版本每次归档操作递增，最多归档65536次
+        let version = self.now.version() + 1;
+        let version_old = self.now.version();
+        let filepath_old = filepath;
+        let filepath = self.now.filepath();
+        self.insert(version_old, filepath_old, self.now.create_time());
+        self.now = Record::new(version, filepath)
+    }
+
+    fn insert(&mut self, version: u16, filepath: String, create_time: Time) {
+        self.history
+            .insert(version, Record::recovery(version, filepath, create_time));
+    }
+
     /// 当前归档版本
     pub(crate) fn now(&self) -> Record {
         self.now.clone()
@@ -227,6 +245,12 @@ impl Pigeonhole {
         self.history.clone()
     }
 
+    /// 当前归档版本生成文件描述
+    pub(crate) fn now_to_string(&self) -> String {
+        self.now.to_string()
+    }
+
+    /// 历史归档版本生成文件描述
     fn history_to_string(&self) -> String {
         let mut res = String::from("");
         for (_, record) in self.history.iter() {
@@ -256,7 +280,7 @@ impl Pigeonhole {
     pub(crate) fn to_string(&self) -> String {
         hex::encode(format!(
             "{}$_$!{}",
-            self.now().to_string(),
+            self.now_to_string(),
             self.history_to_string()
         ))
     }
@@ -303,7 +327,17 @@ impl fmt::Debug for Record {
 }
 
 impl Record {
-    fn create(version: u16, filepath: String, create_time: Time) -> Record {
+    /// 新建
+    fn new(version: u16, filepath: String) -> Record {
+        Record {
+            version,
+            filepath,
+            create_time: Time::now(),
+        }
+    }
+
+    /// 恢复归档记录
+    fn recovery(version: u16, filepath: String, create_time: Time) -> Record {
         Record {
             version,
             filepath,
@@ -327,7 +361,7 @@ impl Record {
     }
 
     /// 生成文件描述
-    pub(crate) fn to_string(&self) -> String {
+    fn to_string(&self) -> String {
         hex::encode(format!(
             "{}|{}|{}",
             self.version(),
@@ -347,7 +381,7 @@ impl Record {
                 let duration = Duration::nanoseconds(
                     split.next().unwrap().to_string().parse::<i64>().unwrap(),
                 );
-                Ok(Record::create(version, filepath, Time::from(duration)))
+                Ok(Record::recovery(version, filepath, Time::from(duration)))
             }
             Err(err) => Err(Errs::string(format!(
                 "recovery pigeonhole from utf8 1 failed! error is {}",

@@ -13,10 +13,8 @@
  */
 
 use comm::errors::{Errs, GeorgeResult};
-use protocols::impls::db::index::{Engine, KeyType};
-use protocols::impls::utils::Comm;
 
-use crate::cmd::{george_error, george_errors, Config, Drop};
+use crate::cmd::{george_error, Config, Drop};
 
 impl Drop {
     pub(crate) fn analysis(

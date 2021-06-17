@@ -13,10 +13,8 @@
  */
 
 use comm::errors::{Errs, GeorgeResult};
-use protocols::impls::db::index::{Engine, KeyType};
-use protocols::impls::utils::Comm;
 
-use crate::cmd::{george_error, george_errors, Alter, Config};
+use crate::cmd::{george_error, Alter, Config};
 
 impl Alter {
     pub(crate) fn analysis(
@@ -71,6 +69,20 @@ impl Alter {
                 let name = vss[2].clone();
                 let name_new = vss[3].clone();
                 config.view.modify(used, name, name_new, comment)
+            }
+            "archive" => {
+                // alter archive [view:string] [filepath:String]
+                if used.is_empty() {
+                    return Err(Errs::str(
+                        "database name not defined, please use `use [database/page/ledger] [database]` first!",
+                    ));
+                }
+                if vss.len() != 4 {
+                    return Err(george_error(scan));
+                }
+                let name = vss[2].clone();
+                let filepath = vss[3].clone();
+                config.view.archive(used, name, filepath)
             }
             _ => Err(Errs::string(format!(
                 "command do not support prefix {}",

@@ -118,12 +118,12 @@ impl View {
     }
 
     /// 当前视图版本号
-    fn version(&self) -> u16 {
+    pub fn version(&self) -> u16 {
         self.pigeonhole().now().version()
     }
 
     /// 当前视图文件地址
-    fn filepath(&self) -> String {
+    pub fn filepath(&self) -> String {
         self.pigeonhole().now().filepath()
     }
 
@@ -200,7 +200,13 @@ impl View {
     /// archive_file_path 归档路径
     pub(crate) fn archive(&mut self, archive_file_path: String) -> GeorgeResult<()> {
         let header_bytes = self.ge.metadata().header().to_vec()?;
-        let description_content_bytes_vc = self.ge.history()?;
+        self.pigeonhole.update(archive_file_path.clone());
+        let description_content_bytes_vc = vec![View::description(
+            self.name(),
+            self.comment(),
+            self.create_time(),
+            self.pigeonhole(),
+        )];
         self.ge.archive(archive_file_path)?;
         self.ge.rebuild(header_bytes, description_content_bytes_vc)
     }

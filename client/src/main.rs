@@ -17,6 +17,7 @@ use crate::cmd::Command;
 mod cmd;
 mod service;
 
+// ./client -H 127.0.0.1 -P 9219 -u admin -p admin#123
 fn main() {
     Command::init()
 }

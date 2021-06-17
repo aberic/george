@@ -20,7 +20,7 @@ use protocols::impls::db::response::Status;
 use protocols::impls::db::service_grpc::ViewServiceClient;
 use protocols::impls::db::view::{
     RequestViewArchive, RequestViewCreate, RequestViewInfo, RequestViewList, RequestViewModify,
-    RequestViewRecord, RequestViewRemove, ViewList, ViewRecord,
+    RequestViewRecord, RequestViewRecords, RequestViewRemove, ViewList, ViewRecord,
 };
 
 use crate::service::{Tools, View};
@@ -182,6 +182,28 @@ impl View {
         match resp {
             Ok((_m, resp, _md)) => match resp.status {
                 Status::Ok => Ok(resp.record.unwrap()),
+                _ => Err(Tools::response_cus(resp.status, resp.msg_err)),
+            },
+            Err(err) => Err(Errs::strs("view record failed!", err)),
+        }
+    }
+
+    pub(crate) fn records(
+        &self,
+        database_name: String,
+        name: String,
+    ) -> GeorgeResult<Vec<ViewRecord>> {
+        let mut req = RequestViewRecords::new();
+        req.set_database_name(database_name);
+        req.set_name(name);
+        let resp = self
+            .client
+            .records(grpc::RequestOptions::new(), req)
+            .join_metadata_result();
+        let resp = executor::block_on(resp);
+        match resp {
+            Ok((_m, resp, _md)) => match resp.status {
+                Status::Ok => Ok(resp.records.to_vec()),
                 _ => Err(Tools::response_cus(resp.status, resp.msg_err)),
             },
             Err(err) => Err(Errs::strs("view record failed!", err)),

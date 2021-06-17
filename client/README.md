@@ -96,6 +96,18 @@ alter view [view:string] [view:string] [comment:string];
 ```shell
 drop view [view:string];
 ```
+#### 视图归档命令如下：
+```shell
+alter archive [view:string] [filepath:String];
+```
+#### 读取指定版本视图归档信息命令如下：
+```shell
+show record [view:string] [version:u16];
+```
+#### 读取所有视图归档信息命令如下：
+```shell
+show records [view:string];
+```
 ---
 
 ### 索引系列命令

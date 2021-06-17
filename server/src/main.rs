@@ -18,6 +18,7 @@ use crate::service::Server;
 mod cmd;
 pub mod service;
 
+// ./server start -f /Users/aberic/Documents/path/rust/george/server/src/example/conf.yaml
 fn main() {
     // Command::init();
     Server::start("server/src/example/conf.yaml")

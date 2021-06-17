@@ -113,6 +113,8 @@ impl ViewService for ViewServer {
                 item.set_comment(item_r.comment());
                 item.set_create_time(Comm::proto_time_2_grpc_timestamp(item_r.create_time()));
                 item.set_indexes(indexes);
+                item.set_filepath(item_r.filepath());
+                item.set_version(item_r.version() as u32);
                 response.set_view(item);
                 response.set_status(Status::Ok);
             }

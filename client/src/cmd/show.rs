@@ -13,7 +13,7 @@
  */
 
 use cli_table::format::Justify;
-use cli_table::{print_stdout, Cell, Style, Table};
+use cli_table::{Cell, Style, Table};
 
 use comm::errors::{Errs, GeorgeResult};
 use protocols::impls::utils::Comm;
@@ -118,6 +118,68 @@ impl Show {
                             "Comment".cell().bold(true),
                             "Create Time".cell().bold(true),
                             "Index Count".cell().bold(true),
+                        ])
+                        .bold(true),
+                )
+            }
+            "record" => {
+                // show record [view:string] [version:u16]
+                if used.is_empty() {
+                    return Err(Errs::str(
+                        "database name not defined, please use `use [database/page/ledger] [database]` first!",
+                    ));
+                }
+                if vss.len() != 4 {
+                    return Err(george_error(scan));
+                }
+                let name = vss[2].clone();
+                let version = vss[3].parse::<u32>().unwrap();
+                let record = config.view.record(used, name, version)?;
+                let table = vec![vec![
+                    record.get_filepath().cell(),
+                    Comm::proto_grpc_timestamp_2_time(record.get_time().seconds)
+                        .to_string("%Y-%m-%d %H:%M:%S")
+                        .cell(),
+                    version.cell().justify(Justify::Right),
+                ]]
+                .table()
+                .title(vec![
+                    "Filepath".cell().bold(true),
+                    "Time".cell().bold(true),
+                    "Version".cell().bold(true),
+                ])
+                .bold(true);
+                print_table(table)
+            }
+            "records" => {
+                // show records [view:string]
+                if used.is_empty() {
+                    return Err(Errs::str(
+                        "database name not defined, please use `use [database/page/ledger] [database]` first!",
+                    ));
+                }
+                if vss.len() != 3 {
+                    return Err(george_error(scan));
+                }
+                let name = vss[2].clone();
+                let records = config.view.records(used, name)?;
+                let mut table = vec![];
+                for record in records {
+                    table.push(vec![
+                        record.get_filepath().cell(),
+                        Comm::proto_grpc_timestamp_2_time(record.get_time().seconds)
+                            .to_string("%Y-%m-%d %H:%M:%S")
+                            .cell(),
+                        record.get_version().cell().justify(Justify::Right),
+                    ])
+                }
+                print_table(
+                    table
+                        .table()
+                        .title(vec![
+                            "Filepath".cell().bold(true),
+                            "Time".cell().bold(true),
+                            "Version".cell().bold(true),
                         ])
                         .bold(true),
                 )

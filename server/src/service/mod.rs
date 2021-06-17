@@ -203,6 +203,8 @@ impl Children {
                     view_r.create_time(),
                 )),
                 indexes,
+                filepath: view_r.filepath(),
+                version: view_r.version() as u32,
                 unknown_fields: Default::default(),
                 cached_size: Default::default(),
             })

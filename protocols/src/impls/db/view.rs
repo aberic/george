@@ -31,6 +31,8 @@ pub struct View {
     pub comment: ::std::string::String,
     pub create_time: ::protobuf::SingularPtrField<::protobuf::well_known_types::Timestamp>,
     pub indexes: ::protobuf::RepeatedField<super::index::Index>,
+    pub filepath: ::std::string::String,
+    pub version: u32,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -158,6 +160,47 @@ impl View {
     pub fn take_indexes(&mut self) -> ::protobuf::RepeatedField<super::index::Index> {
         ::std::mem::replace(&mut self.indexes, ::protobuf::RepeatedField::new())
     }
+
+    // string filepath = 5;
+
+
+    pub fn get_filepath(&self) -> &str {
+        &self.filepath
+    }
+    pub fn clear_filepath(&mut self) {
+        self.filepath.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_filepath(&mut self, v: ::std::string::String) {
+        self.filepath = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_filepath(&mut self) -> &mut ::std::string::String {
+        &mut self.filepath
+    }
+
+    // Take field
+    pub fn take_filepath(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.filepath, ::std::string::String::new())
+    }
+
+    // uint32 version = 6;
+
+
+    pub fn get_version(&self) -> u32 {
+        self.version
+    }
+    pub fn clear_version(&mut self) {
+        self.version = 0;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_version(&mut self, v: u32) {
+        self.version = v;
+    }
 }
 
 impl ::protobuf::Message for View {
@@ -191,6 +234,16 @@ impl ::protobuf::Message for View {
                 4 => {
                     ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.indexes)?;
                 },
+                5 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.filepath)?;
+                },
+                6 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_uint32()?;
+                    self.version = tmp;
+                },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
                 },
@@ -217,6 +270,12 @@ impl ::protobuf::Message for View {
             let len = value.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         };
+        if !self.filepath.is_empty() {
+            my_size += ::protobuf::rt::string_size(5, &self.filepath);
+        }
+        if self.version != 0 {
+            my_size += ::protobuf::rt::value_size(6, self.version, ::protobuf::wire_format::WireTypeVarint);
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -239,6 +298,12 @@ impl ::protobuf::Message for View {
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
         };
+        if !self.filepath.is_empty() {
+            os.write_string(5, &self.filepath)?;
+        }
+        if self.version != 0 {
+            os.write_uint32(6, self.version)?;
+        }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -297,6 +362,16 @@ impl ::protobuf::Message for View {
                 |m: &View| { &m.indexes },
                 |m: &mut View| { &mut m.indexes },
             ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "filepath",
+                |m: &View| { &m.filepath },
+                |m: &mut View| { &mut m.filepath },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint32>(
+                "version",
+                |m: &View| { &m.version },
+                |m: &mut View| { &mut m.version },
+            ));
             ::protobuf::reflect::MessageDescriptor::new_pb_name::<View>(
                 "View",
                 fields,
@@ -317,6 +392,8 @@ impl ::protobuf::Clear for View {
         self.comment.clear();
         self.create_time.clear();
         self.indexes.clear();
+        self.filepath.clear();
+        self.version = 0;
         self.unknown_fields.clear();
     }
 }
@@ -3328,44 +3405,45 @@ impl ::protobuf::reflect::ProtobufValue for ViewRecord {
 
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\rdb/view.proto\x12\x02db\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\
-    \x0edb/index.proto\x1a\x11db/response.proto\"\x96\x01\n\x04View\x12\x12\
+    \x0edb/index.proto\x1a\x11db/response.proto\"\xcc\x01\n\x04View\x12\x12\
     \n\x04name\x18\x01\x20\x01(\tR\x04name\x12\x18\n\x07comment\x18\x02\x20\
     \x01(\tR\x07comment\x12;\n\x0bcreate_time\x18\x03\x20\x01(\x0b2\x1a.goog\
     le.protobuf.TimestampR\ncreateTime\x12#\n\x07indexes\x18\x04\x20\x03(\
-    \x0b2\t.db.IndexR\x07indexes\"*\n\x08ViewList\x12\x1e\n\x05views\x18\x01\
-    \x20\x03(\x0b2\x08.db.ViewR\x05views\"6\n\x0fRequestViewList\x12#\n\rdat\
-    abase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\"\x8d\x01\n\x11RequestVie\
-    wCreate\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\
-    \x12\n\x04name\x18\x02\x20\x01(\tR\x04name\x12\x18\n\x07comment\x18\x03\
-    \x20\x01(\tR\x07comment\x12%\n\x0ewith_increment\x18\x04\x20\x01(\x08R\r\
-    withIncrement\"\x81\x01\n\x11RequestViewModify\x12#\n\rdatabase_name\x18\
-    \x01\x20\x01(\tR\x0cdatabaseName\x12\x12\n\x04name\x18\x02\x20\x01(\tR\
-    \x04name\x12\x19\n\x08name_new\x18\x03\x20\x01(\tR\x07nameNew\x12\x18\n\
-    \x07comment\x18\x04\x20\x01(\tR\x07comment\"J\n\x0fRequestViewInfo\x12#\
-    \n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x12\n\x04name\
-    \x18\x02\x20\x01(\tR\x04name\"m\n\x10ResponseViewInfo\x12\"\n\x06status\
-    \x18\x01\x20\x01(\x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\
-    \x02\x20\x01(\tR\x06msgErr\x12\x1c\n\x04view\x18\x03\x20\x01(\x0b2\x08.d\
-    b.ViewR\x04view\"L\n\x11RequestViewRemove\x12#\n\rdatabase_name\x18\x01\
-    \x20\x01(\tR\x0cdatabaseName\x12\x12\n\x04name\x18\x02\x20\x01(\tR\x04na\
-    me\"y\n\x12RequestViewArchive\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\
-    \x0cdatabaseName\x12\x12\n\x04name\x18\x02\x20\x01(\tR\x04name\x12*\n\
-    \x11archive_file_path\x18\x03\x20\x01(\tR\x0farchiveFilePath\"f\n\x11Req\
-    uestViewRecord\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\
-    \x12\x12\n\x04name\x18\x02\x20\x01(\tR\x04name\x12\x18\n\x07version\x18\
-    \x03\x20\x01(\rR\x07version\"y\n\x12ResponseViewRecord\x12\"\n\x06status\
-    \x18\x01\x20\x01(\x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\
-    \x02\x20\x01(\tR\x06msgErr\x12&\n\x06record\x18\x03\x20\x01(\x0b2\x0e.db\
-    .ViewRecordR\x06record\"M\n\x12RequestViewRecords\x12#\n\rdatabase_name\
+    \x0b2\t.db.IndexR\x07indexes\x12\x1a\n\x08filepath\x18\x05\x20\x01(\tR\
+    \x08filepath\x12\x18\n\x07version\x18\x06\x20\x01(\rR\x07version\"*\n\
+    \x08ViewList\x12\x1e\n\x05views\x18\x01\x20\x03(\x0b2\x08.db.ViewR\x05vi\
+    ews\"6\n\x0fRequestViewList\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\
+    \x0cdatabaseName\"\x8d\x01\n\x11RequestViewCreate\x12#\n\rdatabase_name\
     \x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x12\n\x04name\x18\x02\x20\x01(\
-    \tR\x04name\"|\n\x13ResponseViewRecords\x12\"\n\x06status\x18\x01\x20\
-    \x01(\x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\x02\x20\x01(\
-    \tR\x06msgErr\x12(\n\x07records\x18\x03\x20\x03(\x0b2\x0e.db.ViewRecordR\
-    \x07records\"r\n\nViewRecord\x12\x1a\n\x08filepath\x18\x01\x20\x01(\tR\
-    \x08filepath\x12.\n\x04time\x18\x02\x20\x01(\x0b2\x1a.google.protobuf.Ti\
-    mestampR\x04time\x12\x18\n\x07version\x18\x03\x20\x01(\rR\x07versionBJ\n\
-    \x1dcn.aberic.george.protocols.dbB\tViewProtoZ\x1egithub.com/george/prot\
-    ocols/dbb\x06proto3\
+    \tR\x04name\x12\x18\n\x07comment\x18\x03\x20\x01(\tR\x07comment\x12%\n\
+    \x0ewith_increment\x18\x04\x20\x01(\x08R\rwithIncrement\"\x81\x01\n\x11R\
+    equestViewModify\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseNa\
+    me\x12\x12\n\x04name\x18\x02\x20\x01(\tR\x04name\x12\x19\n\x08name_new\
+    \x18\x03\x20\x01(\tR\x07nameNew\x12\x18\n\x07comment\x18\x04\x20\x01(\tR\
+    \x07comment\"J\n\x0fRequestViewInfo\x12#\n\rdatabase_name\x18\x01\x20\
+    \x01(\tR\x0cdatabaseName\x12\x12\n\x04name\x18\x02\x20\x01(\tR\x04name\"\
+    m\n\x10ResponseViewInfo\x12\"\n\x06status\x18\x01\x20\x01(\x0e2\n.db.Sta\
+    tusR\x06status\x12\x17\n\x07msg_err\x18\x02\x20\x01(\tR\x06msgErr\x12\
+    \x1c\n\x04view\x18\x03\x20\x01(\x0b2\x08.db.ViewR\x04view\"L\n\x11Reques\
+    tViewRemove\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\
+    \x12\x12\n\x04name\x18\x02\x20\x01(\tR\x04name\"y\n\x12RequestViewArchiv\
+    e\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x12\n\
+    \x04name\x18\x02\x20\x01(\tR\x04name\x12*\n\x11archive_file_path\x18\x03\
+    \x20\x01(\tR\x0farchiveFilePath\"f\n\x11RequestViewRecord\x12#\n\rdataba\
+    se_name\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x12\n\x04name\x18\x02\
+    \x20\x01(\tR\x04name\x12\x18\n\x07version\x18\x03\x20\x01(\rR\x07version\
+    \"y\n\x12ResponseViewRecord\x12\"\n\x06status\x18\x01\x20\x01(\x0e2\n.db\
+    .StatusR\x06status\x12\x17\n\x07msg_err\x18\x02\x20\x01(\tR\x06msgErr\
+    \x12&\n\x06record\x18\x03\x20\x01(\x0b2\x0e.db.ViewRecordR\x06record\"M\
+    \n\x12RequestViewRecords\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cda\
+    tabaseName\x12\x12\n\x04name\x18\x02\x20\x01(\tR\x04name\"|\n\x13Respons\
+    eViewRecords\x12\"\n\x06status\x18\x01\x20\x01(\x0e2\n.db.StatusR\x06sta\
+    tus\x12\x17\n\x07msg_err\x18\x02\x20\x01(\tR\x06msgErr\x12(\n\x07records\
+    \x18\x03\x20\x03(\x0b2\x0e.db.ViewRecordR\x07records\"r\n\nViewRecord\
+    \x12\x1a\n\x08filepath\x18\x01\x20\x01(\tR\x08filepath\x12.\n\x04time\
+    \x18\x02\x20\x01(\x0b2\x1a.google.protobuf.TimestampR\x04time\x12\x18\n\
+    \x07version\x18\x03\x20\x01(\rR\x07versionBJ\n\x1dcn.aberic.george.proto\
+    cols.dbB\tViewProtoZ\x1egithub.com/george/protocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

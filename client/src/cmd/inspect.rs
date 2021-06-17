@@ -13,7 +13,7 @@
  */
 
 use cli_table::format::Justify;
-use cli_table::{print_stdout, Cell, Style, Table};
+use cli_table::{Cell, Style, Table};
 
 use comm::errors::{Errs, GeorgeResult};
 use protocols::impls::utils::Comm;
@@ -119,6 +119,8 @@ impl Inspect {
                         .to_string("%Y-%m-%d %H:%M:%S")
                         .cell(),
                     view.get_indexes().len().cell().justify(Justify::Right),
+                    view.get_filepath().cell(),
+                    view.get_version().cell(),
                 ]]
                 .table()
                 .title(vec![
@@ -126,7 +128,9 @@ impl Inspect {
                     "Comment".cell().bold(true),
                     "Increment".cell().bold(true),
                     "Create Time".cell().bold(true),
-                    "View Count".cell().bold(true),
+                    "Index Count".cell().bold(true),
+                    "Filepath".cell().bold(true),
+                    "Version".cell().bold(true),
                 ])
                 .bold(true);
                 print_table(table)

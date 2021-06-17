@@ -15,8 +15,7 @@
 use std::io;
 use std::io::Write;
 
-use comm::errors::{Errs, GeorgeError, GeorgeResult};
-use protocols::impls::db::database::DatabaseList;
+use comm::errors::{Errs, GeorgeResult};
 use protocols::impls::utils::Comm;
 
 use crate::cmd::{
