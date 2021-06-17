@@ -57,6 +57,7 @@ service ViewService {
   rpc remove(RequestViewRemove) returns (Response);
   rpc archive(RequestViewArchive) returns (Response);
   rpc record(RequestViewRecord) returns (ResponseViewRecord);
+  rpc records(RequestViewRecords) returns (ResponseViewRecords);
 }
 
 service IndexService {

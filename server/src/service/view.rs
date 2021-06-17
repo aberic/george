@@ -24,8 +24,8 @@ use protocols::impls::db::response::{Response, Status};
 use protocols::impls::db::service_grpc::ViewService;
 use protocols::impls::db::view::{
     RequestViewArchive, RequestViewCreate, RequestViewInfo, RequestViewList, RequestViewModify,
-    RequestViewRecord, RequestViewRemove, ResponseViewInfo, ResponseViewRecord, View, ViewList,
-    ViewRecord,
+    RequestViewRecord, RequestViewRecords, RequestViewRemove, ResponseViewInfo, ResponseViewRecord,
+    ResponseViewRecords, View, ViewList, ViewRecord,
 };
 use protocols::impls::utils::Comm;
 
@@ -171,7 +171,39 @@ impl ViewService for ViewServer {
                 let mut record = ViewRecord::new();
                 record.set_filepath(filepath);
                 record.set_time(Comm::proto_time_2_grpc_timestamp(create_time));
+                record.set_version(req.message.version);
                 response.set_record(record);
+                response.set_status(Status::Ok);
+            }
+            Err(err) => {
+                response.set_status(Status::Custom);
+                response.set_msg_err(err.to_string());
+            }
+        }
+        resp.finish(response)
+    }
+
+    fn records(
+        &self,
+        _o: ServerHandlerContext,
+        req: ServerRequestSingle<RequestViewRecords>,
+        resp: ServerResponseUnarySink<ResponseViewRecords>,
+    ) -> Result<()> {
+        let mut response = ResponseViewRecords::new();
+        let mut records: RepeatedField<ViewRecord> = RepeatedField::new();
+        match self
+            .task
+            .view_records(req.message.database_name, req.message.name)
+        {
+            Ok(v8s) => {
+                for (filepath, time, version) in v8s {
+                    let mut record = ViewRecord::new();
+                    record.set_filepath(filepath);
+                    record.set_time(Comm::proto_time_2_grpc_timestamp(time));
+                    record.set_version(version as u32);
+                    records.push(record);
+                }
+                response.set_records(records);
                 response.set_status(Status::Ok);
             }
             Err(err) => {

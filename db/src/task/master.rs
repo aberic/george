@@ -307,6 +307,17 @@ impl TMaster for Master {
             .view_record(view_name, version)
     }
 
+    fn view_records(
+        &self,
+        database_name: String,
+        view_name: String,
+    ) -> GeorgeResult<Vec<(String, Time, u16)>> {
+        self.database(database_name)?
+            .read()
+            .unwrap()
+            .view_records(view_name)
+    }
+
     fn view_remove(&self, database_name: String, view_name: String) -> GeorgeResult<()> {
         self.database(database_name)?
             .read()

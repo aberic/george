@@ -180,7 +180,7 @@ impl Database {
             .archive(archive_file_path)
     }
 
-    /// 指定归档版本信息
+    /// 读取指定归档版本信息
     ///
     /// version 版本号
     ///
@@ -193,6 +193,16 @@ impl Database {
         version: u16,
     ) -> GeorgeResult<(String, Time)> {
         self.view(view_name)?.read().unwrap().record(version)
+    }
+
+    /// 读取所有归档版本信息
+    ///
+    /// #return Vec<(String, Time, Version)>
+    /// * filepath 当前归档版本文件所处路径
+    /// * create_time 归档时间
+    /// * version 版本号
+    pub(crate) fn view_records(&self, view_name: String) -> GeorgeResult<Vec<(String, Time, u16)>> {
+        Ok(self.view(view_name)?.read().unwrap().records())
     }
 }
 

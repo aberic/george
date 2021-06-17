@@ -117,7 +117,7 @@ pub trait TMaster {
         archive_file_path: String,
     ) -> GeorgeResult<()>;
 
-    /// 指定归档版本信息
+    /// 读取指定归档版本信息
     ///
     /// version 版本号
     ///
@@ -130,6 +130,18 @@ pub trait TMaster {
         view_name: String,
         version: u16,
     ) -> GeorgeResult<(String, Time)>;
+
+    /// 读取所有归档版本信息
+    ///
+    /// #return Vec<(String, Time, Version)>
+    /// * filepath 当前归档版本文件所处路径
+    /// * create_time 归档时间
+    /// * version 版本号
+    fn view_records(
+        &self,
+        database_name: String,
+        view_name: String,
+    ) -> GeorgeResult<Vec<(String, Time, u16)>>;
 
     /// 删除视图
     fn view_remove(&self, database_name: String, view_name: String) -> GeorgeResult<()>;

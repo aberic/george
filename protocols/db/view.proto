@@ -104,7 +104,7 @@ message RequestViewArchive {
   string archive_file_path = 3;
 }
 
-// 指定归档版本信息
+// 读取指定归档版本信息
 message RequestViewRecord {
   // 数据库名称
   string database_name = 1;
@@ -114,12 +114,28 @@ message RequestViewRecord {
   uint32 version = 3;
 }
 
-// 指定归档版本信息
+// 读取指定归档版本信息
 message ResponseViewRecord {
   Status status = 1;
   string msg_err = 2;
   // 归档版本信息
   ViewRecord record = 3;
+}
+
+// 读取指定归档版本信息
+message RequestViewRecords {
+  // 数据库名称
+  string database_name = 1;
+  // 名称
+  string name = 2;
+}
+
+// 读取指定归档版本信息
+message ResponseViewRecords {
+  Status status = 1;
+  string msg_err = 2;
+  // 归档版本信息
+  repeated ViewRecord records = 3;
 }
 
 // 指定归档版本信息
@@ -128,4 +144,6 @@ message ViewRecord {
   string filepath = 1;
   // 归档时间
   google.protobuf.Timestamp time = 2;
+  // 版本号
+  uint32 version = 3;
 }

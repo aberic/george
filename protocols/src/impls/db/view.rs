@@ -2628,10 +2628,457 @@ impl ::protobuf::reflect::ProtobufValue for ResponseViewRecord {
 
 #[derive(PartialEq,Clone,Default)]
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+pub struct RequestViewRecords {
+    // message fields
+    pub database_name: ::std::string::String,
+    pub name: ::std::string::String,
+    // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a RequestViewRecords {
+    fn default() -> &'a RequestViewRecords {
+        <RequestViewRecords as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl RequestViewRecords {
+    pub fn new() -> RequestViewRecords {
+        ::std::default::Default::default()
+    }
+
+    // string database_name = 1;
+
+
+    pub fn get_database_name(&self) -> &str {
+        &self.database_name
+    }
+    pub fn clear_database_name(&mut self) {
+        self.database_name.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_database_name(&mut self, v: ::std::string::String) {
+        self.database_name = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_database_name(&mut self) -> &mut ::std::string::String {
+        &mut self.database_name
+    }
+
+    // Take field
+    pub fn take_database_name(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.database_name, ::std::string::String::new())
+    }
+
+    // string name = 2;
+
+
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+    pub fn clear_name(&mut self) {
+        self.name.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_name(&mut self, v: ::std::string::String) {
+        self.name = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_name(&mut self) -> &mut ::std::string::String {
+        &mut self.name
+    }
+
+    // Take field
+    pub fn take_name(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.name, ::std::string::String::new())
+    }
+}
+
+impl ::protobuf::Message for RequestViewRecords {
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.database_name)?;
+                },
+                2 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.name)?;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if !self.database_name.is_empty() {
+            my_size += ::protobuf::rt::string_size(1, &self.database_name);
+        }
+        if !self.name.is_empty() {
+            my_size += ::protobuf::rt::string_size(2, &self.name);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if !self.database_name.is_empty() {
+            os.write_string(1, &self.database_name)?;
+        }
+        if !self.name.is_empty() {
+            os.write_string(2, &self.name)?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> RequestViewRecords {
+        RequestViewRecords::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
+        descriptor.get(|| {
+            let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "database_name",
+                |m: &RequestViewRecords| { &m.database_name },
+                |m: &mut RequestViewRecords| { &mut m.database_name },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "name",
+                |m: &RequestViewRecords| { &m.name },
+                |m: &mut RequestViewRecords| { &mut m.name },
+            ));
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<RequestViewRecords>(
+                "RequestViewRecords",
+                fields,
+                file_descriptor_proto()
+            )
+        })
+    }
+
+    fn default_instance() -> &'static RequestViewRecords {
+        static instance: ::protobuf::rt::LazyV2<RequestViewRecords> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(RequestViewRecords::new)
+    }
+}
+
+impl ::protobuf::Clear for RequestViewRecords {
+    fn clear(&mut self) {
+        self.database_name.clear();
+        self.name.clear();
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for RequestViewRecords {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for RequestViewRecords {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+pub struct ResponseViewRecords {
+    // message fields
+    pub status: super::response::Status,
+    pub msg_err: ::std::string::String,
+    pub records: ::protobuf::RepeatedField<ViewRecord>,
+    // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a ResponseViewRecords {
+    fn default() -> &'a ResponseViewRecords {
+        <ResponseViewRecords as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl ResponseViewRecords {
+    pub fn new() -> ResponseViewRecords {
+        ::std::default::Default::default()
+    }
+
+    // .db.Status status = 1;
+
+
+    pub fn get_status(&self) -> super::response::Status {
+        self.status
+    }
+    pub fn clear_status(&mut self) {
+        self.status = super::response::Status::Ok;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_status(&mut self, v: super::response::Status) {
+        self.status = v;
+    }
+
+    // string msg_err = 2;
+
+
+    pub fn get_msg_err(&self) -> &str {
+        &self.msg_err
+    }
+    pub fn clear_msg_err(&mut self) {
+        self.msg_err.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_msg_err(&mut self, v: ::std::string::String) {
+        self.msg_err = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_msg_err(&mut self) -> &mut ::std::string::String {
+        &mut self.msg_err
+    }
+
+    // Take field
+    pub fn take_msg_err(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.msg_err, ::std::string::String::new())
+    }
+
+    // repeated .db.ViewRecord records = 3;
+
+
+    pub fn get_records(&self) -> &[ViewRecord] {
+        &self.records
+    }
+    pub fn clear_records(&mut self) {
+        self.records.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_records(&mut self, v: ::protobuf::RepeatedField<ViewRecord>) {
+        self.records = v;
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_records(&mut self) -> &mut ::protobuf::RepeatedField<ViewRecord> {
+        &mut self.records
+    }
+
+    // Take field
+    pub fn take_records(&mut self) -> ::protobuf::RepeatedField<ViewRecord> {
+        ::std::mem::replace(&mut self.records, ::protobuf::RepeatedField::new())
+    }
+}
+
+impl ::protobuf::Message for ResponseViewRecords {
+    fn is_initialized(&self) -> bool {
+        for v in &self.records {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.status, 1, &mut self.unknown_fields)?
+                },
+                2 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.msg_err)?;
+                },
+                3 => {
+                    ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.records)?;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if self.status != super::response::Status::Ok {
+            my_size += ::protobuf::rt::enum_size(1, self.status);
+        }
+        if !self.msg_err.is_empty() {
+            my_size += ::protobuf::rt::string_size(2, &self.msg_err);
+        }
+        for value in &self.records {
+            let len = value.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        };
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.status != super::response::Status::Ok {
+            os.write_enum(1, ::protobuf::ProtobufEnum::value(&self.status))?;
+        }
+        if !self.msg_err.is_empty() {
+            os.write_string(2, &self.msg_err)?;
+        }
+        for v in &self.records {
+            os.write_tag(3, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        };
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> ResponseViewRecords {
+        ResponseViewRecords::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
+        descriptor.get(|| {
+            let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<super::response::Status>>(
+                "status",
+                |m: &ResponseViewRecords| { &m.status },
+                |m: &mut ResponseViewRecords| { &mut m.status },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "msg_err",
+                |m: &ResponseViewRecords| { &m.msg_err },
+                |m: &mut ResponseViewRecords| { &mut m.msg_err },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<ViewRecord>>(
+                "records",
+                |m: &ResponseViewRecords| { &m.records },
+                |m: &mut ResponseViewRecords| { &mut m.records },
+            ));
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<ResponseViewRecords>(
+                "ResponseViewRecords",
+                fields,
+                file_descriptor_proto()
+            )
+        })
+    }
+
+    fn default_instance() -> &'static ResponseViewRecords {
+        static instance: ::protobuf::rt::LazyV2<ResponseViewRecords> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(ResponseViewRecords::new)
+    }
+}
+
+impl ::protobuf::Clear for ResponseViewRecords {
+    fn clear(&mut self) {
+        self.status = super::response::Status::Ok;
+        self.msg_err.clear();
+        self.records.clear();
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for ResponseViewRecords {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for ResponseViewRecords {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct ViewRecord {
     // message fields
     pub filepath: ::std::string::String,
     pub time: ::protobuf::SingularPtrField<::protobuf::well_known_types::Timestamp>,
+    pub version: u32,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -2708,6 +3155,21 @@ impl ViewRecord {
     pub fn take_time(&mut self) -> ::protobuf::well_known_types::Timestamp {
         self.time.take().unwrap_or_else(|| ::protobuf::well_known_types::Timestamp::new())
     }
+
+    // uint32 version = 3;
+
+
+    pub fn get_version(&self) -> u32 {
+        self.version
+    }
+    pub fn clear_version(&mut self) {
+        self.version = 0;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_version(&mut self, v: u32) {
+        self.version = v;
+    }
 }
 
 impl ::protobuf::Message for ViewRecord {
@@ -2730,6 +3192,13 @@ impl ::protobuf::Message for ViewRecord {
                 2 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.time)?;
                 },
+                3 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_uint32()?;
+                    self.version = tmp;
+                },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
                 },
@@ -2749,6 +3218,9 @@ impl ::protobuf::Message for ViewRecord {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         }
+        if self.version != 0 {
+            my_size += ::protobuf::rt::value_size(3, self.version, ::protobuf::wire_format::WireTypeVarint);
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -2762,6 +3234,9 @@ impl ::protobuf::Message for ViewRecord {
             os.write_tag(2, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
+        }
+        if self.version != 0 {
+            os.write_uint32(3, self.version)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -2811,6 +3286,11 @@ impl ::protobuf::Message for ViewRecord {
                 |m: &ViewRecord| { &m.time },
                 |m: &mut ViewRecord| { &mut m.time },
             ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint32>(
+                "version",
+                |m: &ViewRecord| { &m.version },
+                |m: &mut ViewRecord| { &mut m.version },
+            ));
             ::protobuf::reflect::MessageDescriptor::new_pb_name::<ViewRecord>(
                 "ViewRecord",
                 fields,
@@ -2829,6 +3309,7 @@ impl ::protobuf::Clear for ViewRecord {
     fn clear(&mut self) {
         self.filepath.clear();
         self.time.clear();
+        self.version = 0;
         self.unknown_fields.clear();
     }
 }
@@ -2875,10 +3356,16 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x03\x20\x01(\rR\x07version\"y\n\x12ResponseViewRecord\x12\"\n\x06status\
     \x18\x01\x20\x01(\x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\
     \x02\x20\x01(\tR\x06msgErr\x12&\n\x06record\x18\x03\x20\x01(\x0b2\x0e.db\
-    .ViewRecordR\x06record\"X\n\nViewRecord\x12\x1a\n\x08filepath\x18\x01\
-    \x20\x01(\tR\x08filepath\x12.\n\x04time\x18\x02\x20\x01(\x0b2\x1a.google\
-    .protobuf.TimestampR\x04timeBJ\n\x1dcn.aberic.george.protocols.dbB\tView\
-    ProtoZ\x1egithub.com/george/protocols/dbb\x06proto3\
+    .ViewRecordR\x06record\"M\n\x12RequestViewRecords\x12#\n\rdatabase_name\
+    \x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x12\n\x04name\x18\x02\x20\x01(\
+    \tR\x04name\"|\n\x13ResponseViewRecords\x12\"\n\x06status\x18\x01\x20\
+    \x01(\x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\x02\x20\x01(\
+    \tR\x06msgErr\x12(\n\x07records\x18\x03\x20\x03(\x0b2\x0e.db.ViewRecordR\
+    \x07records\"r\n\nViewRecord\x12\x1a\n\x08filepath\x18\x01\x20\x01(\tR\
+    \x08filepath\x12.\n\x04time\x18\x02\x20\x01(\x0b2\x1a.google.protobuf.Ti\
+    mestampR\x04time\x12\x18\n\x07version\x18\x03\x20\x01(\rR\x07versionBJ\n\
+    \x1dcn.aberic.george.protocols.dbB\tViewProtoZ\x1egithub.com/george/prot\
+    ocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

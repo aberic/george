@@ -173,6 +173,14 @@ impl TMaster for Task {
         self.master.view_record(database_name, view_name, version)
     }
 
+    fn view_records(
+        &self,
+        database_name: String,
+        view_name: String,
+    ) -> GeorgeResult<Vec<(String, Time, u16)>> {
+        self.master.view_records(database_name, view_name)
+    }
+
     fn view_remove(&self, database_name: String, view_name: String) -> GeorgeResult<()> {
         self.master.view_remove(database_name, view_name)
     }

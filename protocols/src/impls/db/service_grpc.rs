@@ -404,6 +404,8 @@ pub trait ViewService {
     fn archive(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::view::RequestViewArchive>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
     fn record(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::view::RequestViewRecord>, resp: ::grpc::ServerResponseUnarySink<super::view::ResponseViewRecord>) -> ::grpc::Result<()>;
+
+    fn records(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::view::RequestViewRecords>, resp: ::grpc::ServerResponseUnarySink<super::view::ResponseViewRecords>) -> ::grpc::Result<()>;
 }
 
 // client
@@ -484,6 +486,16 @@ impl ViewServiceClient {
     pub fn record(&self, o: ::grpc::RequestOptions, req: super::view::RequestViewRecord) -> ::grpc::SingleResponse<super::view::ResponseViewRecord> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.ViewService/record"),
+            streaming: ::grpc::rt::GrpcStreaming::Unary,
+            req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+            resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+        });
+        self.grpc_client.call_unary(o, req, descriptor)
+    }
+
+    pub fn records(&self, o: ::grpc::RequestOptions, req: super::view::RequestViewRecords) -> ::grpc::SingleResponse<super::view::ResponseViewRecords> {
+        let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+            name: ::grpc::rt::StringOrStatic::Static("/db.ViewService/records"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
             req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
             resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
@@ -584,6 +596,18 @@ impl ViewServiceServer {
                     {
                         let handler_copy = handler_arc.clone();
                         ::grpc::rt::MethodHandlerUnary::new(move |ctx, req, resp| (*handler_copy).record(ctx, req, resp))
+                    },
+                ),
+                ::grpc::rt::ServerMethod::new(
+                    ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+                        name: ::grpc::rt::StringOrStatic::Static("/db.ViewService/records"),
+                        streaming: ::grpc::rt::GrpcStreaming::Unary,
+                        req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+                        resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+                    }),
+                    {
+                        let handler_copy = handler_arc.clone();
+                        ::grpc::rt::MethodHandlerUnary::new(move |ctx, req, resp| (*handler_copy).records(ctx, req, resp))
                     },
                 ),
             ],

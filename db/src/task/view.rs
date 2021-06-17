@@ -153,7 +153,7 @@ impl View {
         };
     }
 
-    /// 指定归档版本信息
+    /// 读取指定归档版本信息
     ///
     /// #param
     /// * version 版本号
@@ -173,6 +173,26 @@ impl View {
             }
             Err(Errs::str("no view version found"))
         }
+    }
+
+    /// 读取所有归档版本信息
+    ///
+    /// #return Vec<(String, Time, Version)>
+    /// * filepath 当前归档版本文件所处路径
+    /// * create_time 归档时间
+    /// * version 版本号
+    pub(crate) fn records(&self) -> Vec<(String, Time, u16)> {
+        let mut v8s: Vec<(String, Time, u16)> = vec![];
+        let now = self.pigeonhole();
+        v8s.push((
+            now.now().filepath(),
+            now.now().create_time(),
+            now.now().version(),
+        ));
+        for (_ver, record) in self.pigeonhole().history().iter() {
+            v8s.push((record.filepath(), record.create_time(), record.version()));
+        }
+        v8s
     }
 
     /// 整理归档
