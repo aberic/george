@@ -86,12 +86,12 @@ impl Database {
     pub(crate) fn modify(
         &self,
         name: String,
-        comment: String,
+        comment_new: String,
         name_new: String,
     ) -> GeorgeResult<()> {
         let mut req = RequestDatabaseModify::new();
         req.set_name(name);
-        req.set_comment(comment);
+        req.set_comment(comment_new);
         req.set_name_new(name_new);
         let resp = self
             .client

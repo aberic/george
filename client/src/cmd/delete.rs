@@ -17,7 +17,12 @@ use comm::errors::GeorgeResult;
 use crate::cmd::{Config, Delete};
 
 impl Delete {
-    pub(crate) fn analysis(_config: &Config, _used: String, _vss: Vec<String>) -> GeorgeResult<()> {
+    pub(crate) fn analysis(
+        _config: &Config,
+        _used: String,
+        _scan: String,
+        _vss: Vec<String>,
+    ) -> GeorgeResult<()> {
         unimplemented!()
     }
 }

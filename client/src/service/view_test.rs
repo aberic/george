@@ -19,6 +19,6 @@ mod view {
     #[test]
     fn list() {
         let view = View::new("127.0.0.1", 9219);
-        println!("views {:#?}", view.list("sys".to_string()))
+        println!("views {:#?}", view.list("test1".to_string()))
     }
 }

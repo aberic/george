@@ -66,6 +66,27 @@ impl Comm {
         }
     }
 
+    pub fn key_type_from_str(key_type: String) -> KeyType {
+        match key_type.as_str() {
+            "String" => KeyType::String,
+            "Int" => KeyType::Int,
+            "Float" => KeyType::Float,
+            "Bool" => KeyType::Bool,
+            "UInt" => KeyType::UInt,
+            _ => KeyType::Nonsupport,
+        }
+    }
+
+    pub fn engine_from_str(engine: String) -> Engine {
+        match engine.as_str() {
+            "Disk" => Engine::Disk,
+            "Increment" => Engine::Increment,
+            "Block" => Engine::Block,
+            "Sequence" => Engine::Sequence,
+            _ => Engine::None,
+        }
+    }
+
     pub fn trim_str(str: String) -> String {
         trim_str(str)
     }

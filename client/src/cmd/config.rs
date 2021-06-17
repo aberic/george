@@ -12,13 +12,17 @@
  * limitations under the License.
  */
 
-use crate::cmd::{Config, Create, Delete, Get, Insert, Inspect, Put, Select, Set, Show};
-use crate::service::{Database, Disk, Index, Memory, Page, User, View};
+use std::io;
+use std::io::Write;
+
 use comm::errors::{Errs, GeorgeError, GeorgeResult};
 use protocols::impls::db::database::DatabaseList;
 use protocols::impls::utils::Comm;
-use std::io;
-use std::io::Write;
+
+use crate::cmd::{
+    george_error, Alter, Config, Create, Delete, Drop, Get, Insert, Inspect, Put, Select, Set, Show,
+};
+use crate::service::{Database, Disk, Index, Memory, Page, User, View};
 
 impl Config {
     pub(crate) fn new(remote: &str, port: u16) -> Self {
@@ -75,9 +79,9 @@ impl Config {
                         }
                     }
                 }
-                match self.parse(used.clone(), scan) {
-                    Ok(()) => {}
-                    Err(err) => println!("error: {}", err),
+                match self.parse(used.clone(), scan.clone()) {
+                    Ok(()) => println!("exec \"{}\" on {} success!", scan, used),
+                    Err(err) => println!("exec \"{}\" on {} error: {}", scan, used, err),
                 }
                 print!("george->: ");
                 io::stdout().flush().unwrap();
@@ -93,7 +97,7 @@ impl Config {
     fn use_check(&self, scan: String) -> GeorgeResult<String> {
         let vss = Comm::split_str(scan.clone());
         if vss.len() != 3 {
-            return Err(Errs::string(format!("error command with '{}'", scan)));
+            return Err(george_error(scan));
         }
         let used = vss[1].as_str();
         let name = vss[2].clone();
@@ -131,19 +135,21 @@ impl Config {
     fn parse(&self, used: String, scan: String) -> GeorgeResult<()> {
         let vss = Comm::split_str(scan.clone());
         if vss.len() == 0 {
-            return Err(Errs::string(format!("error command with '{}'", scan)));
+            return Err(george_error(scan));
         }
         let intent = vss[0].as_str();
         match intent {
             "show" => Show::analysis(&self, used, scan, vss),
-            "inspect" => Inspect::analysis(&self, used, vss),
-            "create" => Create::analysis(&self, used, vss),
-            "put" => Put::analysis(&self, used, vss),
-            "set" => Set::analysis(&self, used, vss),
-            "insert" => Insert::analysis(&self, used, vss),
-            "get" => Get::analysis(&self, used, vss),
-            "select" => Select::analysis(&self, used, vss),
-            "delete" => Delete::analysis(&self, used, vss),
+            "inspect" => Inspect::analysis(&self, used, scan, vss),
+            "create" => Create::analysis(&self, used, scan, vss),
+            "alter" => Alter::analysis(&self, used, scan, vss),
+            "drop" => Drop::analysis(&self, used, scan, vss),
+            "put" => Put::analysis(&self, used, scan, vss),
+            "set" => Set::analysis(&self, used, scan, vss),
+            "insert" => Insert::analysis(&self, used, scan, vss),
+            "get" => Get::analysis(&self, used, scan, vss),
+            "select" => Select::analysis(&self, used, scan, vss),
+            "delete" => Delete::analysis(&self, used, scan, vss),
             _ => Err(Errs::string(format!(
                 "command do not support prefix {} in '{}'",
                 intent, scan

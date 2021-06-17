@@ -13,11 +13,15 @@
  */
 
 use crate::service::{Database, Disk, Index, Memory, Page, User, View};
+use cli_table::{print_stdout, Table};
+use comm::errors::{Errs, GeorgeError, GeorgeResult};
 
+mod alter;
 mod command;
-pub mod config;
+mod config;
 mod create;
 mod delete;
+mod drop;
 mod get;
 mod insert;
 mod inspect;
@@ -36,6 +40,10 @@ pub(crate) struct Show;
 pub(crate) struct Inspect;
 
 pub(crate) struct Create;
+
+pub(crate) struct Alter;
+
+pub(crate) struct Drop;
 
 pub(crate) struct Put;
 
@@ -57,4 +65,19 @@ pub(crate) struct Config {
     index: Index,
     disk: Disk,
     memory: Memory,
+}
+
+pub(crate) fn george_error(scan: String) -> GeorgeError {
+    Errs::string(format!("error command with '{}'", scan))
+}
+
+pub(crate) fn george_errors<Err: ToString>(scan: String, err: Err) -> GeorgeError {
+    Errs::strings(format!("error command with '{}'", scan), err)
+}
+
+pub(crate) fn print_table<T: Table>(table: T) -> GeorgeResult<()> {
+    match print_stdout(table) {
+        Ok(()) => Ok(()),
+        Err(err) => Err(Errs::strs("print stdout", err)),
+    }
 }

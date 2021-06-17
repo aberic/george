@@ -12,12 +12,13 @@
  * limitations under the License.
  */
 
-use comm::errors::{Errs, GeorgeResult};
-
-use crate::cmd::{Config, Show};
 use cli_table::format::Justify;
 use cli_table::{print_stdout, Cell, Style, Table};
+
+use comm::errors::{Errs, GeorgeResult};
 use protocols::impls::utils::Comm;
+
+use crate::cmd::{george_error, print_table, Config, Show};
 
 impl Show {
     pub(crate) fn analysis(
@@ -27,7 +28,7 @@ impl Show {
         vss: Vec<String>,
     ) -> GeorgeResult<()> {
         if vss.len() < 2 {
-            return Err(Errs::string(format!("error command with '{}'", scan)));
+            return Err(george_error(scan));
         }
         let intent = vss[1].as_str();
         match intent {
@@ -42,23 +43,21 @@ impl Show {
                         db.get_comment().cell(),
                         Comm::proto_grpc_timestamp_2_time(db.get_create_time().seconds)
                             .to_string("%Y-%m-%d %H:%M:%S")
-                            .cell()
-                            .justify(Justify::Right),
+                            .cell(),
+                        db.get_views().len().cell().justify(Justify::Right),
                     ])
                 }
-                match print_stdout(
+                print_table(
                     table
                         .table()
                         .title(vec![
                             "Name".cell().bold(true),
                             "Comment".cell().bold(true),
                             "Create Time".cell().bold(true),
+                            "View Count".cell().bold(true),
                         ])
                         .bold(true),
-                ) {
-                    Ok(()) => Ok(()),
-                    Err(err) => Err(Errs::strs("print stdout", err)),
-                }
+                )
             }
             "pages" => {
                 // show pages;
@@ -77,7 +76,7 @@ impl Show {
                             .justify(Justify::Right),
                     ])
                 }
-                match print_stdout(
+                print_table(
                     table
                         .table()
                         .title(vec![
@@ -88,10 +87,7 @@ impl Show {
                             "Create Time".cell().bold(true),
                         ])
                         .bold(true),
-                ) {
-                    Ok(()) => Ok(()),
-                    Err(err) => Err(Errs::strs("print stdout", err)),
-                }
+                )
             }
             "ledgers" => Err(Errs::str("no support ledgers now!")),
             "views" => {
@@ -114,7 +110,7 @@ impl Show {
                         view.get_indexes().len().cell().justify(Justify::Right),
                     ])
                 }
-                match print_stdout(
+                print_table(
                     table
                         .table()
                         .title(vec![
@@ -124,15 +120,12 @@ impl Show {
                             "Index Count".cell().bold(true),
                         ])
                         .bold(true),
-                ) {
-                    Ok(()) => Ok(()),
-                    Err(err) => Err(Errs::strs("print stdout", err)),
-                }
+                )
             }
             "indexes" => {
-                // show indexes from [view];
-                if vss.len() < 4 {
-                    return Err(Errs::string(format!("error command with '{}'", scan)));
+                // show indexes from [view:string];
+                if vss.len() != 4 {
+                    return Err(george_error(scan));
                 }
                 if used.is_empty() {
                     return Err(Errs::str(
@@ -140,7 +133,7 @@ impl Show {
                     ));
                 }
                 if vss[2].ne("from") {
-                    return Err(Errs::string(format!("error command with '{}'", scan)));
+                    return Err(george_error(scan));
                 }
                 let view_name = vss[3].clone();
                 let mut view_exist = false;
@@ -182,7 +175,7 @@ impl Show {
                             .justify(Justify::Right),
                     ])
                 }
-                match print_stdout(
+                print_table(
                     table
                         .table()
                         .title(vec![
@@ -195,10 +188,7 @@ impl Show {
                             "Create Time".cell().bold(true),
                         ])
                         .bold(true),
-                ) {
-                    Ok(()) => Ok(()),
-                    Err(err) => Err(Errs::strs("print stdout", err)),
-                }
+                )
             }
             _ => Err(Errs::string(format!(
                 "command do not support prefix {}",

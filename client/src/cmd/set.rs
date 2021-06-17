@@ -16,7 +16,12 @@ use crate::cmd::{Config, Set};
 use comm::errors::GeorgeResult;
 
 impl Set {
-    pub(crate) fn analysis(_config: &Config, _used: String, _vss: Vec<String>) -> GeorgeResult<()> {
+    pub(crate) fn analysis(
+        _config: &Config,
+        _used: String,
+        _scan: String,
+        _vss: Vec<String>,
+    ) -> GeorgeResult<()> {
         unimplemented!()
     }
 }
