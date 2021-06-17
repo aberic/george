@@ -12,6 +12,23 @@
  * limitations under the License.
  */
 
+use std::path::Path;
+use std::sync::{Arc, RwLock};
+use std::thread;
+
+use protobuf::{RepeatedField, SingularPtrField};
+
+use db::task::traits::TForm;
+use db::Task;
+use deploy::{Init, LogPolicy};
+use protocols::impls::db::index::{Engine, Index, KeyType};
+use protocols::impls::db::service_grpc::{
+    DatabaseServiceServer, DiskServiceServer, IndexServiceServer, MemoryServiceServer,
+    PageServiceServer, UserServiceServer, ViewServiceServer,
+};
+use protocols::impls::db::view::View;
+use protocols::impls::utils::Comm;
+
 use crate::service::database::DatabaseServer;
 use crate::service::disk::DiskServer;
 use crate::service::index::IndexServer;
@@ -19,16 +36,6 @@ use crate::service::memory::MemoryServer;
 use crate::service::page::PageServer;
 use crate::service::user::UserServer;
 use crate::service::view::ViewServer;
-use db::Task;
-use deploy::{Init, LogPolicy};
-use protocols::impls::db::index::{Engine, KeyType};
-use protocols::impls::db::service_grpc::{
-    DatabaseServiceServer, DiskServiceServer, IndexServiceServer, MemoryServiceServer,
-    PageServiceServer, UserServiceServer, ViewServiceServer,
-};
-use std::path::Path;
-use std::sync::Arc;
-use std::thread;
 
 pub mod database;
 mod disk;
@@ -152,5 +159,54 @@ impl Enums {
             KeyType::Bool => db::utils::enums::KeyType::Bool,
             KeyType::Float => db::utils::enums::KeyType::Float,
         }
+    }
+}
+
+pub(crate) struct Children;
+
+impl Children {
+    pub(crate) fn indexes(view: Arc<RwLock<db::task::View>>) -> RepeatedField<Index> {
+        let view_r = view.read().unwrap();
+        let indexes = view_r.index_map();
+        let indexes_r = indexes.read().unwrap();
+        let mut indexes: RepeatedField<Index> = RepeatedField::new();
+        for (_name, index) in indexes_r.iter() {
+            indexes.push(Index {
+                name: index.name(),
+                engine: Enums::db_2_engine(index.engine()),
+                primary: index.primary(),
+                unique: index.unique(),
+                null: index.null(),
+                key_type: Enums::db_2_key_type(index.key_type()),
+                create_time: SingularPtrField::some(Comm::proto_time_2_grpc_timestamp(
+                    index.create_time(),
+                )),
+                unknown_fields: Default::default(),
+                cached_size: Default::default(),
+            })
+        }
+        indexes
+    }
+
+    pub(crate) fn views(database: Arc<RwLock<db::task::Database>>) -> RepeatedField<View> {
+        let database_r = database.read().unwrap();
+        let views = database_r.view_map();
+        let views_r = views.read().unwrap();
+        let mut views: RepeatedField<View> = RepeatedField::new();
+        for (_name, view) in views_r.iter() {
+            let indexes = Children::indexes(view.clone());
+            let view_r = view.read().unwrap();
+            views.push(View {
+                name: view_r.name(),
+                comment: view_r.comment(),
+                create_time: SingularPtrField::some(Comm::proto_time_2_grpc_timestamp(
+                    view_r.create_time(),
+                )),
+                indexes,
+                unknown_fields: Default::default(),
+                cached_size: Default::default(),
+            })
+        }
+        views
     }
 }

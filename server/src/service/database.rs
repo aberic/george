@@ -18,7 +18,7 @@ use grpc::{Result, ServerHandlerContext, ServerRequestSingle, ServerResponseUnar
 use protobuf::{RepeatedField, SingularPtrField};
 
 use crate::service::index::IndexServer;
-use crate::service::Enums;
+use crate::service::{Children, Enums};
 use db::task::traits::{TForm, TMaster};
 use db::Task;
 use protobuf::well_known_types::Timestamp;
@@ -49,11 +49,13 @@ impl DatabaseService for DatabaseServer {
         let db_map = self.task.database_map();
         let db_map_r = db_map.read().unwrap();
         for db in db_map_r.values() {
+            let views = Children::views(db.clone());
             let db_r = db.read().unwrap();
             let mut database = Database::new();
             database.set_name(db_r.name());
             database.set_comment(db_r.comment());
             database.set_create_time(Comm::proto_time_2_grpc_timestamp(db_r.create_time()));
+            database.set_views(views);
             databases.push(database);
         }
         list.set_databases(databases);
@@ -100,44 +102,11 @@ impl DatabaseService for DatabaseServer {
         let mut item = Database::new();
         match self.task.database(req.message.name) {
             Ok(res) => {
+                let views = Children::views(res.clone());
                 let item_r = res.read().unwrap();
                 item.set_name(item_r.name());
                 item.set_comment(item_r.comment());
                 item.set_create_time(Comm::proto_time_2_grpc_timestamp(item_r.create_time()));
-                let views = item_r.view_map();
-                let views_r = views.read().unwrap();
-                let mut views: RepeatedField<View> = RepeatedField::new();
-                for (_name, view) in views_r.iter() {
-                    let view_r = view.read().unwrap();
-                    let indexes = view_r.index_map();
-                    let indexes_r = indexes.read().unwrap();
-                    let mut indexes: RepeatedField<Index> = RepeatedField::new();
-                    for (_name, index) in indexes_r.iter() {
-                        indexes.push(Index {
-                            name: index.name(),
-                            engine: Enums::db_2_engine(index.engine()),
-                            primary: index.primary(),
-                            unique: index.unique(),
-                            null: index.null(),
-                            key_type: Enums::db_2_key_type(index.key_type()),
-                            create_time: SingularPtrField::some(Comm::proto_time_2_grpc_timestamp(
-                                index.create_time(),
-                            )),
-                            unknown_fields: Default::default(),
-                            cached_size: Default::default(),
-                        })
-                    }
-                    views.push(View {
-                        name: view_r.name(),
-                        comment: view_r.comment(),
-                        create_time: SingularPtrField::some(Comm::proto_time_2_grpc_timestamp(
-                            view_r.create_time(),
-                        )),
-                        indexes,
-                        unknown_fields: Default::default(),
-                        cached_size: Default::default(),
-                    })
-                }
                 item.set_views(views);
                 response.set_status(Status::Ok);
                 response.set_database(item);

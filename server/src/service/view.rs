@@ -17,6 +17,7 @@ use std::sync::Arc;
 use grpc::{Result, ServerHandlerContext, ServerRequestSingle, ServerResponseUnarySink};
 use protobuf::RepeatedField;
 
+use crate::service::Children;
 use db::task::traits::{TForm, TMaster};
 use db::Task;
 use protocols::impls::db::response::{Response, Status};
@@ -45,12 +46,14 @@ impl ViewService for ViewServer {
             Ok(view_map) => {
                 let view_map_r = view_map.read().unwrap();
                 for view in view_map_r.values() {
+                    let indexes = Children::indexes(view.clone());
                     let view_r = view.read().unwrap();
                     let mut view_item = View::new();
                     view_item.set_name(view_r.name());
                     view_item.set_comment(view_r.comment());
                     view_item
                         .set_create_time(Comm::proto_time_2_grpc_timestamp(view_r.create_time()));
+                    view_item.set_indexes(indexes);
                     views.push(view_item);
                 }
                 list.set_views(views);
@@ -104,10 +107,12 @@ impl ViewService for ViewServer {
         let mut item = View::new();
         match self.task.view(req.message.database_name, req.message.name) {
             Ok(res) => {
+                let indexes = Children::indexes(res.clone());
                 let item_r = res.read().unwrap();
                 item.set_name(item_r.name());
                 item.set_comment(item_r.comment());
                 item.set_create_time(Comm::proto_time_2_grpc_timestamp(item_r.create_time()));
+                item.set_indexes(indexes);
                 response.set_view(item);
                 response.set_status(Status::Ok);
             }
