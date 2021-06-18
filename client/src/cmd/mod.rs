@@ -27,6 +27,7 @@ mod insert;
 mod inspect;
 mod options;
 mod put;
+mod remove;
 mod select;
 mod set;
 mod show;
@@ -49,9 +50,11 @@ pub(crate) struct Put;
 
 pub(crate) struct Set;
 
-pub(crate) struct Insert;
-
 pub(crate) struct Get;
+
+pub(crate) struct Remove;
+
+pub(crate) struct Insert;
 
 pub(crate) struct Select;
 

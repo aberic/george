@@ -180,8 +180,8 @@ impl Inspect {
                 print_table(table)
             }
             _ => Err(Errs::string(format!(
-                "command do not support prefix {}",
-                intent
+                "command do not support prefix {} in {}",
+                intent, scan
             ))),
         }
     }

@@ -12,16 +12,50 @@
  * limitations under the License.
  */
 
-use crate::cmd::{Config, Put};
-use comm::errors::GeorgeResult;
+use comm::errors::{Errs, GeorgeResult};
+
+use crate::cmd::{george_error, Config, Put};
 
 impl Put {
     pub(crate) fn analysis(
-        _config: &Config,
-        _used: String,
-        _scan: String,
-        _vss: Vec<String>,
+        config: &Config,
+        disk: bool,
+        used: String,
+        scan: String,
+        vss: Vec<String>,
     ) -> GeorgeResult<()> {
-        unimplemented!()
+        let len = vss.len();
+        if len < 3 {
+            return Err(george_error(scan));
+        }
+        if disk {
+            // put [view:string] [key:string] [value:string]
+            // put [view:string] [key:string] [value:string]
+            if used.is_empty() {
+                return Err(Errs::str(
+                    "database name not defined, please use `use [database/page/ledger] [database]` first!",
+                ));
+            }
+            if len != 4 {
+                return Err(george_error(scan));
+            }
+            let view_name = vss[1].clone();
+            let key = vss[2].clone();
+            let value = vss[3].as_bytes().to_vec();
+            config.disk.put(used, view_name, key, value)
+        } else {
+            // put [key:string] [value:string]
+            // put [key:string] [value:string]
+            if len != 3 {
+                return Err(george_error(scan));
+            }
+            let key = vss[1].clone();
+            let value = vss[2].as_bytes().to_vec();
+            if used.is_empty() {
+                config.memory.put(key, value)
+            } else {
+                config.memory.put_by_page(used, key, value)
+            }
+        }
     }
 }

@@ -19,7 +19,8 @@ use comm::errors::{Errs, GeorgeResult};
 use protocols::impls::utils::Comm;
 
 use crate::cmd::{
-    george_error, Alter, Config, Create, Delete, Drop, Get, Insert, Inspect, Put, Select, Set, Show,
+    george_error, Alter, Config, Create, Delete, Drop, Get, Insert, Inspect, Put, Remove, Select,
+    Set, Show,
 };
 use crate::service::{Database, Disk, Index, Memory, Page, User, View};
 
@@ -52,6 +53,7 @@ impl Config {
         io::stdout().flush().unwrap();
         let mut new_str = String::new();
         let mut all_str = String::new();
+        let mut disk: bool = false;
         let mut used = String::from("");
         while io::stdin().read_line(&mut new_str).is_ok() {
             new_str = Comm::trim_str(new_str);
@@ -60,8 +62,29 @@ impl Config {
                 let scan = Comm::parse_str(all_str.clone());
                 if scan.starts_with("use ") {
                     match self.use_check(scan) {
-                        Ok(res) => {
-                            used = res;
+                        Ok((d, u)) => {
+                            disk = d;
+                            used = u;
+                            print!("george->: ");
+                            io::stdout().flush().unwrap();
+                            new_str.clear();
+                            all_str.clear();
+                            continue;
+                        }
+                        Err(err) => {
+                            println!("{}", err);
+                            print!("george->: ");
+                            io::stdout().flush().unwrap();
+                            new_str.clear();
+                            all_str.clear();
+                            continue;
+                        }
+                    }
+                } else if scan.starts_with("clear") {
+                    match self.clear_check(scan) {
+                        Ok(()) => {
+                            disk = false;
+                            used = String::from("");
                             print!("george->: ");
                             io::stdout().flush().unwrap();
                             new_str.clear();
@@ -78,7 +101,7 @@ impl Config {
                         }
                     }
                 }
-                match self.parse(used.clone(), scan.clone()) {
+                match self.parse(disk, used.clone(), scan.clone()) {
                     Ok(()) => println!("exec \"{}\" on {} success!", scan, used),
                     Err(err) => println!("exec \"{}\" on {} error: {}", scan, used, err),
                 }
@@ -93,11 +116,18 @@ impl Config {
         }
     }
 
-    fn use_check(&self, scan: String) -> GeorgeResult<String> {
+    /// 验证use语法
+    ///
+    /// #return
+    ///
+    /// * bool 是否为磁盘存储类型
+    /// * String 存储引擎名称
+    fn use_check(&self, scan: String) -> GeorgeResult<(bool, String)> {
         let vss = Comm::split_str(scan.clone());
         if vss.len() != 3 {
             return Err(george_error(scan));
         }
+        let disk: bool;
         let used = vss[1].as_str();
         let name = vss[2].clone();
         match used {
@@ -105,7 +135,8 @@ impl Config {
                 Ok(list) => {
                     for database in list.databases.iter() {
                         if name.eq(database.get_name()) {
-                            return Ok(name);
+                            disk = true;
+                            return Ok((disk, name));
                         }
                     }
                     Err(Errs::string(format!("no database matched {}!", name)))
@@ -116,7 +147,8 @@ impl Config {
                 Ok(list) => {
                     for page in list.pages.iter() {
                         if name.eq(page.get_name()) {
-                            return Ok(name);
+                            disk = false;
+                            return Ok((disk, name));
                         }
                     }
                     Err(Errs::string(format!("no page matched {}!", name)))
@@ -131,22 +163,39 @@ impl Config {
         }
     }
 
-    fn parse(&self, used: String, scan: String) -> GeorgeResult<()> {
+    /// 恢复初始状态
+    fn clear_check(&self, scan: String) -> GeorgeResult<()> {
+        let vss = Comm::split_str(scan.clone());
+        if vss.len() != 1 {
+            return Err(george_error(scan));
+        }
+        let clear = vss[0].as_str();
+        match clear {
+            "clear" => Ok(()),
+            _ => Err(Errs::string(format!(
+                "command do not support prefix {} in '{}'",
+                clear, scan
+            ))),
+        }
+    }
+
+    fn parse(&self, disk: bool, used: String, scan: String) -> GeorgeResult<()> {
         let vss = Comm::split_str(scan.clone());
         if vss.len() == 0 {
             return Err(george_error(scan));
         }
         let intent = vss[0].as_str();
         match intent {
-            "show" => Show::analysis(&self, used, scan, vss),
+            "show" => Show::analysis(&self, disk, used, scan, vss),
             "inspect" => Inspect::analysis(&self, used, scan, vss),
             "create" => Create::analysis(&self, used, scan, vss),
             "alter" => Alter::analysis(&self, used, scan, vss),
             "drop" => Drop::analysis(&self, used, scan, vss),
-            "put" => Put::analysis(&self, used, scan, vss),
-            "set" => Set::analysis(&self, used, scan, vss),
+            "put" => Put::analysis(&self, disk, used, scan, vss),
+            "set" => Set::analysis(&self, disk, used, scan, vss),
             "insert" => Insert::analysis(&self, used, scan, vss),
-            "get" => Get::analysis(&self, used, scan, vss),
+            "get" => Get::analysis(&self, disk, used, scan, vss),
+            "remove" => Remove::analysis(&self, disk, used, scan, vss),
             "select" => Select::analysis(&self, used, scan, vss),
             "delete" => Delete::analysis(&self, used, scan, vss),
             _ => Err(Errs::string(format!(

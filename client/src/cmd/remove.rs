@@ -13,12 +13,10 @@
  */
 
 use comm::errors::{Errs, GeorgeResult};
-use comm::strings::StringHandler;
-use comm::Strings;
 
-use crate::cmd::{george_error, Config, Get};
+use crate::cmd::{george_error, Config, Remove};
 
-impl Get {
+impl Remove {
     pub(crate) fn analysis(
         config: &Config,
         disk: bool,
@@ -31,46 +29,31 @@ impl Get {
             return Err(george_error(scan));
         }
         if disk {
-            // get [view:string] [key:string]
-            // get [view:string] [key:string]
-            // get [view:string] [key:string] [index:string]
-            // get [view:string] [key:string] [index:string]
+            // remove [view:string] [key:string]
+            // remove [view:string] [key:string]
             if used.is_empty() {
                 return Err(Errs::str(
                     "database name not defined, please use `use [database/page/ledger] [database]` first!",
                 ));
             }
-            if len == 3 {
-                let view_name = vss[1].clone();
-                let key = vss[2].clone();
-                let value = config.disk.get(used, view_name, key)?;
-                println!("{}", Strings::from_utf8(value)?);
-                Ok(())
-            } else if len == 4 {
-                let view_name = vss[1].clone();
-                let key = vss[2].clone();
-                let index_name = vss[3].clone();
-                let value = config.disk.get_by_index(used, view_name, index_name, key)?;
-                println!("{}", Strings::from_utf8(value)?);
-                Ok(())
-            } else {
+            if len != 3 {
                 return Err(george_error(scan));
             }
+            let view_name = vss[1].clone();
+            let key = vss[2].clone();
+            config.disk.remove(used, view_name, key)
         } else {
-            // get [key:string]
-            // get [key:string]
+            // remove [key:string]
+            // remove [key:string]
             if len != 2 {
                 return Err(george_error(scan));
             }
             let key = vss[1].clone();
             if used.is_empty() {
-                let value = config.memory.get(key)?;
-                println!("{}", Strings::from_utf8(value)?);
+                config.memory.remove(key)
             } else {
-                let value = config.memory.get_by_page(used, key)?;
-                println!("{}", Strings::from_utf8(value)?);
+                config.memory.remove_by_page(used, key)
             }
-            Ok(())
         }
     }
 }

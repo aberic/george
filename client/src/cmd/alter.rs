@@ -85,8 +85,8 @@ impl Alter {
                 config.view.archive(used, name, filepath)
             }
             _ => Err(Errs::string(format!(
-                "command do not support prefix {}",
-                intent
+                "command do not support prefix {} in {}",
+                intent, scan
             ))),
         }
     }

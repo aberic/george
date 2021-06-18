@@ -12,17 +12,46 @@
  * limitations under the License.
  */
 
-use comm::errors::GeorgeResult;
+use cli_table::format::Justify;
+use cli_table::{Cell, Style, Table};
 
-use crate::cmd::{Config, Delete};
+use comm::errors::{Errs, GeorgeResult};
+
+use crate::cmd::{george_error, print_table, Config, Delete};
 
 impl Delete {
     pub(crate) fn analysis(
-        _config: &Config,
-        _used: String,
-        _scan: String,
-        _vss: Vec<String>,
+        config: &Config,
+        used: String,
+        scan: String,
+        vss: Vec<String>,
     ) -> GeorgeResult<()> {
-        unimplemented!()
+        // delete [view:string] [constraint:string]
+        if used.is_empty() {
+            return Err(Errs::str(
+                "database name not defined, please use `use [database/page/ledger] [database]` first!",
+            ));
+        }
+        if vss.len() != 3 {
+            return Err(george_error(scan));
+        }
+        let view_name = vss[1].clone();
+        let constraint_json_bytes = vss[2].as_bytes().to_vec();
+        let deleted = config.disk.delete(used, view_name, constraint_json_bytes)?;
+        let table = vec![vec![
+            deleted.total.cell(),
+            deleted.count.cell(),
+            deleted.index_name.cell(),
+            deleted.asc.cell().justify(Justify::Right),
+        ]]
+        .table()
+        .title(vec![
+            "Total".cell().bold(true),
+            "Count".cell().bold(true),
+            "Index Name".cell().bold(true),
+            "Asc".cell().bold(true),
+        ])
+        .bold(true);
+        print_table(table)
     }
 }

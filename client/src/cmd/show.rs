@@ -23,12 +23,18 @@ use crate::cmd::{george_error, print_table, Config, Show};
 impl Show {
     pub(crate) fn analysis(
         config: &Config,
+        disk: bool,
         used: String,
         scan: String,
         vss: Vec<String>,
     ) -> GeorgeResult<()> {
-        if vss.len() < 2 {
-            return Err(george_error(scan));
+        let len = vss.len();
+        if len == 1 {
+            let table = vec![vec![used.cell(), disk.cell().justify(Justify::Right)]]
+                .table()
+                .title(vec!["Used".cell().bold(true), "Disk".cell().bold(true)])
+                .bold(true);
+            return print_table(table);
         }
         let intent = vss[1].as_str();
         match intent {
@@ -129,7 +135,7 @@ impl Show {
                         "database name not defined, please use `use [database/page/ledger] [database]` first!",
                     ));
                 }
-                if vss.len() != 4 {
+                if len != 4 {
                     return Err(george_error(scan));
                 }
                 let name = vss[2].clone();
@@ -158,7 +164,7 @@ impl Show {
                         "database name not defined, please use `use [database/page/ledger] [database]` first!",
                     ));
                 }
-                if vss.len() != 3 {
+                if len != 3 {
                     return Err(george_error(scan));
                 }
                 let name = vss[2].clone();
@@ -186,7 +192,7 @@ impl Show {
             }
             "indexes" => {
                 // show indexes from [view:string];
-                if vss.len() != 4 {
+                if len != 4 {
                     return Err(george_error(scan));
                 }
                 if used.is_empty() {
@@ -253,8 +259,8 @@ impl Show {
                 )
             }
             _ => Err(Errs::string(format!(
-                "command do not support prefix {}",
-                intent
+                "command do not support prefix {} in {}",
+                intent, scan
             ))),
         }
     }
