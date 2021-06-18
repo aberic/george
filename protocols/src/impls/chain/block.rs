@@ -1047,6 +1047,7 @@ pub struct PreBlockIndex {
     // message fields
     pub no: u32,
     pub seek: u32,
+    pub length: u32,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -1094,6 +1095,21 @@ impl PreBlockIndex {
     pub fn set_seek(&mut self, v: u32) {
         self.seek = v;
     }
+
+    // uint32 length = 3;
+
+
+    pub fn get_length(&self) -> u32 {
+        self.length
+    }
+    pub fn clear_length(&mut self) {
+        self.length = 0;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_length(&mut self, v: u32) {
+        self.length = v;
+    }
 }
 
 impl ::protobuf::Message for PreBlockIndex {
@@ -1119,6 +1135,13 @@ impl ::protobuf::Message for PreBlockIndex {
                     let tmp = is.read_uint32()?;
                     self.seek = tmp;
                 },
+                3 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_uint32()?;
+                    self.length = tmp;
+                },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
                 },
@@ -1137,6 +1160,9 @@ impl ::protobuf::Message for PreBlockIndex {
         if self.seek != 0 {
             my_size += ::protobuf::rt::value_size(2, self.seek, ::protobuf::wire_format::WireTypeVarint);
         }
+        if self.length != 0 {
+            my_size += ::protobuf::rt::value_size(3, self.length, ::protobuf::wire_format::WireTypeVarint);
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -1148,6 +1174,9 @@ impl ::protobuf::Message for PreBlockIndex {
         }
         if self.seek != 0 {
             os.write_uint32(2, self.seek)?;
+        }
+        if self.length != 0 {
+            os.write_uint32(3, self.length)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -1197,6 +1226,11 @@ impl ::protobuf::Message for PreBlockIndex {
                 |m: &PreBlockIndex| { &m.seek },
                 |m: &mut PreBlockIndex| { &mut m.seek },
             ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint32>(
+                "length",
+                |m: &PreBlockIndex| { &m.length },
+                |m: &mut PreBlockIndex| { &mut m.length },
+            ));
             ::protobuf::reflect::MessageDescriptor::new_pb_name::<PreBlockIndex>(
                 "PreBlockIndex",
                 fields,
@@ -1215,6 +1249,7 @@ impl ::protobuf::Clear for PreBlockIndex {
     fn clear(&mut self) {
         self.no = 0;
         self.seek = 0;
+        self.length = 0;
         self.unknown_fields.clear();
     }
 }
@@ -1735,14 +1770,15 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     a\x18\x01\x20\x01(\x0cR\x04data\"z\n\rBlockMetadata\x12\x16\n\x06length\
     \x18\x01\x20\x01(\rR\x06length\x12*\n\x05index\x18\x02\x20\x01(\x0b2\x14\
     .chain.PreBlockIndexR\x05index\x12%\n\x06signer\x18\x03\x20\x01(\x0b2\r.\
-    chain.SignerR\x06signer\"3\n\rPreBlockIndex\x12\x0e\n\x02no\x18\x01\x20\
-    \x01(\rR\x02no\x12\x12\n\x04seek\x18\x02\x20\x01(\rR\x04seek\"A\n\tBlock\
-    Info\x124\n\x0btransaction\x18\x01\x20\x01(\x0b2\x12.chain.TransactionR\
-    \x0btransaction\"`\n\x0cRequestBlock\x12\x18\n\x06height\x18\x01\x20\x01\
-    (\rH\0R\x06height\x12\x14\n\x04hash\x18\x02\x20\x01(\tH\0R\x04hash\x12\
-    \x19\n\x07tx_hash\x18\x03\x20\x01(\tH\0R\x06txHashB\x05\n\x03getBQ\n\x20\
-    cn.aberic.george.protocols.chainB\nBlockProtoZ!github.com/george/protoco\
-    ls/chainb\x06proto3\
+    chain.SignerR\x06signer\"K\n\rPreBlockIndex\x12\x0e\n\x02no\x18\x01\x20\
+    \x01(\rR\x02no\x12\x12\n\x04seek\x18\x02\x20\x01(\rR\x04seek\x12\x16\n\
+    \x06length\x18\x03\x20\x01(\rR\x06length\"A\n\tBlockInfo\x124\n\x0btrans\
+    action\x18\x01\x20\x01(\x0b2\x12.chain.TransactionR\x0btransaction\"`\n\
+    \x0cRequestBlock\x12\x18\n\x06height\x18\x01\x20\x01(\rH\0R\x06height\
+    \x12\x14\n\x04hash\x18\x02\x20\x01(\tH\0R\x04hash\x12\x19\n\x07tx_hash\
+    \x18\x03\x20\x01(\tH\0R\x06txHashB\x05\n\x03getBQ\n\x20cn.aberic.george.\
+    protocols.chainB\nBlockProtoZ!github.com/george/protocols/chainb\x06prot\
+    o3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

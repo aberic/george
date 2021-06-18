@@ -71,6 +71,8 @@ message PreBlockIndex {
   uint32 no = 1;
   // 区块所在文件起始位置，所在文件起始下标
   uint32 seek = 2;
+  // 区块所在文件持续长度
+  uint32 length = 3;
 }
 
 // 区块数据信息

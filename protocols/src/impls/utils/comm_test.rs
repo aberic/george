@@ -14,7 +14,10 @@
 
 #[cfg(test)]
 mod comm {
+    use crate::impls::db::database::Database;
     use crate::impls::utils::Comm;
+    use comm::Time;
+    use protobuf::Message;
 
     #[test]
     fn test_parse() {
@@ -24,5 +27,18 @@ mod comm {
            "
         .to_string();
         println!("res = {}", Comm::parse_str(t1))
+    }
+
+    #[test]
+    fn test_message() {
+        let mut item = Database::new();
+        item.set_name("test".to_string());
+        item.set_comment("comment".to_string());
+        item.set_create_time(Comm::proto_time_2_grpc_timestamp(Time::now()));
+        let res = item.write_to_bytes().unwrap();
+        println!("res = \n{:#?}", res);
+        let mut db = Database::new();
+        db.merge_from_bytes(res.as_slice()).unwrap();
+        println!("db = \n{:#?}", db);
     }
 }
