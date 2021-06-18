@@ -414,7 +414,7 @@ impl ResponseMemoryOut {
         ::std::default::Default::default()
     }
 
-    // .db.Status status = 1;
+    // .comm.Status status = 1;
 
 
     pub fn get_status(&self) -> super::response::Status {
@@ -1261,7 +1261,7 @@ impl ResponseMemoryPOut {
         ::std::default::Default::default()
     }
 
-    // .db.Status status = 1;
+    // .comm.Status status = 1;
 
 
     pub fn get_status(&self) -> super::response::Status {
@@ -1676,24 +1676,24 @@ impl ::protobuf::reflect::ProtobufValue for RequestMemoryPRemove {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x0fdb/memory.proto\x12\x02db\x1a\x11db/response.proto\";\n\x11Request\
-    MemoryInto\x12\x10\n\x03key\x18\x01\x20\x01(\tR\x03key\x12\x14\n\x05valu\
-    e\x18\x02\x20\x01(\x0cR\x05value\"$\n\x10RequestMemoryOut\x12\x10\n\x03k\
-    ey\x18\x01\x20\x01(\tR\x03key\"f\n\x11ResponseMemoryOut\x12\"\n\x06statu\
-    s\x18\x01\x20\x01(\x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\
-    \x02\x20\x01(\tR\x06msgErr\x12\x14\n\x05value\x18\x03\x20\x01(\x0cR\x05v\
-    alue\"'\n\x13RequestMemoryRemove\x12\x10\n\x03key\x18\x01\x20\x01(\tR\
-    \x03key\"Y\n\x12RequestMemoryPInto\x12\x1b\n\tpage_name\x18\x01\x20\x01(\
-    \tR\x08pageName\x12\x10\n\x03key\x18\x02\x20\x01(\tR\x03key\x12\x14\n\
-    \x05value\x18\x03\x20\x01(\x0cR\x05value\"B\n\x11RequestMemoryPOut\x12\
-    \x1b\n\tpage_name\x18\x01\x20\x01(\tR\x08pageName\x12\x10\n\x03key\x18\
-    \x02\x20\x01(\tR\x03key\"g\n\x12ResponseMemoryPOut\x12\"\n\x06status\x18\
-    \x01\x20\x01(\x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\x02\
-    \x20\x01(\tR\x06msgErr\x12\x14\n\x05value\x18\x03\x20\x01(\x0cR\x05value\
-    \"E\n\x14RequestMemoryPRemove\x12\x1b\n\tpage_name\x18\x01\x20\x01(\tR\
-    \x08pageName\x12\x10\n\x03key\x18\x02\x20\x01(\tR\x03keyBL\n\x1dcn.aberi\
-    c.george.protocols.dbB\x0bMemoryProtoZ\x1egithub.com/george/protocols/db\
-    b\x06proto3\
+    \n\x0fdb/memory.proto\x12\x02db\x1a\x13comm/response.proto\";\n\x11Reque\
+    stMemoryInto\x12\x10\n\x03key\x18\x01\x20\x01(\tR\x03key\x12\x14\n\x05va\
+    lue\x18\x02\x20\x01(\x0cR\x05value\"$\n\x10RequestMemoryOut\x12\x10\n\
+    \x03key\x18\x01\x20\x01(\tR\x03key\"h\n\x11ResponseMemoryOut\x12$\n\x06s\
+    tatus\x18\x01\x20\x01(\x0e2\x0c.comm.StatusR\x06status\x12\x17\n\x07msg_\
+    err\x18\x02\x20\x01(\tR\x06msgErr\x12\x14\n\x05value\x18\x03\x20\x01(\
+    \x0cR\x05value\"'\n\x13RequestMemoryRemove\x12\x10\n\x03key\x18\x01\x20\
+    \x01(\tR\x03key\"Y\n\x12RequestMemoryPInto\x12\x1b\n\tpage_name\x18\x01\
+    \x20\x01(\tR\x08pageName\x12\x10\n\x03key\x18\x02\x20\x01(\tR\x03key\x12\
+    \x14\n\x05value\x18\x03\x20\x01(\x0cR\x05value\"B\n\x11RequestMemoryPOut\
+    \x12\x1b\n\tpage_name\x18\x01\x20\x01(\tR\x08pageName\x12\x10\n\x03key\
+    \x18\x02\x20\x01(\tR\x03key\"i\n\x12ResponseMemoryPOut\x12$\n\x06status\
+    \x18\x01\x20\x01(\x0e2\x0c.comm.StatusR\x06status\x12\x17\n\x07msg_err\
+    \x18\x02\x20\x01(\tR\x06msgErr\x12\x14\n\x05value\x18\x03\x20\x01(\x0cR\
+    \x05value\"E\n\x14RequestMemoryPRemove\x12\x1b\n\tpage_name\x18\x01\x20\
+    \x01(\tR\x08pageName\x12\x10\n\x03key\x18\x02\x20\x01(\tR\x03keyBL\n\x1d\
+    cn.aberic.george.protocols.dbB\x0bMemoryProtoZ\x1egithub.com/george/prot\
+    ocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

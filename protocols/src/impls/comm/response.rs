@@ -17,7 +17,7 @@
 #![allow(trivial_casts)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `db/response.proto`
+//! Generated file from `comm/response.proto`
 
 /// Generated files are compatible only with the same version
 /// of protobuf runtime.
@@ -47,7 +47,7 @@ impl Response {
         ::std::default::Default::default()
     }
 
-    // .db.Status status = 1;
+    // .comm.Status status = 1;
 
 
     pub fn get_status(&self) -> Status {
@@ -316,19 +316,19 @@ impl ::protobuf::reflect::ProtobufValue for Status {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x11db/response.proto\x12\x02db\"G\n\x08Response\x12\"\n\x06status\x18\
-    \x01\x20\x01(\x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\x02\
-    \x20\x01(\tR\x06msgErr*\xb4\x02\n\x06Status\x12\x06\n\x02Ok\x10\0\x12\r\
-    \n\tCancelled\x10\x01\x12\x0b\n\x07Unknown\x10\x02\x12\x0c\n\x08Argument\
-    \x10\x03\x12\x14\n\x10DeadlineExceeded\x10\x04\x12\x0c\n\x08NotFound\x10\
-    \x05\x12\x11\n\rAlreadyExists\x10\x06\x12\x14\n\x10PermissionDenied\x10\
-    \x07\x12\x13\n\x0fUnauthenticated\x10\x08\x12\x15\n\x11ResourceExhausted\
-    \x10\t\x12\x16\n\x12FailedPrecondition\x10\n\x12\x0b\n\x07Aborted\x10\
-    \x0b\x12\x0e\n\nOutOfRange\x10\x0c\x12\x11\n\rUnimplemented\x10\r\x12\
-    \x0c\n\x08Internal\x10\x0e\x12\x0f\n\x0bUnavailable\x10\x0f\x12\x0c\n\
-    \x08DataLoss\x10\x10\x12\n\n\x06Custom\x10\x11BN\n\x1dcn.aberic.george.p\
-    rotocols.dbB\rResponseProtoZ\x1egithub.com/george/protocols/dbb\x06proto\
-    3\
+    \n\x13comm/response.proto\x12\x04comm\"I\n\x08Response\x12$\n\x06status\
+    \x18\x01\x20\x01(\x0e2\x0c.comm.StatusR\x06status\x12\x17\n\x07msg_err\
+    \x18\x02\x20\x01(\tR\x06msgErr*\xb4\x02\n\x06Status\x12\x06\n\x02Ok\x10\
+    \0\x12\r\n\tCancelled\x10\x01\x12\x0b\n\x07Unknown\x10\x02\x12\x0c\n\x08\
+    Argument\x10\x03\x12\x14\n\x10DeadlineExceeded\x10\x04\x12\x0c\n\x08NotF\
+    ound\x10\x05\x12\x11\n\rAlreadyExists\x10\x06\x12\x14\n\x10PermissionDen\
+    ied\x10\x07\x12\x13\n\x0fUnauthenticated\x10\x08\x12\x15\n\x11ResourceEx\
+    hausted\x10\t\x12\x16\n\x12FailedPrecondition\x10\n\x12\x0b\n\x07Aborted\
+    \x10\x0b\x12\x0e\n\nOutOfRange\x10\x0c\x12\x11\n\rUnimplemented\x10\r\
+    \x12\x0c\n\x08Internal\x10\x0e\x12\x0f\n\x0bUnavailable\x10\x0f\x12\x0c\
+    \n\x08DataLoss\x10\x10\x12\n\n\x06Custom\x10\x11BR\n\x1fcn.aberic.george\
+    .protocols.commB\rResponseProtoZ\x20github.com/george/protocols/commb\
+    \x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

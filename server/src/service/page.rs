@@ -19,12 +19,12 @@ use protobuf::RepeatedField;
 
 use db::task::traits::TMaster;
 use db::Task;
+use protocols::impls::comm::request::Request;
+use protocols::impls::comm::response::{Response, Status};
 use protocols::impls::db::page::{
     Page, PageList, RequestPageCreate, RequestPageInfo, RequestPageModify, RequestPageRemove,
     ResponsePageInfo,
 };
-use protocols::impls::db::response::{Response, Status};
-use protocols::impls::db::service::Request;
 use protocols::impls::db::service_grpc::PageService;
 use protocols::impls::utils::Comm;
 

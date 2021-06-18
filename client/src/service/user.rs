@@ -15,12 +15,12 @@
 use futures::executor;
 use grpc::ClientStubExt;
 
+use comm::errors::{Errs, GeorgeResult};
+use protocols::impls::comm::response::Status;
 use protocols::impls::db::service_grpc::UserServiceClient;
 use protocols::impls::db::user::RequestLogin;
 
 use crate::service::User;
-use comm::errors::{Errs, GeorgeResult};
-use protocols::impls::db::response::Status;
 
 impl User {
     pub(crate) fn new(remote: &str, port: u16) -> User {

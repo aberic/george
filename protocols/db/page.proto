@@ -20,8 +20,8 @@ option java_outer_classname = "PageProto";
 
 package db;
 
-import "google/protobuf/timestamp.proto";
-import "db/response.proto";
+import "comm/timestamp.proto";
+import "comm/response.proto";
 
 // 缓存页
 message Page {
@@ -34,7 +34,7 @@ message Page {
   // 默认有效期(单位：秒)，如无设置，默认维300(0：永久有效)
   uint32 period = 4;
   // 创建时间
-  google.protobuf.Timestamp create_time = 5;
+  comm.Timestamp create_time = 5;
 }
 
 // 缓存页集合
@@ -69,7 +69,7 @@ message RequestPageInfo {
 
 // 请求缓存页信息
 message ResponsePageInfo {
-  Status status = 1;
+  comm.Status status = 1;
   string msg_err = 2;
   Page page = 3;
 }

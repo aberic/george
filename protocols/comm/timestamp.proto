@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021. Aberic - All Rights Reserved.
+ * Copyright (c) 2020. Aberic - All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,18 +12,15 @@
  * limitations under the License.
  */
 
-pub use crate::impls::comm::*;
+syntax = "proto3";
 
-pub mod block;
-pub mod contract;
-pub mod data;
-pub mod genesis;
-pub mod ledger;
-pub mod organization;
-pub mod peer;
-pub mod policy;
-pub mod rwset;
-pub mod service;
-pub mod service_grpc;
-pub mod sign;
-pub mod transaction;
+option go_package = "github.com/george/protocols/comm";
+option java_package = "cn.aberic.george.protocols.comm";
+option java_outer_classname = "TimestampProto";
+
+package comm;
+
+message Timestamp {
+  int64 seconds = 1;
+  int32 nanos = 2;
+}

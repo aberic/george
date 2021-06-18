@@ -20,7 +20,7 @@ option java_outer_classname = "BlockProto";
 
 package chain;
 
-import "google/protobuf/timestamp.proto";
+import "comm/timestamp.proto";
 import "chain/transaction.proto";
 import "chain/sign.proto";
 
@@ -45,7 +45,7 @@ message BlockHeader {
   // 当前区块hash，hash值来自区块数据中交易的默克尔树
   string hash = 3;
   // 区块打包时间
-  google.protobuf.Timestamp timestamp = 4;
+  comm.Timestamp timestamp = 4;
 }
 
 // 区块体
@@ -77,4 +77,12 @@ message PreBlockIndex {
 message BlockInfo {
   // 交易对象
   Transaction transaction = 1;
+}
+
+message RequestBlock {
+  oneof get {
+    uint32 height = 1;
+    string hash = 2;
+    string tx_hash = 3;
+  }
 }

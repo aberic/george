@@ -14,11 +14,11 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/george/protocols/db";
-option java_package = "cn.aberic.george.protocols.db";
+option go_package = "github.com/george/protocols/comm";
+option java_package = "cn.aberic.george.protocols.comm";
 option java_outer_classname = "ResponseProto";
 
-package db;
+package comm;
 
 message Response {
     Status status = 1;

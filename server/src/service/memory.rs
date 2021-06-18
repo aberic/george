@@ -12,17 +12,19 @@
  * limitations under the License.
  */
 
+use std::sync::Arc;
+
+use grpc::{Result, ServerHandlerContext, ServerRequestSingle, ServerResponseUnarySink};
+
 use db::task::traits::TMaster;
 use db::Task;
-use grpc::{Result, ServerHandlerContext, ServerRequestSingle, ServerResponseUnarySink};
+use protocols::impls::comm::response::{Response, Status};
 use protocols::impls::db::memory::{
     RequestMemoryInto, RequestMemoryOut, RequestMemoryPInto, RequestMemoryPOut,
     RequestMemoryPRemove, RequestMemoryRemove, ResponseMemoryOut, ResponseMemoryPOut,
 };
-use protocols::impls::db::response::{Response, Status};
 use protocols::impls::db::service_grpc::MemoryService;
 use protocols::impls::utils::Comm;
-use std::sync::Arc;
 
 pub(crate) struct MemoryServer {
     pub(crate) task: Arc<Task>,

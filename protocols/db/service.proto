@@ -27,64 +27,63 @@ import "db/view.proto";
 import "db/index.proto";
 import "db/disk.proto";
 import "db/memory.proto";
-import "db/response.proto";
+import "comm/request.proto";
+import "comm/response.proto";
 
 service UserService {
-  rpc login(RequestLogin) returns (Response);
+  rpc login(RequestLogin) returns (comm.Response);
 }
 
 service PageService {
-  rpc list(Request) returns (PageList);
-  rpc create(RequestPageCreate) returns (Response);
-  rpc modify(RequestPageModify) returns (Response);
+  rpc list(comm.Request) returns (PageList);
+  rpc create(RequestPageCreate) returns (comm.Response);
+  rpc modify(RequestPageModify) returns (comm.Response);
   rpc info(RequestPageInfo) returns (ResponsePageInfo);
-  rpc remove(RequestPageRemove) returns (Response);
+  rpc remove(RequestPageRemove) returns (comm.Response);
 }
 
 service DatabaseService {
-  rpc list(Request) returns (DatabaseList);
-  rpc create(RequestDatabaseCreate) returns (Response);
-  rpc modify(RequestDatabaseModify) returns (Response);
+  rpc list(comm.Request) returns (DatabaseList);
+  rpc create(RequestDatabaseCreate) returns (comm.Response);
+  rpc modify(RequestDatabaseModify) returns (comm.Response);
   rpc info(RequestDatabaseInfo) returns (ResponseDatabaseInfo);
-  rpc remove(RequestDatabaseRemove) returns (Response);
+  rpc remove(RequestDatabaseRemove) returns (comm.Response);
 }
 
 service ViewService {
   rpc list(RequestViewList) returns (ViewList);
-  rpc create(RequestViewCreate) returns (Response);
-  rpc modify(RequestViewModify) returns (Response);
+  rpc create(RequestViewCreate) returns (comm.Response);
+  rpc modify(RequestViewModify) returns (comm.Response);
   rpc info(RequestViewInfo) returns (ResponseViewInfo);
-  rpc remove(RequestViewRemove) returns (Response);
-  rpc archive(RequestViewArchive) returns (Response);
+  rpc remove(RequestViewRemove) returns (comm.Response);
+  rpc archive(RequestViewArchive) returns (comm.Response);
   rpc record(RequestViewRecord) returns (ResponseViewRecord);
   rpc records(RequestViewRecords) returns (ResponseViewRecords);
 }
 
 service IndexService {
   rpc list(RequestIndexList) returns (IndexList);
-  rpc create(RequestIndexCreate) returns (Response);
+  rpc create(RequestIndexCreate) returns (comm.Response);
   rpc info(RequestIndexInfo) returns (ResponseIndexInfo);
 }
 
 service DiskService {
-  rpc put(RequestDiskInto) returns (Response);
-  rpc set(RequestDiskInto) returns (Response);
+  rpc put(RequestDiskInto) returns (comm.Response);
+  rpc set(RequestDiskInto) returns (comm.Response);
   rpc get(RequestDiskOut) returns (ResponseDiskOut);
   rpc get_by_index(RequestDiskIOut) returns (ResponseDiskOut);
-  rpc remove(RequestDiskRemove) returns (Response);
+  rpc remove(RequestDiskRemove) returns (comm.Response);
   rpc select(RequestDiskSelect) returns (ResponseDiskSelect);
   rpc delete(RequestDiskDelete) returns (ResponseDiskDelete);
 }
 
 service MemoryService {
-  rpc put(RequestMemoryInto) returns (Response);
-  rpc set(RequestMemoryInto) returns (Response);
+  rpc put(RequestMemoryInto) returns (comm.Response);
+  rpc set(RequestMemoryInto) returns (comm.Response);
   rpc get(RequestMemoryOut) returns (ResponseMemoryOut);
-  rpc remove(RequestMemoryRemove) returns (Response);
-  rpc put_by_page(RequestMemoryPInto) returns (Response);
-  rpc set_by_page(RequestMemoryPInto) returns (Response);
+  rpc remove(RequestMemoryRemove) returns (comm.Response);
+  rpc put_by_page(RequestMemoryPInto) returns (comm.Response);
+  rpc set_by_page(RequestMemoryPInto) returns (comm.Response);
   rpc get_by_page(RequestMemoryPOut) returns (ResponseMemoryPOut);
-  rpc remove_by_page(RequestMemoryPRemove) returns (Response);
+  rpc remove_by_page(RequestMemoryPRemove) returns (comm.Response);
 }
-
-message Request {}

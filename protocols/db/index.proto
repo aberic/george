@@ -20,8 +20,8 @@ option java_outer_classname = "IndexProto";
 
 package db;
 
-import "google/protobuf/timestamp.proto";
-import "db/response.proto";
+import "comm/timestamp.proto";
+import "comm/response.proto";
 
 // 索引
 message Index {
@@ -38,7 +38,7 @@ message Index {
   // 索引值类型
   KeyType key_type = 6;
   // 创建时间
-  google.protobuf.Timestamp create_time = 7;
+  comm.Timestamp create_time = 7;
 }
 
 // 索引集合
@@ -86,7 +86,7 @@ message RequestIndexInfo {
 
 // 请求视图信息
 message ResponseIndexInfo {
-  Status status = 1;
+  comm.Status status = 1;
   string msg_err = 2;
   Index index = 3;
 }

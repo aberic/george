@@ -20,9 +20,9 @@ option java_outer_classname = "ViewProto";
 
 package db;
 
-import "google/protobuf/timestamp.proto";
+import "comm/timestamp.proto";
 import "db/index.proto";
-import "db/response.proto";
+import "comm/response.proto";
 
 // 视图
 message View {
@@ -31,7 +31,7 @@ message View {
   // 描述
   string comment = 2;
   // 创建时间
-  google.protobuf.Timestamp create_time = 3;
+  comm.Timestamp create_time = 3;
   // 索引集合
   repeated Index indexes = 4;
   // 文件地址
@@ -85,7 +85,7 @@ message RequestViewInfo {
 
 // 请求视图信息
 message ResponseViewInfo {
-  Status status = 1;
+  comm.Status status = 1;
   string msg_err = 2;
   View view = 3;
 }
@@ -120,7 +120,7 @@ message RequestViewRecord {
 
 // 读取指定归档版本信息
 message ResponseViewRecord {
-  Status status = 1;
+  comm.Status status = 1;
   string msg_err = 2;
   // 归档版本信息
   ViewRecord record = 3;
@@ -136,7 +136,7 @@ message RequestViewRecords {
 
 // 读取指定归档版本信息
 message ResponseViewRecords {
-  Status status = 1;
+  comm.Status status = 1;
   string msg_err = 2;
   // 归档版本信息
   repeated ViewRecord records = 3;
@@ -147,7 +147,7 @@ message ViewRecord {
   // 当前归档版本文件所处路径
   string filepath = 1;
   // 归档时间
-  google.protobuf.Timestamp time = 2;
+  comm.Timestamp time = 2;
   // 版本号
   uint32 version = 3;
 }

@@ -19,10 +19,10 @@ use protobuf::RepeatedField;
 
 use db::task::traits::TMaster;
 use db::Task;
+use protocols::impls::comm::response::{Response, Status};
 use protocols::impls::db::index::{
     Index, IndexList, RequestIndexCreate, RequestIndexInfo, RequestIndexList, ResponseIndexInfo,
 };
-use protocols::impls::db::response::{Response, Status};
 use protocols::impls::db::service_grpc::IndexService;
 use protocols::impls::utils::Comm;
 

@@ -16,12 +16,12 @@ use futures::executor;
 use grpc::ClientStubExt;
 
 use comm::errors::{Errs, GeorgeResult};
+use protocols::impls::comm::request::Request;
+use protocols::impls::comm::response::Status;
 use protocols::impls::db::database::{
     DatabaseList, RequestDatabaseCreate, RequestDatabaseInfo, RequestDatabaseModify,
     RequestDatabaseRemove,
 };
-use protocols::impls::db::response::Status;
-use protocols::impls::db::service::Request;
 use protocols::impls::db::service_grpc::DatabaseServiceClient;
 
 use crate::service::{Database, Tools};

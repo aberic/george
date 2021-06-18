@@ -19,7 +19,7 @@ use grpc::{Result, ServerHandlerContext, ServerRequestSingle, ServerResponseUnar
 use db::task::traits::TMaster;
 use db::utils::comm::{DATABASE_SYS_NAME, VIEW_USER_NAME};
 use db::Task;
-use protocols::impls::db::response::Response;
+use protocols::impls::comm::response::Response;
 use protocols::impls::db::service_grpc::UserService;
 use protocols::impls::db::user::RequestLogin;
 use protocols::impls::utils::Comm;

@@ -11,13 +11,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+pub use crate::impls::comm::*;
+
 pub mod database;
 pub mod disk;
 pub mod index;
 pub mod master;
 pub mod memory;
 pub mod page;
-pub mod response;
 pub mod service;
 pub mod service_grpc;
 pub mod user;

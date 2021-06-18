@@ -20,9 +20,9 @@ option java_outer_classname = "DatabaseProto";
 
 package db;
 
-import "google/protobuf/timestamp.proto";
+import "comm/timestamp.proto";
 import "db/view.proto";
-import "db/response.proto";
+import "comm/response.proto";
 
 // 数据库
 message Database {
@@ -31,7 +31,7 @@ message Database {
   // 描述
   string comment = 2;
   // 创建时间
-  google.protobuf.Timestamp create_time = 3;
+  comm.Timestamp create_time = 3;
   // 视图集合
   repeated View views = 4;
 }
@@ -66,7 +66,7 @@ message RequestDatabaseInfo {
 
 // 请求数据库信息
 message ResponseDatabaseInfo {
-  Status status = 1;
+  comm.Status status = 1;
   string msg_err = 2;
   Database database = 3;
 }

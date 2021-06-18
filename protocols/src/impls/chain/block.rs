@@ -321,7 +321,7 @@ pub struct BlockHeader {
     pub number: u64,
     pub preHash: ::std::string::String,
     pub hash: ::std::string::String,
-    pub timestamp: ::protobuf::SingularPtrField<::protobuf::well_known_types::Timestamp>,
+    pub timestamp: ::protobuf::SingularPtrField<super::timestamp::Timestamp>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -407,11 +407,11 @@ impl BlockHeader {
         ::std::mem::replace(&mut self.hash, ::std::string::String::new())
     }
 
-    // .google.protobuf.Timestamp timestamp = 4;
+    // .comm.Timestamp timestamp = 4;
 
 
-    pub fn get_timestamp(&self) -> &::protobuf::well_known_types::Timestamp {
-        self.timestamp.as_ref().unwrap_or_else(|| <::protobuf::well_known_types::Timestamp as ::protobuf::Message>::default_instance())
+    pub fn get_timestamp(&self) -> &super::timestamp::Timestamp {
+        self.timestamp.as_ref().unwrap_or_else(|| <super::timestamp::Timestamp as ::protobuf::Message>::default_instance())
     }
     pub fn clear_timestamp(&mut self) {
         self.timestamp.clear();
@@ -422,13 +422,13 @@ impl BlockHeader {
     }
 
     // Param is passed by value, moved
-    pub fn set_timestamp(&mut self, v: ::protobuf::well_known_types::Timestamp) {
+    pub fn set_timestamp(&mut self, v: super::timestamp::Timestamp) {
         self.timestamp = ::protobuf::SingularPtrField::some(v);
     }
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_timestamp(&mut self) -> &mut ::protobuf::well_known_types::Timestamp {
+    pub fn mut_timestamp(&mut self) -> &mut super::timestamp::Timestamp {
         if self.timestamp.is_none() {
             self.timestamp.set_default();
         }
@@ -436,8 +436,8 @@ impl BlockHeader {
     }
 
     // Take field
-    pub fn take_timestamp(&mut self) -> ::protobuf::well_known_types::Timestamp {
-        self.timestamp.take().unwrap_or_else(|| ::protobuf::well_known_types::Timestamp::new())
+    pub fn take_timestamp(&mut self) -> super::timestamp::Timestamp {
+        self.timestamp.take().unwrap_or_else(|| super::timestamp::Timestamp::new())
     }
 }
 
@@ -569,7 +569,7 @@ impl ::protobuf::Message for BlockHeader {
                 |m: &BlockHeader| { &m.hash },
                 |m: &mut BlockHeader| { &mut m.hash },
             ));
-            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<::protobuf::well_known_types::Timestamp>>(
+            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::timestamp::Timestamp>>(
                 "timestamp",
                 |m: &BlockHeader| { &m.timestamp },
                 |m: &mut BlockHeader| { &mut m.timestamp },
@@ -1408,24 +1408,341 @@ impl ::protobuf::reflect::ProtobufValue for BlockInfo {
     }
 }
 
+#[derive(PartialEq,Clone,Default)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+pub struct RequestBlock {
+    // message oneof groups
+    pub get: ::std::option::Option<RequestBlock_oneof_get>,
+    // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a RequestBlock {
+    fn default() -> &'a RequestBlock {
+        <RequestBlock as ::protobuf::Message>::default_instance()
+    }
+}
+
+#[derive(Clone,PartialEq,Debug)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+pub enum RequestBlock_oneof_get {
+    height(u32),
+    hash(::std::string::String),
+    tx_hash(::std::string::String),
+}
+
+impl RequestBlock {
+    pub fn new() -> RequestBlock {
+        ::std::default::Default::default()
+    }
+
+    // uint32 height = 1;
+
+
+    pub fn get_height(&self) -> u32 {
+        match self.get {
+            ::std::option::Option::Some(RequestBlock_oneof_get::height(v)) => v,
+            _ => 0,
+        }
+    }
+    pub fn clear_height(&mut self) {
+        self.get = ::std::option::Option::None;
+    }
+
+    pub fn has_height(&self) -> bool {
+        match self.get {
+            ::std::option::Option::Some(RequestBlock_oneof_get::height(..)) => true,
+            _ => false,
+        }
+    }
+
+    // Param is passed by value, moved
+    pub fn set_height(&mut self, v: u32) {
+        self.get = ::std::option::Option::Some(RequestBlock_oneof_get::height(v))
+    }
+
+    // string hash = 2;
+
+
+    pub fn get_hash(&self) -> &str {
+        match self.get {
+            ::std::option::Option::Some(RequestBlock_oneof_get::hash(ref v)) => v,
+            _ => "",
+        }
+    }
+    pub fn clear_hash(&mut self) {
+        self.get = ::std::option::Option::None;
+    }
+
+    pub fn has_hash(&self) -> bool {
+        match self.get {
+            ::std::option::Option::Some(RequestBlock_oneof_get::hash(..)) => true,
+            _ => false,
+        }
+    }
+
+    // Param is passed by value, moved
+    pub fn set_hash(&mut self, v: ::std::string::String) {
+        self.get = ::std::option::Option::Some(RequestBlock_oneof_get::hash(v))
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_hash(&mut self) -> &mut ::std::string::String {
+        if let ::std::option::Option::Some(RequestBlock_oneof_get::hash(_)) = self.get {
+        } else {
+            self.get = ::std::option::Option::Some(RequestBlock_oneof_get::hash(::std::string::String::new()));
+        }
+        match self.get {
+            ::std::option::Option::Some(RequestBlock_oneof_get::hash(ref mut v)) => v,
+            _ => panic!(),
+        }
+    }
+
+    // Take field
+    pub fn take_hash(&mut self) -> ::std::string::String {
+        if self.has_hash() {
+            match self.get.take() {
+                ::std::option::Option::Some(RequestBlock_oneof_get::hash(v)) => v,
+                _ => panic!(),
+            }
+        } else {
+            ::std::string::String::new()
+        }
+    }
+
+    // string tx_hash = 3;
+
+
+    pub fn get_tx_hash(&self) -> &str {
+        match self.get {
+            ::std::option::Option::Some(RequestBlock_oneof_get::tx_hash(ref v)) => v,
+            _ => "",
+        }
+    }
+    pub fn clear_tx_hash(&mut self) {
+        self.get = ::std::option::Option::None;
+    }
+
+    pub fn has_tx_hash(&self) -> bool {
+        match self.get {
+            ::std::option::Option::Some(RequestBlock_oneof_get::tx_hash(..)) => true,
+            _ => false,
+        }
+    }
+
+    // Param is passed by value, moved
+    pub fn set_tx_hash(&mut self, v: ::std::string::String) {
+        self.get = ::std::option::Option::Some(RequestBlock_oneof_get::tx_hash(v))
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_tx_hash(&mut self) -> &mut ::std::string::String {
+        if let ::std::option::Option::Some(RequestBlock_oneof_get::tx_hash(_)) = self.get {
+        } else {
+            self.get = ::std::option::Option::Some(RequestBlock_oneof_get::tx_hash(::std::string::String::new()));
+        }
+        match self.get {
+            ::std::option::Option::Some(RequestBlock_oneof_get::tx_hash(ref mut v)) => v,
+            _ => panic!(),
+        }
+    }
+
+    // Take field
+    pub fn take_tx_hash(&mut self) -> ::std::string::String {
+        if self.has_tx_hash() {
+            match self.get.take() {
+                ::std::option::Option::Some(RequestBlock_oneof_get::tx_hash(v)) => v,
+                _ => panic!(),
+            }
+        } else {
+            ::std::string::String::new()
+        }
+    }
+}
+
+impl ::protobuf::Message for RequestBlock {
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    self.get = ::std::option::Option::Some(RequestBlock_oneof_get::height(is.read_uint32()?));
+                },
+                2 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeLengthDelimited {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    self.get = ::std::option::Option::Some(RequestBlock_oneof_get::hash(is.read_string()?));
+                },
+                3 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeLengthDelimited {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    self.get = ::std::option::Option::Some(RequestBlock_oneof_get::tx_hash(is.read_string()?));
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if let ::std::option::Option::Some(ref v) = self.get {
+            match v {
+                &RequestBlock_oneof_get::height(v) => {
+                    my_size += ::protobuf::rt::value_size(1, v, ::protobuf::wire_format::WireTypeVarint);
+                },
+                &RequestBlock_oneof_get::hash(ref v) => {
+                    my_size += ::protobuf::rt::string_size(2, &v);
+                },
+                &RequestBlock_oneof_get::tx_hash(ref v) => {
+                    my_size += ::protobuf::rt::string_size(3, &v);
+                },
+            };
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if let ::std::option::Option::Some(ref v) = self.get {
+            match v {
+                &RequestBlock_oneof_get::height(v) => {
+                    os.write_uint32(1, v)?;
+                },
+                &RequestBlock_oneof_get::hash(ref v) => {
+                    os.write_string(2, v)?;
+                },
+                &RequestBlock_oneof_get::tx_hash(ref v) => {
+                    os.write_string(3, v)?;
+                },
+            };
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> RequestBlock {
+        RequestBlock::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
+        descriptor.get(|| {
+            let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_singular_u32_accessor::<_>(
+                "height",
+                RequestBlock::has_height,
+                RequestBlock::get_height,
+            ));
+            fields.push(::protobuf::reflect::accessor::make_singular_string_accessor::<_>(
+                "hash",
+                RequestBlock::has_hash,
+                RequestBlock::get_hash,
+            ));
+            fields.push(::protobuf::reflect::accessor::make_singular_string_accessor::<_>(
+                "tx_hash",
+                RequestBlock::has_tx_hash,
+                RequestBlock::get_tx_hash,
+            ));
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<RequestBlock>(
+                "RequestBlock",
+                fields,
+                file_descriptor_proto()
+            )
+        })
+    }
+
+    fn default_instance() -> &'static RequestBlock {
+        static instance: ::protobuf::rt::LazyV2<RequestBlock> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(RequestBlock::new)
+    }
+}
+
+impl ::protobuf::Clear for RequestBlock {
+    fn clear(&mut self) {
+        self.get = ::std::option::Option::None;
+        self.get = ::std::option::Option::None;
+        self.get = ::std::option::Option::None;
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for RequestBlock {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for RequestBlock {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x11chain/block.proto\x12\x05chain\x1a\x1fgoogle/protobuf/timestamp.pr\
-    oto\x1a\x17chain/transaction.proto\x1a\x10chain/sign.proto\"\x8b\x01\n\
-    \x05Block\x12*\n\x06header\x18\x01\x20\x01(\x0b2\x12.chain.BlockHeaderR\
-    \x06header\x12$\n\x04data\x18\x02\x20\x01(\x0b2\x10.chain.BlockDataR\x04\
-    data\x120\n\x08metadata\x18\x03\x20\x01(\x0b2\x14.chain.BlockMetadataR\
-    \x08metadata\"\x8d\x01\n\x0bBlockHeader\x12\x16\n\x06number\x18\x01\x20\
-    \x01(\x04R\x06number\x12\x18\n\x07preHash\x18\x02\x20\x01(\tR\x07preHash\
-    \x12\x12\n\x04hash\x18\x03\x20\x01(\tR\x04hash\x128\n\ttimestamp\x18\x04\
-    \x20\x01(\x0b2\x1a.google.protobuf.TimestampR\ttimestamp\"\x1f\n\tBlockD\
-    ata\x12\x12\n\x04data\x18\x01\x20\x01(\x0cR\x04data\"z\n\rBlockMetadata\
-    \x12\x16\n\x06length\x18\x01\x20\x01(\rR\x06length\x12*\n\x05index\x18\
-    \x02\x20\x01(\x0b2\x14.chain.PreBlockIndexR\x05index\x12%\n\x06signer\
-    \x18\x03\x20\x01(\x0b2\r.chain.SignerR\x06signer\"3\n\rPreBlockIndex\x12\
-    \x0e\n\x02no\x18\x01\x20\x01(\rR\x02no\x12\x12\n\x04seek\x18\x02\x20\x01\
-    (\rR\x04seek\"A\n\tBlockInfo\x124\n\x0btransaction\x18\x01\x20\x01(\x0b2\
-    \x12.chain.TransactionR\x0btransactionBQ\n\x20cn.aberic.george.protocols\
-    .chainB\nBlockProtoZ!github.com/george/protocols/chainb\x06proto3\
+    \n\x11chain/block.proto\x12\x05chain\x1a\x14comm/timestamp.proto\x1a\x17\
+    chain/transaction.proto\x1a\x10chain/sign.proto\"\x8b\x01\n\x05Block\x12\
+    *\n\x06header\x18\x01\x20\x01(\x0b2\x12.chain.BlockHeaderR\x06header\x12\
+    $\n\x04data\x18\x02\x20\x01(\x0b2\x10.chain.BlockDataR\x04data\x120\n\
+    \x08metadata\x18\x03\x20\x01(\x0b2\x14.chain.BlockMetadataR\x08metadata\
+    \"\x82\x01\n\x0bBlockHeader\x12\x16\n\x06number\x18\x01\x20\x01(\x04R\
+    \x06number\x12\x18\n\x07preHash\x18\x02\x20\x01(\tR\x07preHash\x12\x12\n\
+    \x04hash\x18\x03\x20\x01(\tR\x04hash\x12-\n\ttimestamp\x18\x04\x20\x01(\
+    \x0b2\x0f.comm.TimestampR\ttimestamp\"\x1f\n\tBlockData\x12\x12\n\x04dat\
+    a\x18\x01\x20\x01(\x0cR\x04data\"z\n\rBlockMetadata\x12\x16\n\x06length\
+    \x18\x01\x20\x01(\rR\x06length\x12*\n\x05index\x18\x02\x20\x01(\x0b2\x14\
+    .chain.PreBlockIndexR\x05index\x12%\n\x06signer\x18\x03\x20\x01(\x0b2\r.\
+    chain.SignerR\x06signer\"3\n\rPreBlockIndex\x12\x0e\n\x02no\x18\x01\x20\
+    \x01(\rR\x02no\x12\x12\n\x04seek\x18\x02\x20\x01(\rR\x04seek\"A\n\tBlock\
+    Info\x124\n\x0btransaction\x18\x01\x20\x01(\x0b2\x12.chain.TransactionR\
+    \x0btransaction\"`\n\x0cRequestBlock\x12\x18\n\x06height\x18\x01\x20\x01\
+    (\rH\0R\x06height\x12\x14\n\x04hash\x18\x02\x20\x01(\tH\0R\x04hash\x12\
+    \x19\n\x07tx_hash\x18\x03\x20\x01(\tH\0R\x06txHashB\x05\n\x03getBQ\n\x20\
+    cn.aberic.george.protocols.chainB\nBlockProtoZ!github.com/george/protoco\
+    ls/chainb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

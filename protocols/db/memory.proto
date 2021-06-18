@@ -20,7 +20,7 @@ option java_outer_classname = "MemoryProto";
 
 package db;
 
-import "db/response.proto";
+import "comm/response.proto";
 
 // 请求插入数据
 message RequestMemoryInto {
@@ -35,7 +35,7 @@ message RequestMemoryOut {
 
 // 返回获取数据
 message ResponseMemoryOut {
-  Status status = 1;
+  comm.Status status = 1;
   string msg_err = 2;
   bytes value = 3;
 }
@@ -62,7 +62,7 @@ message RequestMemoryPOut {
 
 // 返回获取数据
 message ResponseMemoryPOut {
-  Status status = 1;
+  comm.Status status = 1;
   string msg_err = 2;
   bytes value = 3;
 }

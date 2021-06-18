@@ -16,11 +16,11 @@ use futures::executor;
 use grpc::ClientStubExt;
 
 use comm::errors::{Errs, GeorgeResult};
+use protocols::impls::comm::response::Status;
 use protocols::impls::db::memory::{
     RequestMemoryInto, RequestMemoryOut, RequestMemoryPInto, RequestMemoryPOut,
     RequestMemoryPRemove, RequestMemoryRemove,
 };
-use protocols::impls::db::response::Status;
 use protocols::impls::db::service_grpc::MemoryServiceClient;
 
 use crate::service::{Memory, Tools};

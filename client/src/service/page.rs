@@ -16,11 +16,11 @@ use futures::executor;
 use grpc::ClientStubExt;
 
 use comm::errors::{Errs, GeorgeResult};
+use protocols::impls::comm::request::Request;
+use protocols::impls::comm::response::Status;
 use protocols::impls::db::page::{
     PageList, RequestPageCreate, RequestPageInfo, RequestPageModify, RequestPageRemove,
 };
-use protocols::impls::db::response::Status;
-use protocols::impls::db::service::Request;
 use protocols::impls::db::service_grpc::PageServiceClient;
 
 use crate::service::{Page, Tools};

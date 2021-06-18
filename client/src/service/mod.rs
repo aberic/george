@@ -13,7 +13,7 @@
  */
 
 use comm::errors::{Errs, GeorgeError};
-use protocols::impls::db::response::{Response, Status};
+use protocols::impls::comm::response::{Response, Status};
 use protocols::impls::db::service_grpc::{
     DatabaseServiceClient, DiskServiceClient, IndexServiceClient, MemoryServiceClient,
     PageServiceClient, UserServiceClient, ViewServiceClient,

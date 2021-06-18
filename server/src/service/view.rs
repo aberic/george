@@ -17,10 +17,9 @@ use std::sync::Arc;
 use grpc::{Result, ServerHandlerContext, ServerRequestSingle, ServerResponseUnarySink};
 use protobuf::RepeatedField;
 
-use crate::service::Children;
 use db::task::traits::{TForm, TMaster};
 use db::Task;
-use protocols::impls::db::response::{Response, Status};
+use protocols::impls::comm::response::{Response, Status};
 use protocols::impls::db::service_grpc::ViewService;
 use protocols::impls::db::view::{
     RequestViewArchive, RequestViewCreate, RequestViewInfo, RequestViewList, RequestViewModify,
@@ -28,6 +27,8 @@ use protocols::impls::db::view::{
     ResponseViewRecords, View, ViewList, ViewRecord,
 };
 use protocols::impls::utils::Comm;
+
+use crate::service::Children;
 
 pub(crate) struct ViewServer {
     pub(crate) task: Arc<Task>,

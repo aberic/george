@@ -16,7 +16,7 @@ use futures::executor;
 use grpc::ClientStubExt;
 
 use comm::errors::{Errs, GeorgeResult};
-use protocols::impls::db::response::Status;
+use protocols::impls::comm::response::Status;
 use protocols::impls::db::service_grpc::ViewServiceClient;
 use protocols::impls::db::view::{
     RequestViewArchive, RequestViewCreate, RequestViewInfo, RequestViewList, RequestViewModify,

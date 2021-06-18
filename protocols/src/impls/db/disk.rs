@@ -870,7 +870,7 @@ impl ResponseDiskOut {
         ::std::default::Default::default()
     }
 
-    // .db.Status status = 1;
+    // .comm.Status status = 1;
 
 
     pub fn get_status(&self) -> super::response::Status {
@@ -1597,7 +1597,7 @@ impl ResponseDiskSelect {
         ::std::default::Default::default()
     }
 
-    // .db.Status status = 1;
+    // .comm.Status status = 1;
 
 
     pub fn get_status(&self) -> super::response::Status {
@@ -2401,7 +2401,7 @@ impl ResponseDiskDelete {
         ::std::default::Default::default()
     }
 
-    // .db.Status status = 1;
+    // .comm.Status status = 1;
 
 
     pub fn get_status(&self) -> super::response::Status {
@@ -2935,43 +2935,43 @@ impl ::protobuf::reflect::ProtobufValue for DiskDeleted {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\rdb/disk.proto\x12\x02db\x1a\x11db/response.proto\"{\n\x0fRequestDisk\
-    Into\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\n\
-    \tview_name\x18\x02\x20\x01(\tR\x08viewName\x12\x10\n\x03key\x18\x03\x20\
-    \x01(\tR\x03key\x12\x14\n\x05value\x18\x04\x20\x01(\x0cR\x05value\"d\n\
-    \x0eRequestDiskOut\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabase\
-    Name\x12\x1b\n\tview_name\x18\x02\x20\x01(\tR\x08viewName\x12\x10\n\x03k\
-    ey\x18\x03\x20\x01(\tR\x03key\"\x84\x01\n\x0fRequestDiskIOut\x12#\n\rdat\
-    abase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tview_name\x18\
-    \x02\x20\x01(\tR\x08viewName\x12\x1d\n\nindex_name\x18\x03\x20\x01(\tR\t\
-    indexName\x12\x10\n\x03key\x18\x04\x20\x01(\tR\x03key\"d\n\x0fResponseDi\
-    skOut\x12\"\n\x06status\x18\x01\x20\x01(\x0e2\n.db.StatusR\x06status\x12\
-    \x17\n\x07msg_err\x18\x02\x20\x01(\tR\x06msgErr\x12\x14\n\x05value\x18\
-    \x03\x20\x01(\x0cR\x05value\"g\n\x11RequestDiskRemove\x12#\n\rdatabase_n\
-    ame\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tview_name\x18\x02\x20\
-    \x01(\tR\x08viewName\x12\x10\n\x03key\x18\x03\x20\x01(\tR\x03key\"\x89\
-    \x01\n\x11RequestDiskSelect\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\
-    \x0cdatabaseName\x12\x1b\n\tview_name\x18\x02\x20\x01(\tR\x08viewName\
+    \n\rdb/disk.proto\x12\x02db\x1a\x13comm/response.proto\"{\n\x0fRequestDi\
+    skInto\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\
+    \n\tview_name\x18\x02\x20\x01(\tR\x08viewName\x12\x10\n\x03key\x18\x03\
+    \x20\x01(\tR\x03key\x12\x14\n\x05value\x18\x04\x20\x01(\x0cR\x05value\"d\
+    \n\x0eRequestDiskOut\x12#\n\rdatabase_name\x18\x01\x20\x01(\tR\x0cdataba\
+    seName\x12\x1b\n\tview_name\x18\x02\x20\x01(\tR\x08viewName\x12\x10\n\
+    \x03key\x18\x03\x20\x01(\tR\x03key\"\x84\x01\n\x0fRequestDiskIOut\x12#\n\
+    \rdatabase_name\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tview_name\
+    \x18\x02\x20\x01(\tR\x08viewName\x12\x1d\n\nindex_name\x18\x03\x20\x01(\
+    \tR\tindexName\x12\x10\n\x03key\x18\x04\x20\x01(\tR\x03key\"f\n\x0fRespo\
+    nseDiskOut\x12$\n\x06status\x18\x01\x20\x01(\x0e2\x0c.comm.StatusR\x06st\
+    atus\x12\x17\n\x07msg_err\x18\x02\x20\x01(\tR\x06msgErr\x12\x14\n\x05val\
+    ue\x18\x03\x20\x01(\x0cR\x05value\"g\n\x11RequestDiskRemove\x12#\n\rdata\
+    base_name\x18\x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tview_name\x18\
+    \x02\x20\x01(\tR\x08viewName\x12\x10\n\x03key\x18\x03\x20\x01(\tR\x03key\
+    \"\x89\x01\n\x11RequestDiskSelect\x12#\n\rdatabase_name\x18\x01\x20\x01(\
+    \tR\x0cdatabaseName\x12\x1b\n\tview_name\x18\x02\x20\x01(\tR\x08viewName\
     \x122\n\x15constraint_json_bytes\x18\x03\x20\x01(\x0cR\x13constraintJson\
-    Bytes\"\x7f\n\x12ResponseDiskSelect\x12\"\n\x06status\x18\x01\x20\x01(\
-    \x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\x02\x20\x01(\tR\
-    \x06msgErr\x12,\n\x08selected\x18\x03\x20\x01(\x0b2\x10.db.DiskSelectedR\
-    \x08selected\"\x83\x01\n\x0cDiskSelected\x12\x14\n\x05total\x18\x01\x20\
-    \x01(\x04R\x05total\x12\x14\n\x05count\x18\x02\x20\x01(\x04R\x05count\
-    \x12\x1d\n\nindex_name\x18\x03\x20\x01(\tR\tindexName\x12\x10\n\x03asc\
+    Bytes\"\x81\x01\n\x12ResponseDiskSelect\x12$\n\x06status\x18\x01\x20\x01\
+    (\x0e2\x0c.comm.StatusR\x06status\x12\x17\n\x07msg_err\x18\x02\x20\x01(\
+    \tR\x06msgErr\x12,\n\x08selected\x18\x03\x20\x01(\x0b2\x10.db.DiskSelect\
+    edR\x08selected\"\x83\x01\n\x0cDiskSelected\x12\x14\n\x05total\x18\x01\
+    \x20\x01(\x04R\x05total\x12\x14\n\x05count\x18\x02\x20\x01(\x04R\x05coun\
+    t\x12\x1d\n\nindex_name\x18\x03\x20\x01(\tR\tindexName\x12\x10\n\x03asc\
     \x18\x04\x20\x01(\x08R\x03asc\x12\x16\n\x06values\x18\x06\x20\x03(\x0cR\
     \x06values\"\x89\x01\n\x11RequestDiskDelete\x12#\n\rdatabase_name\x18\
     \x01\x20\x01(\tR\x0cdatabaseName\x12\x1b\n\tview_name\x18\x02\x20\x01(\t\
     R\x08viewName\x122\n\x15constraint_json_bytes\x18\x03\x20\x01(\x0cR\x13c\
-    onstraintJsonBytes\"|\n\x12ResponseDiskDelete\x12\"\n\x06status\x18\x01\
-    \x20\x01(\x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\x02\x20\
-    \x01(\tR\x06msgErr\x12)\n\x07deleted\x18\x03\x20\x01(\x0b2\x0f.db.DiskDe\
-    letedR\x07deleted\"\x82\x01\n\x0bDiskDeleted\x12\x14\n\x05total\x18\x01\
-    \x20\x01(\x04R\x05total\x12\x14\n\x05count\x18\x02\x20\x01(\x04R\x05coun\
-    t\x12\x1d\n\nindex_name\x18\x03\x20\x01(\tR\tindexName\x12\x10\n\x03asc\
-    \x18\x04\x20\x01(\x08R\x03asc\x12\x16\n\x06values\x18\x06\x20\x03(\x0cR\
-    \x06valuesBJ\n\x1dcn.aberic.george.protocols.dbB\tDiskProtoZ\x1egithub.c\
-    om/george/protocols/dbb\x06proto3\
+    onstraintJsonBytes\"~\n\x12ResponseDiskDelete\x12$\n\x06status\x18\x01\
+    \x20\x01(\x0e2\x0c.comm.StatusR\x06status\x12\x17\n\x07msg_err\x18\x02\
+    \x20\x01(\tR\x06msgErr\x12)\n\x07deleted\x18\x03\x20\x01(\x0b2\x0f.db.Di\
+    skDeletedR\x07deleted\"\x82\x01\n\x0bDiskDeleted\x12\x14\n\x05total\x18\
+    \x01\x20\x01(\x04R\x05total\x12\x14\n\x05count\x18\x02\x20\x01(\x04R\x05\
+    count\x12\x1d\n\nindex_name\x18\x03\x20\x01(\tR\tindexName\x12\x10\n\x03\
+    asc\x18\x04\x20\x01(\x08R\x03asc\x12\x16\n\x06values\x18\x06\x20\x03(\
+    \x0cR\x06valuesBJ\n\x1dcn.aberic.george.protocols.dbB\tDiskProtoZ\x1egit\
+    hub.com/george/protocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

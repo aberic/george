@@ -22,9 +22,9 @@
 // server interface
 
 pub trait Blocks {
-    fn add(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::block::Block>, resp: ::grpc::ServerResponseUnarySink<super::service::Response>) -> ::grpc::Result<()>;
+    fn add(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::block::Block>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
-    fn get(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::service::BlockGet>, resp: ::grpc::ServerResponseUnarySink<super::block::Block>) -> ::grpc::Result<()>;
+    fn get(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::block::RequestBlock>, resp: ::grpc::ServerResponseUnarySink<super::block::Block>) -> ::grpc::Result<()>;
 }
 
 // client
@@ -42,7 +42,7 @@ impl ::grpc::ClientStub for BlocksClient {
 }
 
 impl BlocksClient {
-    pub fn add(&self, o: ::grpc::RequestOptions, req: super::block::Block) -> ::grpc::SingleResponse<super::service::Response> {
+    pub fn add(&self, o: ::grpc::RequestOptions, req: super::block::Block) -> ::grpc::SingleResponse<super::response::Response> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/chain.Blocks/add"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -52,7 +52,7 @@ impl BlocksClient {
         self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    pub fn get(&self, o: ::grpc::RequestOptions, req: super::service::BlockGet) -> ::grpc::SingleResponse<super::block::Block> {
+    pub fn get(&self, o: ::grpc::RequestOptions, req: super::block::RequestBlock) -> ::grpc::SingleResponse<super::block::Block> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/chain.Blocks/get"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,

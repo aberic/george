@@ -31,7 +31,7 @@ pub struct Page {
     pub comment: ::std::string::String,
     pub size: u64,
     pub period: u32,
-    pub create_time: ::protobuf::SingularPtrField<::protobuf::well_known_types::Timestamp>,
+    pub create_time: ::protobuf::SingularPtrField<super::timestamp::Timestamp>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -132,11 +132,11 @@ impl Page {
         self.period = v;
     }
 
-    // .google.protobuf.Timestamp create_time = 5;
+    // .comm.Timestamp create_time = 5;
 
 
-    pub fn get_create_time(&self) -> &::protobuf::well_known_types::Timestamp {
-        self.create_time.as_ref().unwrap_or_else(|| <::protobuf::well_known_types::Timestamp as ::protobuf::Message>::default_instance())
+    pub fn get_create_time(&self) -> &super::timestamp::Timestamp {
+        self.create_time.as_ref().unwrap_or_else(|| <super::timestamp::Timestamp as ::protobuf::Message>::default_instance())
     }
     pub fn clear_create_time(&mut self) {
         self.create_time.clear();
@@ -147,13 +147,13 @@ impl Page {
     }
 
     // Param is passed by value, moved
-    pub fn set_create_time(&mut self, v: ::protobuf::well_known_types::Timestamp) {
+    pub fn set_create_time(&mut self, v: super::timestamp::Timestamp) {
         self.create_time = ::protobuf::SingularPtrField::some(v);
     }
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_create_time(&mut self) -> &mut ::protobuf::well_known_types::Timestamp {
+    pub fn mut_create_time(&mut self) -> &mut super::timestamp::Timestamp {
         if self.create_time.is_none() {
             self.create_time.set_default();
         }
@@ -161,8 +161,8 @@ impl Page {
     }
 
     // Take field
-    pub fn take_create_time(&mut self) -> ::protobuf::well_known_types::Timestamp {
-        self.create_time.take().unwrap_or_else(|| ::protobuf::well_known_types::Timestamp::new())
+    pub fn take_create_time(&mut self) -> super::timestamp::Timestamp {
+        self.create_time.take().unwrap_or_else(|| super::timestamp::Timestamp::new())
     }
 }
 
@@ -312,7 +312,7 @@ impl ::protobuf::Message for Page {
                 |m: &Page| { &m.period },
                 |m: &mut Page| { &mut m.period },
             ));
-            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<::protobuf::well_known_types::Timestamp>>(
+            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::timestamp::Timestamp>>(
                 "create_time",
                 |m: &Page| { &m.create_time },
                 |m: &mut Page| { &mut m.create_time },
@@ -1188,7 +1188,7 @@ impl ResponsePageInfo {
         ::std::default::Default::default()
     }
 
-    // .db.Status status = 1;
+    // .comm.Status status = 1;
 
 
     pub fn get_status(&self) -> super::response::Status {
@@ -1576,24 +1576,24 @@ impl ::protobuf::reflect::ProtobufValue for RequestPageRemove {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\rdb/page.proto\x12\x02db\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\
-    \x11db/response.proto\"\x9d\x01\n\x04Page\x12\x12\n\x04name\x18\x01\x20\
-    \x01(\tR\x04name\x12\x18\n\x07comment\x18\x02\x20\x01(\tR\x07comment\x12\
-    \x12\n\x04size\x18\x03\x20\x01(\x04R\x04size\x12\x16\n\x06period\x18\x04\
-    \x20\x01(\rR\x06period\x12;\n\x0bcreate_time\x18\x05\x20\x01(\x0b2\x1a.g\
-    oogle.protobuf.TimestampR\ncreateTime\"*\n\x08PageList\x12\x1e\n\x05page\
-    s\x18\x01\x20\x03(\x0b2\x08.db.PageR\x05pages\"m\n\x11RequestPageCreate\
-    \x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04name\x12\x18\n\x07comment\x18\
-    \x02\x20\x01(\tR\x07comment\x12\x12\n\x04size\x18\x03\x20\x01(\x04R\x04s\
-    ize\x12\x16\n\x06period\x18\x04\x20\x01(\rR\x06period\"B\n\x11RequestPag\
-    eModify\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04name\x12\x19\n\x08name_\
-    new\x18\x02\x20\x01(\tR\x07nameNew\"%\n\x0fRequestPageInfo\x12\x12\n\x04\
-    name\x18\x01\x20\x01(\tR\x04name\"m\n\x10ResponsePageInfo\x12\"\n\x06sta\
-    tus\x18\x01\x20\x01(\x0e2\n.db.StatusR\x06status\x12\x17\n\x07msg_err\
-    \x18\x02\x20\x01(\tR\x06msgErr\x12\x1c\n\x04page\x18\x03\x20\x01(\x0b2\
-    \x08.db.PageR\x04page\"'\n\x11RequestPageRemove\x12\x12\n\x04name\x18\
-    \x01\x20\x01(\tR\x04nameBJ\n\x1dcn.aberic.george.protocols.dbB\tPageProt\
-    oZ\x1egithub.com/george/protocols/dbb\x06proto3\
+    \n\rdb/page.proto\x12\x02db\x1a\x14comm/timestamp.proto\x1a\x13comm/resp\
+    onse.proto\"\x92\x01\n\x04Page\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04\
+    name\x12\x18\n\x07comment\x18\x02\x20\x01(\tR\x07comment\x12\x12\n\x04si\
+    ze\x18\x03\x20\x01(\x04R\x04size\x12\x16\n\x06period\x18\x04\x20\x01(\rR\
+    \x06period\x120\n\x0bcreate_time\x18\x05\x20\x01(\x0b2\x0f.comm.Timestam\
+    pR\ncreateTime\"*\n\x08PageList\x12\x1e\n\x05pages\x18\x01\x20\x03(\x0b2\
+    \x08.db.PageR\x05pages\"m\n\x11RequestPageCreate\x12\x12\n\x04name\x18\
+    \x01\x20\x01(\tR\x04name\x12\x18\n\x07comment\x18\x02\x20\x01(\tR\x07com\
+    ment\x12\x12\n\x04size\x18\x03\x20\x01(\x04R\x04size\x12\x16\n\x06period\
+    \x18\x04\x20\x01(\rR\x06period\"B\n\x11RequestPageModify\x12\x12\n\x04na\
+    me\x18\x01\x20\x01(\tR\x04name\x12\x19\n\x08name_new\x18\x02\x20\x01(\tR\
+    \x07nameNew\"%\n\x0fRequestPageInfo\x12\x12\n\x04name\x18\x01\x20\x01(\t\
+    R\x04name\"o\n\x10ResponsePageInfo\x12$\n\x06status\x18\x01\x20\x01(\x0e\
+    2\x0c.comm.StatusR\x06status\x12\x17\n\x07msg_err\x18\x02\x20\x01(\tR\
+    \x06msgErr\x12\x1c\n\x04page\x18\x03\x20\x01(\x0b2\x08.db.PageR\x04page\
+    \"'\n\x11RequestPageRemove\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04name\
+    BJ\n\x1dcn.aberic.george.protocols.dbB\tPageProtoZ\x1egithub.com/george/\
+    protocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

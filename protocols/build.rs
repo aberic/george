@@ -14,6 +14,23 @@
 
 use protoc_rust::Customize;
 
+fn init_comm() {
+    let mut ps_block: Vec<&str> = vec![];
+    ps_block.push("comm/request.proto");
+    ps_block.push("comm/response.proto");
+    ps_block.push("comm/timestamp.proto");
+    protoc_rust_grpc::Codegen::new()
+        .out_dir("src/impls/comm")
+        .inputs(ps_block)
+        .rust_protobuf(true)
+        .rust_protobuf_customize(Customize {
+            serde_derive: Some(true),
+            ..Default::default()
+        })
+        .run()
+        .expect("protoc-rust-grpc");
+}
+
 // 先执行无依赖proto，完成后导入mod，再执行有依赖proto，完成后导入mod
 fn init_chain() {
     let mut ps_block: Vec<&str> = vec![];
@@ -43,7 +60,6 @@ fn init_chain() {
 
 fn init_db() {
     let mut ps_block: Vec<&str> = vec![];
-    ps_block.push("db/response.proto");
     ps_block.push("db/user.proto");
     ps_block.push("db/database.proto");
     ps_block.push("db/index.proto");
@@ -67,6 +83,7 @@ fn init_db() {
 
 // 先执行无依赖proto，完成后导入mod，再执行有依赖proto，完成后导入mod
 fn main() {
+    init_comm();
     init_chain();
     init_db();
 }

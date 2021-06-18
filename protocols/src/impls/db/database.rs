@@ -29,7 +29,7 @@ pub struct Database {
     // message fields
     pub name: ::std::string::String,
     pub comment: ::std::string::String,
-    pub create_time: ::protobuf::SingularPtrField<::protobuf::well_known_types::Timestamp>,
+    pub create_time: ::protobuf::SingularPtrField<super::timestamp::Timestamp>,
     pub views: ::protobuf::RepeatedField<super::view::View>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
@@ -101,11 +101,11 @@ impl Database {
         ::std::mem::replace(&mut self.comment, ::std::string::String::new())
     }
 
-    // .google.protobuf.Timestamp create_time = 3;
+    // .comm.Timestamp create_time = 3;
 
 
-    pub fn get_create_time(&self) -> &::protobuf::well_known_types::Timestamp {
-        self.create_time.as_ref().unwrap_or_else(|| <::protobuf::well_known_types::Timestamp as ::protobuf::Message>::default_instance())
+    pub fn get_create_time(&self) -> &super::timestamp::Timestamp {
+        self.create_time.as_ref().unwrap_or_else(|| <super::timestamp::Timestamp as ::protobuf::Message>::default_instance())
     }
     pub fn clear_create_time(&mut self) {
         self.create_time.clear();
@@ -116,13 +116,13 @@ impl Database {
     }
 
     // Param is passed by value, moved
-    pub fn set_create_time(&mut self, v: ::protobuf::well_known_types::Timestamp) {
+    pub fn set_create_time(&mut self, v: super::timestamp::Timestamp) {
         self.create_time = ::protobuf::SingularPtrField::some(v);
     }
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_create_time(&mut self) -> &mut ::protobuf::well_known_types::Timestamp {
+    pub fn mut_create_time(&mut self) -> &mut super::timestamp::Timestamp {
         if self.create_time.is_none() {
             self.create_time.set_default();
         }
@@ -130,8 +130,8 @@ impl Database {
     }
 
     // Take field
-    pub fn take_create_time(&mut self) -> ::protobuf::well_known_types::Timestamp {
-        self.create_time.take().unwrap_or_else(|| ::protobuf::well_known_types::Timestamp::new())
+    pub fn take_create_time(&mut self) -> super::timestamp::Timestamp {
+        self.create_time.take().unwrap_or_else(|| super::timestamp::Timestamp::new())
     }
 
     // repeated .db.View views = 4;
@@ -287,7 +287,7 @@ impl ::protobuf::Message for Database {
                 |m: &Database| { &m.comment },
                 |m: &mut Database| { &mut m.comment },
             ));
-            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<::protobuf::well_known_types::Timestamp>>(
+            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::timestamp::Timestamp>>(
                 "create_time",
                 |m: &Database| { &m.create_time },
                 |m: &mut Database| { &mut m.create_time },
@@ -1139,7 +1139,7 @@ impl ResponseDatabaseInfo {
         ::std::default::Default::default()
     }
 
-    // .db.Status status = 1;
+    // .comm.Status status = 1;
 
 
     pub fn get_status(&self) -> super::response::Status {
@@ -1527,24 +1527,24 @@ impl ::protobuf::reflect::ProtobufValue for RequestDatabaseRemove {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x11db/database.proto\x12\x02db\x1a\x1fgoogle/protobuf/timestamp.proto\
-    \x1a\rdb/view.proto\x1a\x11db/response.proto\"\x95\x01\n\x08Database\x12\
-    \x12\n\x04name\x18\x01\x20\x01(\tR\x04name\x12\x18\n\x07comment\x18\x02\
-    \x20\x01(\tR\x07comment\x12;\n\x0bcreate_time\x18\x03\x20\x01(\x0b2\x1a.\
-    google.protobuf.TimestampR\ncreateTime\x12\x1e\n\x05views\x18\x04\x20\
-    \x03(\x0b2\x08.db.ViewR\x05views\":\n\x0cDatabaseList\x12*\n\tdatabases\
-    \x18\x01\x20\x03(\x0b2\x0c.db.DatabaseR\tdatabases\"E\n\x15RequestDataba\
-    seCreate\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04name\x12\x18\n\x07comm\
-    ent\x18\x02\x20\x01(\tR\x07comment\"`\n\x15RequestDatabaseModify\x12\x12\
-    \n\x04name\x18\x01\x20\x01(\tR\x04name\x12\x19\n\x08name_new\x18\x02\x20\
-    \x01(\tR\x07nameNew\x12\x18\n\x07comment\x18\x03\x20\x01(\tR\x07comment\
-    \")\n\x13RequestDatabaseInfo\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04na\
-    me\"}\n\x14ResponseDatabaseInfo\x12\"\n\x06status\x18\x01\x20\x01(\x0e2\
-    \n.db.StatusR\x06status\x12\x17\n\x07msg_err\x18\x02\x20\x01(\tR\x06msgE\
-    rr\x12(\n\x08database\x18\x03\x20\x01(\x0b2\x0c.db.DatabaseR\x08database\
-    \"+\n\x15RequestDatabaseRemove\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04\
-    nameBN\n\x1dcn.aberic.george.protocols.dbB\rDatabaseProtoZ\x1egithub.com\
-    /george/protocols/dbb\x06proto3\
+    \n\x11db/database.proto\x12\x02db\x1a\x14comm/timestamp.proto\x1a\rdb/vi\
+    ew.proto\x1a\x13comm/response.proto\"\x8a\x01\n\x08Database\x12\x12\n\
+    \x04name\x18\x01\x20\x01(\tR\x04name\x12\x18\n\x07comment\x18\x02\x20\
+    \x01(\tR\x07comment\x120\n\x0bcreate_time\x18\x03\x20\x01(\x0b2\x0f.comm\
+    .TimestampR\ncreateTime\x12\x1e\n\x05views\x18\x04\x20\x03(\x0b2\x08.db.\
+    ViewR\x05views\":\n\x0cDatabaseList\x12*\n\tdatabases\x18\x01\x20\x03(\
+    \x0b2\x0c.db.DatabaseR\tdatabases\"E\n\x15RequestDatabaseCreate\x12\x12\
+    \n\x04name\x18\x01\x20\x01(\tR\x04name\x12\x18\n\x07comment\x18\x02\x20\
+    \x01(\tR\x07comment\"`\n\x15RequestDatabaseModify\x12\x12\n\x04name\x18\
+    \x01\x20\x01(\tR\x04name\x12\x19\n\x08name_new\x18\x02\x20\x01(\tR\x07na\
+    meNew\x12\x18\n\x07comment\x18\x03\x20\x01(\tR\x07comment\")\n\x13Reques\
+    tDatabaseInfo\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04name\"\x7f\n\x14R\
+    esponseDatabaseInfo\x12$\n\x06status\x18\x01\x20\x01(\x0e2\x0c.comm.Stat\
+    usR\x06status\x12\x17\n\x07msg_err\x18\x02\x20\x01(\tR\x06msgErr\x12(\n\
+    \x08database\x18\x03\x20\x01(\x0b2\x0c.db.DatabaseR\x08database\"+\n\x15\
+    RequestDatabaseRemove\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04nameBN\n\
+    \x1dcn.aberic.george.protocols.dbB\rDatabaseProtoZ\x1egithub.com/george/\
+    protocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

@@ -30,7 +30,7 @@ pub struct Master {
     pub default_page_name: ::std::string::String,
     pub pages: ::protobuf::RepeatedField<super::page::Page>,
     pub databases: ::protobuf::RepeatedField<super::database::Database>,
-    pub create_time: ::protobuf::SingularPtrField<::protobuf::well_known_types::Timestamp>,
+    pub create_time: ::protobuf::SingularPtrField<super::timestamp::Timestamp>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -125,11 +125,11 @@ impl Master {
         ::std::mem::replace(&mut self.databases, ::protobuf::RepeatedField::new())
     }
 
-    // .google.protobuf.Timestamp create_time = 4;
+    // .comm.Timestamp create_time = 4;
 
 
-    pub fn get_create_time(&self) -> &::protobuf::well_known_types::Timestamp {
-        self.create_time.as_ref().unwrap_or_else(|| <::protobuf::well_known_types::Timestamp as ::protobuf::Message>::default_instance())
+    pub fn get_create_time(&self) -> &super::timestamp::Timestamp {
+        self.create_time.as_ref().unwrap_or_else(|| <super::timestamp::Timestamp as ::protobuf::Message>::default_instance())
     }
     pub fn clear_create_time(&mut self) {
         self.create_time.clear();
@@ -140,13 +140,13 @@ impl Master {
     }
 
     // Param is passed by value, moved
-    pub fn set_create_time(&mut self, v: ::protobuf::well_known_types::Timestamp) {
+    pub fn set_create_time(&mut self, v: super::timestamp::Timestamp) {
         self.create_time = ::protobuf::SingularPtrField::some(v);
     }
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_create_time(&mut self) -> &mut ::protobuf::well_known_types::Timestamp {
+    pub fn mut_create_time(&mut self) -> &mut super::timestamp::Timestamp {
         if self.create_time.is_none() {
             self.create_time.set_default();
         }
@@ -154,8 +154,8 @@ impl Master {
     }
 
     // Take field
-    pub fn take_create_time(&mut self) -> ::protobuf::well_known_types::Timestamp {
-        self.create_time.take().unwrap_or_else(|| ::protobuf::well_known_types::Timestamp::new())
+    pub fn take_create_time(&mut self) -> super::timestamp::Timestamp {
+        self.create_time.take().unwrap_or_else(|| super::timestamp::Timestamp::new())
     }
 }
 
@@ -299,7 +299,7 @@ impl ::protobuf::Message for Master {
                 |m: &Master| { &m.databases },
                 |m: &mut Master| { &mut m.databases },
             ));
-            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<::protobuf::well_known_types::Timestamp>>(
+            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::timestamp::Timestamp>>(
                 "create_time",
                 |m: &Master| { &m.create_time },
                 |m: &mut Master| { &mut m.create_time },
@@ -341,14 +341,13 @@ impl ::protobuf::reflect::ProtobufValue for Master {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x0fdb/master.proto\x12\x02db\x1a\x1fgoogle/protobuf/timestamp.proto\
-    \x1a\x11db/database.proto\x1a\rdb/page.proto\"\xbd\x01\n\x06Master\x12*\
-    \n\x11default_page_name\x18\x01\x20\x01(\tR\x0fdefaultPageName\x12\x1e\n\
-    \x05pages\x18\x02\x20\x03(\x0b2\x08.db.PageR\x05pages\x12*\n\tdatabases\
-    \x18\x03\x20\x03(\x0b2\x0c.db.DatabaseR\tdatabases\x12;\n\x0bcreate_time\
-    \x18\x04\x20\x01(\x0b2\x1a.google.protobuf.TimestampR\ncreateTimeBL\n\
-    \x1dcn.aberic.george.protocols.dbB\x0bMasterProtoZ\x1egithub.com/george/\
-    protocols/dbb\x06proto3\
+    \n\x0fdb/master.proto\x12\x02db\x1a\x14comm/timestamp.proto\x1a\x11db/da\
+    tabase.proto\x1a\rdb/page.proto\"\xb2\x01\n\x06Master\x12*\n\x11default_\
+    page_name\x18\x01\x20\x01(\tR\x0fdefaultPageName\x12\x1e\n\x05pages\x18\
+    \x02\x20\x03(\x0b2\x08.db.PageR\x05pages\x12*\n\tdatabases\x18\x03\x20\
+    \x03(\x0b2\x0c.db.DatabaseR\tdatabases\x120\n\x0bcreate_time\x18\x04\x20\
+    \x01(\x0b2\x0f.comm.TimestampR\ncreateTimeBL\n\x1dcn.aberic.george.proto\
+    cols.dbB\x0bMasterProtoZ\x1egithub.com/george/protocols/dbb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

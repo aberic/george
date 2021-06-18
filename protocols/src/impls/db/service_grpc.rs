@@ -81,7 +81,7 @@ impl UserServiceServer {
 // server interface
 
 pub trait PageService {
-    fn list(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::service::Request>, resp: ::grpc::ServerResponseUnarySink<super::page::PageList>) -> ::grpc::Result<()>;
+    fn list(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::request::Request>, resp: ::grpc::ServerResponseUnarySink<super::page::PageList>) -> ::grpc::Result<()>;
 
     fn create(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::page::RequestPageCreate>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
@@ -107,7 +107,7 @@ impl ::grpc::ClientStub for PageServiceClient {
 }
 
 impl PageServiceClient {
-    pub fn list(&self, o: ::grpc::RequestOptions, req: super::service::Request) -> ::grpc::SingleResponse<super::page::PageList> {
+    pub fn list(&self, o: ::grpc::RequestOptions, req: super::request::Request) -> ::grpc::SingleResponse<super::page::PageList> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.PageService/list"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,
@@ -236,7 +236,7 @@ impl PageServiceServer {
 // server interface
 
 pub trait DatabaseService {
-    fn list(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::service::Request>, resp: ::grpc::ServerResponseUnarySink<super::database::DatabaseList>) -> ::grpc::Result<()>;
+    fn list(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::request::Request>, resp: ::grpc::ServerResponseUnarySink<super::database::DatabaseList>) -> ::grpc::Result<()>;
 
     fn create(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::database::RequestDatabaseCreate>, resp: ::grpc::ServerResponseUnarySink<super::response::Response>) -> ::grpc::Result<()>;
 
@@ -262,7 +262,7 @@ impl ::grpc::ClientStub for DatabaseServiceClient {
 }
 
 impl DatabaseServiceClient {
-    pub fn list(&self, o: ::grpc::RequestOptions, req: super::service::Request) -> ::grpc::SingleResponse<super::database::DatabaseList> {
+    pub fn list(&self, o: ::grpc::RequestOptions, req: super::request::Request) -> ::grpc::SingleResponse<super::database::DatabaseList> {
         let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
             name: ::grpc::rt::StringOrStatic::Static("/db.DatabaseService/list"),
             streaming: ::grpc::rt::GrpcStreaming::Unary,

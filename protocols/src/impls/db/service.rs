@@ -23,169 +23,51 @@
 /// of protobuf runtime.
 // const _PROTOBUF_VERSION_CHECK: () = ::protobuf::VERSION_2_18_2;
 
-#[derive(PartialEq,Clone,Default)]
-#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
-pub struct Request {
-    // special fields
-    #[cfg_attr(feature = "with-serde", serde(skip))]
-    pub unknown_fields: ::protobuf::UnknownFields,
-    #[cfg_attr(feature = "with-serde", serde(skip))]
-    pub cached_size: ::protobuf::CachedSize,
-}
-
-impl<'a> ::std::default::Default for &'a Request {
-    fn default() -> &'a Request {
-        <Request as ::protobuf::Message>::default_instance()
-    }
-}
-
-impl Request {
-    pub fn new() -> Request {
-        ::std::default::Default::default()
-    }
-}
-
-impl ::protobuf::Message for Request {
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
-        while !is.eof()? {
-            let (field_number, wire_type) = is.read_tag_unpack()?;
-            match field_number {
-                _ => {
-                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u32 {
-        let mut my_size = 0;
-        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
-        self.cached_size.set(my_size);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
-        os.write_unknown_fields(self.get_unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn get_cached_size(&self) -> u32 {
-        self.cached_size.get()
-    }
-
-    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
-        &self.unknown_fields
-    }
-
-    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
-        &mut self.unknown_fields
-    }
-
-    fn as_any(&self) -> &dyn (::std::any::Any) {
-        self as &dyn (::std::any::Any)
-    }
-    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
-        self as &mut dyn (::std::any::Any)
-    }
-    fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
-        self
-    }
-
-    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
-        Self::descriptor_static()
-    }
-
-    fn new() -> Request {
-        Request::new()
-    }
-
-    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
-        descriptor.get(|| {
-            let fields = ::std::vec::Vec::new();
-            ::protobuf::reflect::MessageDescriptor::new_pb_name::<Request>(
-                "Request",
-                fields,
-                file_descriptor_proto()
-            )
-        })
-    }
-
-    fn default_instance() -> &'static Request {
-        static instance: ::protobuf::rt::LazyV2<Request> = ::protobuf::rt::LazyV2::INIT;
-        instance.get(Request::new)
-    }
-}
-
-impl ::protobuf::Clear for Request {
-    fn clear(&mut self) {
-        self.unknown_fields.clear();
-    }
-}
-
-impl ::std::fmt::Debug for Request {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for Request {
-    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
-        ::protobuf::reflect::ReflectValueRef::Message(self)
-    }
-}
-
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\x10db/service.proto\x12\x02db\x1a\rdb/user.proto\x1a\rdb/page.proto\
     \x1a\x11db/database.proto\x1a\rdb/view.proto\x1a\x0edb/index.proto\x1a\r\
-    db/disk.proto\x1a\x0fdb/memory.proto\x1a\x11db/response.proto\"\t\n\x07R\
-    equest26\n\x0bUserService\x12'\n\x05login\x12\x10.db.RequestLogin\x1a\
-    \x0c.db.Response2\xf0\x01\n\x0bPageService\x12!\n\x04list\x12\x0b.db.Req\
-    uest\x1a\x0c.db.PageList\x12-\n\x06create\x12\x15.db.RequestPageCreate\
-    \x1a\x0c.db.Response\x12-\n\x06modify\x12\x15.db.RequestPageModify\x1a\
-    \x0c.db.Response\x121\n\x04info\x12\x13.db.RequestPageInfo\x1a\x14.db.Re\
-    sponsePageInfo\x12-\n\x06remove\x12\x15.db.RequestPageRemove\x1a\x0c.db.\
-    Response2\x8c\x02\n\x0fDatabaseService\x12%\n\x04list\x12\x0b.db.Request\
-    \x1a\x10.db.DatabaseList\x121\n\x06create\x12\x19.db.RequestDatabaseCrea\
-    te\x1a\x0c.db.Response\x121\n\x06modify\x12\x19.db.RequestDatabaseModify\
-    \x1a\x0c.db.Response\x129\n\x04info\x12\x17.db.RequestDatabaseInfo\x1a\
-    \x18.db.ResponseDatabaseInfo\x121\n\x06remove\x12\x19.db.RequestDatabase\
-    Remove\x1a\x0c.db.Response2\x9e\x03\n\x0bViewService\x12)\n\x04list\x12\
-    \x13.db.RequestViewList\x1a\x0c.db.ViewList\x12-\n\x06create\x12\x15.db.\
-    RequestViewCreate\x1a\x0c.db.Response\x12-\n\x06modify\x12\x15.db.Reques\
-    tViewModify\x1a\x0c.db.Response\x121\n\x04info\x12\x13.db.RequestViewInf\
-    o\x1a\x14.db.ResponseViewInfo\x12-\n\x06remove\x12\x15.db.RequestViewRem\
-    ove\x1a\x0c.db.Response\x12/\n\x07archive\x12\x16.db.RequestViewArchive\
-    \x1a\x0c.db.Response\x127\n\x06record\x12\x15.db.RequestViewRecord\x1a\
-    \x16.db.ResponseViewRecord\x12:\n\x07records\x12\x16.db.RequestViewRecor\
-    ds\x1a\x17.db.ResponseViewRecords2\xa0\x01\n\x0cIndexService\x12+\n\x04l\
-    ist\x12\x14.db.RequestIndexList\x1a\r.db.IndexList\x12.\n\x06create\x12\
-    \x16.db.RequestIndexCreate\x1a\x0c.db.Response\x123\n\x04info\x12\x14.db\
-    .RequestIndexInfo\x1a\x15.db.ResponseIndexInfo2\xec\x02\n\x0bDiskService\
-    \x12(\n\x03put\x12\x13.db.RequestDiskInto\x1a\x0c.db.Response\x12(\n\x03\
-    set\x12\x13.db.RequestDiskInto\x1a\x0c.db.Response\x12.\n\x03get\x12\x12\
-    .db.RequestDiskOut\x1a\x13.db.ResponseDiskOut\x128\n\x0cget_by_index\x12\
-    \x13.db.RequestDiskIOut\x1a\x13.db.ResponseDiskOut\x12-\n\x06remove\x12\
-    \x15.db.RequestDiskRemove\x1a\x0c.db.Response\x127\n\x06select\x12\x15.d\
-    b.RequestDiskSelect\x1a\x16.db.ResponseDiskSelect\x127\n\x06delete\x12\
-    \x15.db.RequestDiskDelete\x1a\x16.db.ResponseDiskDelete2\xae\x03\n\rMemo\
-    ryService\x12*\n\x03put\x12\x15.db.RequestMemoryInto\x1a\x0c.db.Response\
-    \x12*\n\x03set\x12\x15.db.RequestMemoryInto\x1a\x0c.db.Response\x122\n\
-    \x03get\x12\x14.db.RequestMemoryOut\x1a\x15.db.ResponseMemoryOut\x12/\n\
-    \x06remove\x12\x17.db.RequestMemoryRemove\x1a\x0c.db.Response\x123\n\x0b\
-    put_by_page\x12\x16.db.RequestMemoryPInto\x1a\x0c.db.Response\x123\n\x0b\
-    set_by_page\x12\x16.db.RequestMemoryPInto\x1a\x0c.db.Response\x12<\n\x0b\
-    get_by_page\x12\x15.db.RequestMemoryPOut\x1a\x16.db.ResponseMemoryPOut\
-    \x128\n\x0eremove_by_page\x12\x18.db.RequestMemoryPRemove\x1a\x0c.db.Res\
-    ponseBM\n\x1dcn.aberic.george.protocols.dbB\x0cServiceProtoZ\x1egithub.c\
-    om/george/protocols/dbb\x06proto3\
+    db/disk.proto\x1a\x0fdb/memory.proto\x1a\x12comm/request.proto\x1a\x13co\
+    mm/response.proto28\n\x0bUserService\x12)\n\x05login\x12\x10.db.RequestL\
+    ogin\x1a\x0e.comm.Response2\xf8\x01\n\x0bPageService\x12#\n\x04list\x12\
+    \r.comm.Request\x1a\x0c.db.PageList\x12/\n\x06create\x12\x15.db.RequestP\
+    ageCreate\x1a\x0e.comm.Response\x12/\n\x06modify\x12\x15.db.RequestPageM\
+    odify\x1a\x0e.comm.Response\x121\n\x04info\x12\x13.db.RequestPageInfo\
+    \x1a\x14.db.ResponsePageInfo\x12/\n\x06remove\x12\x15.db.RequestPageRemo\
+    ve\x1a\x0e.comm.Response2\x94\x02\n\x0fDatabaseService\x12'\n\x04list\
+    \x12\r.comm.Request\x1a\x10.db.DatabaseList\x123\n\x06create\x12\x19.db.\
+    RequestDatabaseCreate\x1a\x0e.comm.Response\x123\n\x06modify\x12\x19.db.\
+    RequestDatabaseModify\x1a\x0e.comm.Response\x129\n\x04info\x12\x17.db.Re\
+    questDatabaseInfo\x1a\x18.db.ResponseDatabaseInfo\x123\n\x06remove\x12\
+    \x19.db.RequestDatabaseRemove\x1a\x0e.comm.Response2\xa6\x03\n\x0bViewSe\
+    rvice\x12)\n\x04list\x12\x13.db.RequestViewList\x1a\x0c.db.ViewList\x12/\
+    \n\x06create\x12\x15.db.RequestViewCreate\x1a\x0e.comm.Response\x12/\n\
+    \x06modify\x12\x15.db.RequestViewModify\x1a\x0e.comm.Response\x121\n\x04\
+    info\x12\x13.db.RequestViewInfo\x1a\x14.db.ResponseViewInfo\x12/\n\x06re\
+    move\x12\x15.db.RequestViewRemove\x1a\x0e.comm.Response\x121\n\x07archiv\
+    e\x12\x16.db.RequestViewArchive\x1a\x0e.comm.Response\x127\n\x06record\
+    \x12\x15.db.RequestViewRecord\x1a\x16.db.ResponseViewRecord\x12:\n\x07re\
+    cords\x12\x16.db.RequestViewRecords\x1a\x17.db.ResponseViewRecords2\xa2\
+    \x01\n\x0cIndexService\x12+\n\x04list\x12\x14.db.RequestIndexList\x1a\r.\
+    db.IndexList\x120\n\x06create\x12\x16.db.RequestIndexCreate\x1a\x0e.comm\
+    .Response\x123\n\x04info\x12\x14.db.RequestIndexInfo\x1a\x15.db.Response\
+    IndexInfo2\xf2\x02\n\x0bDiskService\x12*\n\x03put\x12\x13.db.RequestDisk\
+    Into\x1a\x0e.comm.Response\x12*\n\x03set\x12\x13.db.RequestDiskInto\x1a\
+    \x0e.comm.Response\x12.\n\x03get\x12\x12.db.RequestDiskOut\x1a\x13.db.Re\
+    sponseDiskOut\x128\n\x0cget_by_index\x12\x13.db.RequestDiskIOut\x1a\x13.\
+    db.ResponseDiskOut\x12/\n\x06remove\x12\x15.db.RequestDiskRemove\x1a\x0e\
+    .comm.Response\x127\n\x06select\x12\x15.db.RequestDiskSelect\x1a\x16.db.\
+    ResponseDiskSelect\x127\n\x06delete\x12\x15.db.RequestDiskDelete\x1a\x16\
+    .db.ResponseDiskDelete2\xba\x03\n\rMemoryService\x12,\n\x03put\x12\x15.d\
+    b.RequestMemoryInto\x1a\x0e.comm.Response\x12,\n\x03set\x12\x15.db.Reque\
+    stMemoryInto\x1a\x0e.comm.Response\x122\n\x03get\x12\x14.db.RequestMemor\
+    yOut\x1a\x15.db.ResponseMemoryOut\x121\n\x06remove\x12\x17.db.RequestMem\
+    oryRemove\x1a\x0e.comm.Response\x125\n\x0bput_by_page\x12\x16.db.Request\
+    MemoryPInto\x1a\x0e.comm.Response\x125\n\x0bset_by_page\x12\x16.db.Reque\
+    stMemoryPInto\x1a\x0e.comm.Response\x12<\n\x0bget_by_page\x12\x15.db.Req\
+    uestMemoryPOut\x1a\x16.db.ResponseMemoryPOut\x12:\n\x0eremove_by_page\
+    \x12\x18.db.RequestMemoryPRemove\x1a\x0e.comm.ResponseBM\n\x1dcn.aberic.\
+    george.protocols.dbB\x0cServiceProtoZ\x1egithub.com/george/protocols/dbb\
+    \x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

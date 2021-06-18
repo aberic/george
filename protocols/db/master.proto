@@ -20,7 +20,7 @@ option java_outer_classname = "MasterProto";
 
 package db;
 
-import "google/protobuf/timestamp.proto";
+import "comm/timestamp.proto";
 import "db/database.proto";
 import "db/page.proto";
 
@@ -33,5 +33,5 @@ message Master {
   // 库集合
   repeated Database databases = 3;
   // 创建时间
-  google.protobuf.Timestamp create_time = 4;
+  comm.Timestamp create_time = 4;
 }

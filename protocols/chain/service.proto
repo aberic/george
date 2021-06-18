@@ -21,26 +21,9 @@ option java_outer_classname = "ServiceProto";
 package chain;
 
 import "chain/block.proto";
+import "comm/response.proto";
 
 service Blocks {
-  rpc add(Block) returns (Response);
-  rpc get(BlockGet) returns (Block);
-}
-
-message BlockGet {
-  oneof get {
-    uint32 height = 1;
-    string hash = 2;
-    string tx_hash = 3;
-  }
-}
-
-message Response {
-  Status status = 1;
-  string error = 2;
-}
-
-enum Status {
-  SUCCESS = 0;
-  FAIL = 1;
+  rpc add(Block) returns (comm.Response);
+  rpc get(RequestBlock) returns (Block);
 }

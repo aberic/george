@@ -12,10 +12,9 @@
  * limitations under the License.
  */
 
-use protobuf::well_known_types::Timestamp;
-
 use comm::Time;
 
+use crate::impls::comm::timestamp::Timestamp;
 use crate::impls::db;
 use crate::impls::db::index::{Engine, KeyType};
 use crate::impls::utils::Comm;

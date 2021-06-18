@@ -16,10 +16,10 @@ use futures::executor;
 use grpc::ClientStubExt;
 
 use comm::errors::{Errs, GeorgeResult};
+use protocols::impls::comm::response::Status;
 use protocols::impls::db::index::{
     Engine, IndexList, KeyType, RequestIndexCreate, RequestIndexInfo, RequestIndexList,
 };
-use protocols::impls::db::response::Status;
 use protocols::impls::db::service_grpc::IndexServiceClient;
 
 use crate::service::{Index, Tools};
