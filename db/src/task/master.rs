@@ -163,7 +163,7 @@ impl TMaster for Master {
             Err(Errs::page_exist_error())
         } else {
             self.page_map().write().unwrap().remove(&page_name);
-            Ok(())
+            Dir::rm(Paths::page_path(page_name))
         }
     }
 
@@ -215,7 +215,7 @@ impl TMaster for Master {
             Err(Errs::database_exist_error())
         } else {
             self.database_map().write().unwrap().remove(&database_name);
-            Ok(())
+            Dir::rm(Paths::database_path(database_name))
         }
     }
 

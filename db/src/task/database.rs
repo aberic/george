@@ -20,7 +20,7 @@ use chrono::Duration;
 
 use comm::errors::{Errs, GeorgeResult};
 use comm::io::file::FilerHandler;
-use comm::io::Filer;
+use comm::io::{Dir, Filer};
 use comm::strings::StringHandler;
 use comm::{Strings, Time};
 use ge::utils::enums::Tag;
@@ -29,6 +29,7 @@ use ge::GeFactory;
 use crate::task::rich::Expectation;
 use crate::task::{Database, View};
 use crate::utils::Paths;
+use comm::io::dir::DirHandler;
 
 impl Database {
     /// 新建数据库
@@ -140,7 +141,7 @@ impl Database {
             Err(Errs::view_exist_error())
         } else {
             self.view_map().write().unwrap().remove(&view_name);
-            Ok(())
+            Dir::rm(Paths::view_path(self.name(), view_name))
         }
     }
 

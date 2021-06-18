@@ -15,23 +15,20 @@
 use std::sync::Arc;
 
 use grpc::{Result, ServerHandlerContext, ServerRequestSingle, ServerResponseUnarySink};
-use protobuf::{RepeatedField, SingularPtrField};
+use protobuf::RepeatedField;
 
-use crate::service::index::IndexServer;
-use crate::service::{Children, Enums};
-use db::task::traits::{TForm, TMaster};
+use db::task::traits::TMaster;
 use db::Task;
-use protobuf::well_known_types::Timestamp;
 use protocols::impls::db::database::{
     Database, DatabaseList, RequestDatabaseCreate, RequestDatabaseInfo, RequestDatabaseModify,
     RequestDatabaseRemove, ResponseDatabaseInfo,
 };
-use protocols::impls::db::index::Index;
 use protocols::impls::db::response::{Response, Status};
 use protocols::impls::db::service::Request;
 use protocols::impls::db::service_grpc::DatabaseService;
-use protocols::impls::db::view::View;
 use protocols::impls::utils::Comm;
+
+use crate::service::Children;
 
 pub(crate) struct DatabaseServer {
     pub(crate) task: Arc<Task>,
