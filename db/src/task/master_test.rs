@@ -650,9 +650,9 @@ mod test {
                 );
 
                 let mut pos1: u32 = 1;
-                while pos1 <= 10000 {
+                while pos1 <= 1000 {
                     print!("{} ", pos1);
-                    let user_str = Json::obj_2_string(&create_t(pos1, 10000 - pos1)).unwrap();
+                    let user_str = Json::obj_2_string(&create_t(pos1, 1000 - pos1)).unwrap();
                     put(
                         task.clone(),
                         database_name,
@@ -815,7 +815,7 @@ mod test {
                                         {
                                             "Param":"george_db_index_increment",
                                             "Cond":"ge",
-                                            "Value":8000
+                                            "Value":800
                                         }
                                     ],
                                     "Sort":{
@@ -845,17 +845,17 @@ mod test {
                                         {
                                             "Param":"age",
                                             "Cond":"ge",
-                                            "Value":4990
+                                            "Value":490
                                         },
                                         {
                                             "Param":"age",
                                             "Cond":"le",
-                                            "Value":9010
+                                            "Value":910
                                         },
                                         {
                                             "Param":"height",
                                             "Cond":"le",
-                                            "Value":5000
+                                            "Value":500
                                         }
                                     ],
                                     "Sort":{
@@ -885,17 +885,17 @@ mod test {
                                         {
                                             "Param":"age",
                                             "Cond":"ge",
-                                            "Value":4990
+                                            "Value":490
                                         },
                                         {
                                             "Param":"age",
                                             "Cond":"le",
-                                            "Value":9010
+                                            "Value":910
                                         },
                                         {
                                             "Param":"height",
                                             "Cond":"le",
-                                            "Value":5000
+                                            "Value":500
                                         }
                                     ],
                                     "Sort":{
@@ -925,17 +925,17 @@ mod test {
                                         {
                                             "Param":"height",
                                             "Cond":"ge",
-                                            "Value":4990
+                                            "Value":490
                                         },
                                         {
                                             "Param":"height",
                                             "Cond":"le",
-                                            "Value":9010
+                                            "Value":910
                                         },
                                         {
                                             "Param":"age",
                                             "Cond":"le",
-                                            "Value":5000
+                                            "Value":500
                                         }
                                     ],
                                     "Sort":{
@@ -965,17 +965,17 @@ mod test {
                                         {
                                             "Param":"height",
                                             "Cond":"ge",
-                                            "Value":4990
+                                            "Value":490
                                         },
                                         {
                                             "Param":"height",
                                             "Cond":"le",
-                                            "Value":9010
+                                            "Value":910
                                         },
                                         {
                                             "Param":"age",
                                             "Cond":"le",
-                                            "Value":5000
+                                            "Value":500
                                         }
                                     ],
                                     "Sort":{
@@ -994,45 +994,45 @@ mod test {
                 );
             }
 
-            #[test]
-            fn select_delete_increment() {
-                let task = Task::default().unwrap();
-                let database_name = "database_select_base_test";
-                let view_name = "view_base_test";
-                let cond_str0 = r#"
-                                  {
-                                    "Conditions":[
-                                        {
-                                            "Param":"george_db_index_increment",
-                                            "Cond":"ge",
-                                            "Value":4990
-                                        },
-                                        {
-                                            "Param":"age",
-                                            "Cond":"ge",
-                                            "Value":4990
-                                        },
-                                        {
-                                            "Param":"age",
-                                            "Cond":"le",
-                                            "Value":9010
-                                        }
-                                    ],
-                                    "Sort":{
-                                        "Param":"height",
-                                        "Asc":true
-                                    },
-                                    "Skip":10,
-                                    "Limit":100
-                                  }"#;
-                delete(
-                    task.clone(),
-                    database_name,
-                    view_name,
-                    cond_str0.as_bytes().to_vec(),
-                    0,
-                );
-            }
+            // #[test]
+            // fn select_delete_increment() {
+            //     let task = Task::default().unwrap();
+            //     let database_name = "database_select_base_test";
+            //     let view_name = "view_base_test";
+            //     let cond_str0 = r#"
+            //                       {
+            //                         "Conditions":[
+            //                             {
+            //                                 "Param":"george_db_index_increment",
+            //                                 "Cond":"ge",
+            //                                 "Value":4990
+            //                             },
+            //                             {
+            //                                 "Param":"age",
+            //                                 "Cond":"ge",
+            //                                 "Value":4990
+            //                             },
+            //                             {
+            //                                 "Param":"age",
+            //                                 "Cond":"le",
+            //                                 "Value":9010
+            //                             }
+            //                         ],
+            //                         "Sort":{
+            //                             "Param":"height",
+            //                             "Asc":true
+            //                         },
+            //                         "Skip":10,
+            //                         "Limit":100
+            //                       }"#;
+            //     delete(
+            //         task.clone(),
+            //         database_name,
+            //         view_name,
+            //         cond_str0.as_bytes().to_vec(),
+            //         0,
+            //     );
+            // }
         }
     }
 

@@ -486,23 +486,23 @@ mod ca {
         Cert::save_chain_pem(
             "src/test/crypto/ca/chain/chain.pem.crt",
             vec![
-                Cert::load_der_file("src/test/crypto/ca/stack/root.der.crt")
+                Cert::load_der_file("src/test/crypto/ca/chain/root.der.crt")
                     .unwrap()
                     .x509,
-                Cert::load_pem_file("src/test/crypto/ca/stack/intermediate1.pem.crt")
+                Cert::load_pem_file("src/test/crypto/ca/chain/intermediate1.pem.crt")
                     .unwrap()
                     .x509,
-                Cert::load_der_file("src/test/crypto/ca/stack/intermediate2.der.crt")
+                Cert::load_der_file("src/test/crypto/ca/chain/intermediate2.der.crt")
                     .unwrap()
                     .x509,
-                Cert::load_pem_file("src/test/crypto/ca/stack/intermediate3.pem.crt")
+                Cert::load_pem_file("src/test/crypto/ca/chain/intermediate3.pem.crt")
                     .unwrap()
                     .x509,
             ],
         )
         .unwrap();
 
-        let certs = Cert::load_chain_pem("src/test/crypto/ca/stack/stack.pem.crt").unwrap();
+        let certs = Cert::load_chain_pem("src/test/crypto/ca/chain/chain.pem.crt").unwrap();
         println!("certs len = {}", certs.len());
 
         let cert_root = certs.get(0).unwrap();

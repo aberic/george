@@ -180,22 +180,22 @@ mod md5 {
 
     #[test]
     fn hashcode64_test2() {
-        let x1: i64 = -1;
+        // let x1: i64 = -1;
         let x2: i64 = -2;
         let x3: i64 = -3;
         let x4: i64 = 301047507;
         let x5: i64 = 1;
-        let x1b = x1.to_be_bytes();
+        // let x1b = x1.to_be_bytes();
         let x2b = x2.to_be_bytes();
         let x3b = x3.to_be_bytes();
         let x4b = x4.to_be_bytes();
         let x5b = x5.to_be_bytes();
 
-        println!(
-            "x1b = {}, bytes = {:#?}",
-            Hash::crc64(x1b.to_vec().as_slice()),
-            x1b
-        );
+        // println!(
+        //     "x1b = {}, bytes = {:#?}",
+        //     Hash::crc64(x1b.to_vec().as_slice()),
+        //     x1b
+        // );
         println!(
             "x2b = {}, bytes = {:#?}",
             Hash::crc64(x2b.to_vec().as_slice()),
