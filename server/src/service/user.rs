@@ -23,7 +23,7 @@ use protocols::impls::db::service_grpc::UserService;
 use protocols::impls::db::user::RequestLogin;
 use protocols::impls::utils::Comm;
 
-use crate::service::{DATABASE_SYS_NAME, VIEW_USER_NAME};
+use crate::service::{DATABASE_SYS, VIEW_USER};
 
 pub(crate) struct UserServer {
     pub(crate) task: Arc<Task>,
@@ -37,8 +37,8 @@ impl UserService for UserServer {
         resp: ServerResponseUnarySink<Response>,
     ) -> Result<()> {
         match self.task.get_disk(
-            DATABASE_SYS_NAME.to_string(),
-            VIEW_USER_NAME.to_string(),
+            DATABASE_SYS.to_string(),
+            VIEW_USER.to_string(),
             req.message.name,
         ) {
             Ok(res) => match String::from_utf8(res) {

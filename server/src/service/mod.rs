@@ -46,8 +46,8 @@ mod page;
 mod user;
 mod view;
 
-pub const DATABASE_SYS_NAME: &str = "sys";
-pub const VIEW_USER_NAME: &str = "user";
+pub const DATABASE_SYS: &str = "sys";
+pub const VIEW_USER: &str = "user";
 pub const DEFAULT_COMMENT: &str = "system default";
 
 pub struct Server;
@@ -129,22 +129,17 @@ fn log_policy(init: Init) {
 fn init_data(task: Arc<Task>) -> GeorgeResult<()> {
     if !task.init() {
         log::info!("server init!");
-        task.page_create(
-            DATABASE_SYS_NAME.to_string(),
-            DEFAULT_COMMENT.to_string(),
-            0,
-            0,
-        )?;
-        task.database_create(DATABASE_SYS_NAME.to_string(), DEFAULT_COMMENT.to_string())?;
+        task.page_create(DATABASE_SYS.to_string(), DEFAULT_COMMENT.to_string(), 0, 0)?;
+        task.database_create(DATABASE_SYS.to_string(), DEFAULT_COMMENT.to_string())?;
         task.view_create(
-            DATABASE_SYS_NAME.to_string(),
-            VIEW_USER_NAME.to_string(),
+            DATABASE_SYS.to_string(),
+            VIEW_USER.to_string(),
             DEFAULT_COMMENT.to_string(),
             true,
         )?;
         task.put_disk(
-            DATABASE_SYS_NAME.to_string(),
-            VIEW_USER_NAME.to_string(),
+            DATABASE_SYS.to_string(),
+            VIEW_USER.to_string(),
             "admin".to_string(),
             "admin#123".as_bytes().to_vec(),
         )?;

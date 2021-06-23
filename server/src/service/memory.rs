@@ -16,7 +16,7 @@ use std::sync::Arc;
 
 use grpc::{Result, ServerHandlerContext, ServerRequestSingle, ServerResponseUnarySink};
 
-use crate::service::DATABASE_SYS_NAME;
+use crate::service::DATABASE_SYS;
 use db::task::traits::TMaster;
 use db::Task;
 use protocols::impls::comm::response::{Response, Status};
@@ -38,11 +38,10 @@ impl MemoryService for MemoryServer {
         req: ServerRequestSingle<RequestMemoryInto>,
         resp: ServerResponseUnarySink<Response>,
     ) -> Result<()> {
-        match self.task.put_memory(
-            DATABASE_SYS_NAME.to_string(),
-            req.message.key,
-            req.message.value,
-        ) {
+        match self
+            .task
+            .put_memory(DATABASE_SYS.to_string(), req.message.key, req.message.value)
+        {
             Ok(()) => resp.finish(Comm::proto_success_db()),
             Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
@@ -54,11 +53,10 @@ impl MemoryService for MemoryServer {
         req: ServerRequestSingle<RequestMemoryInto>,
         resp: ServerResponseUnarySink<Response>,
     ) -> Result<()> {
-        match self.task.set_memory(
-            DATABASE_SYS_NAME.to_string(),
-            req.message.key,
-            req.message.value,
-        ) {
+        match self
+            .task
+            .set_memory(DATABASE_SYS.to_string(), req.message.key, req.message.value)
+        {
             Ok(()) => resp.finish(Comm::proto_success_db()),
             Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
         }
@@ -73,7 +71,7 @@ impl MemoryService for MemoryServer {
         let mut response = ResponseMemoryOut::new();
         match self
             .task
-            .get_memory(DATABASE_SYS_NAME.to_string(), req.message.key)
+            .get_memory(DATABASE_SYS.to_string(), req.message.key)
         {
             Ok(res) => {
                 response.set_value(res);
@@ -95,7 +93,7 @@ impl MemoryService for MemoryServer {
     ) -> Result<()> {
         match self
             .task
-            .remove_memory(DATABASE_SYS_NAME.to_string(), req.message.key)
+            .remove_memory(DATABASE_SYS.to_string(), req.message.key)
         {
             Ok(()) => resp.finish(Comm::proto_success_db()),
             Err(err) => resp.finish(Comm::proto_failed_db_custom(err.to_string())),
