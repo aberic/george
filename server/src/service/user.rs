@@ -17,12 +17,13 @@ use std::sync::Arc;
 use grpc::{Result, ServerHandlerContext, ServerRequestSingle, ServerResponseUnarySink};
 
 use db::task::traits::TMaster;
-use db::utils::comm::{DATABASE_SYS_NAME, VIEW_USER_NAME};
 use db::Task;
 use protocols::impls::comm::response::Response;
 use protocols::impls::db::service_grpc::UserService;
 use protocols::impls::db::user::RequestLogin;
 use protocols::impls::utils::Comm;
+
+use crate::service::{DATABASE_SYS_NAME, VIEW_USER_NAME};
 
 pub(crate) struct UserServer {
     pub(crate) task: Arc<Task>,

@@ -22,10 +22,6 @@ use comm::Json;
 
 use crate::utils::enums::KeyType;
 
-pub const DATABASE_SYS_NAME: &str = "sys";
-pub const VIEW_USER_NAME: &str = "user";
-pub const DEFAULT_COMMENT: &str = "system default";
-
 /// 默认KV存储索引
 pub const INDEX_DISK: &str = "george_db_index_disk";
 /// 默认自增序列ID索引，不保证连续性，只保证有序性

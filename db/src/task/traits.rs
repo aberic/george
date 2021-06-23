@@ -26,6 +26,8 @@ use crate::task::{Database, Page, View};
 use crate::utils::enums::{Engine, KeyType};
 
 pub trait TMaster {
+    /// 是否已经初始化过
+    fn init(&self) -> bool;
     /// 创建时间
     fn create_time(&self) -> Time;
 
@@ -56,9 +58,6 @@ pub trait TMaster {
 
     /// 根据缓存页name获取库
     fn page(&self, page_name: String) -> GeorgeResult<Arc<RwLock<Page>>>;
-
-    /// 获取默认缓存页
-    fn page_default(&self) -> GeorgeResult<Arc<RwLock<Page>>>;
 
     /// 库集合
     fn database_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Database>>>>>;
@@ -307,60 +306,6 @@ pub trait TMaster {
         view_name: String,
         constraint_json_bytes: Vec<u8>,
     ) -> GeorgeResult<Expectation>;
-
-    /// 插入数据，如果存在则返回已存在<p><p>
-    ///
-    /// ###Params
-    ///
-    /// key string
-    ///
-    /// value 当前结果value信息<p><p>
-    ///
-    /// ###Return
-    ///
-    /// IndexResult<()>
-    fn put_memory_default(&self, key: String, value: Vec<u8>) -> GeorgeResult<()>;
-
-    /// 插入数据，无论存在与否都会插入或更新数据<p><p>
-    ///
-    /// ###Params
-    ///
-    /// view_name 视图名称<p><p>
-    ///
-    /// key string
-    ///
-    /// value 当前结果value信息<p><p>
-    ///
-    /// ###Return
-    ///
-    /// IndexResult<()>
-    fn set_memory_default(&self, key: String, value: Vec<u8>) -> GeorgeResult<()>;
-
-    /// 获取数据，返回存储对象<p><p>
-    ///
-    /// ###Params
-    ///
-    /// view_name 视图名称
-    ///
-    /// key string
-    ///
-    /// ###Return
-    ///
-    /// Seed value信息
-    fn get_memory_default(&self, key: String) -> GeorgeResult<Vec<u8>>;
-
-    /// 删除数据<p><p>
-    ///
-    /// ###Params
-    ///
-    /// view_name 视图名称
-    ///
-    /// key string
-    ///
-    /// ###Return
-    ///
-    /// Seed value信息
-    fn remove_memory_default(&self, key: String) -> GeorgeResult<()>;
 
     /// 插入数据，如果存在则返回已存在<p><p>
     ///

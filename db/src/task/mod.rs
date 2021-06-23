@@ -49,8 +49,8 @@ pub(super) static GLOBAL_THREAD_POOL: Lazy<ThreadPool> = Lazy::new(|| {
 /// 主管员
 #[derive(Debug, Clone)]
 pub struct Master {
-    /// 默认缓存页名称
-    default_page_name: String,
+    /// 是否已经初始化过
+    init: bool,
     /// 缓存页集合
     pages: Arc<RwLock<HashMap<String, Arc<RwLock<Page>>>>>,
     /// 库集合

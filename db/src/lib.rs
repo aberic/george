@@ -65,6 +65,10 @@ impl Task {
 }
 
 impl TMaster for Task {
+    fn init(&self) -> bool {
+        self.master.init()
+    }
+
     fn create_time(&self) -> Time {
         self.master.create_time()
     }
@@ -93,10 +97,6 @@ impl TMaster for Task {
 
     fn page(&self, page_name: String) -> GeorgeResult<Arc<RwLock<Page>>> {
         self.master.page(page_name)
-    }
-
-    fn page_default(&self) -> GeorgeResult<Arc<RwLock<Page>>> {
-        self.master.page_default()
     }
 
     fn database_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Database>>>>> {
@@ -296,22 +296,6 @@ impl TMaster for Task {
     ) -> GeorgeResult<Expectation> {
         self.master
             .delete_disk(database_name, view_name, constraint_json_bytes)
-    }
-
-    fn put_memory_default(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        self.master.put_memory_default(key, value)
-    }
-
-    fn set_memory_default(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        self.master.set_memory_default(key, value)
-    }
-
-    fn get_memory_default(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        self.master.get_memory_default(key)
-    }
-
-    fn remove_memory_default(&self, key: String) -> GeorgeResult<()> {
-        self.master.remove_memory_default(key)
     }
 
     fn put_memory(&self, page_name: String, key: String, value: Vec<u8>) -> GeorgeResult<()> {

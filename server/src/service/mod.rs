@@ -18,7 +18,8 @@ use std::thread;
 
 use protobuf::{RepeatedField, SingularPtrField};
 
-use db::task::traits::TForm;
+use comm::errors::GeorgeResult;
+use db::task::traits::{TForm, TMaster};
 use db::Task;
 use deploy::{Init, LogPolicy};
 use protocols::impls::db::index::{Engine, Index, KeyType};
@@ -45,6 +46,10 @@ mod page;
 mod user;
 mod view;
 
+pub const DATABASE_SYS_NAME: &str = "sys";
+pub const VIEW_USER_NAME: &str = "user";
+pub const DEFAULT_COMMENT: &str = "system default";
+
 pub struct Server;
 
 impl Server {
@@ -60,6 +65,10 @@ impl Server {
         match Task::new(init.clone()) {
             Ok(res) => task = Arc::new(res),
             Err(err) => panic!("Task new failed! {}", err),
+        }
+        match init_data(task.clone()) {
+            Err(err) => panic!("Init data failed! {}", err),
+            _ => {}
         }
         let mut server = grpc::ServerBuilder::new_plain();
         server.http.set_port(init.port_unwrap());
@@ -114,6 +123,34 @@ fn log_policy(init: Init) {
         "httpbis::server::conn".to_string(),
         false,
     ));
+}
+
+/// 初始化
+fn init_data(task: Arc<Task>) -> GeorgeResult<()> {
+    if !task.init() {
+        log::info!("server init!");
+        task.page_create(
+            DATABASE_SYS_NAME.to_string(),
+            DEFAULT_COMMENT.to_string(),
+            0,
+            0,
+        )?;
+        task.database_create(DATABASE_SYS_NAME.to_string(), DEFAULT_COMMENT.to_string())?;
+        task.view_create(
+            DATABASE_SYS_NAME.to_string(),
+            VIEW_USER_NAME.to_string(),
+            DEFAULT_COMMENT.to_string(),
+            true,
+        )?;
+        task.put_disk(
+            DATABASE_SYS_NAME.to_string(),
+            VIEW_USER_NAME.to_string(),
+            "admin".to_string(),
+            "admin#123".as_bytes().to_vec(),
+        )?;
+        log::info!("server init success!");
+    }
+    Ok(())
 }
 
 pub(crate) struct Enums;

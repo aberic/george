@@ -32,7 +32,7 @@ use crate::task::rich::Expectation;
 use crate::task::traits::TMaster;
 use crate::task::{Database, Master};
 use crate::task::{Page, View};
-use crate::utils::comm::{DATABASE_SYS_NAME, DEFAULT_COMMENT, INDEX_DISK, VIEW_USER_NAME};
+use crate::utils::comm::INDEX_DISK;
 use crate::utils::enums::{Engine, KeyType};
 use crate::utils::Paths;
 
@@ -52,7 +52,7 @@ impl Master {
                 Ok(res) => duration = Duration::nanoseconds(res),
                 Err(err) => return Err(Errs::strs("duration parse i64", err)),
             }
-            init = false;
+            init = true;
         } else {
             let now: NaiveDateTime = Local::now().naive_local();
             duration = Duration::nanoseconds(now.timestamp_nanos());
@@ -65,7 +65,7 @@ impl Master {
                     .to_vec(),
             );
             GeFactory {}.create(Tag::Bootstrap, bootstrap_file_path.clone(), description)?;
-            init = true;
+            init = false;
         }
 
         let create_time = Time::from(duration);
@@ -75,15 +75,12 @@ impl Master {
         );
 
         let master = Master {
-            default_page_name: DATABASE_SYS_NAME.to_string(),
+            init,
             pages: Arc::new(Default::default()),
             databases: Default::default(),
             create_time,
         };
         if init {
-            log::info!("initialize new data");
-            master.init()?;
-        } else {
             log::info!("recovery exist data from bootstrap");
             log::debug!(
                 "recovery exist data from bootstrap file {}",
@@ -92,30 +89,6 @@ impl Master {
             master.recovery()?;
         }
         Ok(master)
-    }
-
-    /// 初始化
-    fn init(&self) -> GeorgeResult<()> {
-        log::info!("bootstrap init!");
-        self.page_create(
-            DATABASE_SYS_NAME.to_string(),
-            DEFAULT_COMMENT.to_string(),
-            0,
-            0,
-        )?;
-        self.database_create(DATABASE_SYS_NAME.to_string(), DEFAULT_COMMENT.to_string())?;
-        self.view_create(
-            DATABASE_SYS_NAME.to_string(),
-            VIEW_USER_NAME.to_string(),
-            DEFAULT_COMMENT.to_string(),
-            true,
-        )?;
-        self.put_disk(
-            DATABASE_SYS_NAME.to_string(),
-            VIEW_USER_NAME.to_string(),
-            "admin".to_string(),
-            "admin#123".as_bytes().to_vec(),
-        )
     }
 
     fn exist_database(&self, database_name: String) -> bool {
@@ -134,6 +107,10 @@ impl Master {
 }
 
 impl TMaster for Master {
+    fn init(&self) -> bool {
+        self.init
+    }
+
     fn create_time(&self) -> Time {
         self.create_time.clone()
     }
@@ -187,10 +164,6 @@ impl TMaster for Master {
             Some(page) => Ok(page.clone()),
             None => Err(Errs::page_no_exist_error()),
         }
-    }
-
-    fn page_default(&self) -> GeorgeResult<Arc<RwLock<Page>>> {
-        self.page(self.default_page_name.clone())
     }
 
     fn database_map(&self) -> Arc<RwLock<HashMap<String, Arc<RwLock<Database>>>>> {
@@ -459,22 +432,6 @@ impl TMaster for Master {
             .read()
             .unwrap()
             .delete(view_name, constraint_json_bytes)
-    }
-
-    fn put_memory_default(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        self.page_default()?.read().unwrap().put(key, value)
-    }
-
-    fn set_memory_default(&self, key: String, value: Vec<u8>) -> GeorgeResult<()> {
-        self.page_default()?.read().unwrap().set(key, value)
-    }
-
-    fn get_memory_default(&self, key: String) -> GeorgeResult<Vec<u8>> {
-        self.page_default()?.read().unwrap().get(key)
-    }
-
-    fn remove_memory_default(&self, key: String) -> GeorgeResult<()> {
-        self.page_default()?.read().unwrap().remove(key)
     }
 
     fn put_memory(&self, page_name: String, key: String, value: Vec<u8>) -> GeorgeResult<()> {
