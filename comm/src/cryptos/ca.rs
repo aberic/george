@@ -37,13 +37,14 @@ use crate::errors::Errs;
 use crate::errors::GeorgeResult;
 use crate::io::file::{FilerReader, FilerWriter};
 use crate::io::Filer;
+use openssl::pkcs12::Pkcs12;
 
 /// sign
 impl Cert {
     /// 签发根证书
     ///
     /// * bits 以比特为单位的数字长度
-    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * msb_ca 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
     /// * odd 如果' true '，则生成的数字为奇数
     /// * sk 签发证书用的私钥
     /// * pk 待签发证书的公钥
@@ -91,7 +92,7 @@ impl Cert {
 
     /// 签发128位签名根证书
     ///
-    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * msb_ca 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
     /// * odd 如果' true '，则生成的数字为奇数
     /// * sk 签发证书用的私钥
     /// * pk 待签发证书的公钥
@@ -131,7 +132,7 @@ impl Cert {
 
     /// 签发256位签名根证书
     ///
-    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * msb_ca 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
     /// * odd 如果' true '，则生成的数字为奇数
     /// * sk 签发证书用的私钥
     /// * pk 待签发证书的公钥
@@ -173,13 +174,11 @@ impl Cert {
     ///
     /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
     /// * bits 以比特为单位的数字长度
-    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * msb_ca 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
     /// * odd 如果' true '，则生成的数字为奇数
     /// * sk 签发证书用的私钥
     /// * pk 待签发证书的公钥
     /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-    ///   CN字段用于普通名称，例如DNS名称
     /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
     /// * not_before_day 证书上的有效期在指定天之后
     /// * not_after_day 证书上的有效期在指定天之前
@@ -224,14 +223,11 @@ impl Cert {
     /// 签发128位签名中间证书
     ///
     /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
-    /// * bits 以比特为单位的数字长度
-    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * msb_ca 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
     /// * odd 如果' true '，则生成的数字为奇数
     /// * sk 签发证书用的私钥
     /// * pk 待签发证书的公钥
     /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-    ///   CN字段用于普通名称，例如DNS名称
     /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
     /// * not_before_day 证书上的有效期在指定天之后
     /// * not_after_day 证书上的有效期在指定天之前
@@ -269,14 +265,11 @@ impl Cert {
     /// 签发256位签名中间证书
     ///
     /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
-    /// * bits 以比特为单位的数字长度
-    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * msb_ca 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
     /// * odd 如果' true '，则生成的数字为奇数
     /// * sk 签发证书用的私钥
     /// * pk 待签发证书的公钥
     /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-    ///   CN字段用于普通名称，例如DNS名称
     /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
     /// * not_before_day 证书上的有效期在指定天之后
     /// * not_after_day 证书上的有效期在指定天之前
@@ -313,15 +306,12 @@ impl Cert {
 
     /// 签发中间证书
     ///
+    /// * csr 证书签名申请
     /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
     /// * bits 以比特为单位的数字长度
-    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * msb_ca 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
     /// * odd 如果' true '，则生成的数字为奇数
     /// * sk 签发证书用的私钥
-    /// * pk 待签发证书的公钥
-    /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-    ///   CN字段用于普通名称，例如DNS名称
     /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
     /// * not_before_day 证书上的有效期在指定天之后
     /// * not_after_day 证书上的有效期在指定天之前
@@ -358,15 +348,11 @@ impl Cert {
 
     /// 签发128位签名中间证书
     ///
+    /// * csr 证书签名申请
     /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
-    /// * bits 以比特为单位的数字长度
-    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * msb_ca 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
     /// * odd 如果' true '，则生成的数字为奇数
     /// * sk 签发证书用的私钥
-    /// * pk 待签发证书的公钥
-    /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-    ///   CN字段用于普通名称，例如DNS名称
     /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
     /// * not_before_day 证书上的有效期在指定天之后
     /// * not_after_day 证书上的有效期在指定天之前
@@ -401,15 +387,11 @@ impl Cert {
 
     /// 签发256位签名中间证书
     ///
+    /// * csr 证书签名申请
     /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
-    /// * bits 以比特为单位的数字长度
-    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * msb_ca 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
     /// * odd 如果' true '，则生成的数字为奇数
     /// * sk 签发证书用的私钥
-    /// * pk 待签发证书的公钥
-    /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-    ///   CN字段用于普通名称，例如DNS名称
     /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
     /// * not_before_day 证书上的有效期在指定天之后
     /// * not_after_day 证书上的有效期在指定天之前
@@ -446,7 +428,7 @@ impl Cert {
     ///
     /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
     /// * bits 以比特为单位的数字长度
-    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * msb_ca 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
     /// * odd 如果' true '，则生成的数字为奇数
     /// * sk 签发证书用的私钥
     /// * pk 待签发证书的公钥
@@ -524,8 +506,7 @@ impl Cert {
     /// 签发128位签名用户证书
     ///
     /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
-    /// * bits 以比特为单位的数字长度
-    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * msb_ca 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
     /// * odd 如果' true '，则生成的数字为奇数
     /// * sk 签发证书用的私钥
     /// * pk 待签发证书的公钥
@@ -569,8 +550,7 @@ impl Cert {
     /// 签发256位签名用户证书
     ///
     /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
-    /// * bits 以比特为单位的数字长度
-    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * msb_ca 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
     /// * odd 如果' true '，则生成的数字为奇数
     /// * sk 签发证书用的私钥
     /// * pk 待签发证书的公钥
@@ -613,15 +593,11 @@ impl Cert {
 
     /// 签发用户证书
     ///
+    /// * csr 证书签名申请
     /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
-    /// * bits 以比特为单位的数字长度
-    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * msb_ca 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
     /// * odd 如果' true '，则生成的数字为奇数
     /// * sk 签发证书用的私钥
-    /// * pk 待签发证书的公钥
-    /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-    ///   CN字段用于普通名称，例如DNS名称
     /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
     /// * not_before_day 证书上的有效期在指定天之后
     /// * not_after_day 证书上的有效期在指定天之前
@@ -658,15 +634,11 @@ impl Cert {
 
     /// 签发128位签名用户证书
     ///
+    /// * csr 证书签名申请
     /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
-    /// * bits 以比特为单位的数字长度
-    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * msb_ca 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
     /// * odd 如果' true '，则生成的数字为奇数
     /// * sk 签发证书用的私钥
-    /// * pk 待签发证书的公钥
-    /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-    ///   CN字段用于普通名称，例如DNS名称
     /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
     /// * not_before_day 证书上的有效期在指定天之后
     /// * not_after_day 证书上的有效期在指定天之前
@@ -701,15 +673,11 @@ impl Cert {
 
     /// 签发256位签名用户证书
     ///
+    /// * csr 证书签名申请
     /// * op_x509 根证书。待签发证书如果自签名则为None，否则不能为None
-    /// * bits 以比特为单位的数字长度
-    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * msb_ca 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
     /// * odd 如果' true '，则生成的数字为奇数
     /// * sk 签发证书用的私钥
-    /// * pk 待签发证书的公钥
-    /// * subject_info 证书的主题信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-    /// * issuer_info 证书的发布者信息，在构建证书时，使用openssl等命令行工具时通常使用C、ST和O选项。CN字段用于通用名称，比如DNS名称
-    ///   CN字段用于普通名称，例如DNS名称
     /// * version 证书版本。版本是零索引的，也就是说，对应于X.509标准版本3的证书应该将“2”传递给该方法。
     /// * not_before_day 证书上的有效期在指定天之后
     /// * not_after_day 证书上的有效期在指定天之前
@@ -1297,15 +1265,20 @@ impl Extensions {
 }
 
 /// Options for the most significant bits of a randomly generated `BigNum`.
+/// 随机生成' BigNum '的最有效位的选项
 pub enum MsbOptionCA {
     /// The most significant bit of the number may be 0.
+    /// 该数字的最高有效位可能为0
     One,
     /// The most significant bit of the number must be 1.
+    /// 这个数字的最高有效位必须是1
     MaybeZero,
     /// The most significant two bits of the number must be 1.
+    /// 这个数字的最有效两位必须是1
     ///
     /// The number of bits in the product of two such numbers will always be exactly twice the
     /// number of bits in the original numbers.
+    /// 两个这样的数的乘积的位数总是原始数位数的两倍
     TwoOnes,
 }
 
@@ -1313,7 +1286,7 @@ pub enum MsbOptionCA {
 pub struct SerialNumber {
     /// * bits 以比特为单位的数字长度，用于生成一个bits位奇数随机数
     bits: i32,
-    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * msb_ca 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
     msb_ca: MsbOptionCA,
     /// * odd 如果' true '，则生成的数字为奇数
     odd: bool,
@@ -1323,7 +1296,7 @@ impl SerialNumber {
     /// 生成序列号对象
     ///
     /// * bits 以比特为单位的数字长度
-    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * msb_ca 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
     /// * odd 如果' true '，则生成的数字为奇数
     pub fn new(bits: i32, msb_ca: MsbOptionCA, odd: bool) -> SerialNumber {
         SerialNumber { bits, msb_ca, odd }
@@ -1334,7 +1307,7 @@ impl SerialNumber {
     /// 数字表示法ASN.1中的整数可能包括BigNum、int64或uint64
     ///
     /// * bits 以比特为单位的数字长度
-    /// * msb 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
+    /// * msb_ca 期望的最高位属性，是随机生成' BigNum '的最有效位的选项
     /// * odd 如果' true '，则生成的数字为奇数
     ///
     /// # Examples
@@ -1451,5 +1424,200 @@ impl X509NameInfo {
             _ => {}
         }
         Ok(x509_name_builder.build())
+    }
+}
+
+/// Pkcs #12
+pub struct P12 {
+    /// 证书。如果为根证书，则`stacks`为空
+    x509: X509,
+    /// 签发`x509`证书的私钥
+    pkey: PKey<Private>,
+    /// 证书链
+    /// 该链应该包含从`x509`证书到受信任的根证书所需的所有证书
+    chain: Vec<X509>,
+    /// 密码保护。生成的p12文件提取需要密码
+    password: String,
+}
+
+pub trait P12Handler<String> {
+    /// 构建`P12`对象
+    fn new(
+        x509: X509,
+        pkey: PKey<Private>,
+        chain: Vec<X509>,
+        password: String,
+    ) -> GeorgeResult<P12>;
+
+    /// 读取`P12`对象
+    ///
+    /// * bytes `pkcs12.p12`der字节数组
+    fn load(password: String, bytes: Vec<u8>) -> GeorgeResult<P12>;
+
+    /// 读取`P12`对象
+    ///
+    /// * filepath `pkcs12.p12`文件路径
+    fn load_file<P: AsRef<Path>>(password: String, filepath: P) -> GeorgeResult<P12>;
+}
+
+impl P12Handler<&str> for P12 {
+    fn new(x509: X509, pkey: PKey<Private>, chain: Vec<X509>, password: &str) -> GeorgeResult<P12> {
+        if chain.len() == 0 || Cert::verify_cert_chain(chain.clone(), x509.clone())? {
+            Ok(P12 {
+                x509,
+                pkey,
+                chain,
+                password: password.to_string(),
+            })
+        } else {
+            Err(Errs::str("x509 verify cert chain failed!"))
+        }
+    }
+
+    fn load(password: &str, bytes: Vec<u8>) -> GeorgeResult<P12> {
+        match Pkcs12::from_der(bytes.as_slice()) {
+            Ok(res) => match res.parse(password) {
+                Ok(res) => {
+                    let mut chain: Vec<X509> = vec![];
+                    match res.chain {
+                        Some(res) => {
+                            for x509 in res.into_iter() {
+                                chain.push(x509)
+                            }
+                        }
+                        None => {}
+                    }
+                    Ok(P12 {
+                        x509: res.cert,
+                        pkey: res.pkey,
+                        chain,
+                        password: password.to_string(),
+                    })
+                }
+                Err(err) => Err(Errs::strs("Pkcs12 parse", err)),
+            },
+            Err(err) => Err(Errs::strs("Pkcs12 from_der", err)),
+        }
+    }
+
+    fn load_file<P: AsRef<Path>>(password: &str, filepath: P) -> GeorgeResult<P12> {
+        match read(filepath) {
+            Ok(bytes) => P12::load(password, bytes),
+            Err(err) => Err(Errs::strs("read", err)),
+        }
+    }
+}
+
+impl P12Handler<String> for P12 {
+    fn new(
+        x509: X509,
+        pkey: PKey<Private>,
+        chain: Vec<X509>,
+        password: String,
+    ) -> GeorgeResult<P12> {
+        if chain.len() == 0 || Cert::verify_cert_chain(chain.clone(), x509.clone())? {
+            Ok(P12 {
+                x509,
+                pkey,
+                chain,
+                password,
+            })
+        } else {
+            Err(Errs::str("x509 verify cert chain failed!"))
+        }
+    }
+
+    fn load(password: String, bytes: Vec<u8>) -> GeorgeResult<P12> {
+        match Pkcs12::from_der(bytes.as_slice()) {
+            Ok(res) => match res.parse(password.as_str()) {
+                Ok(res) => {
+                    let mut chain: Vec<X509> = vec![];
+                    match res.chain {
+                        Some(res) => {
+                            for x509 in res.into_iter() {
+                                chain.push(x509)
+                            }
+                        }
+                        None => {}
+                    }
+                    Ok(P12 {
+                        x509: res.cert,
+                        pkey: res.pkey,
+                        chain,
+                        password,
+                    })
+                }
+                Err(err) => Err(Errs::strs("Pkcs12 parse", err)),
+            },
+            Err(err) => Err(Errs::strs("Pkcs12 from_der", err)),
+        }
+    }
+
+    fn load_file<P: AsRef<Path>>(password: String, filepath: P) -> GeorgeResult<P12> {
+        match read(filepath) {
+            Ok(bytes) => P12::load(password, bytes),
+            Err(err) => Err(Errs::strs("read", err)),
+        }
+    }
+}
+
+impl P12 {
+    /// 构建`PKCS #12`对象
+    pub fn pkcs12(&self) -> GeorgeResult<Pkcs12> {
+        match self
+            .x509
+            .issuer_name()
+            .entries_by_nid(Nid::COMMONNAME)
+            .next()
+        {
+            Some(name_entry) => match name_entry.data().as_utf8() {
+                Ok(openssl_string) => {
+                    let friendly_name = openssl_string.as_ref();
+                    // 为受保护的pkcs12证书创建新的构建器，使用OpenSSL库的默认值
+                    let mut pkcs12_builder = Pkcs12::builder();
+                    if !self.chain.is_empty() {
+                        let mut chain: Stack<X509>;
+                        match Stack::new() {
+                            Ok(res) => chain = res,
+                            Err(err) => return Err(Errs::strs("Stack new", err)),
+                        }
+                        for x509 in self.chain.iter() {
+                            match chain.push(x509.clone()) {
+                                Err(err) => return Err(Errs::strs("chain push", err)),
+                                _ => {}
+                            }
+                        }
+                        pkcs12_builder.ca(chain);
+                    }
+                    match pkcs12_builder.build(
+                        self.password.as_str(),
+                        friendly_name,
+                        self.pkey.as_ref(),
+                        self.x509.as_ref(),
+                    ) {
+                        Ok(res) => Ok(res),
+                        Err(err) => Err(Errs::strs("sign pkcs12", err)),
+                    }
+                }
+                Err(err) => Err(Errs::strs("name entry data as utf8", err)),
+            },
+            None => Err(Errs::str("Cert have no common name!")),
+        }
+    }
+
+    /// 存储`PKCS #12`对象
+    ///
+    /// * pkey 生成该证书的私钥
+    /// * password 用于加密密钥和证书的密码
+    /// * filepath `pkcs12.p12`文件路径
+    pub fn save<P: AsRef<Path>>(&self, filepath: P) -> GeorgeResult<()> {
+        let pkcs12 = self.pkcs12()?;
+        match pkcs12.to_der() {
+            Ok(v8s) => {
+                Filer::write_force(filepath, v8s)?;
+                Ok(())
+            }
+            Err(err) => Err(Errs::strs("pkcs12 to_der", err)),
+        }
     }
 }

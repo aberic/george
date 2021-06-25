@@ -14,11 +14,14 @@
 
 #[cfg(test)]
 mod ca {
-    use crate::cryptos::ca::{MsbOptionCA, X509NameInfo, CSR, SAN};
+    use crate::cryptos::ca::{MsbOptionCA, P12Handler, X509NameInfo, CSR, P12, SAN};
+    use crate::cryptos::rsa::RSAStoreKey;
     use crate::cryptos::Cert;
     use crate::cryptos::ECDSA;
     use crate::cryptos::RSA;
     use openssl::hash::MessageDigest;
+    use openssl::nid::Nid;
+    use openssl::pkcs12::Pkcs12;
 
     #[test]
     fn cert_test() {
@@ -536,5 +539,119 @@ mod ca {
         )
         .unwrap());
         assert!(!Cert::verify_cert_chain(vec![cert_root.clone()], inter_root2.clone()).unwrap());
+    }
+
+    #[test]
+    fn cert_parse_test() {
+        let rsa_root = RSA::new(2048).unwrap();
+        let subject_info = X509NameInfo::new_cus(
+            "CNRoot".to_string(),
+            "CN".to_string(),
+            Some("org".to_string()),
+            Some("org unit".to_string()),
+            Some("loc".to_string()),
+            Some("pro".to_string()),
+            Some("sa".to_string()),
+        )
+        .unwrap();
+        let san = Some(SAN {
+            dns_names: vec!["tt.cn".to_string()],
+            email_addresses: vec!["email@tt.cn".to_string()],
+            ip_addresses: vec!["128.0.9.1".to_string()],
+            uris: vec!["uri_root.cn".to_string()],
+        });
+        let root = Cert::sign_root_256(
+            MsbOptionCA::MaybeZero,
+            true,
+            rsa_root.sk(),
+            rsa_root.pk(),
+            subject_info.as_ref(),
+            2,
+            0,
+            365,
+            san,
+            MessageDigest::sha384(),
+        )
+        .unwrap();
+        for entry in root.x509.issuer_name().entries() {
+            println!("object = {:#?}", entry.object());
+            println!("data = {:#?}", entry.data());
+        }
+        println!(
+            "entries = {:#?}",
+            root.x509
+                .issuer_name()
+                .entries_by_nid(Nid::COMMONNAME)
+                .next()
+                .unwrap()
+                .data()
+                .as_utf8()
+                .unwrap()
+                .to_string()
+        );
+    }
+
+    #[test]
+    fn cert_sign_pkcs12_test() {
+        let rsa_root = RSA::new(2048).unwrap();
+        let subject_info = X509NameInfo::new_cus(
+            "CNRoot".to_string(),
+            "CN".to_string(),
+            Some("org".to_string()),
+            Some("org unit".to_string()),
+            Some("loc".to_string()),
+            Some("pro".to_string()),
+            Some("sa".to_string()),
+        )
+        .unwrap();
+        let san = Some(SAN {
+            dns_names: vec!["tt.cn".to_string()],
+            email_addresses: vec!["email@tt.cn".to_string()],
+            ip_addresses: vec!["128.0.9.1".to_string()],
+            uris: vec!["uri_root.cn".to_string()],
+        });
+        let root = Cert::sign_root_256(
+            MsbOptionCA::MaybeZero,
+            true,
+            rsa_root.sk(),
+            rsa_root.pk(),
+            subject_info.as_ref(),
+            2,
+            0,
+            365,
+            san,
+            MessageDigest::sha384(),
+        )
+        .unwrap();
+        root.save_pem("src/test/crypto/ca/pkcs12/cert.pem").unwrap();
+        RSA::store(
+            rsa_root.sk_pkcs1_pem().unwrap(),
+            "src/test/crypto/ca/pkcs12/key.pem",
+        )
+        .unwrap();
+        let pkey = rsa_root.sk();
+        let p12 = P12::new(root.x509.clone(), pkey.clone(), vec![], "123").unwrap();
+        let pkcs12 = p12.pkcs12().unwrap();
+        let der = pkcs12.to_der().unwrap();
+
+        let pkcs12 = Pkcs12::from_der(&der).unwrap();
+        let parsed = pkcs12.parse("123").unwrap();
+
+        assert_eq!(
+            &*parsed.cert.digest(MessageDigest::sha1()).unwrap(),
+            &*root.x509.digest(MessageDigest::sha1()).unwrap()
+        );
+        assert!(parsed.pkey.public_eq(&pkey));
+
+        p12.save("src/test/crypto/ca/pkcs12/root.p12").unwrap();
+        let p12 = P12::load_file("123", "src/test/crypto/ca/pkcs12/root.p12").unwrap();
+        let pkcs12 = p12.pkcs12().unwrap();
+        let parsed = pkcs12.parse("123").unwrap();
+
+        assert_eq!(
+            &*parsed.cert.digest(MessageDigest::sha1()).unwrap(),
+            &*root.x509.digest(MessageDigest::sha1()).unwrap()
+        );
+        assert!(parsed.pkey.public_eq(&pkey));
     }
 }
