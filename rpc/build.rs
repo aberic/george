@@ -16,13 +16,13 @@ fn comm() -> Result<(), std::io::Error> {
     tonic_build::configure()
         .build_server(false)
         .build_client(true)
-        .out_dir("src/comm")
+        .out_dir("src/protos/utils")
         // .extern_path(".comm", "crate::comm::comm")
         .compile(
             &[
-                "rust/comm/request.proto",
-                "rust/comm/response.proto",
-                "rust/comm/timestamp.proto",
+                "utils/request.proto",
+                "utils/response.proto",
+                "utils/timestamp.proto",
             ],
             &["../protos"],
         )?;
@@ -31,32 +31,57 @@ fn comm() -> Result<(), std::io::Error> {
 
 fn db() -> Result<(), std::io::Error> {
     tonic_build::configure()
-        .build_server(false)
+        .build_server(true)
         .build_client(true)
-        .out_dir("src/db")
-        .extern_path(".comm", "crate::comm::comm")
+        .disable_package_emission()
+        .out_dir("src/protos/db")
+        // .extern_path(".utils", "super")
         .compile(
             &[
-                "database.proto",
-                "disk.proto",
-                "index.proto",
-                "master.proto",
-                "memory.proto",
-                "page.proto",
-                "service.proto",
-                "user.proto",
-                "view.proto",
-                "request.proto",
-                "response.proto",
-                "timestamp.proto",
+                "db/database.proto",
+                "db/disk.proto",
+                "db/index.proto",
+                "db/master.proto",
+                "db/memory.proto",
+                "db/page.proto",
+                "db/service.proto",
+                "db/user.proto",
+                "db/view.proto",
             ],
-            &["../protos/rust/db", "../protos/rust/comm"],
+            &["../protos"],
+        )?;
+    Ok(())
+}
+
+fn chain() -> Result<(), std::io::Error> {
+    tonic_build::configure()
+        .build_server(true)
+        .build_client(true)
+        .out_dir("src/protos/chain")
+        // .extern_path(".comm", "crate::comm::comm")
+        .compile(
+            &[
+                "chain/block.proto",
+                "chain/contract.proto",
+                "chain/data.proto",
+                "chain/genesis.proto",
+                "chain/ledger.proto",
+                "chain/organization.proto",
+                "chain/peer.proto",
+                "chain/policy.proto",
+                "chain/rwset.proto",
+                "chain/service.proto",
+                "chain/sign.proto",
+                "chain/transaction.proto",
+            ],
+            &["../protos"],
         )?;
     Ok(())
 }
 
 fn main() -> Result<(), std::io::Error> {
     comm()?;
-    // db()?;
+    db()?;
+    chain()?;
     Ok(())
 }

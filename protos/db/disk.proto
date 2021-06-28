@@ -20,7 +20,7 @@ option java_outer_classname = "DiskProto";
 
 package db;
 
-import "response.proto";
+import "utils/response.proto";
 
 // 请求插入数据
 message RequestDiskInto {
@@ -54,7 +54,7 @@ message RequestDiskIOut {
 
 // 返回获取数据
 message ResponseDiskOut {
-  comm.Status status = 1;
+  utils.Status status = 1;
   string msg_err = 2;
   bytes value = 3;
 }
@@ -80,7 +80,7 @@ message RequestDiskSelect {
 
 // 返回查询数据
 message ResponseDiskSelect {
-  comm.Status status = 1;
+  utils.Status status = 1;
   string msg_err = 2;
   // 查询数据
   DiskSelected selected = 3;
@@ -112,7 +112,7 @@ message RequestDiskDelete {
 
 // 返回查询数据
 message ResponseDiskDelete {
-  comm.Status status = 1;
+  utils.Status status = 1;
   string msg_err = 2;
   // 删除数据
   DiskDeleted deleted = 3;

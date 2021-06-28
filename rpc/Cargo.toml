@@ -14,8 +14,10 @@ build = "build.rs"
 
 [dependencies]
 comm = { path = "../comm", version = "0.1.0" }
-tonic = { version = "0.4.3", features = ["tls"]  }
+db = { path = "../db", version = "0.1.0" }
+tonic = { version = "0.4.3", features = ["tls", "prost"]  }
 prost = "0.7"
+futures = { version = "0.3", default-features = false, features = ["alloc"] }
 
 [build-dependencies]
 tonic-build = "0.4.2"

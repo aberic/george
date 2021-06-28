@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020. Aberic - All Rights Reserved.
+ * Copyright (c) 2021. Aberic - All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,26 +12,12 @@
  * limitations under the License.
  */
 
-syntax = "proto3";
+pub mod child;
+pub mod results;
+pub mod trans;
 
-option go_package = "github.com/george/protocols/db";
-option java_package = "cn.aberic.george.protocols.db";
-option java_outer_classname = "MasterProto";
+pub struct Children;
 
-package db;
+pub struct Trans;
 
-import "timestamp.proto";
-import "database.proto";
-import "page.proto";
-
-// 主管员
-message Master {
-  // 默认缓存页名称
-  string default_page_name = 1;
-  // 缓存页集合
-  repeated Page pages = 2;
-  // 库集合
-  repeated Database databases = 3;
-  // 创建时间
-  comm.Timestamp create_time = 4;
-}
+pub struct Results;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020. Aberic - All Rights Reserved.
+ * Copyright (c) 2021. Aberic - All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,23 +12,6 @@
  * limitations under the License.
  */
 
-syntax = "proto3";
+pub use super::utils::*;
 
-option go_package = "github.com/george/protocols/chain";
-option java_package = "cn.aberic.george.protocols.chain";
-option java_outer_classname = "SignProto";
-
-package chain;
-
-// 签名印章，签名者信息集合
-message Signet {
-  repeated Signer signers = 2;
-}
-
-// 签名者信息
-message Signer {
-  // 签名者id，如o1、p1、u1
-  string id = 1;
-  // sm2签名结果
-  string signature = 2;
-}
+pub mod db;

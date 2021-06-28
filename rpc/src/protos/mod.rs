@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020. Aberic - All Rights Reserved.
+ * Copyright (c) 2021. Aberic - All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,27 +12,6 @@
  * limitations under the License.
  */
 
-syntax = "proto3";
-
-option go_package = "github.com/george/protocols/chain";
-option java_package = "cn.aberic.george.protocols.chain";
-option java_outer_classname = "ContractProto";
-
-package chain;
-
-// 合约
-message ContractBase {
-  // 合约id
-  string id = 1;
-  // 合约版本
-  string version = 2;
-}
-
-// 合约
-message Contract {
-  ContractBase base = 1;
-  // 合约名称
-  string name = 2;
-  // 合约描述
-  string description = 3;
-}
+pub mod chain;
+pub mod db;
+pub mod utils;

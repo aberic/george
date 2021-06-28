@@ -12,14 +12,15 @@
  * limitations under the License.
  */
 
-pub mod chain;
-pub mod comm;
-pub mod db;
+pub mod client;
+pub mod protos;
+pub mod server;
+pub mod tools;
 
 #[cfg(test)]
 mod rpc_build {
     #[test]
-    fn run() {
+    fn exec() {
         assert_eq!(2 + 2, 4);
     }
 }

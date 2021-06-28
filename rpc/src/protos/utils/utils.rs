@@ -1,7 +1,7 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Request {}
+pub struct Req {}
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Response {
+pub struct Resp {
     #[prost(enumeration = "Status", tag = "1")]
     pub status: i32,
     #[prost(string, tag = "2")]

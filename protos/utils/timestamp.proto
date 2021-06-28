@@ -14,10 +14,9 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/george/protocols/comm";
-option java_package = "cn.aberic.george.protocols.comm";
-option java_outer_classname = "RequestProto";
+package utils;
 
-package comm;
-
-message Request {}
+message Timestamp {
+  int64 seconds = 1;
+  int32 nanos = 2;
+}

@@ -21,9 +21,9 @@ option java_outer_classname = "ServiceProto";
 package chain;
 
 import "chain/block.proto";
-import "comm/response.proto";
+import "utils/response.proto";
 
 service Blocks {
-  rpc add(Block) returns (comm.Response);
+  rpc add(Block) returns (utils.Resp);
   rpc get(RequestBlock) returns (Block);
 }

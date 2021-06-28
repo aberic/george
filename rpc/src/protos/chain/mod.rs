@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020. Aberic - All Rights Reserved.
+ * Copyright (c) 2021. Aberic - All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,18 +12,6 @@
  * limitations under the License.
  */
 
-syntax = "proto3";
+pub use super::utils::*;
 
-option go_package = "github.com/george/protocols/db";
-option java_package = "cn.aberic.george.protocols.db";
-option java_outer_classname = "UserProto";
-
-package db;
-
-// 请求登录数据库
-message RequestLogin {
-  // 名称
-  string name = 1;
-  // 密码
-  string pass = 2;
-}
+pub mod chain;

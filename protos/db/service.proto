@@ -20,70 +20,70 @@ option java_outer_classname = "ServiceProto";
 
 package db;
 
-import "user.proto";
-import "page.proto";
-import "database.proto";
-import "view.proto";
-import "index.proto";
-import "disk.proto";
-import "memory.proto";
-import "request.proto";
-import "response.proto";
+import "db/user.proto";
+import "db/page.proto";
+import "db/database.proto";
+import "db/view.proto";
+import "db/index.proto";
+import "db/disk.proto";
+import "db/memory.proto";
+import "utils/request.proto";
+import "utils/response.proto";
 
 service UserService {
-  rpc login(RequestLogin) returns (comm.Response);
+  rpc login(RequestLogin) returns (utils.Resp);
 }
 
 service PageService {
-  rpc list(comm.Request) returns (PageList);
-  rpc create(RequestPageCreate) returns (comm.Response);
-  rpc modify(RequestPageModify) returns (comm.Response);
+  rpc list(utils.Req) returns (PageList);
+  rpc create(RequestPageCreate) returns (utils.Resp);
+  rpc modify(RequestPageModify) returns (utils.Resp);
   rpc info(RequestPageInfo) returns (ResponsePageInfo);
-  rpc remove(RequestPageRemove) returns (comm.Response);
+  rpc remove(RequestPageRemove) returns (utils.Resp);
 }
 
 service DatabaseService {
-  rpc list(comm.Request) returns (DatabaseList);
-  rpc create(RequestDatabaseCreate) returns (comm.Response);
-  rpc modify(RequestDatabaseModify) returns (comm.Response);
+  rpc list(utils.Req) returns (DatabaseList);
+  rpc create(RequestDatabaseCreate) returns (utils.Resp);
+  rpc modify(RequestDatabaseModify) returns (utils.Resp);
   rpc info(RequestDatabaseInfo) returns (ResponseDatabaseInfo);
-  rpc remove(RequestDatabaseRemove) returns (comm.Response);
+  rpc remove(RequestDatabaseRemove) returns (utils.Resp);
 }
 
 service ViewService {
   rpc list(RequestViewList) returns (ViewList);
-  rpc create(RequestViewCreate) returns (comm.Response);
-  rpc modify(RequestViewModify) returns (comm.Response);
+  rpc create(RequestViewCreate) returns (utils.Resp);
+  rpc modify(RequestViewModify) returns (utils.Resp);
   rpc info(RequestViewInfo) returns (ResponseViewInfo);
-  rpc remove(RequestViewRemove) returns (comm.Response);
-  rpc archive(RequestViewArchive) returns (comm.Response);
+  rpc remove(RequestViewRemove) returns (utils.Resp);
+  rpc archive(RequestViewArchive) returns (utils.Resp);
   rpc record(RequestViewRecord) returns (ResponseViewRecord);
   rpc records(RequestViewRecords) returns (ResponseViewRecords);
 }
 
 service IndexService {
   rpc list(RequestIndexList) returns (IndexList);
-  rpc create(RequestIndexCreate) returns (comm.Response);
+  rpc create(RequestIndexCreate) returns (utils.Resp);
   rpc info(RequestIndexInfo) returns (ResponseIndexInfo);
 }
 
 service DiskService {
-  rpc put(RequestDiskInto) returns (comm.Response);
-  rpc set(RequestDiskInto) returns (comm.Response);
+  rpc put(RequestDiskInto) returns (utils.Resp);
+  rpc set(RequestDiskInto) returns (utils.Resp);
   rpc get(RequestDiskOut) returns (ResponseDiskOut);
   rpc get_by_index(RequestDiskIOut) returns (ResponseDiskOut);
-  rpc remove(RequestDiskRemove) returns (comm.Response);
+  rpc remove(RequestDiskRemove) returns (utils.Resp);
   rpc select(RequestDiskSelect) returns (ResponseDiskSelect);
   rpc delete(RequestDiskDelete) returns (ResponseDiskDelete);
 }
 
 service MemoryService {
-  rpc put(RequestMemoryInto) returns (comm.Response);
-  rpc set(RequestMemoryInto) returns (comm.Response);
+  rpc put(RequestMemoryInto) returns (utils.Resp);
+  rpc set(RequestMemoryInto) returns (utils.Resp);
   rpc get(RequestMemoryOut) returns (ResponseMemoryOut);
-  rpc remove(RequestMemoryRemove) returns (comm.Response);
-  rpc put_by_page(RequestMemoryPInto) returns (comm.Response);
-  rpc set_by_page(RequestMemoryPInto) returns (comm.Response);
+  rpc remove(RequestMemoryRemove) returns (utils.Resp);
+  rpc put_by_page(RequestMemoryPInto) returns (utils.Resp);
+  rpc set_by_page(RequestMemoryPInto) returns (utils.Resp);
   rpc get_by_page(RequestMemoryPOut) returns (ResponseMemoryPOut);
-  rpc remove_by_page(RequestMemoryPRemove) returns (comm.Response);
+  rpc remove_by_page(RequestMemoryPRemove) returns (utils.Resp);
 }

@@ -14,9 +14,9 @@
 
 syntax = "proto3";
 
-package comm;
+package utils;
 
-message Response {
+message Resp {
     Status status = 1;
     string msg_err = 2;
 }

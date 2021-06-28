@@ -20,7 +20,7 @@ option java_outer_classname = "BlockProto";
 
 package chain;
 
-import "comm/timestamp.proto";
+import "utils/timestamp.proto";
 import "chain/transaction.proto";
 import "chain/sign.proto";
 
@@ -45,7 +45,7 @@ message BlockHeader {
   // 当前区块hash，hash值来自区块数据中交易的默克尔树
   string hash = 3;
   // 区块打包时间
-  comm.Timestamp timestamp = 4;
+  utils.Timestamp timestamp = 4;
 }
 
 // 区块体
