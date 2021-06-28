@@ -1,0 +1,123 @@
+/*
+ * Copyright (c) 2020. Aberic - All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+option go_package = "github.com/george/protocols/db";
+option java_package = "cn.aberic.george.protocols.db";
+option java_outer_classname = "IndexProto";
+
+package db;
+
+import "timestamp.proto";
+import "response.proto";
+
+// 索引
+message Index {
+  // 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
+  string name = 1;
+  // 存储引擎类型
+  Engine engine = 2;
+  // 是否主键，主键也是唯一索引，即默认列表依赖索引
+  bool primary = 3;
+  // 是否唯一索引
+  bool  unique = 4;
+  // 是否允许为空
+  bool null = 5;
+  // 索引值类型
+  KeyType key_type = 6;
+  // 创建时间
+  comm.Timestamp create_time = 7;
+}
+
+// 索引集合
+message IndexList {
+  repeated Index indexes = 1;
+}
+
+// 请求索引集合
+message RequestIndexList {
+  // 数据库名称
+  string database_name = 1;
+  // 视图名称
+  string view_name = 2;
+}
+
+// 请求新建视图
+message RequestIndexCreate {
+  // 数据库名称
+  string database_name = 1;
+  // 视图名称
+  string view_name = 2;
+  // 索引名，新插入的数据将会尝试将数据对象转成json，并将json中的`index_name`作为索引存入
+  string name = 3;
+  // 存储引擎类型
+  Engine engine = 4;
+  // 是否主键，主键也是唯一索引，即默认列表依赖索引
+  bool primary = 5;
+  // 是否唯一索引
+  bool  unique = 6;
+  // 是否允许为空
+  bool null = 7;
+  // 索引值类型
+  KeyType key_type = 8;
+}
+
+// 请求视图信息
+message RequestIndexInfo {
+  // 数据库名称
+  string database_name = 1;
+  // 视图名称
+  string view_name = 2;
+  // 名称
+  string name = 3;
+}
+
+// 请求视图信息
+message ResponseIndexInfo {
+  comm.Status status = 1;
+  string msg_err = 2;
+  Index index = 3;
+}
+
+// 存储引擎类型
+enum Engine{
+  // 占位
+  None = 0;
+  // 卷宗存储引擎(单文件索引存储-64位)，最合适用于自增
+  Increment = 1;
+  // 卷宗存储引擎(单文件索引存储-64位)，最合适用于不重复u64
+  Sequence = 2;
+  // 卷宗存储引擎(单文件索引存储-32位)
+  Disk = 3;
+  // 块存储引擎(区块链索引存储-32位)
+  Block = 4;
+}
+
+/// 索引值类型
+enum KeyType {
+  // 字符串索引
+  String = 0;
+  // 无符号64位整型
+  UInt = 1;
+  // 有符号64位整型
+  Int = 2;
+  // 有符号64位浮点类型
+  Float = 3;
+  // bool类型
+  Bool = 4;
+  // 不支持类型
+  Nonsupport = 5;
+}
+
