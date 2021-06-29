@@ -54,6 +54,21 @@ impl Init {
             .expect("It's not gonna happen!")
     }
 
+    pub fn tls(&self) -> bool {
+        match self.conf.server().unwrap().tls {
+            Some(res) => res,
+            None => false,
+        }
+    }
+
+    pub fn server_key_unwrap(&self) -> String {
+        self.conf.server().unwrap().tls_key.unwrap()
+    }
+
+    pub fn server_cert_unwrap(&self) -> String {
+        self.conf.server().unwrap().tls_cert.unwrap()
+    }
+
     pub fn db_unwrap(&self) -> ConfigDB {
         self.conf.db().expect("It's not gonna happen!")
     }

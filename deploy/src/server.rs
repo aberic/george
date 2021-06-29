@@ -16,7 +16,22 @@ use crate::ConfigServer;
 
 impl ConfigServer {
     pub fn default() -> ConfigServer {
-        ConfigServer { port: Some(9219) }
+        ConfigServer {
+            tls: None,
+            tls_key: None,
+            tls_cert: None,
+            timeout: None,
+            concurrency_limit_per_connection: None,
+            tcp_nodelay: None,
+            tcp_keepalive: None,
+            http2_keepalive_interval: None,
+            http2_keepalive_timeout: None,
+            initial_connection_window_size: None,
+            initial_stream_window_size: None,
+            max_concurrent_streams: None,
+            max_frame_size: None,
+            port: Some(9219),
+        }
     }
 
     pub(crate) fn check(&mut self) {

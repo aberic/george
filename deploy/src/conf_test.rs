@@ -37,6 +37,10 @@ mod test {
         let mut conf = Conf::from("src/example/conf_with_no_server.yaml").unwrap();
         conf.check();
         println!("conf_with_no_server = {:#?}", conf);
+
+        let mut conf = Conf::from("src/example/conf_tls.yaml").unwrap();
+        conf.check();
+        println!("conf_tls = {:#?}", conf);
     }
 
     #[test]

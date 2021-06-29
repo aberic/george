@@ -94,6 +94,53 @@ pub struct ConfigDB {
 /// 该配置信息可通过指定路径的文件中进行读取，文件格式支持yaml
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct ConfigServer {
+    /// 是否开启`TLS`，默认`false`
+    pub tls: Option<bool>,
+    /// 服务端`key`，开启`TLS`后生效
+    pub tls_key: Option<String>,
+    /// 服务端`cert`，开启`TLS`后生效
+    pub tls_cert: Option<String>,
+    /// 为所有请求处理程序设置超时，单位secs
+    pub timeout: Option<u32>,
+    /// 设置应用于每个连接入站请求的并发限制
+    pub concurrency_limit_per_connection: Option<u32>,
+    /// 为接受的连接设置`TCP_NODELAY`选项的值。默认启用。
+    ///
+    /// 用户侧使用对于延时敏感型，同时数据传输量比较小的应用建议启用
+    ///
+    /// 服务侧相互同步数据，可依据实际情况选择禁用。
+    /// 数据只有在写缓存中累积到一定量之后，才会被发送出去，这样明显提高了网络利用率（实际传输数据payload与协议头的比例大大提高）。
+    /// 但会增加了延时；与TCP delayed ack这个特性结合，延时基本在40ms左右
+    pub tcp_nodelay: Option<bool>,
+    /// 设置是否在接受的连接上启用`TCP keepalive`消息。
+    /// 如果指定了`None`，表示关闭`keepalive`功能，否则指定的持续时间就是发送`TCP keepalive`探测前的空闲时间。
+    /// 默认是没有`keepalive` (None)
+    pub tcp_keepalive: Option<u32>,
+    /// 设置是否在接受的连接上启用HTTP2 Ping帧。<p>
+    /// 如果指定了None，表示禁用HTTP2 keepalive，否则指定的持续时间为HTTP2 Ping帧之间的时间间隔。<p>
+    /// 接收keepalive ping应答的超时时间可以设置为[Server::http2_keepalive_timeout]。<p>
+    /// 默认是没有HTTP2 keepalive (None)
+    ///
+    /// Keep-alives一般被用来验证远端连接是否有效。
+    /// 如果该连接上没有其他数据被传输，或者更高level 的 keep-alives被传送，keep-alives 在每个KeepAliveTime被发送。
+    /// 如果没有收到 keep-alive 应答，keep-alive 将在每 KeepAliveInterval 秒重发一次。KeepAliveInterval 默认为5秒
+    pub http2_keepalive_interval: Option<u32>,
+    /// 设置接收keepalive ping应答的超时时间。
+    /// 如果在超时时间内没有确认ping，连接将被关闭。如果http2_keep_alive_interval被禁用，则不执行任何操作。
+    /// 默认值是20秒
+    pub http2_keepalive_timeout: Option<u32>,
+    /// 设置HTTP2的最大连接级流控制，默认是65535
+    pub initial_connection_window_size: Option<u32>,
+    /// 表明发送方的流级别的流量控制的初始窗口大小（以字节为单位）。
+    /// 初始值是2^16-1(65535)字节。
+    /// 这个设置影响所有流的窗口大小。
+    /// 超过65535的窗口大小必选被视为类型是FLOW_CONTROL_ERROR的连接错误
+    pub initial_stream_window_size: Option<u32>,
+    /// 限制对等端流的最大并发量，默认不限制
+    pub max_concurrent_streams: Option<u32>,
+    /// 设置HTTP2使用的最大帧大小。
+    /// 如果未设置，将默认从底层传输。
+    pub max_frame_size: Option<u32>,
     /// 服务端口号
     pub port: Option<u16>,
 }
