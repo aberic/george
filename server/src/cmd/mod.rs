@@ -13,6 +13,7 @@
  */
 mod command;
 mod restart;
+mod service;
 mod start;
 mod status;
 mod stop;
@@ -22,3 +23,4 @@ pub struct Start;
 pub struct Restart;
 pub struct Stop;
 pub struct Status;
+pub struct Service;

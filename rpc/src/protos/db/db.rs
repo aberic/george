@@ -718,7 +718,7 @@ pub mod user_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/UserService/login");
+            let path = http::uri::PathAndQuery::from_static("/db.UserService/login");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -779,7 +779,7 @@ pub mod page_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/PageService/list");
+            let path = http::uri::PathAndQuery::from_static("/db.PageService/list");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn create(
@@ -793,7 +793,7 @@ pub mod page_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/PageService/create");
+            let path = http::uri::PathAndQuery::from_static("/db.PageService/create");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn modify(
@@ -807,7 +807,7 @@ pub mod page_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/PageService/modify");
+            let path = http::uri::PathAndQuery::from_static("/db.PageService/modify");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn info(
@@ -821,7 +821,7 @@ pub mod page_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/PageService/info");
+            let path = http::uri::PathAndQuery::from_static("/db.PageService/info");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn remove(
@@ -835,7 +835,7 @@ pub mod page_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/PageService/remove");
+            let path = http::uri::PathAndQuery::from_static("/db.PageService/remove");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -896,7 +896,7 @@ pub mod database_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/DatabaseService/list");
+            let path = http::uri::PathAndQuery::from_static("/db.DatabaseService/list");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn create(
@@ -910,7 +910,7 @@ pub mod database_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/DatabaseService/create");
+            let path = http::uri::PathAndQuery::from_static("/db.DatabaseService/create");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn modify(
@@ -924,7 +924,7 @@ pub mod database_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/DatabaseService/modify");
+            let path = http::uri::PathAndQuery::from_static("/db.DatabaseService/modify");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn info(
@@ -938,7 +938,7 @@ pub mod database_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/DatabaseService/info");
+            let path = http::uri::PathAndQuery::from_static("/db.DatabaseService/info");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn remove(
@@ -952,7 +952,7 @@ pub mod database_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/DatabaseService/remove");
+            let path = http::uri::PathAndQuery::from_static("/db.DatabaseService/remove");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -1013,7 +1013,7 @@ pub mod view_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/ViewService/list");
+            let path = http::uri::PathAndQuery::from_static("/db.ViewService/list");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn create(
@@ -1027,7 +1027,7 @@ pub mod view_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/ViewService/create");
+            let path = http::uri::PathAndQuery::from_static("/db.ViewService/create");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn modify(
@@ -1041,7 +1041,7 @@ pub mod view_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/ViewService/modify");
+            let path = http::uri::PathAndQuery::from_static("/db.ViewService/modify");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn info(
@@ -1055,7 +1055,7 @@ pub mod view_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/ViewService/info");
+            let path = http::uri::PathAndQuery::from_static("/db.ViewService/info");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn remove(
@@ -1069,7 +1069,7 @@ pub mod view_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/ViewService/remove");
+            let path = http::uri::PathAndQuery::from_static("/db.ViewService/remove");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn archive(
@@ -1083,7 +1083,7 @@ pub mod view_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/ViewService/archive");
+            let path = http::uri::PathAndQuery::from_static("/db.ViewService/archive");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn record(
@@ -1097,7 +1097,7 @@ pub mod view_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/ViewService/record");
+            let path = http::uri::PathAndQuery::from_static("/db.ViewService/record");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn records(
@@ -1111,7 +1111,7 @@ pub mod view_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/ViewService/records");
+            let path = http::uri::PathAndQuery::from_static("/db.ViewService/records");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -1172,7 +1172,7 @@ pub mod index_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/IndexService/list");
+            let path = http::uri::PathAndQuery::from_static("/db.IndexService/list");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn create(
@@ -1186,7 +1186,7 @@ pub mod index_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/IndexService/create");
+            let path = http::uri::PathAndQuery::from_static("/db.IndexService/create");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn info(
@@ -1200,7 +1200,7 @@ pub mod index_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/IndexService/info");
+            let path = http::uri::PathAndQuery::from_static("/db.IndexService/info");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -1261,7 +1261,7 @@ pub mod disk_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/DiskService/put");
+            let path = http::uri::PathAndQuery::from_static("/db.DiskService/put");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn set(
@@ -1275,7 +1275,7 @@ pub mod disk_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/DiskService/set");
+            let path = http::uri::PathAndQuery::from_static("/db.DiskService/set");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn get(
@@ -1289,7 +1289,7 @@ pub mod disk_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/DiskService/get");
+            let path = http::uri::PathAndQuery::from_static("/db.DiskService/get");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn get_by_index(
@@ -1303,7 +1303,7 @@ pub mod disk_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/DiskService/get_by_index");
+            let path = http::uri::PathAndQuery::from_static("/db.DiskService/get_by_index");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn remove(
@@ -1317,7 +1317,7 @@ pub mod disk_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/DiskService/remove");
+            let path = http::uri::PathAndQuery::from_static("/db.DiskService/remove");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn select(
@@ -1331,7 +1331,7 @@ pub mod disk_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/DiskService/select");
+            let path = http::uri::PathAndQuery::from_static("/db.DiskService/select");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn delete(
@@ -1345,7 +1345,7 @@ pub mod disk_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/DiskService/delete");
+            let path = http::uri::PathAndQuery::from_static("/db.DiskService/delete");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -1406,7 +1406,7 @@ pub mod memory_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/MemoryService/put");
+            let path = http::uri::PathAndQuery::from_static("/db.MemoryService/put");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn set(
@@ -1420,7 +1420,7 @@ pub mod memory_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/MemoryService/set");
+            let path = http::uri::PathAndQuery::from_static("/db.MemoryService/set");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn get(
@@ -1434,7 +1434,7 @@ pub mod memory_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/MemoryService/get");
+            let path = http::uri::PathAndQuery::from_static("/db.MemoryService/get");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn remove(
@@ -1448,7 +1448,7 @@ pub mod memory_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/MemoryService/remove");
+            let path = http::uri::PathAndQuery::from_static("/db.MemoryService/remove");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn put_by_page(
@@ -1462,7 +1462,7 @@ pub mod memory_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/MemoryService/put_by_page");
+            let path = http::uri::PathAndQuery::from_static("/db.MemoryService/put_by_page");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn set_by_page(
@@ -1476,7 +1476,7 @@ pub mod memory_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/MemoryService/set_by_page");
+            let path = http::uri::PathAndQuery::from_static("/db.MemoryService/set_by_page");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn get_by_page(
@@ -1490,7 +1490,7 @@ pub mod memory_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/MemoryService/get_by_page");
+            let path = http::uri::PathAndQuery::from_static("/db.MemoryService/get_by_page");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn remove_by_page(
@@ -1504,7 +1504,7 @@ pub mod memory_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/MemoryService/remove_by_page");
+            let path = http::uri::PathAndQuery::from_static("/db.MemoryService/remove_by_page");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -1624,7 +1624,7 @@ pub mod user_service_server {
         }
     }
     impl<T: UserService> tonic::transport::NamedService for UserServiceServer<T> {
-        const NAME: &'static str = "UserService";
+        const NAME: &'static str = "db.UserService";
     }
 }
 #[doc = r" Generated server implementations."]
@@ -1870,7 +1870,7 @@ pub mod page_service_server {
         }
     }
     impl<T: PageService> tonic::transport::NamedService for PageServiceServer<T> {
-        const NAME: &'static str = "PageService";
+        const NAME: &'static str = "db.PageService";
     }
 }
 #[doc = r" Generated server implementations."]
@@ -2122,7 +2122,7 @@ pub mod database_service_server {
         }
     }
     impl<T: DatabaseService> tonic::transport::NamedService for DatabaseServiceServer<T> {
-        const NAME: &'static str = "DatabaseService";
+        const NAME: &'static str = "db.DatabaseService";
     }
 }
 #[doc = r" Generated server implementations."]
@@ -2473,7 +2473,7 @@ pub mod view_service_server {
         }
     }
     impl<T: ViewService> tonic::transport::NamedService for ViewServiceServer<T> {
-        const NAME: &'static str = "ViewService";
+        const NAME: &'static str = "db.ViewService";
     }
 }
 #[doc = r" Generated server implementations."]
@@ -2649,7 +2649,7 @@ pub mod index_service_server {
         }
     }
     impl<T: IndexService> tonic::transport::NamedService for IndexServiceServer<T> {
-        const NAME: &'static str = "IndexService";
+        const NAME: &'static str = "db.IndexService";
     }
 }
 #[doc = r" Generated server implementations."]
@@ -2965,7 +2965,7 @@ pub mod disk_service_server {
         }
     }
     impl<T: DiskService> tonic::transport::NamedService for DiskServiceServer<T> {
-        const NAME: &'static str = "DiskService";
+        const NAME: &'static str = "db.DiskService";
     }
 }
 #[doc = r" Generated server implementations."]
@@ -3322,6 +3322,6 @@ pub mod memory_service_server {
         }
     }
     impl<T: MemoryService> tonic::transport::NamedService for MemoryServiceServer<T> {
-        const NAME: &'static str = "MemoryService";
+        const NAME: &'static str = "db.MemoryService";
     }
 }

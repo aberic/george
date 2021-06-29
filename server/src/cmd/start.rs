@@ -12,14 +12,15 @@
  * limitations under the License.
  */
 
-use crate::cmd::Start;
-use crate::service::Server;
 use clap::{App, Arg, ArgMatches, SubCommand};
+use tokio::sync::mpsc;
+
 use comm::io::file::FilerHandler;
 use comm::io::Filer;
 use deploy::comm::DEPLOY_START_CONFIG_FILEPATH;
 use deploy::Builder;
-use tokio::sync::mpsc;
+
+use crate::cmd::{Service, Start};
 
 impl Start {
     pub fn subcommand() -> App<'static, 'static> {
@@ -45,10 +46,10 @@ impl Start {
         if let Some(res) = matches.value_of("file") {
             println!("prepare run with file...");
             // start(Some(res.to_string()))
-            Server::start(res)
+            Service::start(res)
         } else if let Some(res) = matches.value_of("filepath") {
             println!("prepare run...");
-            Server::start(res)
+            Service::start(res)
         } else {
             println!("prepare run with no file...");
             start(None)
@@ -77,7 +78,7 @@ fn start(filepath: Option<String>) {
 async fn server_start(filepath: String) {
     let (sender, mut receiver) = mpsc::channel(32);
     tokio::spawn(async move {
-        match sender.send(Server::start(filepath)).await {
+        match sender.send(Service::start(filepath)).await {
             Err(err) => {
                 panic!("sender send error {}", err);
             }

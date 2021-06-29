@@ -12,4 +12,14 @@
  * limitations under the License.
  */
 
-pub mod db;
+use crate::protos::db::db::database_service_client::DatabaseServiceClient;
+use tokio::runtime::Runtime;
+use tonic::transport::Channel;
+
+pub mod database;
+mod database_test;
+
+pub struct DatabaseRpcClient {
+    client: DatabaseServiceClient<Channel>,
+    rt: Runtime,
+}

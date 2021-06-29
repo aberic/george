@@ -64,7 +64,7 @@ impl Results {
     }
 
     pub fn failed_err(err: GeorgeError) -> Result<Response<Resp>, tonic::Status> {
-        let status = status(err);
+        let status = status(err.clone());
         let resp = Resp {
             status: status as i32,
             msg_err: err.to_string(),

@@ -183,30 +183,9 @@ mod test {
         #[cfg(test)]
         mod memory {
             use crate::task::master_test::test::{
-                create_page, get_memory, get_memory_default, put_memory, put_memory_default,
-                remove_memory, remove_memory_default, set_memory, set_memory_default,
+                create_page, get_memory, put_memory, remove_memory, set_memory,
             };
             use crate::Task;
-
-            #[test]
-            fn memory_test1() {
-                let task = Task::default().unwrap();
-                let key1 = "a";
-                let key2 = "b";
-                let key3 = "c";
-                put_memory_default(task.clone(), key1, "test1", 1);
-                put_memory_default(task.clone(), key2, "test2", 2);
-                get_memory_default(task.clone(), key1, 1);
-                get_memory_default(task.clone(), key2, 2);
-                remove_memory_default(task.clone(), key2, 3);
-                get_memory_default(task.clone(), key2, 3);
-                put_memory_default(task.clone(), key3, "test4", 4);
-                get_memory_default(task.clone(), key3, 4);
-                put_memory_default(task.clone(), key3, "test5", 5);
-                get_memory_default(task.clone(), key3, 5);
-                set_memory_default(task.clone(), key3, "test6", 6);
-                get_memory_default(task.clone(), key3, 6);
-            }
 
             #[test]
             fn memory_test2() {
@@ -1383,50 +1362,6 @@ mod test {
 
     fn remove_memory(task: Task, page_name: &str, key: &str, position: usize) {
         match task.remove_memory(page_name.to_string(), key.to_string()) {
-            Ok(_) => println!("remove{} success!", position),
-            Err(ie) => println!(
-                "remove{} is {:#?}",
-                position,
-                ie.source().unwrap().to_string()
-            ),
-        }
-    }
-
-    fn put_memory_default(task: Task, key: &str, value: &str, position: usize) {
-        match task.put_memory_default(key.to_string(), value.to_string().into_bytes()) {
-            Err(ie) => println!(
-                "put{} error is {:#?}",
-                position,
-                ie.source().unwrap().to_string()
-            ),
-            _ => {}
-        }
-    }
-
-    fn set_memory_default(task: Task, key: &str, value: &str, position: usize) {
-        match task.set_memory_default(key.to_string(), value.to_string().into_bytes()) {
-            Err(ie) => println!(
-                "put{} error is {:#?}",
-                position,
-                ie.source().unwrap().to_string()
-            ),
-            _ => {}
-        }
-    }
-
-    fn get_memory_default(task: Task, key: &str, position: usize) {
-        match task.get_memory_default(key.to_string()) {
-            Ok(vu8) => println!(
-                "get{} is {:#?}",
-                position,
-                String::from_utf8(vu8).unwrap().as_str()
-            ),
-            Err(ie) => println!("get{} is {:#?}", position, ie.source().unwrap().to_string()),
-        }
-    }
-
-    fn remove_memory_default(task: Task, key: &str, position: usize) {
-        match task.remove_memory_default(key.to_string()) {
             Ok(_) => println!("remove{} success!", position),
             Err(ie) => println!(
                 "remove{} is {:#?}",

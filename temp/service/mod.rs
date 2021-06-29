@@ -12,31 +12,30 @@
  * limitations under the License.
  */
 
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 use std::thread;
 
 use protobuf::{RepeatedField, SingularPtrField};
+use tonic::transport::{Identity, ServerTlsConfig};
 
 use comm::errors::GeorgeResult;
+use comm::io::file::FilerReader;
+use comm::io::Filer;
 use db::task::traits::{TForm, TMaster};
 use db::Task;
 use deploy::{Init, LogPolicy};
 use protocols::impls::db::index::{Engine, Index, KeyType};
 use protocols::impls::db::service_grpc::{
-    DatabaseServiceServer, DiskServiceServer, IndexServiceServer, MemoryServiceServer,
-    PageServiceServer, UserServiceServer, ViewServiceServer,
+    DiskServiceServer, IndexServiceServer, MemoryServiceServer, PageServiceServer,
+    UserServiceServer, ViewServiceServer,
 };
 use protocols::impls::db::view::View;
 use protocols::impls::utils::Comm;
-
-use crate::service::database::DatabaseServer;
-use crate::service::disk::DiskServer;
-use crate::service::index::IndexServer;
-use crate::service::memory::MemoryServer;
-use crate::service::page::PageServer;
-use crate::service::user::UserServer;
-use crate::service::view::ViewServer;
+use rpc::protos::db::db::database_service_server::DatabaseServiceServer;
+use rpc::server::db::DatabaseServer;
+use tokio::runtime::Runtime;
 
 pub mod database;
 mod disk;
@@ -53,7 +52,7 @@ pub const DEFAULT_COMMENT: &str = "system default";
 pub struct Server;
 
 impl Server {
-    /// filepath e.g: `server/src/example/conf.yaml`
+    /// filepath e.g: `server/src/example/conf.yaml` | `server/src/example/conf_tls.yaml`
     pub fn start<P: AsRef<Path>>(filepath: P) {
         let init: Init;
         match Init::from(filepath) {
@@ -70,38 +69,81 @@ impl Server {
             Err(err) => panic!("Init data failed! {}", err),
             _ => {}
         }
-        let mut server = grpc::ServerBuilder::new_plain();
-        server.http.set_port(init.port_unwrap());
-        server.http.conf.no_delay = Some(true);
-        server.http.conf.thread_name = Some("george-server".to_string());
-        server.http.conf.reuse_port = Some(true);
-        // server.http.set_cpu_pool_threads(4);
-        server.add_service(UserServiceServer::new_service_def(UserServer {
-            task: task.clone(),
-        }));
-        server.add_service(PageServiceServer::new_service_def(PageServer {
-            task: task.clone(),
-        }));
-        server.add_service(DatabaseServiceServer::new_service_def(DatabaseServer {
-            task: task.clone(),
-        }));
-        server.add_service(ViewServiceServer::new_service_def(ViewServer {
-            task: task.clone(),
-        }));
-        server.add_service(IndexServiceServer::new_service_def(IndexServer {
-            task: task.clone(),
-        }));
-        server.add_service(DiskServiceServer::new_service_def(DiskServer {
-            task: task.clone(),
-        }));
-        server.add_service(MemoryServiceServer::new_service_def(MemoryServer {
-            task: task.clone(),
-        }));
-        let _server = server.build().expect("Could not start server");
-        loop {
-            thread::park();
+
+        log::info!("listener port: {}", init.port_unwrap());
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), init.port_unwrap());
+
+        let database_service = DatabaseServiceServer::new(DatabaseServer::new(task.clone()));
+
+        let server_future;
+        if init.tls() {
+            let cert = Filer::read_bytes(init.server_cert_unwrap()).unwrap();
+            let key = Filer::read_bytes(init.server_key_unwrap()).unwrap();
+            let identity = Identity::from_pem(cert, key);
+            server_future = tonic::transport::Server::builder()
+                .tls_config(ServerTlsConfig::new().identity(identity))
+                .unwrap()
+                .add_service(database_service)
+                .serve(addr)
+        } else {
+            server_future = tonic::transport::Server::builder()
+                .add_service(database_service)
+                .serve(addr)
         }
+        let rt = Runtime::new().expect("failed to obtain a new RunTime object");
+        rt.block_on(server_future)
+            .expect("failed to successfully run the future on RunTime");
     }
+
+    // /// filepath e.g: `server/src/example/conf.yaml`
+    // pub fn start<P: AsRef<Path>>(filepath: P) {
+    //     let init: Init;
+    //     match Init::from(filepath) {
+    //         Ok(res) => init = res,
+    //         Err(err) => panic!("Init from failed! {}", err),
+    //     }
+    //     log_policy(init.clone());
+    //     let task: Arc<Task>;
+    //     match Task::new(init.clone()) {
+    //         Ok(res) => task = Arc::new(res),
+    //         Err(err) => panic!("Task new failed! {}", err),
+    //     }
+    //     match init_data(task.clone()) {
+    //         Err(err) => panic!("Init data failed! {}", err),
+    //         _ => {}
+    //     }
+    //     let mut server = grpc::ServerBuilder::new_plain();
+    //     server.http.set_port(init.port_unwrap());
+    //     server.http.conf.no_delay = Some(true);
+    //     server.http.conf.thread_name = Some("george-server".to_string());
+    //     server.http.conf.reuse_port = Some(true);
+    //     // server.http.set_cpu_pool_threads(4);
+    //     server.add_service(UserServiceServer::new_service_def(UserServer {
+    //         task: task.clone(),
+    //     }));
+    //     server.add_service(PageServiceServer::new_service_def(PageServer {
+    //         task: task.clone(),
+    //     }));
+    //     server.add_service(DatabaseServiceServer::new_service_def(DatabaseServer {
+    //         task: task.clone(),
+    //     }));
+    //     server.add_service(ViewServiceServer::new_service_def(ViewServer {
+    //         task: task.clone(),
+    //     }));
+    //     server.add_service(IndexServiceServer::new_service_def(IndexServer {
+    //         task: task.clone(),
+    //     }));
+    //     server.add_service(DiskServiceServer::new_service_def(DiskServer {
+    //         task: task.clone(),
+    //     }));
+    //     server.add_service(MemoryServiceServer::new_service_def(MemoryServer {
+    //         task: task.clone(),
+    //     }));
+    //     let _server = server.build().expect("Could not start server");
+    //     loop {
+    //         thread::park();
+    //     }
+    // }
 }
 
 fn log_policy(init: Init) {

@@ -12,4 +12,16 @@
  * limitations under the License.
  */
 
-pub mod db;
+#[cfg(test)]
+mod database {
+    use crate::client::db::DatabaseRpcClient;
+
+    #[test]
+    fn list() {
+        let mut cli = DatabaseRpcClient::new("127.0.0.1", 9219).unwrap();
+        let res = cli.list().unwrap();
+        for db in res.databases {
+            println!("db {}", db.name)
+        }
+    }
+}

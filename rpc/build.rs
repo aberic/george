@@ -33,7 +33,6 @@ fn db() -> Result<(), std::io::Error> {
     tonic_build::configure()
         .build_server(true)
         .build_client(true)
-        .disable_package_emission()
         .out_dir("src/protos/db")
         // .extern_path(".utils", "super")
         .compile(

@@ -12,22 +12,28 @@
  * limitations under the License.
  */
 
+use tonic::{Request, Response, Status};
+
+use db::task::traits::TMaster;
+
 use crate::protos::chain::utils::{Req, Resp};
 use crate::protos::db::db::database_service_server::DatabaseService;
 use crate::protos::db::db::{
     Database, DatabaseList, RequestDatabaseCreate, RequestDatabaseInfo, RequestDatabaseModify,
     RequestDatabaseRemove, ResponseDatabaseInfo,
 };
+use crate::server::db::DatabaseServer;
 use crate::tools::{Children, Results, Trans};
-use db::task::traits::TMaster;
 use db::Task;
 use std::sync::Arc;
-use tonic::{Request, Response, Status};
 
-pub(crate) struct DatabaseServer {
-    pub(crate) task: Arc<Task>,
+impl DatabaseServer {
+    pub fn new(task: Arc<Task>) -> Self {
+        DatabaseServer { task }
+    }
 }
 
+#[tonic::async_trait]
 impl DatabaseService for DatabaseServer {
     async fn list(&self, _request: Request<Req>) -> Result<Response<DatabaseList>, Status> {
         let mut databases: Vec<Database> = vec![];
@@ -44,8 +50,8 @@ impl DatabaseService for DatabaseServer {
             };
             databases.push(database);
         }
-        let dl = DatabaseList { databases };
-        Ok(Response::new(dl))
+        let message = DatabaseList { databases };
+        Ok(Response::new(message))
     }
 
     async fn create(
@@ -97,7 +103,7 @@ impl DatabaseService for DatabaseServer {
             }
             Err(err) => {
                 resp = ResponseDatabaseInfo {
-                    status: Results::failed_status(err),
+                    status: Results::failed_status(err.clone()),
                     msg_err: err.to_string(),
                     database: None,
                 };

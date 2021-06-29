@@ -12,15 +12,14 @@
  * limitations under the License.
  */
 
-use crate::cmd::Command;
-use crate::service::Server;
+use crate::cmd::{Command, Service};
 
 mod cmd;
-pub mod service;
 
 // ./server start -f /Users/aberic/Documents/path/rust/george/server/src/example/conf.yaml
 fn main() {
-    Command::init();
+    // Command::init();
     // 测试时启用如下代码
-    Server::start("server/src/example/conf.yaml")
+    // Service::start("server/src/example/conf.yaml")
+    Service::start("server/src/example/conf_tls.yaml")
 }

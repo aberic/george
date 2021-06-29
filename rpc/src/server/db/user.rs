@@ -12,4 +12,26 @@
  * limitations under the License.
  */
 
-pub mod db;
+use std::sync::Arc;
+
+use tonic::{Request, Response, Status};
+
+use db::Task;
+
+use crate::protos::chain::utils::Resp;
+use crate::protos::db::db::user_service_server::UserService;
+use crate::protos::db::db::RequestLogin;
+use crate::server::db::UserServer;
+
+impl UserServer {
+    pub fn new(task: Arc<Task>) -> Self {
+        UserServer { task }
+    }
+}
+
+#[tonic::async_trait]
+impl UserService for UserServer {
+    async fn login(&self, request: Request<RequestLogin>) -> Result<Response<Resp>, Status> {
+        todo!()
+    }
+}
