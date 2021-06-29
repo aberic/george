@@ -16,7 +16,7 @@ use std::error::Error;
 use std::fmt::{Display, Formatter, Result};
 
 /// 子类型 Error,实现std::fmt::Debug的trait
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StringError {
     pub(crate) error_msg: String,
 }
@@ -29,7 +29,7 @@ impl Display for StringError {
 
 impl Error for StringError {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DirExistError;
 
 /// 实现Display的trait，并实现fmt方法
@@ -42,7 +42,7 @@ impl Display for DirExistError {
 /// 实现Error的trait,因为没有子Error,不需要覆盖source()方法
 impl Error for DirExistError {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FileExistError;
 
 /// 实现Display的trait，并实现fmt方法
@@ -55,7 +55,7 @@ impl Display for FileExistError {
 /// 实现Error的trait,因为没有子Error,不需要覆盖source()方法
 impl Error for FileExistError {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DataExistError;
 
 /// 实现Display的trait，并实现fmt方法
@@ -68,7 +68,7 @@ impl Display for DataExistError {
 /// 实现Error的trait,因为没有子Error,不需要覆盖source()方法
 impl Error for DataExistError {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PageExistError;
 
 impl Display for PageExistError {
@@ -79,7 +79,7 @@ impl Display for PageExistError {
 
 impl Error for PageExistError {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DatabaseExistError;
 
 impl Display for DatabaseExistError {
@@ -90,7 +90,7 @@ impl Display for DatabaseExistError {
 
 impl Error for DatabaseExistError {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ViewExistError;
 
 impl Display for ViewExistError {
@@ -101,7 +101,7 @@ impl Display for ViewExistError {
 
 impl Error for ViewExistError {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IndexExistError;
 
 impl Display for IndexExistError {
@@ -112,7 +112,7 @@ impl Display for IndexExistError {
 
 impl Error for IndexExistError {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DirNoExistError;
 
 impl Display for DirNoExistError {
@@ -123,7 +123,7 @@ impl Display for DirNoExistError {
 
 impl Error for DirNoExistError {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FileNoExistError;
 
 impl Display for FileNoExistError {
@@ -134,7 +134,7 @@ impl Display for FileNoExistError {
 
 impl Error for FileNoExistError {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DataNoExistError;
 
 impl Display for DataNoExistError {
@@ -145,7 +145,7 @@ impl Display for DataNoExistError {
 
 impl Error for DataNoExistError {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PageNoExistError;
 
 impl Display for PageNoExistError {
@@ -156,7 +156,7 @@ impl Display for PageNoExistError {
 
 impl Error for PageNoExistError {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DatabaseNoExistError;
 
 impl Display for DatabaseNoExistError {
@@ -167,7 +167,7 @@ impl Display for DatabaseNoExistError {
 
 impl Error for DatabaseNoExistError {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ViewNoExistError;
 
 impl Display for ViewNoExistError {
@@ -178,7 +178,7 @@ impl Display for ViewNoExistError {
 
 impl Error for ViewNoExistError {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IndexNoExistError;
 
 impl Display for IndexNoExistError {
@@ -189,7 +189,7 @@ impl Display for IndexNoExistError {
 
 impl Error for IndexNoExistError {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MethodNoSupportError;
 
 impl Display for MethodNoSupportError {
@@ -200,7 +200,7 @@ impl Display for MethodNoSupportError {
 
 impl Error for MethodNoSupportError {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NoneError;
 
 impl Display for NoneError {

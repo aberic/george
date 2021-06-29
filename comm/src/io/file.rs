@@ -644,9 +644,15 @@ pub fn file_write(mut file: File, content: &[u8]) -> GeorgeResult<usize> {
 ///
 /// 返回写入的字节长度
 pub fn filepath_write<P: AsRef<Path>>(filepath: P, content: &[u8]) -> GeorgeResult<usize> {
-    match OpenOptions::new().write(true).open(filepath) {
+    match OpenOptions::new().write(true).open(&filepath) {
         Ok(file) => file_write(file, content),
-        Err(err) => Err(Errs::strs("file open when write", err)),
+        Err(err) => Err(Errs::strings(
+            format!(
+                "file {} open when write",
+                filepath.as_ref().to_str().unwrap()
+            ),
+            err,
+        )),
     }
 }
 
@@ -665,9 +671,15 @@ pub fn filepath_write_force<P: AsRef<Path>>(filepath: P, content: &[u8]) -> Geor
 
 /// 在指定文件中追加数据
 fn filepath_append<P: AsRef<Path>>(filepath: P, content: &[u8]) -> GeorgeResult<()> {
-    match OpenOptions::new().append(true).open(filepath) {
+    match OpenOptions::new().append(true).open(&filepath) {
         Ok(file) => file_append(file, content),
-        Err(err) => Err(Errs::strs("file open when append", err)),
+        Err(err) => Err(Errs::strings(
+            format!(
+                "file {} open when append",
+                filepath.as_ref().to_str().unwrap()
+            ),
+            err,
+        )),
     }
 }
 
@@ -689,9 +701,15 @@ fn file_append(mut file: File, content: &[u8]) -> GeorgeResult<()> {
 
 /// 在指定文件中指定位置后覆盖数据
 fn filepath_write_seek<P: AsRef<Path>>(filepath: P, seek: u64, content: &[u8]) -> GeorgeResult<()> {
-    match OpenOptions::new().write(true).open(filepath) {
+    match OpenOptions::new().write(true).open(&filepath) {
         Ok(file) => file_write_seek(file, seek, content),
-        Err(err) => Err(Errs::strs("file open when write seek", err)),
+        Err(err) => Err(Errs::strings(
+            format!(
+                "file {} open when write seek",
+                filepath.as_ref().to_str().unwrap()
+            ),
+            err,
+        )),
     }
 }
 
@@ -708,9 +726,15 @@ fn file_write_seek(mut file: File, seek: u64, content: &[u8]) -> GeorgeResult<()
 
 /// 将文件的全部内容读入字符串
 fn filepath_read<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
-    match read_to_string(filepath) {
+    match read_to_string(&filepath) {
         Ok(s) => Ok(s),
-        Err(err) => Err(Errs::strs("file read to string", err)),
+        Err(err) => Err(Errs::strings(
+            format!(
+                "file {} read to string",
+                filepath.as_ref().to_str().unwrap()
+            ),
+            err,
+        )),
     }
 }
 
@@ -732,9 +756,15 @@ fn initial_buffer_size(file: &File) -> usize {
 
 /// 将文件的全部内容读入字节数组
 fn filepath_reads<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
-    match read(filepath) {
+    match read(&filepath) {
         Ok(u8s) => Ok(u8s),
-        Err(err) => Err(Errs::strs("file read to string", err)),
+        Err(err) => Err(Errs::strings(
+            format!(
+                "file {} read to string",
+                filepath.as_ref().to_str().unwrap()
+            ),
+            err,
+        )),
     }
 }
 
@@ -768,9 +798,12 @@ fn filepath_read_sub_allow_none<P: AsRef<Path>>(
     start: u64,
     last: usize,
 ) -> GeorgeResult<Vec<u8>> {
-    match File::open(filepath) {
+    match File::open(&filepath) {
         Ok(file) => file_read_sub_allow_none(file, start, last),
-        Err(err) => Err(Errs::string(err.to_string())),
+        Err(err) => Err(Errs::strings(
+            format!("file {} open", filepath.as_ref().to_str().unwrap()),
+            err,
+        )),
     }
 }
 
@@ -883,43 +916,71 @@ fn file_read_subs_helper(mut file: File, start: u64, last: usize) -> GeorgeResul
 }
 
 fn rw_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<File> {
-    match OpenOptions::new().read(true).write(true).open(filepath) {
+    match OpenOptions::new().read(true).write(true).open(&filepath) {
         Ok(file) => Ok(file),
-        Err(err) => Err(Errs::strs("open read&write file", err)),
+        Err(err) => Err(Errs::strings(
+            format!(
+                "open read&write file {}",
+                filepath.as_ref().to_str().unwrap()
+            ),
+            err,
+        )),
     }
 }
 
 fn ra_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<File> {
-    match OpenOptions::new().read(true).append(true).open(filepath) {
+    match OpenOptions::new().read(true).append(true).open(&filepath) {
         Ok(file) => Ok(file),
-        Err(err) => Err(Errs::strs("open read&write file", err)),
+        Err(err) => Err(Errs::strings(
+            format!(
+                "open read&write file {}",
+                filepath.as_ref().to_str().unwrap()
+            ),
+            err,
+        )),
     }
 }
 
 fn r_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<File> {
-    match OpenOptions::new().read(true).open(filepath) {
+    match OpenOptions::new().read(true).open(&filepath) {
         Ok(file) => Ok(file),
-        Err(err) => Err(Errs::strs("open read file", err)),
+        Err(err) => Err(Errs::strings(
+            format!("open read file {}", filepath.as_ref().to_str().unwrap()),
+            err,
+        )),
     }
 }
 
 fn w_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<File> {
-    match OpenOptions::new().write(true).open(filepath) {
+    match OpenOptions::new().write(true).open(&filepath) {
         Ok(file) => Ok(file),
-        Err(err) => Err(Errs::strs("open write file", err)),
+        Err(err) => Err(Errs::strings(
+            format!("open write file {}", filepath.as_ref().to_str().unwrap()),
+            err,
+        )),
     }
 }
 
 fn a_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<File> {
-    match OpenOptions::new().append(true).open(filepath) {
+    match OpenOptions::new().append(true).open(&filepath) {
         Ok(file) => Ok(file),
-        Err(err) => Err(Errs::strs("open append file", err)),
+        Err(err) => Err(Errs::strings(
+            format!("open append file {}", filepath.as_ref().to_str().unwrap()),
+            err,
+        )),
     }
 }
 
 fn rename<P: AsRef<Path>>(from: P, to: P) -> GeorgeResult<()> {
-    match std::fs::rename(from, to) {
+    match std::fs::rename(&from, &to) {
         Ok(_) => Ok(()),
-        Err(err) => Err(Errs::strs("file rename failed", err.to_string())),
+        Err(err) => Err(Errs::strings(
+            format!(
+                "file rename failed from {} to {}",
+                from.as_ref().to_str().unwrap(),
+                to.as_ref().to_str().unwrap()
+            ),
+            err,
+        )),
     }
 }

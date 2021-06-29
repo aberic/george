@@ -35,7 +35,7 @@ pub trait GeorgeString<M>: Sized {
 pub type GeorgeResult<T> = std::result::Result<T, GeorgeError>;
 
 /// 索引触发Error,实现std::fmt::Debug的trait
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum GeorgeError {
     StringError(StringError),
     DirExistError(DirExistError),
