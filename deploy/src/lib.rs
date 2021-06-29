@@ -101,9 +101,9 @@ pub struct ConfigServer {
     /// 服务端`cert`，开启`TLS`后生效
     pub tls_cert: Option<String>,
     /// 为所有请求处理程序设置超时，单位secs
-    pub timeout: Option<u32>,
+    pub timeout: Option<u64>,
     /// 设置应用于每个连接入站请求的并发限制
-    pub concurrency_limit_per_connection: Option<u32>,
+    pub concurrency_limit_per_connection: Option<usize>,
     /// 为接受的连接设置`TCP_NODELAY`选项的值。默认启用。
     ///
     /// 用户侧使用对于延时敏感型，同时数据传输量比较小的应用建议启用
@@ -112,11 +112,11 @@ pub struct ConfigServer {
     /// 数据只有在写缓存中累积到一定量之后，才会被发送出去，这样明显提高了网络利用率（实际传输数据payload与协议头的比例大大提高）。
     /// 但会增加了延时；与TCP delayed ack这个特性结合，延时基本在40ms左右
     pub tcp_nodelay: Option<bool>,
-    /// 设置是否在接受的连接上启用`TCP keepalive`消息。
+    /// 设置是否在接受的连接上启用`TCP keepalive`消息，单位ms
     /// 如果指定了`None`，表示关闭`keepalive`功能，否则指定的持续时间就是发送`TCP keepalive`探测前的空闲时间。
     /// 默认是没有`keepalive` (None)
-    pub tcp_keepalive: Option<u32>,
-    /// 设置是否在接受的连接上启用HTTP2 Ping帧。<p>
+    pub tcp_keepalive: Option<u64>,
+    /// 设置是否在接受的连接上启用HTTP2 Ping帧，单位ms<p>
     /// 如果指定了None，表示禁用HTTP2 keepalive，否则指定的持续时间为HTTP2 Ping帧之间的时间间隔。<p>
     /// 接收keepalive ping应答的超时时间可以设置为[Server::http2_keepalive_timeout]。<p>
     /// 默认是没有HTTP2 keepalive (None)
@@ -124,12 +124,12 @@ pub struct ConfigServer {
     /// Keep-alives一般被用来验证远端连接是否有效。
     /// 如果该连接上没有其他数据被传输，或者更高level 的 keep-alives被传送，keep-alives 在每个KeepAliveTime被发送。
     /// 如果没有收到 keep-alive 应答，keep-alive 将在每 KeepAliveInterval 秒重发一次。KeepAliveInterval 默认为5秒
-    pub http2_keepalive_interval: Option<u32>,
-    /// 设置接收keepalive ping应答的超时时间。
-    /// 如果在超时时间内没有确认ping，连接将被关闭。如果http2_keep_alive_interval被禁用，则不执行任何操作。
+    pub http2_keepalive_interval: Option<u64>,
+    /// 设置接收keepalive ping应答的超时时间，单位ms<p>
+    /// 如果在超时时间内没有确认ping，连接将被关闭。如果http2_keep_alive_interval被禁用，则不执行任何操作。<p>
     /// 默认值是20秒
-    pub http2_keepalive_timeout: Option<u32>,
-    /// 设置HTTP2的最大连接级流控制，默认是65535
+    pub http2_keepalive_timeout: Option<u64>,
+    /// 设置HTTP2的最大连接级流控制（以字节为单位），默认是65535
     pub initial_connection_window_size: Option<u32>,
     /// 表明发送方的流级别的流量控制的初始窗口大小（以字节为单位）。
     /// 初始值是2^16-1(65535)字节。
