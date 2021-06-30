@@ -15,7 +15,7 @@
 #[cfg(test)]
 mod ca {
     use crate::cryptos::ca::{MsbOptionCA, P12Handler, X509NameInfo, CSR, P12, SAN};
-    use crate::cryptos::rsa::RSAStoreKey;
+    use crate::cryptos::rsa::{RSANewStore, RSAStoreKey};
     use crate::cryptos::Cert;
     use crate::cryptos::ECDSA;
     use crate::cryptos::RSA;
@@ -177,8 +177,8 @@ mod ca {
         let root1 = Cert::load_pem_file("src/test/crypto/ca/verify/root.pem.crt").unwrap();
         let root2 = Cert::load_der_file("src/test/crypto/ca/verify/root.der.crt").unwrap();
 
-        assert!(Cert::verify(rsa_root.pk(), root1.x509).unwrap());
-        assert!(Cert::verify(rsa_root.pk(), root2.x509).unwrap());
+        assert!(Cert::verify(rsa_root.sk(), root1.x509).unwrap());
+        assert!(Cert::verify(rsa_root.sk(), root2.x509).unwrap());
 
         let ecdsa_intermediate = ECDSA::new().unwrap();
         let subject_info = X509NameInfo::new_cus(
@@ -653,5 +653,167 @@ mod ca {
             &*root.x509.digest(MessageDigest::sha1()).unwrap()
         );
         assert!(parsed.pkey.public_eq(&pkey));
+    }
+
+    #[test]
+    fn generate_rsa_tls_test() {
+        generate_rsa_server_tls();
+        generate_ec_client_tls();
+    }
+
+    fn generate_rsa_server_tls() {
+        let subject_info = X509NameInfo::new_cus(
+            "CNRoot".to_string(),
+            "CN".to_string(),
+            Some("org".to_string()),
+            Some("org unit".to_string()),
+            Some("loc".to_string()),
+            Some("pro".to_string()),
+            Some("sa".to_string()),
+        )
+        .unwrap();
+        let san = Some(SAN {
+            dns_names: vec!["tt.cn".to_string()],
+            email_addresses: vec!["email@tt.cn".to_string()],
+            ip_addresses: vec!["128.0.9.1".to_string()],
+            uris: vec!["uri_root.cn".to_string()],
+        });
+
+        let server_ca_sk_bytes =
+            RSA::generate_pkcs8_pem(2048, "src/test/crypto/ca/tls/server_ca_sk.pem").unwrap();
+        let server_ca_rsa = RSA::from_bytes(server_ca_sk_bytes).unwrap();
+        let server_ca = Cert::sign_root_256(
+            MsbOptionCA::MaybeZero,
+            true,
+            server_ca_rsa.sk(),
+            server_ca_rsa.pk(),
+            subject_info.as_ref(),
+            2,
+            0,
+            365,
+            san,
+            MessageDigest::sha256(),
+        )
+        .unwrap();
+        server_ca
+            .save_pem("src/test/crypto/ca/tls/server_ca.pem")
+            .unwrap();
+
+        let subject_info_server = X509NameInfo::new_cus(
+            "CNUser".to_string(),
+            "CN".to_string(),
+            Some("org user".to_string()),
+            Some("org unit user".to_string()),
+            Some("loc user".to_string()),
+            Some("pro user".to_string()),
+            Some("sa user".to_string()),
+        )
+        .unwrap();
+        let san_server = Some(SAN {
+            dns_names: vec!["user.cn".to_string()],
+            email_addresses: vec!["email@user.cn".to_string()],
+            ip_addresses: vec!["128.0.9.3".to_string()],
+            uris: vec!["uri_user.cn".to_string()],
+        });
+        let server_sk_bytes =
+            RSA::generate_pkcs8_pem(2048, "src/test/crypto/ca/tls/server_sk.pem").unwrap();
+        let server_rsa = RSA::from_bytes(server_sk_bytes).unwrap();
+        let server_cert = Cert::sign_user_256(
+            server_ca.x509.clone(),
+            MsbOptionCA::MaybeZero,
+            true,
+            server_ca_rsa.sk(),
+            server_rsa.pk(),
+            subject_info_server.as_ref(),
+            2,
+            0,
+            363,
+            san_server,
+            MessageDigest::sha512(),
+        )
+        .unwrap();
+        server_cert
+            .save_pem("src/test/crypto/ca/tls/server.pem")
+            .unwrap();
+    }
+
+    fn generate_ec_client_tls() {
+        let subject_info = X509NameInfo::new_cus(
+            "CNRoot".to_string(),
+            "CN".to_string(),
+            Some("org".to_string()),
+            Some("org unit".to_string()),
+            Some("loc".to_string()),
+            Some("pro".to_string()),
+            Some("sa".to_string()),
+        )
+        .unwrap();
+        let san = Some(SAN {
+            dns_names: vec!["tt.cn".to_string()],
+            email_addresses: vec!["email@tt.cn".to_string()],
+            ip_addresses: vec!["128.0.9.1".to_string()],
+            uris: vec!["uri_root.cn".to_string()],
+        });
+
+        let client_ca_ec = ECDSA::new().unwrap();
+        client_ca_ec.store_pem(
+            "src/test/crypto/ca/tls/client_ca_sk.pem",
+            "src/test/crypto/ca/tls/client_ca_pk.pem",
+        );
+        let client_ca = Cert::sign_root_256(
+            MsbOptionCA::MaybeZero,
+            true,
+            client_ca_ec.sk(),
+            client_ca_ec.pk(),
+            subject_info.as_ref(),
+            2,
+            0,
+            365,
+            san,
+            MessageDigest::sha256(),
+        )
+        .unwrap();
+        client_ca
+            .save_pem("src/test/crypto/ca/tls/client_ca.pem")
+            .unwrap();
+
+        let subject_info_client = X509NameInfo::new_cus(
+            "CNUser".to_string(),
+            "CN".to_string(),
+            Some("org user".to_string()),
+            Some("org unit user".to_string()),
+            Some("loc user".to_string()),
+            Some("pro user".to_string()),
+            Some("sa user".to_string()),
+        )
+        .unwrap();
+        let san_client = Some(SAN {
+            dns_names: vec!["user.cn".to_string()],
+            email_addresses: vec!["email@user.cn".to_string()],
+            ip_addresses: vec!["128.0.9.3".to_string()],
+            uris: vec!["uri_user.cn".to_string()],
+        });
+        let client_ec = ECDSA::new().unwrap();
+        client_ec.store_pem(
+            "src/test/crypto/ca/tls/client_sk.pem",
+            "src/test/crypto/ca/tls/client_pk.pem",
+        );
+        let client_cert = Cert::sign_user_256(
+            client_ca.x509.clone(),
+            MsbOptionCA::MaybeZero,
+            true,
+            client_ca_ec.sk(),
+            client_ec.pk(),
+            subject_info_client.as_ref(),
+            2,
+            0,
+            363,
+            san_client,
+            MessageDigest::sha512(),
+        )
+        .unwrap();
+        client_cert
+            .save_pem("src/test/crypto/ca/tls/client.pem")
+            .unwrap();
     }
 }

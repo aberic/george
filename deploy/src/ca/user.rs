@@ -11,16 +11,3 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-use crate::cmd::{Command, Service};
-
-mod cmd;
-
-// ./server start -f /Users/aberic/Documents/path/rust/george/server/src/example/conf.yaml
-fn main() {
-    // Command::init();
-    // 测试时启用如下代码
-    // Service::start("server/src/examples/conf.yaml")
-    Service::start("server/src/examples/conf_tls_cross.yaml")
-    // Service::start("server/src/examples/conf_tls.yaml")
-}

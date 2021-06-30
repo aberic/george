@@ -19,10 +19,17 @@ use crate::protos::utils::utils::Req;
 use comm::errors::{Errs, GeorgeResult};
 use std::time::Duration;
 use tokio::runtime::{Builder, Runtime};
-use tonic::transport::{Channel, Uri};
+use tonic::transport::{Certificate, Channel, ClientTlsConfig, Identity, Uri};
 
 impl DatabaseRpcClient {
-    pub fn new(remote: &str, port: u16) -> GeorgeResult<DatabaseRpcClient> {
+    pub fn new(
+        remote: &str,
+        port: u16,
+        tls: bool,
+        key: Option<Vec<u8>>,
+        cert: Option<Vec<u8>>,
+        server_ca: Option<Vec<u8>>,
+    ) -> GeorgeResult<DatabaseRpcClient> {
         let dst = format!("{}://{}:{}", "http", remote, port);
         let rt: Runtime;
         match Builder::new_multi_thread().enable_all().build() {
@@ -34,9 +41,34 @@ impl DatabaseRpcClient {
             Ok(res) => uri = res,
             Err(err) => return Err(Errs::strs("uri from maybe shared", err)),
         }
-        let endpoint = Channel::builder(uri)
-            // .timeout(Duration::from_secs(30))
-            ;
+        let mut endpoint = Channel::builder(uri);
+        if tls {
+            let mut tls_config = ClientTlsConfig::new().domain_name("example.com");
+            match key {
+                Some(res) => {
+                    let key = res;
+                    match cert {
+                        Some(res) => {
+                            let cert = res;
+                            let identity = Identity::from_pem(cert, key);
+                            tls_config = tls_config.identity(identity);
+                        }
+                        _ => {}
+                    }
+                }
+                _ => {}
+            }
+            match server_ca {
+                Some(res) => {
+                    let server_ca = res;
+                    let cert = Certificate::from_pem(server_ca);
+                    tls_config = tls_config.ca_certificate(cert);
+                }
+                _ => {}
+            }
+            endpoint = endpoint.tls_config(tls_config).unwrap();
+        }
+        // endpoint = endpoint.timeout(Duration::from_secs(30));
         let future = endpoint.connect();
         match rt.block_on(future) {
             Ok(res) => Ok(DatabaseRpcClient {
@@ -45,10 +77,6 @@ impl DatabaseRpcClient {
             }),
             Err(err) => Err(Errs::strs("endpoint connect", err)),
         }
-        // match rt.block_on(DatabaseServiceClient::connect(dst)) {
-        //     Ok(client) => Ok(DatabaseRpcClient { client, rt }),
-        //     Err(err) => Err(Errs::strs("client connect failed!", err)),
-        // }
     }
 }
 

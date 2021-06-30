@@ -12,15 +12,21 @@
  * limitations under the License.
  */
 
-use crate::cmd::{Command, Service};
+use comm::cryptos::Cert;
 
-mod cmd;
+use crate::ca::identity::CryptoType;
 
-// ./server start -f /Users/aberic/Documents/path/rust/george/server/src/example/conf.yaml
-fn main() {
-    // Command::init();
-    // 测试时启用如下代码
-    // Service::start("server/src/examples/conf.yaml")
-    Service::start("server/src/examples/conf_tls_cross.yaml")
-    // Service::start("server/src/examples/conf_tls.yaml")
+mod identity;
+mod intermediate;
+mod root;
+mod user;
+
+/// 证书等持有者的密钥属性
+pub struct Identity {
+    /// 密钥类型
+    crypto_type: CryptoType,
+    /// 私钥
+    sk: Vec<u8>,
+    /// x509证书
+    cert: Cert,
 }

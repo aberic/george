@@ -13,11 +13,13 @@
  */
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::option::Option::Some;
 use std::path::Path;
 use std::sync::Arc;
+use std::time::Duration;
 
 use tokio::runtime::Runtime;
-use tonic::transport::{Identity, ServerTlsConfig};
+use tonic::transport::{Certificate, Identity, ServerTlsConfig};
 
 use comm::errors::GeorgeResult;
 use comm::io::file::FilerReader;
@@ -37,8 +39,6 @@ use rpc::server::db::{
 };
 
 use crate::cmd::Service;
-use std::option::Option::Some;
-use std::time::Duration;
 
 pub const DATABASE_SYS: &str = "sys";
 pub const VIEW_USER: &str = "user";
@@ -77,12 +77,32 @@ impl Service {
         let server_future;
         let mut server = tonic::transport::Server::builder();
         if init.tls() {
-            let cert = Filer::read_bytes(init.server_cert_unwrap()).unwrap();
-            let key = Filer::read_bytes(init.server_key_unwrap()).unwrap();
-            let identity = Identity::from_pem(cert, key);
-            server = server
-                .tls_config(ServerTlsConfig::new().identity(identity))
-                .unwrap();
+            let mut tls_config = ServerTlsConfig::new();
+            match init.server().unwrap().tls_key {
+                Some(res) => {
+                    let key = Filer::read_bytes(res).unwrap();
+                    match init.server().unwrap().tls_cert {
+                        Some(res) => {
+                            let cert = Filer::read_bytes(res).unwrap();
+                            let identity = Identity::from_pem(cert, key);
+                            tls_config = tls_config.identity(identity);
+                            log::info!("listener tls config identity success!");
+                        }
+                        _ => {}
+                    }
+                }
+                _ => {}
+            }
+            match init.server().unwrap().tls_client_root_cert {
+                Some(res) => {
+                    let client_ca = Filer::read_bytes(res).unwrap();
+                    let cert = Certificate::from_pem(client_ca);
+                    tls_config = tls_config.client_ca_root(cert);
+                    log::info!("listener tls config client ca root success!");
+                }
+                _ => {}
+            }
+            server = server.tls_config(tls_config).unwrap();
             log::info!("listener tls open!");
         }
         if let Some(res) = init.server().unwrap().timeout {

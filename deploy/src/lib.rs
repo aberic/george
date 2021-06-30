@@ -16,6 +16,7 @@ use logs::LogModule;
 use serde::{Deserialize, Serialize};
 
 mod builder;
+mod ca;
 pub mod comm;
 mod conf;
 mod conf_test;
@@ -100,6 +101,8 @@ pub struct ConfigServer {
     pub tls_key: Option<String>,
     /// 服务端`cert`，开启`TLS`后生效
     pub tls_cert: Option<String>,
+    /// 客户端根证书，开启`TLS`后生效
+    pub tls_client_root_cert: Option<String>,
     /// 为所有请求处理程序设置超时，单位secs
     pub timeout: Option<u64>,
     /// 设置应用于每个连接入站请求的并发限制

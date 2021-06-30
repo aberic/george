@@ -18,11 +18,11 @@ use tonic::{Request, Response, Status};
 
 use db::Task;
 
-use crate::protos::chain::utils::Resp;
 use crate::protos::db::db::index_service_server::IndexService;
 use crate::protos::db::db::{
     IndexList, RequestIndexCreate, RequestIndexInfo, RequestIndexList, ResponseIndexInfo,
 };
+use crate::protos::utils::utils::Resp;
 use crate::server::db::IndexServer;
 
 impl IndexServer {

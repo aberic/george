@@ -600,6 +600,11 @@ impl RSA {
         })
     }
 
+    /// 生成RSA对象
+    pub fn from_bytes(sk: Vec<u8>) -> GeorgeResult<RSA> {
+        RSA::from_pkey(load_sk_pkey(sk)?)
+    }
+
     /// 通过私钥文件生成RSA对象
     pub fn load<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<RSA> {
         let sk = load_sk_pkey_file(sk_filepath)?;

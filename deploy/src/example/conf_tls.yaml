@@ -12,6 +12,7 @@ config:
     tls: true # 是否开启`TLS`，为空则默认`false`
     tls_key: src/examples/server.key # 服务端`key`，开启`TLS`后生效
     tls_cert: src/examples/server.pem # 服务端`cert`，开启`TLS`后生效
+    tls_client_root_cert: src/examples/server.pem # 客户端根证书，开启`TLS`后生效
     #timeout: 30 # 为所有请求处理程序设置超时，单位secs
     #concurrency_limit_per_connection: 32 # 设置应用于每个连接入站请求的并发限制
     #tcp_nodelay: true # 为接受的连接设置`TCP_NODELAY`选项的值。默认启用

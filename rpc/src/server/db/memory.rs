@@ -18,12 +18,12 @@ use tonic::{Request, Response, Status};
 
 use db::Task;
 
-use crate::protos::chain::utils::Resp;
 use crate::protos::db::db::memory_service_server::MemoryService;
 use crate::protos::db::db::{
     RequestMemoryInto, RequestMemoryOut, RequestMemoryPInto, RequestMemoryPOut,
     RequestMemoryPRemove, RequestMemoryRemove, ResponseMemoryOut, ResponseMemoryPOut,
 };
+use crate::protos::utils::utils::Resp;
 use crate::server::db::MemoryServer;
 
 impl MemoryServer {

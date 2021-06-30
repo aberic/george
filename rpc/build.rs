@@ -14,8 +14,10 @@
 
 fn comm() -> Result<(), std::io::Error> {
     tonic_build::configure()
-        .build_server(false)
+        .build_server(true)
         .build_client(true)
+        .format(true)
+        .compile_well_known_types(true)
         .out_dir("src/protos/utils")
         // .extern_path(".comm", "crate::comm::comm")
         .compile(
@@ -33,6 +35,8 @@ fn db() -> Result<(), std::io::Error> {
     tonic_build::configure()
         .build_server(true)
         .build_client(true)
+        .format(true)
+        .compile_well_known_types(true)
         .out_dir("src/protos/db")
         // .extern_path(".utils", "super")
         .compile(
@@ -56,6 +60,8 @@ fn chain() -> Result<(), std::io::Error> {
     tonic_build::configure()
         .build_server(true)
         .build_client(true)
+        .format(true)
+        .compile_well_known_types(true)
         .out_dir("src/protos/chain")
         // .extern_path(".comm", "crate::comm::comm")
         .compile(

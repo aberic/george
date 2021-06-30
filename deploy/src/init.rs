@@ -69,6 +69,10 @@ impl Init {
         self.conf.server().unwrap().tls_cert.unwrap()
     }
 
+    pub fn client_root_cert_unwrap(&self) -> String {
+        self.conf.server().unwrap().tls_client_root_cert.unwrap()
+    }
+
     pub fn db_unwrap(&self) -> ConfigDB {
         self.conf.db().expect("It's not gonna happen!")
     }

@@ -18,13 +18,13 @@ use tonic::{Request, Response, Status};
 
 use db::Task;
 
-use crate::protos::chain::utils::Resp;
 use crate::protos::db::db::view_service_server::ViewService;
 use crate::protos::db::db::{
     RequestViewArchive, RequestViewCreate, RequestViewInfo, RequestViewList, RequestViewModify,
     RequestViewRecord, RequestViewRecords, RequestViewRemove, ResponseViewInfo, ResponseViewRecord,
     ResponseViewRecords, ViewList,
 };
+use crate::protos::utils::utils::Resp;
 use crate::server::db::ViewServer;
 
 impl ViewServer {

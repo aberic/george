@@ -772,7 +772,7 @@ impl Cert {
     /// 一般用于验证指定证书是否由自己签发的
     ///
     /// 只检查签名:不进行其他检查(如证书链有效性)
-    pub fn verify(sk: PKey<Public>, x509: X509) -> GeorgeResult<bool> {
+    pub fn verify(sk: PKey<Private>, x509: X509) -> GeorgeResult<bool> {
         match x509.verify(&sk) {
             Ok(res) => Ok(res),
             Err(err) => Err(Errs::strs("x509 verify", err)),

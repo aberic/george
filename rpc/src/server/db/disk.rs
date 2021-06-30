@@ -18,12 +18,12 @@ use tonic::{Request, Response, Status};
 
 use db::Task;
 
-use crate::protos::chain::utils::Resp;
 use crate::protos::db::db::disk_service_server::DiskService;
 use crate::protos::db::db::{
     RequestDiskDelete, RequestDiskIOut, RequestDiskInto, RequestDiskOut, RequestDiskRemove,
     RequestDiskSelect, ResponseDiskDelete, ResponseDiskOut, ResponseDiskSelect,
 };
+use crate::protos::utils::utils::Resp;
 use crate::server::db::DiskServer;
 
 impl DiskServer {

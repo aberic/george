@@ -20,6 +20,7 @@ impl ConfigServer {
             tls: None,
             tls_key: None,
             tls_cert: None,
+            tls_client_root_cert: None,
             timeout: None,
             concurrency_limit_per_connection: None,
             tcp_nodelay: None,

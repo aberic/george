@@ -12,20 +12,21 @@
  * limitations under the License.
  */
 
+use std::sync::Arc;
+
 use tonic::{Request, Response, Status};
 
 use db::task::traits::TMaster;
+use db::Task;
 
-use crate::protos::chain::utils::{Req, Resp};
 use crate::protos::db::db::database_service_server::DatabaseService;
 use crate::protos::db::db::{
     Database, DatabaseList, RequestDatabaseCreate, RequestDatabaseInfo, RequestDatabaseModify,
     RequestDatabaseRemove, ResponseDatabaseInfo,
 };
+use crate::protos::utils::utils::{Req, Resp};
 use crate::server::db::DatabaseServer;
 use crate::tools::{Children, Results, Trans};
-use db::Task;
-use std::sync::Arc;
 
 impl DatabaseServer {
     pub fn new(task: Arc<Task>) -> Self {
@@ -51,7 +52,7 @@ impl DatabaseService for DatabaseServer {
             databases.push(database);
         }
         let message = DatabaseList { databases };
-        Ok(Response::new(message))
+        Results::response(message)
     }
 
     async fn create(

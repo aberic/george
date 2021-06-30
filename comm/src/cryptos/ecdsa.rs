@@ -89,6 +89,17 @@ impl ECDSA {
     }
 
     /// 生成ECDSA对象
+    pub fn from_sk_bytes(sk: Vec<u8>) -> GeorgeResult<ECDSA> {
+        match ECDSA::from_sk_pem(sk.clone()) {
+            Ok(res) => Ok(res),
+            Err(_) => match ECDSA::from_sk_der(sk) {
+                Ok(res) => Ok(res),
+                Err(_) => Err(Errs::str("EcKey private can not load by sk bytes!")),
+            },
+        }
+    }
+
+    /// 生成ECDSA对象
     pub fn from_hex(sk: String, pk: String) -> GeorgeResult<ECDSA> {
         from_bytes(Hex::decode(sk)?, Hex::decode(pk)?)
     }

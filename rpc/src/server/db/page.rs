@@ -18,12 +18,12 @@ use tonic::{Request, Response, Status};
 
 use db::Task;
 
-use crate::protos::chain::utils::{Req, Resp};
 use crate::protos::db::db::page_service_server::PageService;
 use crate::protos::db::db::{
     PageList, RequestPageCreate, RequestPageInfo, RequestPageModify, RequestPageRemove,
     ResponsePageInfo,
 };
+use crate::protos::utils::utils::{Req, Resp};
 use crate::server::db::PageServer;
 
 impl PageServer {

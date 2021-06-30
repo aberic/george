@@ -12,6 +12,6 @@
  * limitations under the License.
  */
 
-pub use super::utils::*;
+use super::utils::*;
 
 pub mod chain;
