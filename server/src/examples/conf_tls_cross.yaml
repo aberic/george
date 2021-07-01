@@ -12,5 +12,4 @@ config:
     tls: true
     tls_key: server/src/examples/server.key # 服务端`key`，开启`TLS`后生效
     tls_cert: server/src/examples/server.pem # 服务端`cert`，开启`TLS`后生效
-#    tls_client_root_cert: server/src/examples/tls/client_ca.pem # 客户端根证书，开启`TLS`后生效
     port: 9219 # 服务端口号

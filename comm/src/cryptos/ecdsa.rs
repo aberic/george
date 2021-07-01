@@ -12,7 +12,6 @@
  * limitations under the License.
  */
 
-use std::fs::{read, read_to_string};
 use std::path::Path;
 
 use openssl::bn::{BigNum, BigNumContext};
@@ -27,7 +26,7 @@ use crate::cryptos::Hex;
 use crate::cryptos::{Base64, ECDSA};
 use crate::errors::Errs;
 use crate::errors::GeorgeResult;
-use crate::io::file::FilerWriter;
+use crate::io::file::{FilerReader, FilerWriter};
 use crate::io::Filer;
 use crate::strings::StringHandler;
 use crate::Strings;
@@ -76,7 +75,18 @@ impl ECDSA {
     pub fn from_sk_pem(sk: Vec<u8>) -> GeorgeResult<ECDSA> {
         match EcKey::private_key_from_pem(&sk) {
             Ok(sk) => ECDSA::from_sk(sk),
-            Err(err) => Err(Errs::strs("EcKey private_key_from_pem", err)),
+            Err(err) => Err(Errs::strs("EcKey from_sk_pem", err)),
+        }
+    }
+
+    /// 生成ECDSA对象
+    pub fn from_sk_pem_pkcs8(sk: Vec<u8>) -> GeorgeResult<ECDSA> {
+        match PKey::private_key_from_pem(&sk) {
+            Ok(res) => match res.ec_key() {
+                Ok(res) => ECDSA::from_sk(res),
+                Err(err) => Err(Errs::strs("PKey to ec_key", err)),
+            },
+            Err(err) => Err(Errs::strs("EcKey from_sk_pem_pkcs8", err)),
         }
     }
 
@@ -84,7 +94,7 @@ impl ECDSA {
     pub fn from_sk_der(sk: Vec<u8>) -> GeorgeResult<ECDSA> {
         match EcKey::private_key_from_der(&sk) {
             Ok(sk) => ECDSA::from_sk(sk),
-            Err(err) => Err(Errs::strs("EcKey private_key_from_pem", err)),
+            Err(err) => Err(Errs::strs("EcKey from_sk_der", err)),
         }
     }
 
@@ -131,6 +141,20 @@ impl ECDSA {
     }
 
     /// 生成ECDSA对象
+    pub fn from_pem_pkcs8(sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<ECDSA> {
+        match PKey::private_key_from_pem(&sk) {
+            Ok(res) => match res.ec_key() {
+                Ok(sk_ec) => match EcKey::public_key_from_pem(&pk) {
+                    Ok(pk_ec) => ECDSA::from(sk_ec, pk_ec),
+                    Err(err) => Err(Errs::strs("EcKey public_key_from_pem", err)),
+                },
+                Err(err) => Err(Errs::strs("PKey to ec_key", err)),
+            },
+            Err(err) => Err(Errs::strs("EcKey private_key_from_pem", err)),
+        }
+    }
+
+    /// 生成ECDSA对象
     pub fn from_der(sk: Vec<u8>, pk: Vec<u8>) -> GeorgeResult<ECDSA> {
         match EcKey::private_key_from_der(&sk) {
             Ok(sk_ec) => match EcKey::public_key_from_der(&pk) {
@@ -143,20 +167,26 @@ impl ECDSA {
 
     /// 生成ECDSA对象
     pub fn from_sk_pem_file<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<ECDSA> {
-        let sk_bytes = load_bytes_file(sk_filepath)?;
+        let sk_bytes = Filer::read_bytes(sk_filepath)?;
         ECDSA::from_sk_pem(sk_bytes)
     }
 
     /// 生成ECDSA对象
+    pub fn from_sk_pem_pkcs8_file<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<ECDSA> {
+        let sk_bytes = Filer::read_bytes(sk_filepath)?;
+        ECDSA::from_sk_pem_pkcs8(sk_bytes)
+    }
+
+    /// 生成ECDSA对象
     pub fn from_sk_der_file<P: AsRef<Path>>(sk_filepath: P) -> GeorgeResult<ECDSA> {
-        let sk_bytes = load_bytes_file(sk_filepath)?;
+        let sk_bytes = Filer::read_bytes(sk_filepath)?;
         ECDSA::from_sk_der(sk_bytes)
     }
 
     /// 生成ECDSA对象
     pub fn from_pem_file<P: AsRef<Path>>(sk_filepath: P, pk_filepath: P) -> GeorgeResult<ECDSA> {
-        let sk = load_bytes_file(sk_filepath)?;
-        let pk = load_bytes_file(pk_filepath)?;
+        let sk = Filer::read_bytes(sk_filepath)?;
+        let pk = Filer::read_bytes(pk_filepath)?;
         ECDSA::from_pem(sk, pk)
     }
 
@@ -165,8 +195,8 @@ impl ECDSA {
         sk_filepath: P,
         pk_filepath: P,
     ) -> GeorgeResult<ECDSA> {
-        let sk = Hex::decode(load_file(sk_filepath)?)?;
-        let pk = Hex::decode(load_file(pk_filepath)?)?;
+        let sk = Hex::decode(Filer::read(sk_filepath)?)?;
+        let pk = Hex::decode(Filer::read(pk_filepath)?)?;
         ECDSA::from_pem(sk, pk)
     }
 
@@ -175,15 +205,15 @@ impl ECDSA {
         sk_filepath: P,
         pk_filepath: P,
     ) -> GeorgeResult<ECDSA> {
-        let sk = Base64::decode(load_file(sk_filepath)?)?;
-        let pk = Base64::decode(load_file(pk_filepath)?)?;
+        let sk = Base64::decode(Filer::read(sk_filepath)?)?;
+        let pk = Base64::decode(Filer::read(pk_filepath)?)?;
         ECDSA::from_pem(sk, pk)
     }
 
     /// 生成ECDSA对象
     pub fn from_der_file<P: AsRef<Path>>(sk_filepath: P, pk_filepath: P) -> GeorgeResult<ECDSA> {
-        let sk = load_bytes_file(sk_filepath)?;
-        let pk = load_bytes_file(pk_filepath)?;
+        let sk = Filer::read_bytes(sk_filepath)?;
+        let pk = Filer::read_bytes(pk_filepath)?;
         ECDSA::from_der(sk, pk)
     }
 
@@ -192,8 +222,8 @@ impl ECDSA {
         sk_filepath: P,
         pk_filepath: P,
     ) -> GeorgeResult<ECDSA> {
-        let sk = Hex::decode(load_file(sk_filepath)?)?;
-        let pk = Hex::decode(load_file(pk_filepath)?)?;
+        let sk = Hex::decode(Filer::read(sk_filepath)?)?;
+        let pk = Hex::decode(Filer::read(pk_filepath)?)?;
         ECDSA::from_der(sk, pk)
     }
 
@@ -202,15 +232,15 @@ impl ECDSA {
         sk_filepath: P,
         pk_filepath: P,
     ) -> GeorgeResult<ECDSA> {
-        let sk = Base64::decode(load_file(sk_filepath)?)?;
-        let pk = Base64::decode(load_file(pk_filepath)?)?;
+        let sk = Base64::decode(Filer::read(sk_filepath)?)?;
+        let pk = Base64::decode(Filer::read(pk_filepath)?)?;
         ECDSA::from_der(sk, pk)
     }
 
     /// 生成ECDSA对象
     pub fn from_hex_file<P: AsRef<Path>>(sk_filepath: P, pk_filepath: P) -> GeorgeResult<ECDSA> {
-        let sk = load_file(sk_filepath)?;
-        let pk = load_file(pk_filepath)?;
+        let sk = Filer::read(sk_filepath)?;
+        let pk = Filer::read(pk_filepath)?;
         from_bytes(Hex::decode(sk)?, Hex::decode(pk)?)
     }
 
@@ -220,15 +250,15 @@ impl ECDSA {
         pk_filepath: P,
         nid: Nid,
     ) -> GeorgeResult<ECDSA> {
-        let sk = load_file(sk_filepath)?;
-        let pk = load_file(pk_filepath)?;
+        let sk = Filer::read(sk_filepath)?;
+        let pk = Filer::read(pk_filepath)?;
         from_bytes_nid(Hex::decode(sk)?, Hex::decode(pk)?, nid)
     }
 
     /// 生成ECDSA对象
     pub fn from_base64_file<P: AsRef<Path>>(sk_filepath: P, pk_filepath: P) -> GeorgeResult<ECDSA> {
-        let sk = load_file(sk_filepath)?;
-        let pk = load_file(pk_filepath)?;
+        let sk = Filer::read(sk_filepath)?;
+        let pk = Filer::read(pk_filepath)?;
         from_bytes(Base64::decode(sk)?, Base64::decode(pk)?)
     }
 
@@ -238,8 +268,8 @@ impl ECDSA {
         pk_filepath: P,
         nid: Nid,
     ) -> GeorgeResult<ECDSA> {
-        let sk = load_file(sk_filepath)?;
-        let pk = load_file(pk_filepath)?;
+        let sk = Filer::read(sk_filepath)?;
+        let pk = Filer::read(pk_filepath)?;
         from_bytes_nid(Base64::decode(sk)?, Base64::decode(pk)?, nid)
     }
 
@@ -278,6 +308,13 @@ impl ECDSA {
         }
     }
 
+    pub fn sk_pem_pkcs8(&self) -> GeorgeResult<Vec<u8>> {
+        match self.sk.private_key_to_pem_pkcs8() {
+            Ok(res) => Ok(res),
+            Err(err) => Err(Errs::strs("private_key_to_pem_pkcs8", err)),
+        }
+    }
+
     /// -----BEGIN EC PRIVATE KEY-----
     /// MHcCAQEEII75Y5ZA5ZicVZ943/9K7zg9E0C7cWYUM65HXh9S8SjioAoGCCqGSM49
     /// AwEHoUQDQgAEg+XjX4DNDSQZhLaawNTfUXmCA2IHkEH9BebmKtcTf/RNpFfJvSqE
@@ -287,6 +324,18 @@ impl ECDSA {
         match self.sk_ec.private_key_to_pem() {
             Ok(res) => Strings::from_utf8(res),
             Err(err) => Err(Errs::strs("private_key_to_pem", err)),
+        }
+    }
+
+    /// -----BEGIN PRIVATE KEY-----
+    /// MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgek9kS0rTEaJ85kTN
+    /// G9U91aqRSsia2W9hmFLHHvottcahRANCAARO2D6g822LBhP0PT/VyKMHbmtzSTvH
+    /// RBV+asdJp/ItD8YcN6P4rxCN2CLkkXyUMbDhxIrJfb/7K1lWfcVynGuc
+    /// -----END PRIVATE KEY-----
+    pub fn sk_pem_pkcs8_str(&self) -> GeorgeResult<String> {
+        match self.sk.private_key_to_pem_pkcs8() {
+            Ok(res) => Strings::from_utf8(res),
+            Err(err) => Err(Errs::strs("private_key_to_pem_pkcs8", err)),
         }
     }
 
@@ -494,6 +543,28 @@ impl ECDSA {
         Ok(())
     }
 
+    /// -----BEGIN EC PRIVATE KEY-----
+    /// MHcCAQEEII75Y5ZA5ZicVZ943/9K7zg9E0C7cWYUM65HXh9S8SjioAoGCCqGSM49
+    /// AwEHoUQDQgAEg+XjX4DNDSQZhLaawNTfUXmCA2IHkEH9BebmKtcTf/RNpFfJvSqE
+    /// m5WsWIMRyz9jE1EQ7HNBySlu7Q3Qshx8lQ==
+    /// -----END EC PRIVATE KEY-----
+    ///
+    /// -----BEGIN PUBLIC KEY-----
+    /// MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEg+XjX4DNDSQZhLaawNTfUXmCA2IH
+    /// kEH9BebmKtcTf/RNpFfJvSqEm5WsWIMRyz9jE1EQ7HNBySlu7Q3Qshx8lQ==
+    /// -----END PUBLIC KEY-----
+    pub fn store_pem_pkcs8<P: AsRef<Path>>(
+        &self,
+        sk_filepath: P,
+        pk_filepath: P,
+    ) -> GeorgeResult<()> {
+        let sk_content = self.sk_pem_pkcs8()?;
+        let pk_content = self.pk_pem()?;
+        let _ = Filer::write_force(sk_filepath, sk_content)?;
+        let _ = Filer::write_force(pk_filepath, pk_content)?;
+        Ok(())
+    }
+
     /// 2d2d2d2d2d424547494e205055424c4943204b45592d2d2d2d2d0a4d466b77457759484b6f5a497a6a3043
     /// 415159494b6f5a497a6a30444151634451674145672b586a5834444e4453515a684c6161774e546655586d
     /// 43413249480a6b4548394265626d4b746354662f524e7046664a765371456d35577357494d52797a396a45
@@ -620,21 +691,5 @@ fn from_bytes_nid(sk_bytes: Vec<u8>, pk_bytes: Vec<u8>, nid: Nid) -> GeorgeResul
             Err(err) => Err(Errs::strs("EcKey from_private_components", err)),
         },
         Err(err) => Err(Errs::strs("BigNum from_slice", err)),
-    }
-}
-
-/// 读取文件字节数组
-fn load_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<String> {
-    match read_to_string(filepath) {
-        Ok(res) => Ok(res),
-        Err(err) => Err(Errs::strs("read", err)),
-    }
-}
-
-/// 读取文件字节数组
-fn load_bytes_file<P: AsRef<Path>>(filepath: P) -> GeorgeResult<Vec<u8>> {
-    match read(filepath) {
-        Ok(v8s) => Ok(v8s),
-        Err(err) => Err(Errs::strs("read", err)),
     }
 }

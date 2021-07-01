@@ -680,7 +680,7 @@ mod ca {
         });
 
         let server_ca_sk_bytes =
-            RSA::generate_pkcs8_pem(2048, "src/test/crypto/ca/tls/server_ca_sk.pem").unwrap();
+            RSA::generate_pkcs8_pem(2048, "src/test/crypto/ca/tls/server_ca_sk.key").unwrap();
         let server_ca_rsa = RSA::from_bytes(server_ca_sk_bytes).unwrap();
         let server_ca = Cert::sign_root_256(
             MsbOptionCA::MaybeZero,
@@ -716,7 +716,7 @@ mod ca {
             uris: vec!["uri_user.cn".to_string()],
         });
         let server_sk_bytes =
-            RSA::generate_pkcs8_pem(2048, "src/test/crypto/ca/tls/server_sk.pem").unwrap();
+            RSA::generate_pkcs8_pem(2048, "src/test/crypto/ca/tls/server_sk.key").unwrap();
         let server_rsa = RSA::from_bytes(server_sk_bytes).unwrap();
         let server_cert = Cert::sign_user_256(
             server_ca.x509.clone(),
@@ -756,10 +756,12 @@ mod ca {
         });
 
         let client_ca_ec = ECDSA::new().unwrap();
-        client_ca_ec.store_pem(
-            "src/test/crypto/ca/tls/client_ca_sk.pem",
-            "src/test/crypto/ca/tls/client_ca_pk.pem",
-        );
+        client_ca_ec
+            .store_pem_pkcs8(
+                "src/test/crypto/ca/tls/client_ca_sk.key",
+                "src/test/crypto/ca/tls/client_ca_pk.pub",
+            )
+            .unwrap();
         let client_ca = Cert::sign_root_256(
             MsbOptionCA::MaybeZero,
             true,
@@ -794,10 +796,12 @@ mod ca {
             uris: vec!["uri_user.cn".to_string()],
         });
         let client_ec = ECDSA::new().unwrap();
-        client_ec.store_pem(
-            "src/test/crypto/ca/tls/client_sk.pem",
-            "src/test/crypto/ca/tls/client_pk.pem",
-        );
+        client_ec
+            .store_pem_pkcs8(
+                "src/test/crypto/ca/tls/client_sk.key",
+                "src/test/crypto/ca/tls/client_pk.pub",
+            )
+            .unwrap();
         let client_cert = Cert::sign_user_256(
             client_ca.x509.clone(),
             MsbOptionCA::MaybeZero,

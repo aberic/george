@@ -89,6 +89,7 @@ mod ecdsa {
             println!("sk str hex = {}", sk_hex.clone());
             println!("sk str b64 = {}", sk_b64.clone());
             println!("sk pem str = {}", ecdsa1.sk_pem_str().unwrap());
+            println!("sk pem pkcs8 str = {}", ecdsa1.sk_pem_pkcs8_str().unwrap());
             println!("sk pem hex = {}", ecdsa1.sk_pem_hex().unwrap());
             println!("sk pem b64 = {}", ecdsa1.sk_pem_base64().unwrap());
             println!("sk der hex = {}", ecdsa1.sk_der_hex().unwrap());
@@ -124,22 +125,29 @@ mod ecdsa {
             )
             .unwrap();
             assert!(ecdsa4.verify(data, sig_res.as_slice()).unwrap());
-            println!("ecdsa sk b64 = {}", sk_b64.clone());
-            println!("ecdsa4 sk b64 = {}", ecdsa4.sk_base64());
-            println!("ecdsa pk b64 = {}", pk_b64.clone());
-            println!("ecdsa4 pk b64 = {}", ecdsa4.pk_base64().unwrap());
+            println!("ecdsa sk pem = {}", sk_b64.clone());
+            println!("ecdsa4 sk pem = {}", ecdsa4.sk_base64());
+            println!("ecdsa pk pem = {}", pk_b64.clone());
+            println!("ecdsa4 pk pem = {}", ecdsa4.pk_base64().unwrap());
             println!();
 
-            let ecdsa5 = ECDSA::from_der(
+            let ecdsa5 = ECDSA::from_sk_pem_pkcs8(ecdsa1.sk_pem_pkcs8().unwrap()).unwrap();
+            assert!(ecdsa5.verify(data, sig_res.as_slice()).unwrap());
+            println!("ecdsa sk pem pkcs8 = {}", sk_b64.clone());
+            println!("ecdsa5 sk pem pkcs8 = {}", ecdsa5.sk_base64());
+            println!("ecdsa pk pem pkcs8 = {}", pk_b64.clone());
+            println!("ecdsa5 pk pem pkcs8 = {}", ecdsa5.pk_base64().unwrap());
+
+            let ecdsa6 = ECDSA::from_der(
                 Hex::decode(ecdsa1.sk_der_hex().unwrap()).unwrap(),
                 Base64::decode(ecdsa1.pk_der_base64().unwrap()).unwrap(),
             )
             .unwrap();
-            assert!(ecdsa5.verify(data, sig_res.as_slice()).unwrap());
-            println!("ecdsa sk b64 = {}", sk_b64.clone());
-            println!("ecdsa5 sk b64 = {}", ecdsa5.sk_base64());
-            println!("ecdsa pk b64 = {}", pk_b64.clone());
-            println!("ecdsa5 pk b64 = {}", ecdsa5.pk_base64().unwrap());
+            assert!(ecdsa6.verify(data, sig_res.as_slice()).unwrap());
+            println!("ecdsa sk der = {}", sk_b64.clone());
+            println!("ecdsa6 sk der = {}", ecdsa6.sk_base64());
+            println!("ecdsa pk der = {}", pk_b64.clone());
+            println!("ecdsa6 pk der = {}", ecdsa6.pk_base64().unwrap());
         }
 
         #[test]

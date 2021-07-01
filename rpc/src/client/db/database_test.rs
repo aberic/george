@@ -39,8 +39,19 @@ mod database {
     }
 
     #[test]
+    fn list_tls_1() {
+        let server_ca = Some(Filer::read_bytes("src/examples/tls/server_ca.pem").unwrap());
+        let mut cli =
+            DatabaseRpcClient::new("127.0.0.1", 9219, true, None, None, server_ca).unwrap();
+        let res = cli.list().unwrap();
+        for db in res.databases {
+            println!("db {}", db.name)
+        }
+    }
+
+    #[test]
     fn list_tls() {
-        let key = Some(Filer::read_bytes("src/examples/tls/client_sk.pem").unwrap());
+        let key = Some(Filer::read_bytes("src/examples/tls/client_sk.key").unwrap());
         let cert = Some(Filer::read_bytes("src/examples/tls/client.pem").unwrap());
         let server_ca = Some(Filer::read_bytes("src/examples/tls/server_ca.pem").unwrap());
         let mut cli =
