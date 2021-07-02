@@ -13,11 +13,25 @@
  */
 
 use crate::protos::db::db::database_service_client::DatabaseServiceClient;
+use comm::errors::{Errs, GeorgeResult};
+use std::future::Future;
 use tokio::runtime::Runtime;
 use tonic::transport::Channel;
 
 pub mod database;
 mod database_test;
+
+// trait R {
+//     fn run<F: Future, T>(&self, future: F) -> GeorgeResult<T> {
+//         match self.rt.block_on(future) {
+//             Ok(res) => Ok(res),
+//             Err(err) => Err(Errs::strs(
+//                 "failed to successfully run the future on RunTime!",
+//                 err,
+//             )),
+//         }
+//     }
+// }
 
 pub struct DatabaseRpcClient {
     client: DatabaseServiceClient<Channel>,

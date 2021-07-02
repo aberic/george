@@ -19,8 +19,11 @@ use comm::errors::{Errs, GeorgeResult};
 
 use crate::client::db::DatabaseRpcClient;
 use crate::protos::db::db::database_service_client::DatabaseServiceClient;
-use crate::protos::db::db::ResponseDatabaseList;
+use crate::protos::db::db::{RequestDatabaseCreate, ResponseDatabaseList};
 use crate::protos::utils::utils::Req;
+use crate::tools::Trans;
+use std::future::Future;
+use tonic::Request;
 
 impl DatabaseRpcClient {
     pub fn new(
@@ -83,7 +86,7 @@ impl DatabaseRpcClient {
 
 impl DatabaseRpcClient {
     pub fn list(&mut self) -> GeorgeResult<ResponseDatabaseList> {
-        let request = tonic::Request::new(Req {});
+        let request = Request::new(Req {});
         match self.rt.block_on(self.client.list(request)) {
             Ok(res) => Ok(res.into_inner()),
             Err(err) => Err(Errs::strs(
@@ -92,4 +95,69 @@ impl DatabaseRpcClient {
             )),
         }
     }
+
+    // pub fn create(&mut self, name: String, comment: String) -> GeorgeResult<()> {
+    //     let request = Request::new(RequestDatabaseCreate { name, comment });
+    //     match self.rt.block_on(self.client.create(request)) {
+    //         Ok(res) => {
+    //             let resp = res.into_inner();
+    //             let status = Trans::i32_2_status(resp.status)?;
+    //             match resp.status {}
+    //         }
+    //         Err(err) => Err(Errs::strs(
+    //             "failed to successfully run the future on RunTime!",
+    //             err,
+    //         )),
+    //     }
+    // }
+    //
+    // pub fn info(&self, name: String) -> GeorgeResult<protocols::impls::db::database::Database> {
+    //     let mut req = RequestDatabaseInfo::new();
+    //     req.set_name(name);
+    //     let resp = self
+    //         .client
+    //         .info(grpc::RequestOptions::new(), req)
+    //         .join_metadata_result();
+    //     let resp = executor::block_on(resp);
+    //     match resp {
+    //         Ok((_m, resp, _md)) => Ok(resp.database.unwrap()),
+    //         Err(err) => Err(Errs::strs("database info failed!", err)),
+    //     }
+    // }
+    //
+    // pub fn modify(&self, name: String, comment_new: String, name_new: String) -> GeorgeResult<()> {
+    //     let mut req = RequestDatabaseModify::new();
+    //     req.set_name(name);
+    //     req.set_comment(comment_new);
+    //     req.set_name_new(name_new);
+    //     let resp = self
+    //         .client
+    //         .modify(grpc::RequestOptions::new(), req)
+    //         .join_metadata_result();
+    //     let resp = executor::block_on(resp);
+    //     match resp {
+    //         Ok((_m, resp, _md)) => match resp.status {
+    //             Status::Ok => Ok(()),
+    //             _ => Err(Tools::response_err(resp)),
+    //         },
+    //         Err(err) => Err(Errs::strs("database modify failed!", err)),
+    //     }
+    // }
+    //
+    // pub fn remove(&self, name: String) -> GeorgeResult<()> {
+    //     let mut req = RequestDatabaseRemove::new();
+    //     req.set_name(name);
+    //     let resp = self
+    //         .client
+    //         .remove(grpc::RequestOptions::new(), req)
+    //         .join_metadata_result();
+    //     let resp = executor::block_on(resp);
+    //     match resp {
+    //         Ok((_m, resp, _md)) => match resp.status {
+    //             Status::Ok => Ok(()),
+    //             _ => Err(Tools::response_err(resp)),
+    //         },
+    //         Err(err) => Err(Errs::strs("database remove failed!", err)),
+    //     }
+    // }
 }

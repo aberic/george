@@ -13,7 +13,7 @@
  */
 
 use crate::protos::db::db::{Engine, KeyType};
-use crate::protos::utils::utils::Timestamp;
+use crate::protos::utils::utils::{Status, Timestamp};
 use crate::tools::Trans;
 use comm::errors::{Errs, GeorgeResult};
 use comm::Time;
@@ -111,6 +111,48 @@ impl Trans {
             Ok(db::utils::enums::KeyType::Float)
         } else {
             Err(Errs::string(format!("no match key type with {}", res)))
+        }
+    }
+
+    pub fn i32_2_status(res: i32) -> GeorgeResult<Status> {
+        if (Status::Ok as i32) == res {
+            Ok(Status::Ok)
+        } else if (Status::Cancelled as i32) == res {
+            Ok(Status::Cancelled)
+        } else if (Status::Unknown as i32) == res {
+            Ok(Status::Unknown)
+        } else if (Status::Argument as i32) == res {
+            Ok(Status::Argument)
+        } else if (Status::DeadlineExceeded as i32) == res {
+            Ok(Status::DeadlineExceeded)
+        } else if (Status::NotFound as i32) == res {
+            Ok(Status::NotFound)
+        } else if (Status::AlreadyExists as i32) == res {
+            Ok(Status::AlreadyExists)
+        } else if (Status::PermissionDenied as i32) == res {
+            Ok(Status::PermissionDenied)
+        } else if (Status::Unauthenticated as i32) == res {
+            Ok(Status::Unauthenticated)
+        } else if (Status::ResourceExhausted as i32) == res {
+            Ok(Status::ResourceExhausted)
+        } else if (Status::FailedPrecondition as i32) == res {
+            Ok(Status::FailedPrecondition)
+        } else if (Status::Aborted as i32) == res {
+            Ok(Status::Aborted)
+        } else if (Status::OutOfRange as i32) == res {
+            Ok(Status::OutOfRange)
+        } else if (Status::Unimplemented as i32) == res {
+            Ok(Status::Unimplemented)
+        } else if (Status::Internal as i32) == res {
+            Ok(Status::Internal)
+        } else if (Status::Unavailable as i32) == res {
+            Ok(Status::Unavailable)
+        } else if (Status::DataLoss as i32) == res {
+            Ok(Status::DataLoss)
+        } else if (Status::Custom as i32) == res {
+            Ok(Status::Custom)
+        } else {
+            Err(Errs::string(format!("no match status with {}", res)))
         }
     }
 }
