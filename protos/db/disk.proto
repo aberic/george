@@ -120,14 +120,14 @@ message ResponseDiskDelete {
 
 // 返回删除数据
 message DiskDeleted {
-  /// total 检索过程中遍历的总条数（也表示文件读取次数，文件描述符次数远小于该数，一般文件描述符数为1，即共用同一文件描述符）
+  // total 检索过程中遍历的总条数（也表示文件读取次数，文件描述符次数远小于该数，一般文件描述符数为1，即共用同一文件描述符）
   uint64 total = 1;
-  /// 检索结果过程中遍历的总条数
+  // 检索结果过程中遍历的总条数
   uint64 count=2;
-  ///  使用到的索引名称，如果没用上则为空
+  //  使用到的索引名称，如果没用上则为空
   string index_name=3;
-  /// 索引是否顺序
+  // 索引是否顺序
   bool asc=4;
-  /// values 检索结果集合
+  // values 检索结果集合
   repeated bytes values=6;
 }

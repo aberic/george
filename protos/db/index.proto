@@ -42,8 +42,10 @@ message Index {
 }
 
 // 索引集合
-message IndexList {
-  repeated Index indexes = 1;
+message ResponseIndexList {
+  utils.Status status = 1;
+  string msg_err = 2;
+  repeated Index indexes = 3;
 }
 
 // 请求索引集合

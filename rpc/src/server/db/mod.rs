@@ -15,6 +15,10 @@
 use db::Task;
 use std::sync::Arc;
 
+pub const DATABASE_SYS: &str = "sys";
+pub const VIEW_USER: &str = "user";
+pub const DEFAULT_COMMENT: &str = "system default";
+
 pub mod database;
 pub mod disk;
 pub mod index;

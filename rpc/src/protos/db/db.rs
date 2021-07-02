@@ -25,8 +25,12 @@ pub struct Index {
 }
 /// 索引集合
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct IndexList {
-    #[prost(message, repeated, tag = "1")]
+pub struct ResponseIndexList {
+    #[prost(enumeration = "super::utils::Status", tag = "1")]
+    pub status: i32,
+    #[prost(string, tag = "2")]
+    pub msg_err: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "3")]
     pub indexes: ::prost::alloc::vec::Vec<Index>,
 }
 /// 请求索引集合
@@ -146,8 +150,12 @@ pub struct View {
 }
 /// 视图集合
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ViewList {
-    #[prost(message, repeated, tag = "1")]
+pub struct ResponseViewList {
+    #[prost(enumeration = "super::utils::Status", tag = "1")]
+    pub status: i32,
+    #[prost(string, tag = "2")]
+    pub msg_err: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "3")]
     pub views: ::prost::alloc::vec::Vec<View>,
 }
 /// 请求视图集合
@@ -308,8 +316,12 @@ pub struct Database {
 }
 /// 数据库集合
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DatabaseList {
-    #[prost(message, repeated, tag = "1")]
+pub struct ResponseDatabaseList {
+    #[prost(enumeration = "super::utils::Status", tag = "1")]
+    pub status: i32,
+    #[prost(string, tag = "2")]
+    pub msg_err: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "3")]
     pub databases: ::prost::alloc::vec::Vec<Database>,
 }
 /// 请求新建数据库
@@ -490,19 +502,19 @@ pub struct ResponseDiskDelete {
 /// 返回删除数据
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DiskDeleted {
-    //// total 检索过程中遍历的总条数（也表示文件读取次数，文件描述符次数远小于该数，一般文件描述符数为1，即共用同一文件描述符）
+    /// total 检索过程中遍历的总条数（也表示文件读取次数，文件描述符次数远小于该数，一般文件描述符数为1，即共用同一文件描述符）
     #[prost(uint64, tag = "1")]
     pub total: u64,
-    //// 检索结果过程中遍历的总条数
+    /// 检索结果过程中遍历的总条数
     #[prost(uint64, tag = "2")]
     pub count: u64,
-    ////  使用到的索引名称，如果没用上则为空
+    ///  使用到的索引名称，如果没用上则为空
     #[prost(string, tag = "3")]
     pub index_name: ::prost::alloc::string::String,
-    //// 索引是否顺序
+    /// 索引是否顺序
     #[prost(bool, tag = "4")]
     pub asc: bool,
-    //// values 检索结果集合
+    /// values 检索结果集合
     #[prost(bytes = "vec", repeated, tag = "6")]
     pub values: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
@@ -527,8 +539,12 @@ pub struct Page {
 }
 /// 缓存页集合
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PageList {
-    #[prost(message, repeated, tag = "1")]
+pub struct ResponsePageList {
+    #[prost(enumeration = "super::utils::Status", tag = "1")]
+    pub status: i32,
+    #[prost(string, tag = "2")]
+    pub msg_err: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "3")]
     pub pages: ::prost::alloc::vec::Vec<Page>,
 }
 /// 请求新建缓存页
@@ -707,6 +723,7 @@ pub mod user_service_client {
             let inner = tonic::client::Grpc::with_interceptor(inner, interceptor);
             Self { inner }
         }
+        #[doc = " 数据库用户登录"]
         pub async fn login(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestLogin>,
@@ -768,10 +785,11 @@ pub mod page_service_client {
             let inner = tonic::client::Grpc::with_interceptor(inner, interceptor);
             Self { inner }
         }
+        #[doc = " 缓存页集合"]
         pub async fn list(
             &mut self,
             request: impl tonic::IntoRequest<super::super::utils::Req>,
-        ) -> Result<tonic::Response<super::PageList>, tonic::Status> {
+        ) -> Result<tonic::Response<super::ResponsePageList>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -782,6 +800,7 @@ pub mod page_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.PageService/list");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 创建缓存页"]
         pub async fn create(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestPageCreate>,
@@ -796,6 +815,7 @@ pub mod page_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.PageService/create");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 修改缓存页"]
         pub async fn modify(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestPageModify>,
@@ -810,6 +830,7 @@ pub mod page_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.PageService/modify");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 获取缓存页详情"]
         pub async fn info(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestPageInfo>,
@@ -824,6 +845,7 @@ pub mod page_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.PageService/info");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 删除缓存页"]
         pub async fn remove(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestPageRemove>,
@@ -885,10 +907,11 @@ pub mod database_service_client {
             let inner = tonic::client::Grpc::with_interceptor(inner, interceptor);
             Self { inner }
         }
+        #[doc = " 数据库集合"]
         pub async fn list(
             &mut self,
             request: impl tonic::IntoRequest<super::super::utils::Req>,
-        ) -> Result<tonic::Response<super::DatabaseList>, tonic::Status> {
+        ) -> Result<tonic::Response<super::ResponseDatabaseList>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -899,6 +922,7 @@ pub mod database_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.DatabaseService/list");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 创建数据库"]
         pub async fn create(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestDatabaseCreate>,
@@ -913,6 +937,7 @@ pub mod database_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.DatabaseService/create");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 修改数据库"]
         pub async fn modify(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestDatabaseModify>,
@@ -927,6 +952,7 @@ pub mod database_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.DatabaseService/modify");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 获取数据库详情"]
         pub async fn info(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestDatabaseInfo>,
@@ -941,6 +967,7 @@ pub mod database_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.DatabaseService/info");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 删除数据库"]
         pub async fn remove(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestDatabaseRemove>,
@@ -1002,10 +1029,11 @@ pub mod view_service_client {
             let inner = tonic::client::Grpc::with_interceptor(inner, interceptor);
             Self { inner }
         }
+        #[doc = " 视图集合"]
         pub async fn list(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestViewList>,
-        ) -> Result<tonic::Response<super::ViewList>, tonic::Status> {
+        ) -> Result<tonic::Response<super::ResponseViewList>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -1016,6 +1044,7 @@ pub mod view_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.ViewService/list");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 创建视图"]
         pub async fn create(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestViewCreate>,
@@ -1030,6 +1059,7 @@ pub mod view_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.ViewService/create");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 修改视图"]
         pub async fn modify(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestViewModify>,
@@ -1044,6 +1074,7 @@ pub mod view_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.ViewService/modify");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 获取视图详情"]
         pub async fn info(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestViewInfo>,
@@ -1058,6 +1089,7 @@ pub mod view_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.ViewService/info");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 删除视图"]
         pub async fn remove(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestViewRemove>,
@@ -1072,6 +1104,7 @@ pub mod view_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.ViewService/remove");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 整理归档"]
         pub async fn archive(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestViewArchive>,
@@ -1086,6 +1119,7 @@ pub mod view_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.ViewService/archive");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 读取指定归档版本信息"]
         pub async fn record(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestViewRecord>,
@@ -1100,6 +1134,7 @@ pub mod view_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.ViewService/record");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 读取所有归档版本信息"]
         pub async fn records(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestViewRecords>,
@@ -1161,10 +1196,11 @@ pub mod index_service_client {
             let inner = tonic::client::Grpc::with_interceptor(inner, interceptor);
             Self { inner }
         }
+        #[doc = " 索引集合"]
         pub async fn list(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestIndexList>,
-        ) -> Result<tonic::Response<super::IndexList>, tonic::Status> {
+        ) -> Result<tonic::Response<super::ResponseIndexList>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -1175,6 +1211,7 @@ pub mod index_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.IndexService/list");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 创建索引"]
         pub async fn create(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestIndexCreate>,
@@ -1189,6 +1226,7 @@ pub mod index_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.IndexService/create");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 获取索引详情"]
         pub async fn info(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestIndexInfo>,
@@ -1250,6 +1288,7 @@ pub mod disk_service_client {
             let inner = tonic::client::Grpc::with_interceptor(inner, interceptor);
             Self { inner }
         }
+        #[doc = " 插入数据，如果存在则返回已存在"]
         pub async fn put(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestDiskInto>,
@@ -1264,6 +1303,7 @@ pub mod disk_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.DiskService/put");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 插入数据，无论存在与否都会插入或更新数据"]
         pub async fn set(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestDiskInto>,
@@ -1278,6 +1318,7 @@ pub mod disk_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.DiskService/set");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 获取数据，返回存储对象"]
         pub async fn get(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestDiskOut>,
@@ -1292,6 +1333,7 @@ pub mod disk_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.DiskService/get");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 根据指定索引名称获取数据，返回存储对象"]
         pub async fn get_by_index(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestDiskIOut>,
@@ -1306,6 +1348,7 @@ pub mod disk_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.DiskService/get_by_index");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 删除数据"]
         pub async fn remove(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestDiskRemove>,
@@ -1320,6 +1363,7 @@ pub mod disk_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.DiskService/remove");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 条件检索"]
         pub async fn select(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestDiskSelect>,
@@ -1334,6 +1378,7 @@ pub mod disk_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.DiskService/select");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 条件删除"]
         pub async fn delete(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestDiskDelete>,
@@ -1395,6 +1440,7 @@ pub mod memory_service_client {
             let inner = tonic::client::Grpc::with_interceptor(inner, interceptor);
             Self { inner }
         }
+        #[doc = " 插入数据，如果存在则返回已存在"]
         pub async fn put(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestMemoryInto>,
@@ -1409,6 +1455,7 @@ pub mod memory_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.MemoryService/put");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 插入数据，无论存在与否都会插入或更新数据"]
         pub async fn set(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestMemoryInto>,
@@ -1423,6 +1470,7 @@ pub mod memory_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.MemoryService/set");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 获取数据，返回存储对象"]
         pub async fn get(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestMemoryOut>,
@@ -1437,6 +1485,7 @@ pub mod memory_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.MemoryService/get");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 删除数据"]
         pub async fn remove(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestMemoryRemove>,
@@ -1451,6 +1500,7 @@ pub mod memory_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.MemoryService/remove");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 在指定缓存页中插入数据，如果存在则返回已存在"]
         pub async fn put_by_page(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestMemoryPInto>,
@@ -1465,6 +1515,7 @@ pub mod memory_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.MemoryService/put_by_page");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 在指定缓存页中插入数据，无论存在与否都会插入或更新数据"]
         pub async fn set_by_page(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestMemoryPInto>,
@@ -1479,6 +1530,7 @@ pub mod memory_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.MemoryService/set_by_page");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 在指定缓存页中获取数据，返回存储对象"]
         pub async fn get_by_page(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestMemoryPOut>,
@@ -1493,6 +1545,7 @@ pub mod memory_service_client {
             let path = http::uri::PathAndQuery::from_static("/db.MemoryService/get_by_page");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " 在指定缓存页中删除数据"]
         pub async fn remove_by_page(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestMemoryPRemove>,
@@ -1528,6 +1581,7 @@ pub mod user_service_server {
     #[doc = "Generated trait containing gRPC methods that should be implemented for use with UserServiceServer."]
     #[async_trait]
     pub trait UserService: Send + Sync + 'static {
+        #[doc = " 数据库用户登录"]
         async fn login(
             &self,
             request: tonic::Request<super::RequestLogin>,
@@ -1634,22 +1688,27 @@ pub mod page_service_server {
     #[doc = "Generated trait containing gRPC methods that should be implemented for use with PageServiceServer."]
     #[async_trait]
     pub trait PageService: Send + Sync + 'static {
+        #[doc = " 缓存页集合"]
         async fn list(
             &self,
             request: tonic::Request<super::super::utils::Req>,
-        ) -> Result<tonic::Response<super::PageList>, tonic::Status>;
+        ) -> Result<tonic::Response<super::ResponsePageList>, tonic::Status>;
+        #[doc = " 创建缓存页"]
         async fn create(
             &self,
             request: tonic::Request<super::RequestPageCreate>,
         ) -> Result<tonic::Response<super::super::utils::Resp>, tonic::Status>;
+        #[doc = " 修改缓存页"]
         async fn modify(
             &self,
             request: tonic::Request<super::RequestPageModify>,
         ) -> Result<tonic::Response<super::super::utils::Resp>, tonic::Status>;
+        #[doc = " 获取缓存页详情"]
         async fn info(
             &self,
             request: tonic::Request<super::RequestPageInfo>,
         ) -> Result<tonic::Response<super::ResponsePageInfo>, tonic::Status>;
+        #[doc = " 删除缓存页"]
         async fn remove(
             &self,
             request: tonic::Request<super::RequestPageRemove>,
@@ -1691,7 +1750,7 @@ pub mod page_service_server {
                     #[allow(non_camel_case_types)]
                     struct listSvc<T: PageService>(pub Arc<T>);
                     impl<T: PageService> tonic::server::UnaryService<super::super::utils::Req> for listSvc<T> {
-                        type Response = super::PageList;
+                        type Response = super::ResponsePageList;
                         type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
@@ -1880,22 +1939,27 @@ pub mod database_service_server {
     #[doc = "Generated trait containing gRPC methods that should be implemented for use with DatabaseServiceServer."]
     #[async_trait]
     pub trait DatabaseService: Send + Sync + 'static {
+        #[doc = " 数据库集合"]
         async fn list(
             &self,
             request: tonic::Request<super::super::utils::Req>,
-        ) -> Result<tonic::Response<super::DatabaseList>, tonic::Status>;
+        ) -> Result<tonic::Response<super::ResponseDatabaseList>, tonic::Status>;
+        #[doc = " 创建数据库"]
         async fn create(
             &self,
             request: tonic::Request<super::RequestDatabaseCreate>,
         ) -> Result<tonic::Response<super::super::utils::Resp>, tonic::Status>;
+        #[doc = " 修改数据库"]
         async fn modify(
             &self,
             request: tonic::Request<super::RequestDatabaseModify>,
         ) -> Result<tonic::Response<super::super::utils::Resp>, tonic::Status>;
+        #[doc = " 获取数据库详情"]
         async fn info(
             &self,
             request: tonic::Request<super::RequestDatabaseInfo>,
         ) -> Result<tonic::Response<super::ResponseDatabaseInfo>, tonic::Status>;
+        #[doc = " 删除数据库"]
         async fn remove(
             &self,
             request: tonic::Request<super::RequestDatabaseRemove>,
@@ -1937,7 +2001,7 @@ pub mod database_service_server {
                     #[allow(non_camel_case_types)]
                     struct listSvc<T: DatabaseService>(pub Arc<T>);
                     impl<T: DatabaseService> tonic::server::UnaryService<super::super::utils::Req> for listSvc<T> {
-                        type Response = super::DatabaseList;
+                        type Response = super::ResponseDatabaseList;
                         type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
@@ -2132,34 +2196,42 @@ pub mod view_service_server {
     #[doc = "Generated trait containing gRPC methods that should be implemented for use with ViewServiceServer."]
     #[async_trait]
     pub trait ViewService: Send + Sync + 'static {
+        #[doc = " 视图集合"]
         async fn list(
             &self,
             request: tonic::Request<super::RequestViewList>,
-        ) -> Result<tonic::Response<super::ViewList>, tonic::Status>;
+        ) -> Result<tonic::Response<super::ResponseViewList>, tonic::Status>;
+        #[doc = " 创建视图"]
         async fn create(
             &self,
             request: tonic::Request<super::RequestViewCreate>,
         ) -> Result<tonic::Response<super::super::utils::Resp>, tonic::Status>;
+        #[doc = " 修改视图"]
         async fn modify(
             &self,
             request: tonic::Request<super::RequestViewModify>,
         ) -> Result<tonic::Response<super::super::utils::Resp>, tonic::Status>;
+        #[doc = " 获取视图详情"]
         async fn info(
             &self,
             request: tonic::Request<super::RequestViewInfo>,
         ) -> Result<tonic::Response<super::ResponseViewInfo>, tonic::Status>;
+        #[doc = " 删除视图"]
         async fn remove(
             &self,
             request: tonic::Request<super::RequestViewRemove>,
         ) -> Result<tonic::Response<super::super::utils::Resp>, tonic::Status>;
+        #[doc = " 整理归档"]
         async fn archive(
             &self,
             request: tonic::Request<super::RequestViewArchive>,
         ) -> Result<tonic::Response<super::super::utils::Resp>, tonic::Status>;
+        #[doc = " 读取指定归档版本信息"]
         async fn record(
             &self,
             request: tonic::Request<super::RequestViewRecord>,
         ) -> Result<tonic::Response<super::ResponseViewRecord>, tonic::Status>;
+        #[doc = " 读取所有归档版本信息"]
         async fn records(
             &self,
             request: tonic::Request<super::RequestViewRecords>,
@@ -2201,7 +2273,7 @@ pub mod view_service_server {
                     #[allow(non_camel_case_types)]
                     struct listSvc<T: ViewService>(pub Arc<T>);
                     impl<T: ViewService> tonic::server::UnaryService<super::RequestViewList> for listSvc<T> {
-                        type Response = super::ViewList;
+                        type Response = super::ResponseViewList;
                         type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
@@ -2483,14 +2555,17 @@ pub mod index_service_server {
     #[doc = "Generated trait containing gRPC methods that should be implemented for use with IndexServiceServer."]
     #[async_trait]
     pub trait IndexService: Send + Sync + 'static {
+        #[doc = " 索引集合"]
         async fn list(
             &self,
             request: tonic::Request<super::RequestIndexList>,
-        ) -> Result<tonic::Response<super::IndexList>, tonic::Status>;
+        ) -> Result<tonic::Response<super::ResponseIndexList>, tonic::Status>;
+        #[doc = " 创建索引"]
         async fn create(
             &self,
             request: tonic::Request<super::RequestIndexCreate>,
         ) -> Result<tonic::Response<super::super::utils::Resp>, tonic::Status>;
+        #[doc = " 获取索引详情"]
         async fn info(
             &self,
             request: tonic::Request<super::RequestIndexInfo>,
@@ -2532,7 +2607,7 @@ pub mod index_service_server {
                     #[allow(non_camel_case_types)]
                     struct listSvc<T: IndexService>(pub Arc<T>);
                     impl<T: IndexService> tonic::server::UnaryService<super::RequestIndexList> for listSvc<T> {
-                        type Response = super::IndexList;
+                        type Response = super::ResponseIndexList;
                         type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
@@ -2659,30 +2734,37 @@ pub mod disk_service_server {
     #[doc = "Generated trait containing gRPC methods that should be implemented for use with DiskServiceServer."]
     #[async_trait]
     pub trait DiskService: Send + Sync + 'static {
+        #[doc = " 插入数据，如果存在则返回已存在"]
         async fn put(
             &self,
             request: tonic::Request<super::RequestDiskInto>,
         ) -> Result<tonic::Response<super::super::utils::Resp>, tonic::Status>;
+        #[doc = " 插入数据，无论存在与否都会插入或更新数据"]
         async fn set(
             &self,
             request: tonic::Request<super::RequestDiskInto>,
         ) -> Result<tonic::Response<super::super::utils::Resp>, tonic::Status>;
+        #[doc = " 获取数据，返回存储对象"]
         async fn get(
             &self,
             request: tonic::Request<super::RequestDiskOut>,
         ) -> Result<tonic::Response<super::ResponseDiskOut>, tonic::Status>;
+        #[doc = " 根据指定索引名称获取数据，返回存储对象"]
         async fn get_by_index(
             &self,
             request: tonic::Request<super::RequestDiskIOut>,
         ) -> Result<tonic::Response<super::ResponseDiskOut>, tonic::Status>;
+        #[doc = " 删除数据"]
         async fn remove(
             &self,
             request: tonic::Request<super::RequestDiskRemove>,
         ) -> Result<tonic::Response<super::super::utils::Resp>, tonic::Status>;
+        #[doc = " 条件检索"]
         async fn select(
             &self,
             request: tonic::Request<super::RequestDiskSelect>,
         ) -> Result<tonic::Response<super::ResponseDiskSelect>, tonic::Status>;
+        #[doc = " 条件删除"]
         async fn delete(
             &self,
             request: tonic::Request<super::RequestDiskDelete>,
@@ -2975,34 +3057,42 @@ pub mod memory_service_server {
     #[doc = "Generated trait containing gRPC methods that should be implemented for use with MemoryServiceServer."]
     #[async_trait]
     pub trait MemoryService: Send + Sync + 'static {
+        #[doc = " 插入数据，如果存在则返回已存在"]
         async fn put(
             &self,
             request: tonic::Request<super::RequestMemoryInto>,
         ) -> Result<tonic::Response<super::super::utils::Resp>, tonic::Status>;
+        #[doc = " 插入数据，无论存在与否都会插入或更新数据"]
         async fn set(
             &self,
             request: tonic::Request<super::RequestMemoryInto>,
         ) -> Result<tonic::Response<super::super::utils::Resp>, tonic::Status>;
+        #[doc = " 获取数据，返回存储对象"]
         async fn get(
             &self,
             request: tonic::Request<super::RequestMemoryOut>,
         ) -> Result<tonic::Response<super::ResponseMemoryOut>, tonic::Status>;
+        #[doc = " 删除数据"]
         async fn remove(
             &self,
             request: tonic::Request<super::RequestMemoryRemove>,
         ) -> Result<tonic::Response<super::super::utils::Resp>, tonic::Status>;
+        #[doc = " 在指定缓存页中插入数据，如果存在则返回已存在"]
         async fn put_by_page(
             &self,
             request: tonic::Request<super::RequestMemoryPInto>,
         ) -> Result<tonic::Response<super::super::utils::Resp>, tonic::Status>;
+        #[doc = " 在指定缓存页中插入数据，无论存在与否都会插入或更新数据"]
         async fn set_by_page(
             &self,
             request: tonic::Request<super::RequestMemoryPInto>,
         ) -> Result<tonic::Response<super::super::utils::Resp>, tonic::Status>;
+        #[doc = " 在指定缓存页中获取数据，返回存储对象"]
         async fn get_by_page(
             &self,
             request: tonic::Request<super::RequestMemoryPOut>,
         ) -> Result<tonic::Response<super::ResponseMemoryPOut>, tonic::Status>;
+        #[doc = " 在指定缓存页中删除数据"]
         async fn remove_by_page(
             &self,
             request: tonic::Request<super::RequestMemoryPRemove>,

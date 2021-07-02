@@ -18,7 +18,7 @@ mod cmd;
 
 // ./server start -f /Users/aberic/Documents/path/rust/george/server/src/example/conf.yaml
 fn main() {
-    // Command::init();
+    Command::init();
     // 测试时启用如下代码
     // Service::start("server/src/examples/conf.yaml")
     // Service::start("server/src/examples/conf_tls_cross.yaml")

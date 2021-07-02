@@ -37,8 +37,10 @@ message Database {
 }
 
 // 数据库集合
-message DatabaseList {
-  repeated Database databases = 1;
+message ResponseDatabaseList {
+  utils.Status status = 1;
+  string msg_err = 2;
+  repeated Database databases = 3;
 }
 
 // 请求新建数据库

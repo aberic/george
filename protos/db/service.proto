@@ -31,59 +31,96 @@ import "utils/request.proto";
 import "utils/response.proto";
 
 service UserService {
+  // 数据库用户登录
   rpc login(RequestLogin) returns (utils.Resp);
 }
 
 service PageService {
-  rpc list(utils.Req) returns (PageList);
+  // 缓存页集合
+  rpc list(utils.Req) returns (ResponsePageList);
+  // 创建缓存页
   rpc create(RequestPageCreate) returns (utils.Resp);
+  // 修改缓存页
   rpc modify(RequestPageModify) returns (utils.Resp);
+  // 获取缓存页详情
   rpc info(RequestPageInfo) returns (ResponsePageInfo);
+  // 删除缓存页
   rpc remove(RequestPageRemove) returns (utils.Resp);
 }
 
 service DatabaseService {
-  rpc list(utils.Req) returns (DatabaseList);
+  // 数据库集合
+  rpc list(utils.Req) returns (ResponseDatabaseList);
+  // 创建数据库
   rpc create(RequestDatabaseCreate) returns (utils.Resp);
+  // 修改数据库
   rpc modify(RequestDatabaseModify) returns (utils.Resp);
+  // 获取数据库详情
   rpc info(RequestDatabaseInfo) returns (ResponseDatabaseInfo);
+  // 删除数据库
   rpc remove(RequestDatabaseRemove) returns (utils.Resp);
 }
 
 service ViewService {
-  rpc list(RequestViewList) returns (ViewList);
+  // 视图集合
+  rpc list(RequestViewList) returns (ResponseViewList);
+  // 创建视图
   rpc create(RequestViewCreate) returns (utils.Resp);
+  // 修改视图
   rpc modify(RequestViewModify) returns (utils.Resp);
+  // 获取视图详情
   rpc info(RequestViewInfo) returns (ResponseViewInfo);
+  // 删除视图
   rpc remove(RequestViewRemove) returns (utils.Resp);
+  // 整理归档
   rpc archive(RequestViewArchive) returns (utils.Resp);
+  // 读取指定归档版本信息
   rpc record(RequestViewRecord) returns (ResponseViewRecord);
+  // 读取所有归档版本信息
   rpc records(RequestViewRecords) returns (ResponseViewRecords);
 }
 
 service IndexService {
-  rpc list(RequestIndexList) returns (IndexList);
+  // 索引集合
+  rpc list(RequestIndexList) returns (ResponseIndexList);
+  // 创建索引
   rpc create(RequestIndexCreate) returns (utils.Resp);
+  // 获取索引详情
   rpc info(RequestIndexInfo) returns (ResponseIndexInfo);
 }
 
 service DiskService {
+  // 插入数据，如果存在则返回已存在
   rpc put(RequestDiskInto) returns (utils.Resp);
+  // 插入数据，无论存在与否都会插入或更新数据
   rpc set(RequestDiskInto) returns (utils.Resp);
+  // 获取数据，返回存储对象
   rpc get(RequestDiskOut) returns (ResponseDiskOut);
+  // 根据指定索引名称获取数据，返回存储对象
   rpc get_by_index(RequestDiskIOut) returns (ResponseDiskOut);
+  // 删除数据
   rpc remove(RequestDiskRemove) returns (utils.Resp);
+  // 条件检索
   rpc select(RequestDiskSelect) returns (ResponseDiskSelect);
+  // 条件删除
   rpc delete(RequestDiskDelete) returns (ResponseDiskDelete);
 }
 
 service MemoryService {
+  // 插入数据，如果存在则返回已存在
   rpc put(RequestMemoryInto) returns (utils.Resp);
+  // 插入数据，无论存在与否都会插入或更新数据
   rpc set(RequestMemoryInto) returns (utils.Resp);
+  // 获取数据，返回存储对象
   rpc get(RequestMemoryOut) returns (ResponseMemoryOut);
+  // 删除数据
   rpc remove(RequestMemoryRemove) returns (utils.Resp);
+  // 在指定缓存页中插入数据，如果存在则返回已存在
   rpc put_by_page(RequestMemoryPInto) returns (utils.Resp);
+  // 在指定缓存页中插入数据，无论存在与否都会插入或更新数据
   rpc set_by_page(RequestMemoryPInto) returns (utils.Resp);
+  // 在指定缓存页中获取数据，返回存储对象
   rpc get_by_page(RequestMemoryPOut) returns (ResponseMemoryPOut);
+  // 在指定缓存页中删除数据
   rpc remove_by_page(RequestMemoryPRemove) returns (utils.Resp);
 }

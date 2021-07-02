@@ -12,14 +12,15 @@
  * limitations under the License.
  */
 
-use crate::client::db::DatabaseRpcClient;
-use crate::protos::db::db::database_service_client::DatabaseServiceClient;
-use crate::protos::db::db::DatabaseList;
-use crate::protos::utils::utils::Req;
-use comm::errors::{Errs, GeorgeResult};
-use std::time::Duration;
 use tokio::runtime::{Builder, Runtime};
 use tonic::transport::{Certificate, Channel, ClientTlsConfig, Identity, Uri};
+
+use comm::errors::{Errs, GeorgeResult};
+
+use crate::client::db::DatabaseRpcClient;
+use crate::protos::db::db::database_service_client::DatabaseServiceClient;
+use crate::protos::db::db::ResponseDatabaseList;
+use crate::protos::utils::utils::Req;
 
 impl DatabaseRpcClient {
     pub fn new(
@@ -81,7 +82,7 @@ impl DatabaseRpcClient {
 }
 
 impl DatabaseRpcClient {
-    pub fn list(&mut self) -> GeorgeResult<DatabaseList> {
+    pub fn list(&mut self) -> GeorgeResult<ResponseDatabaseList> {
         let request = tonic::Request::new(Req {});
         match self.rt.block_on(self.client.list(request)) {
             Ok(res) => Ok(res.into_inner()),

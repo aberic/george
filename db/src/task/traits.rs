@@ -248,7 +248,7 @@ pub trait TMaster {
         key: String,
     ) -> GeorgeResult<Vec<u8>>;
 
-    /// 获取数据，返回存储对象<p><p>
+    /// 根据指定索引名称获取数据，返回存储对象<p><p>
     ///
     /// ###Params
     ///

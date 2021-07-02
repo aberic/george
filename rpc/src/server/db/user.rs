@@ -16,12 +16,14 @@ use std::sync::Arc;
 
 use tonic::{Request, Response, Status};
 
+use db::task::traits::TMaster;
 use db::Task;
 
 use crate::protos::db::db::user_service_server::UserService;
 use crate::protos::db::db::RequestLogin;
 use crate::protos::utils::utils::Resp;
-use crate::server::db::UserServer;
+use crate::server::db::{UserServer, DATABASE_SYS, VIEW_USER};
+use crate::tools::Results;
 
 impl UserServer {
     pub fn new(task: Arc<Task>) -> Self {
@@ -32,6 +34,22 @@ impl UserServer {
 #[tonic::async_trait]
 impl UserService for UserServer {
     async fn login(&self, request: Request<RequestLogin>) -> Result<Response<Resp>, Status> {
-        todo!()
+        match self.task.get_disk(
+            DATABASE_SYS.to_string(),
+            VIEW_USER.to_string(),
+            request.get_ref().name.clone(),
+        ) {
+            Ok(res) => match String::from_utf8(res) {
+                Ok(res) => {
+                    if res.eq(&request.get_ref().pass) {
+                        Results::success()
+                    } else {
+                        Results::failed_custom("user is not exist or pass is wrong!".to_string())
+                    }
+                }
+                Err(err) => Results::failed_errs(err),
+            },
+            Err(err) => Results::failed_err(err),
+        }
     }
 }

@@ -38,8 +38,10 @@ message Page {
 }
 
 // 缓存页集合
-message PageList {
-  repeated Page pages = 1;
+message ResponsePageList {
+  utils.Status status = 1;
+  string msg_err = 2;
+  repeated Page pages = 3;
 }
 
 // 请求新建缓存页

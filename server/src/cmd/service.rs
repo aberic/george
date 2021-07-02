@@ -37,12 +37,9 @@ use rpc::protos::db::db::view_service_server::ViewServiceServer;
 use rpc::server::db::{
     DatabaseServer, DiskServer, IndexServer, MemoryServer, PageServer, UserServer, ViewServer,
 };
+use rpc::server::db::{DATABASE_SYS, DEFAULT_COMMENT, VIEW_USER};
 
 use crate::cmd::Service;
-
-pub const DATABASE_SYS: &str = "sys";
-pub const VIEW_USER: &str = "user";
-pub const DEFAULT_COMMENT: &str = "system default";
 
 impl Service {
     /// filepath e.g: `server/src/example/conf.yaml` | `server/src/example/conf_tls.yaml`

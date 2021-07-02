@@ -12,11 +12,11 @@
  * limitations under the License.
  */
 
-use logs::LogModule;
 use serde::{Deserialize, Serialize};
 
+use logs::LogModule;
+
 mod builder;
-mod ca;
 pub mod comm;
 mod conf;
 mod conf_test;

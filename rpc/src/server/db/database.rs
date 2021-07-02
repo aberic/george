@@ -21,8 +21,8 @@ use db::Task;
 
 use crate::protos::db::db::database_service_server::DatabaseService;
 use crate::protos::db::db::{
-    Database, DatabaseList, RequestDatabaseCreate, RequestDatabaseInfo, RequestDatabaseModify,
-    RequestDatabaseRemove, ResponseDatabaseInfo,
+    Database, RequestDatabaseCreate, RequestDatabaseInfo, RequestDatabaseModify,
+    RequestDatabaseRemove, ResponseDatabaseInfo, ResponseDatabaseList,
 };
 use crate::protos::utils::utils::{Req, Resp};
 use crate::server::db::DatabaseServer;
@@ -36,7 +36,7 @@ impl DatabaseServer {
 
 #[tonic::async_trait]
 impl DatabaseService for DatabaseServer {
-    async fn list(&self, _request: Request<Req>) -> Result<Response<DatabaseList>, Status> {
+    async fn list(&self, _request: Request<Req>) -> Result<Response<ResponseDatabaseList>, Status> {
         let mut databases: Vec<Database> = vec![];
         let db_map = self.task.database_map();
         let db_map_r = db_map.read().unwrap();
@@ -51,8 +51,11 @@ impl DatabaseService for DatabaseServer {
             };
             databases.push(database);
         }
-        let message = DatabaseList { databases };
-        Results::response(message)
+        Results::response(ResponseDatabaseList {
+            status: Results::success_status(),
+            msg_err: "".to_string(),
+            databases,
+        })
     }
 
     async fn create(
@@ -86,7 +89,7 @@ impl DatabaseService for DatabaseServer {
         &self,
         request: Request<RequestDatabaseInfo>,
     ) -> Result<Response<ResponseDatabaseInfo>, Status> {
-        let resp: ResponseDatabaseInfo;
+        let resp;
         match self.task.database(request.get_ref().name.clone()) {
             Ok(res) => {
                 let views = Children::views(res.clone());

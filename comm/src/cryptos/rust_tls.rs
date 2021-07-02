@@ -12,23 +12,23 @@
  * limitations under the License.
  */
 
-use crate::cryptos::RSA;
-use crate::io::file::FilerReader;
-use crate::io::Filer;
-use rustls::internal::msgs::codec::Codec;
-use rustls::sign::{RSASigningKey, SigningKey};
-use rustls::{Certificate, PrivateKey};
-
-#[test]
-fn a() {
-    let rsa = RSA::new(2048).unwrap();
-    let rsa_sk_der = rsa.sk_pkcs8_der().unwrap();
-    let sk = PrivateKey { 0: rsa_sk_der };
-    // println!("sk = {:#?}", sk);
-    let rsa_sign_key = RSASigningKey::new(&sk).unwrap();
-    println!("algorithm = {}", rsa_sign_key.algorithm().get_u8());
-
-    let bytes = Filer::read_bytes("src/test/crypto/ca/cert/root.der.crt").unwrap();
-    let certificate = Certificate { 0: bytes };
-    println!("certificate = {:#?}", certificate);
-}
+// use crate::cryptos::RSA;
+// use crate::io::file::FilerReader;
+// use crate::io::Filer;
+// use rustls::internal::msgs::codec::Codec;
+// use rustls::sign::{RSASigningKey, SigningKey};
+// use rustls::{Certificate, PrivateKey};
+//
+// #[test]
+// fn a() {
+//     let rsa = RSA::new(2048).unwrap();
+//     let rsa_sk_der = rsa.sk_pkcs8_der().unwrap();
+//     let sk = PrivateKey { 0: rsa_sk_der };
+//     // println!("sk = {:#?}", sk);
+//     let rsa_sign_key = RSASigningKey::new(&sk).unwrap();
+//     println!("algorithm = {}", rsa_sign_key.algorithm().get_u8());
+//
+//     let bytes = Filer::read_bytes("src/test/crypto/ca/cert/root.der.crt").unwrap();
+//     let certificate = Certificate { 0: bytes };
+//     println!("certificate = {:#?}", certificate);
+// }

@@ -41,8 +41,10 @@ message View {
 }
 
 // 视图集合
-message ViewList {
-  repeated View views = 1;
+message ResponseViewList {
+  utils.Status status = 1;
+  string msg_err = 2;
+  repeated View views = 3;
 }
 
 // 请求视图集合
