@@ -30,6 +30,7 @@ num-bigint = "0.2"
 tokio = { version = "1.6.1", features = ["full"] }
 Cupcake = "0.1.1" # 同态加密
 concrete = "^0.1" # 同态加密
+rustls = "0.19"
 
 # paillier = "0.2.0"
 # paillier = { git = "https://github.com/KZen-networks/rust-paillier", version = "0.3.10" }

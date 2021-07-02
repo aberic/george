@@ -656,7 +656,7 @@ mod ca {
     }
 
     #[test]
-    fn generate_rsa_tls_test() {
+    fn generate_tls_test() {
         generate_rsa_server_tls();
         generate_ec_client_tls();
     }
@@ -672,26 +672,20 @@ mod ca {
             Some("sa".to_string()),
         )
         .unwrap();
-        let san = Some(SAN {
-            dns_names: vec!["tt.cn".to_string()],
-            email_addresses: vec!["email@tt.cn".to_string()],
-            ip_addresses: vec!["128.0.9.1".to_string()],
-            uris: vec!["uri_root.cn".to_string()],
-        });
 
         let server_ca_sk_bytes =
-            RSA::generate_pkcs8_pem(2048, "src/test/crypto/ca/tls/server_ca_sk.key").unwrap();
+            RSA::generate_pkcs8_pem(3072, "src/test/crypto/ca/tls/server_ca_sk.key").unwrap();
         let server_ca_rsa = RSA::from_bytes(server_ca_sk_bytes).unwrap();
         let server_ca = Cert::sign_root_256(
             MsbOptionCA::MaybeZero,
-            true,
+            false,
             server_ca_rsa.sk(),
             server_ca_rsa.pk(),
             subject_info.as_ref(),
             2,
             0,
             365,
-            san,
+            None,
             MessageDigest::sha256(),
         )
         .unwrap();
@@ -710,17 +704,21 @@ mod ca {
         )
         .unwrap();
         let san_server = Some(SAN {
-            dns_names: vec!["user.cn".to_string()],
+            dns_names: vec![
+                "example.com".to_string(),
+                "*.example.com".to_string(),
+                "localhost".to_string(),
+            ],
             email_addresses: vec!["email@user.cn".to_string()],
-            ip_addresses: vec!["128.0.9.3".to_string()],
-            uris: vec!["uri_user.cn".to_string()],
+            ip_addresses: vec!["127.0.0.1".to_string(), "0:0:0:0:0:0:0:1".to_string()],
+            uris: vec![],
         });
         let server_sk_bytes =
             RSA::generate_pkcs8_pem(2048, "src/test/crypto/ca/tls/server_sk.key").unwrap();
         let server_rsa = RSA::from_bytes(server_sk_bytes).unwrap();
         let server_cert = Cert::sign_user_256(
             server_ca.x509.clone(),
-            MsbOptionCA::MaybeZero,
+            MsbOptionCA::One,
             true,
             server_ca_rsa.sk(),
             server_rsa.pk(),
@@ -748,12 +746,6 @@ mod ca {
             Some("sa".to_string()),
         )
         .unwrap();
-        let san = Some(SAN {
-            dns_names: vec!["tt.cn".to_string()],
-            email_addresses: vec!["email@tt.cn".to_string()],
-            ip_addresses: vec!["128.0.9.1".to_string()],
-            uris: vec!["uri_root.cn".to_string()],
-        });
 
         let client_ca_ec = ECDSA::new().unwrap();
         client_ca_ec
@@ -763,7 +755,7 @@ mod ca {
             )
             .unwrap();
         let client_ca = Cert::sign_root_256(
-            MsbOptionCA::MaybeZero,
+            MsbOptionCA::One,
             true,
             client_ca_ec.sk(),
             client_ca_ec.pk(),
@@ -771,7 +763,7 @@ mod ca {
             2,
             0,
             365,
-            san,
+            None,
             MessageDigest::sha256(),
         )
         .unwrap();
@@ -804,7 +796,7 @@ mod ca {
             .unwrap();
         let client_cert = Cert::sign_user_256(
             client_ca.x509.clone(),
-            MsbOptionCA::MaybeZero,
+            MsbOptionCA::One,
             true,
             client_ca_ec.sk(),
             client_ec.pk(),

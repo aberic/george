@@ -35,6 +35,7 @@ pub mod homomorphic;
 mod homomorphic_test;
 pub mod rsa;
 mod rsa_test;
+mod rust_tls;
 pub mod sm2;
 mod sm2_test;
 pub mod sm4;

@@ -22,5 +22,7 @@ fn main() {
     // 测试时启用如下代码
     // Service::start("server/src/examples/conf.yaml")
     // Service::start("server/src/examples/conf_tls_cross.yaml")
-    Service::start("server/src/examples/conf_tls.yaml")
+    // Service::start("server/src/examples/conf_tls_1.yaml")
+    Service::start("server/src/examples/conf_pki_1.yaml")
+    // Service::start("server/src/examples/conf_tls.yaml")
 }

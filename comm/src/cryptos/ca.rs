@@ -465,8 +465,9 @@ impl Cert {
         let key_usage: X509Extension;
         match KeyUsage::new() // 密钥使用
             .critical() // 关键
-            .data_encipherment() // 数字签名
+            .data_encipherment() // 数据加密
             .key_encipherment() // 密钥加密
+            .non_repudiation()
             .build()
         {
             Ok(ext) => key_usage = ext,
@@ -475,7 +476,7 @@ impl Cert {
         let ext_key_usage: Option<X509Extension>;
         match ExtendedKeyUsage::new() // 扩展的密钥使用
             .server_auth() // 服务器认证
-            .client_auth() // 客户端认证
+            // .client_auth() // 客户端认证
             .build()
         {
             Ok(ext) => ext_key_usage = Some(ext),
@@ -1041,14 +1042,15 @@ fn generate_x509(
         Some(x509) => {
             // 设置签发证书的颁发者信息
             cert_builder.set_issuer_name(x509.subject_name())?;
-            cert_builder.append_extension(
-                SubjectKeyIdentifier::new() // 主题密钥标识符
-                    // 如果证书是自签名的，则将“发布者”设置为“None”。
-                    .build(&cert_builder.x509v3_context(Some(x509.as_ref()), None))?,
-            )?;
+            // cert_builder.append_extension(
+            //     SubjectKeyIdentifier::new() // 主题密钥标识符
+            //         // 如果证书是自签名的，则将“发布者”设置为“None”。
+            //         .build(&cert_builder.x509v3_context(Some(x509.as_ref()), None))?,
+            // )?;
             cert_builder.append_extension(
                 AuthorityKeyIdentifier::new() // 授权密钥标识符
                     .keyid(true)
+                    .issuer(true)
                     .build(&cert_builder.x509v3_context(Some(x509.as_ref()), None))?,
             )?;
             match san {
@@ -1107,7 +1109,7 @@ fn ca_basic_constraints_ext() -> GeorgeResult<X509Extension> {
 fn ca_key_usage_ext() -> GeorgeResult<X509Extension> {
     match KeyUsage::new() // 密钥使用
         .critical() // 关键
-        .data_encipherment() // 数字签名
+        // .data_encipherment() // 数字签名
         .key_cert_sign() // 密钥证书签名
         .crl_sign() // CRL签名
         .build()
@@ -1192,7 +1194,7 @@ pub struct Extensions {
     /// fn key_usage() -> X509Extension {
     ///     KeyUsage::new() // 密钥使用
     ///         .critical() // 关键
-    ///         .data_encipherment() // 数字签名
+    ///         .data_encipherment() // 数据加密
     ///         .key_cert_sign() // 密钥证书签名
     ///         .crl_sign() // CRL签名
     ///         .build().unwrap()
@@ -1237,7 +1239,7 @@ impl Extensions {
     /// fn key_usage() -> X509Extension {
     ///     KeyUsage::new() // 密钥使用
     ///         .critical() // 关键
-    ///         .data_encipherment() // 数字签名
+    ///         .data_encipherment() // 数据加密
     ///         .key_cert_sign() // 密钥证书签名
     ///         .crl_sign() // CRL签名
     ///         .build().unwrap()

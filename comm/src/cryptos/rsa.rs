@@ -741,28 +741,28 @@ impl RSA {
     pub fn sk_pkcs1_der(&self) -> GeorgeResult<Vec<u8>> {
         match self.rsa_sk.private_key_to_der() {
             Ok(res) => Ok(res),
-            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_to_der", err)),
         }
     }
 
     pub fn pk_pkcs1_der(&self) -> GeorgeResult<Vec<u8>> {
         match self.rsa_pk.public_key_to_der() {
             Ok(res) => Ok(res),
-            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("public_key_to_der", err)),
         }
     }
 
     pub fn sk_pkcs8_der(&self) -> GeorgeResult<Vec<u8>> {
         match self.sk.private_key_to_der() {
             Ok(res) => Ok(res),
-            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("private_key_to_der", err)),
         }
     }
 
     pub fn pk_pkcs8_der(&self) -> GeorgeResult<Vec<u8>> {
         match self.pk.public_key_to_der() {
             Ok(res) => Ok(res),
-            Err(err) => Err(Errs::strs("private_key_to_pem", err)),
+            Err(err) => Err(Errs::strs("public_key_to_der", err)),
         }
     }
 
