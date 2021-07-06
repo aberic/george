@@ -16,16 +16,15 @@ use tonic::Request;
 
 use comm::errors::{Errs, GeorgeResult};
 
-use crate::client::db::DatabaseRpcClient;
+use crate::client::db::PageRpcClient;
 use crate::client::{endpoint, status_check};
-use crate::protos::db::db::database_service_client::DatabaseServiceClient;
+use crate::protos::db::db::page_service_client::PageServiceClient;
 use crate::protos::db::db::{
-    Database, RequestDatabaseCreate, RequestDatabaseInfo, RequestDatabaseModify,
-    RequestDatabaseRemove,
+    Page, RequestPageCreate, RequestPageInfo, RequestPageModify, RequestPageRemove,
 };
 use crate::protos::utils::utils::Req;
 
-impl DatabaseRpcClient {
+impl PageRpcClient {
     pub fn new(
         remote: &str,
         port: u16,
@@ -33,36 +32,23 @@ impl DatabaseRpcClient {
         key: Option<Vec<u8>>,
         cert: Option<Vec<u8>>,
         server_ca: Option<Vec<u8>>,
-    ) -> GeorgeResult<DatabaseRpcClient> {
+    ) -> GeorgeResult<PageRpcClient> {
         let (inner, rt) = endpoint(remote, port, tls, key, cert, server_ca)?;
-        Ok(DatabaseRpcClient {
-            client: DatabaseServiceClient::new(inner),
+        Ok(PageRpcClient {
+            client: PageServiceClient::new(inner),
             rt,
         })
     }
-
-    // fn run<F: Future<Output = Result<Response<T>, tonic::Status>>, T>(
-    //     &self,
-    //     future: F,
-    // ) -> GeorgeResult<T> {
-    //     match self.rt.block_on(future) {
-    //         Ok(res) => Ok(res.into_inner()),
-    //         Err(err) => Err(Errs::strs(
-    //             "failed to successfully run the future on RunTime!",
-    //             err,
-    //         )),
-    //     }
-    // }
 }
 
-impl DatabaseRpcClient {
-    pub fn list(&mut self) -> GeorgeResult<Vec<Database>> {
+impl PageRpcClient {
+    pub fn list(&mut self) -> GeorgeResult<Vec<Page>> {
         let request = Request::new(Req {});
         match self.rt.block_on(self.client.list(request)) {
             Ok(res) => {
                 let resp = res.into_inner();
                 status_check(resp.status, resp.msg_err)?;
-                Ok(resp.databases)
+                Ok(resp.pages)
             }
             Err(err) => Err(Errs::strs(
                 "failed to successfully run the future on RunTime!",
@@ -71,8 +57,19 @@ impl DatabaseRpcClient {
         }
     }
 
-    pub fn create(&mut self, name: String, comment: String) -> GeorgeResult<()> {
-        let request = Request::new(RequestDatabaseCreate { name, comment });
+    pub fn create(
+        &mut self,
+        name: String,
+        comment: String,
+        size: u64,
+        period: u32,
+    ) -> GeorgeResult<()> {
+        let request = Request::new(RequestPageCreate {
+            name,
+            comment,
+            size,
+            period,
+        });
         match self.rt.block_on(self.client.create(request)) {
             Ok(res) => {
                 let resp = res.into_inner();
@@ -85,15 +82,15 @@ impl DatabaseRpcClient {
         }
     }
 
-    pub fn info(&mut self, name: String) -> GeorgeResult<Database> {
-        let request = Request::new(RequestDatabaseInfo { name });
+    pub fn info(&mut self, name: String) -> GeorgeResult<Page> {
+        let request = Request::new(RequestPageInfo { name });
         match self.rt.block_on(self.client.info(request)) {
             Ok(res) => {
                 let resp = res.into_inner();
                 status_check(resp.status, resp.msg_err)?;
-                match resp.database {
+                match resp.page {
                     Some(res) => Ok(res),
-                    None => Err(Errs::database_no_exist_error()),
+                    None => Err(Errs::page_no_exist_error()),
                 }
             }
             Err(err) => Err(Errs::strs(
@@ -103,17 +100,8 @@ impl DatabaseRpcClient {
         }
     }
 
-    pub fn modify(
-        &mut self,
-        name: String,
-        comment_new: String,
-        name_new: String,
-    ) -> GeorgeResult<()> {
-        let request = Request::new(RequestDatabaseModify {
-            name,
-            name_new,
-            comment: comment_new,
-        });
+    pub fn modify(&mut self, name: String, name_new: String) -> GeorgeResult<()> {
+        let request = Request::new(RequestPageModify { name, name_new });
         match self.rt.block_on(self.client.modify(request)) {
             Ok(res) => {
                 let resp = res.into_inner();
@@ -127,7 +115,7 @@ impl DatabaseRpcClient {
     }
 
     pub fn remove(&mut self, name: String) -> GeorgeResult<()> {
-        let request = Request::new(RequestDatabaseRemove { name });
+        let request = Request::new(RequestPageRemove { name });
         match self.rt.block_on(self.client.remove(request)) {
             Ok(res) => {
                 let resp = res.into_inner();

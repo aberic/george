@@ -12,28 +12,57 @@
  * limitations under the License.
  */
 
-use crate::protos::db::db::database_service_client::DatabaseServiceClient;
-use comm::errors::{Errs, GeorgeResult};
-use std::future::Future;
 use tokio::runtime::Runtime;
 use tonic::transport::Channel;
 
+use crate::protos::db::db::database_service_client::DatabaseServiceClient;
+use crate::protos::db::db::disk_service_client::DiskServiceClient;
+use crate::protos::db::db::index_service_client::IndexServiceClient;
+use crate::protos::db::db::memory_service_client::MemoryServiceClient;
+use crate::protos::db::db::page_service_client::PageServiceClient;
+use crate::protos::db::db::user_service_client::UserServiceClient;
+use crate::protos::db::db::view_service_client::ViewServiceClient;
+
 pub mod database;
 mod database_test;
-
-// trait R {
-//     fn run<F: Future, T>(&self, future: F) -> GeorgeResult<T> {
-//         match self.rt.block_on(future) {
-//             Ok(res) => Ok(res),
-//             Err(err) => Err(Errs::strs(
-//                 "failed to successfully run the future on RunTime!",
-//                 err,
-//             )),
-//         }
-//     }
-// }
+pub mod disk;
+pub mod index;
+pub mod memory;
+pub mod page;
+pub mod user;
+pub mod view;
 
 pub struct DatabaseRpcClient {
     client: DatabaseServiceClient<Channel>,
+    rt: Runtime,
+}
+
+pub struct PageRpcClient {
+    client: PageServiceClient<Channel>,
+    rt: Runtime,
+}
+
+pub struct ViewRpcClient {
+    client: ViewServiceClient<Channel>,
+    rt: Runtime,
+}
+
+pub struct IndexRpcClient {
+    client: IndexServiceClient<Channel>,
+    rt: Runtime,
+}
+
+pub struct DiskRpcClient {
+    client: DiskServiceClient<Channel>,
+    rt: Runtime,
+}
+
+pub struct MemoryRpcClient {
+    client: MemoryServiceClient<Channel>,
+    rt: Runtime,
+}
+
+pub struct UserRpcClient {
+    client: UserServiceClient<Channel>,
     rt: Runtime,
 }

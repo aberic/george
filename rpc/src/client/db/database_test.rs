@@ -22,7 +22,7 @@ mod database {
     fn list() {
         let mut cli = DatabaseRpcClient::new("127.0.0.1", 9219, false, None, None, None).unwrap();
         let res = cli.list().unwrap();
-        for db in res.databases {
+        for db in res {
             println!("db {}", db.name)
         }
     }
@@ -33,7 +33,7 @@ mod database {
         let mut cli =
             DatabaseRpcClient::new("127.0.0.1", 9219, true, None, None, server_ca).unwrap();
         let res = cli.list().unwrap();
-        for db in res.databases {
+        for db in res {
             println!("db {}", db.name)
         }
     }
@@ -44,7 +44,7 @@ mod database {
         let mut cli =
             DatabaseRpcClient::new("127.0.0.1", 9219, true, None, None, server_ca).unwrap();
         let res = cli.list().unwrap();
-        for db in res.databases {
+        for db in res {
             println!("db {}", db.name)
         }
     }
@@ -55,7 +55,7 @@ mod database {
         let mut cli =
             DatabaseRpcClient::new("127.0.0.1", 9219, true, None, None, server_ca).unwrap();
         let res = cli.list().unwrap();
-        for db in res.databases {
+        for db in res {
             println!("db {}", db.name)
         }
     }
@@ -68,7 +68,7 @@ mod database {
         let mut cli =
             DatabaseRpcClient::new("127.0.0.1", 9219, true, key, cert, server_ca).unwrap();
         let res = cli.list().unwrap();
-        for db in res.databases {
+        for db in res {
             println!("db {}", db.name)
         }
     }
