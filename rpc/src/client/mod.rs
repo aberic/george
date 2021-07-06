@@ -29,6 +29,7 @@ fn endpoint(
     key: Option<Vec<u8>>,
     cert: Option<Vec<u8>>,
     server_ca: Option<Vec<u8>>,
+    domain_name: impl Into<String>,
 ) -> GeorgeResult<(Channel, Runtime)> {
     let dst = format!("{}://{}:{}", "http", remote, port);
     let rt: Runtime;
@@ -43,7 +44,7 @@ fn endpoint(
     }
     let mut endpoint = Channel::builder(uri);
     if tls {
-        let mut tls_config = ClientTlsConfig::new().domain_name("example.com");
+        let mut tls_config = ClientTlsConfig::new().domain_name(domain_name);
         match key {
             Some(res) => {
                 let key = res;

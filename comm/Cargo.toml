@@ -12,8 +12,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-openssl = "0.10.34"
-openssl-sys = "0.9.63"
+openssl = "0.10.35"
+openssl-sys = "0.9.65"
 phf = { version = "0.8.0", features = ["macros"] }
 phf_macros = "0.8.0"
 chrono = "0.4.19"
@@ -28,9 +28,9 @@ libsm = { git = "https://github.com/citahub/libsm", version = "0.4.0" }
 rand = "0.8.3"
 num-bigint = "0.2"
 tokio = { version = "1.6.1", features = ["full"] }
-Cupcake = "0.1.1" # 同态加密
-concrete = "^0.1" # 同态加密
-rustls = "0.19"
+Cupcake = "0.1.1" # homomorphic
+concrete = "^0.1" # homomorphic
+#rustls = "0.19"
 
 # paillier = "0.2.0"
 # paillier = { git = "https://github.com/KZen-networks/rust-paillier", version = "0.3.10" }

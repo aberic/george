@@ -29,8 +29,9 @@ impl UserRpcClient {
         key: Option<Vec<u8>>,
         cert: Option<Vec<u8>>,
         server_ca: Option<Vec<u8>>,
+        domain_name: impl Into<String>,
     ) -> GeorgeResult<UserRpcClient> {
-        let (inner, rt) = endpoint(remote, port, tls, key, cert, server_ca)?;
+        let (inner, rt) = endpoint(remote, port, tls, key, cert, server_ca, domain_name)?;
         Ok(UserRpcClient {
             client: UserServiceClient::new(inner),
             rt,

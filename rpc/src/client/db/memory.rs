@@ -32,8 +32,9 @@ impl MemoryRpcClient {
         key: Option<Vec<u8>>,
         cert: Option<Vec<u8>>,
         server_ca: Option<Vec<u8>>,
+        domain_name: impl Into<String>,
     ) -> GeorgeResult<MemoryRpcClient> {
-        let (inner, rt) = endpoint(remote, port, tls, key, cert, server_ca)?;
+        let (inner, rt) = endpoint(remote, port, tls, key, cert, server_ca, domain_name)?;
         Ok(MemoryRpcClient {
             client: MemoryServiceClient::new(inner),
             rt,

@@ -20,6 +20,7 @@ use openssl::bn::{BigNum, MsbOption};
 use openssl::error::ErrorStack;
 use openssl::hash::MessageDigest;
 use openssl::nid::Nid;
+use openssl::pkcs12::Pkcs12;
 use openssl::pkey::{PKey, Private, Public};
 use openssl::stack::Stack;
 use openssl::x509::extension::{
@@ -37,7 +38,6 @@ use crate::errors::Errs;
 use crate::errors::GeorgeResult;
 use crate::io::file::{FilerReader, FilerWriter};
 use crate::io::Filer;
-use openssl::pkcs12::Pkcs12;
 
 /// sign
 impl Cert {
@@ -465,9 +465,10 @@ impl Cert {
         let key_usage: X509Extension;
         match KeyUsage::new() // 密钥使用
             .critical() // 关键
+            .non_repudiation()
             .data_encipherment() // 数据加密
             .key_encipherment() // 密钥加密
-            .non_repudiation()
+            .digital_signature() // 数字签名
             .build()
         {
             Ok(ext) => key_usage = ext,
@@ -1047,19 +1048,17 @@ fn generate_x509(
             //         // 如果证书是自签名的，则将“发布者”设置为“None”。
             //         .build(&cert_builder.x509v3_context(Some(x509.as_ref()), None))?,
             // )?;
-            cert_builder.append_extension(
-                AuthorityKeyIdentifier::new() // 授权密钥标识符
-                    .keyid(true)
-                    .issuer(true)
-                    .build(&cert_builder.x509v3_context(Some(x509.as_ref()), None))?,
-            )?;
+            let auth_key_identifier = AuthorityKeyIdentifier::new() // 授权密钥标识符
+                .keyid(true)
+                .issuer(true)
+                .build(&cert_builder.x509v3_context(Some(x509.as_ref()), None))?;
+            cert_builder.append_extension(auth_key_identifier)?;
             match san {
                 Some(s) => {
                     let subject_alternative_name = s.build();
-                    cert_builder.append_extension(
-                        subject_alternative_name
-                            .build(&cert_builder.x509v3_context(Some(x509.as_ref()), None))?,
-                    )?
+                    let subject_alt_name = subject_alternative_name
+                        .build(&cert_builder.x509v3_context(Some(x509.as_ref()), None))?;
+                    cert_builder.append_extension(subject_alt_name)?
                 }
                 _ => {}
             }
@@ -1067,22 +1066,22 @@ fn generate_x509(
         None => {
             // 设置签发证书的颁发者信息
             cert_builder.set_issuer_name(subject_info)?;
-            cert_builder.append_extension(
+            let subject_key_identifier =
                 SubjectKeyIdentifier::new() // 主题密钥标识符
                     // 如果证书是自签名的，则将“发布者”设置为“None”。
-                    .build(&cert_builder.x509v3_context(None, None))?,
-            )?;
-            cert_builder.append_extension(
-                AuthorityKeyIdentifier::new() // 授权密钥标识符
-                    .keyid(true)
-                    .build(&cert_builder.x509v3_context(None, None))?,
-            )?;
+                    .build(&cert_builder.x509v3_context(None, None))?;
+            cert_builder.append_extension(subject_key_identifier)?;
+            // cert_builder.append_extension(
+            //     AuthorityKeyIdentifier::new() // 授权密钥标识符
+            //         .keyid(true)
+            //         .build(&cert_builder.x509v3_context(None, None))?,
+            // )?;
             match san {
                 Some(s) => {
                     let subject_alternative_name = s.build();
-                    cert_builder.append_extension(
-                        subject_alternative_name.build(&cert_builder.x509v3_context(None, None))?,
-                    )?
+                    let subject_alt_name =
+                        subject_alternative_name.build(&cert_builder.x509v3_context(None, None))?;
+                    cert_builder.append_extension(subject_alt_name)?
                 }
                 _ => {}
             }
@@ -1405,25 +1404,20 @@ impl X509NameInfo {
         let mut x509_name_builder = X509NameBuilder::new().unwrap();
         x509_name_builder.append_entry_by_nid(Nid::COUNTRYNAME, self.country.as_str())?;
         x509_name_builder.append_entry_by_nid(Nid::COMMONNAME, self.common_name.as_str())?;
-        match self.organization.as_ref() {
-            Some(res) => x509_name_builder.append_entry_by_nid(Nid::ORGANIZATIONNAME, res)?,
-            _ => {}
+        if let Some(res) = self.organization.as_ref() {
+            x509_name_builder.append_entry_by_nid(Nid::ORGANIZATIONNAME, res)?
         }
-        match self.organizational_unit.as_ref() {
-            Some(res) => x509_name_builder.append_entry_by_nid(Nid::ORGANIZATIONALUNITNAME, res)?,
-            _ => {}
+        if let Some(res) = self.organizational_unit.as_ref() {
+            x509_name_builder.append_entry_by_nid(Nid::ORGANIZATIONALUNITNAME, res)?
         }
-        match self.locality.as_ref() {
-            Some(res) => x509_name_builder.append_entry_by_nid(Nid::LOCALITYNAME, res)?,
-            _ => {}
+        if let Some(res) = self.locality.as_ref() {
+            x509_name_builder.append_entry_by_nid(Nid::LOCALITYNAME, res)?
         }
-        match self.province.as_ref() {
-            Some(res) => x509_name_builder.append_entry_by_nid(Nid::STATEORPROVINCENAME, res)?,
-            _ => {}
+        if let Some(res) = self.province.as_ref() {
+            x509_name_builder.append_entry_by_nid(Nid::STATEORPROVINCENAME, res)?
         }
-        match self.street_address.as_ref() {
-            Some(res) => x509_name_builder.append_entry_by_nid(Nid::STREETADDRESS, res)?,
-            _ => {}
+        if let Some(res) = self.street_address.as_ref() {
+            x509_name_builder.append_entry_by_nid(Nid::STREETADDRESS, res)?
         }
         Ok(x509_name_builder.build())
     }

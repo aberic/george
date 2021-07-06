@@ -22,6 +22,7 @@ mod ca {
     use openssl::hash::MessageDigest;
     use openssl::nid::Nid;
     use openssl::pkcs12::Pkcs12;
+    use openssl::x509::X509VerifyResult;
 
     #[test]
     fn cert_test() {
@@ -733,6 +734,11 @@ mod ca {
         server_cert
             .save_pem("src/test/crypto/ca/tls/server.pem")
             .unwrap();
+
+        match server_ca.x509.issued(server_cert.x509.as_ref()) {
+            X509VerifyResult::OK => println!("RSA Certificate verified!"),
+            ver_err => println!("Failed to verify certificate: {}", ver_err),
+        }
     }
 
     fn generate_ec_client_tls() {
@@ -811,5 +817,10 @@ mod ca {
         client_cert
             .save_pem("src/test/crypto/ca/tls/client.pem")
             .unwrap();
+
+        match client_ca.x509.issued(client_cert.x509.as_ref()) {
+            X509VerifyResult::OK => println!("EC Certificate verified!"),
+            ver_err => println!("Failed to verify certificate: {}", ver_err),
+        }
     }
 }
