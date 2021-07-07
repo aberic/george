@@ -18,7 +18,7 @@ use crate::cmd::{george_error, Config, Remove};
 
 impl Remove {
     pub(crate) fn analysis(
-        config: &Config,
+        config: &mut Config,
         disk: bool,
         used: String,
         scan: String,

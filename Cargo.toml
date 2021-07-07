@@ -6,7 +6,6 @@ members = [
     "deploy",
     "ge",
     "logs",
-    "protocols",
     "rpc",
     "server",
 ]

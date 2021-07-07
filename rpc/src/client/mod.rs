@@ -82,7 +82,7 @@ fn status_check(status_i32: i32, msg_err: String) -> GeorgeResult<()> {
     match status {
         Status::Ok => Ok(()),
         _ => Err(Errs::string(format!(
-            "failed to create! status is {}, error is {}",
+            "failed! status is {}, error is {}",
             status_i32, msg_err
         ))),
     }

@@ -12,9 +12,13 @@
  * limitations under the License.
  */
 
-use crate::service::{Database, Disk, Index, Memory, Page, User, View};
 use cli_table::{print_stdout, Table};
+
 use comm::errors::{Errs, GeorgeError, GeorgeResult};
+use rpc::client::db::{
+    DatabaseRpcClient, DiskRpcClient, IndexRpcClient, MemoryRpcClient, PageRpcClient,
+    UserRpcClient, ViewRpcClient,
+};
 
 mod alter;
 mod command;
@@ -61,13 +65,13 @@ pub(crate) struct Select;
 pub(crate) struct Delete;
 
 pub(crate) struct Config {
-    user: User,
-    database: Database,
-    page: Page,
-    view: View,
-    index: Index,
-    disk: Disk,
-    memory: Memory,
+    user: UserRpcClient,
+    database: DatabaseRpcClient,
+    page: PageRpcClient,
+    view: ViewRpcClient,
+    index: IndexRpcClient,
+    disk: DiskRpcClient,
+    memory: MemoryRpcClient,
 }
 
 pub(crate) fn george_error(scan: String) -> GeorgeError {

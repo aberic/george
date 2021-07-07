@@ -29,6 +29,7 @@ pub mod disk;
 pub mod index;
 pub mod memory;
 pub mod page;
+mod page_test;
 pub mod user;
 pub mod view;
 

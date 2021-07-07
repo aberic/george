@@ -19,12 +19,17 @@ use comm::errors::{Errs, GeorgeResult};
 use comm::Time;
 
 impl Trans {
-    pub fn proto_time_2_grpc_timestamp(time: Time) -> Timestamp {
+    pub fn time_2_grpc_timestamp(time: Time) -> Timestamp {
         let (seconds, nanos) = time.secs_nanos();
         Timestamp { seconds, nanos }
     }
-    pub fn proto_grpc_timestamp_2_time(secs: i64) -> Time {
+
+    pub fn grpc_timestamp_2_time(secs: i64) -> Time {
         Time::from_secs(secs)
+    }
+
+    pub fn grpc_timestamp_2_string(secs: i64) -> String {
+        Time::from_secs(secs).to_string("%Y-%m-%d %H:%M:%S")
     }
 
     pub fn db_2_engine(e: db::utils::enums::Engine) -> Engine {
@@ -58,6 +63,32 @@ impl Trans {
             Ok(db::utils::enums::Engine::Block)
         } else if (Engine::Increment as i32) == res {
             Ok(db::utils::enums::Engine::Increment)
+        } else {
+            Err(Errs::string(format!("no match engine with {}", res)))
+        }
+    }
+
+    pub fn engine_from_str(engine: String) -> Engine {
+        match engine.as_str() {
+            "Disk" => Engine::Disk,
+            "Increment" => Engine::Increment,
+            "Block" => Engine::Block,
+            "Sequence" => Engine::Sequence,
+            _ => Engine::None,
+        }
+    }
+
+    pub fn i32_2_engine_str(res: i32) -> GeorgeResult<String> {
+        if (Engine::None as i32) == res {
+            Ok("None".to_string())
+        } else if (Engine::Disk as i32) == res {
+            Ok("Disk".to_string())
+        } else if (Engine::Sequence as i32) == res {
+            Ok("Increment".to_string())
+        } else if (Engine::Block as i32) == res {
+            Ok("Block".to_string())
+        } else if (Engine::Increment as i32) == res {
+            Ok("Sequence".to_string())
         } else {
             Err(Errs::string(format!("no match engine with {}", res)))
         }
@@ -111,6 +142,35 @@ impl Trans {
             Ok(db::utils::enums::KeyType::Float)
         } else {
             Err(Errs::string(format!("no match key type with {}", res)))
+        }
+    }
+
+    pub fn i32_2_key_type_str(res: i32) -> GeorgeResult<String> {
+        if (KeyType::Nonsupport as i32) == res {
+            Ok("Nonsupport".to_string())
+        } else if (KeyType::String as i32) == res {
+            Ok("String".to_string())
+        } else if (KeyType::UInt as i32) == res {
+            Ok("UInt".to_string())
+        } else if (KeyType::Int as i32) == res {
+            Ok("Int".to_string())
+        } else if (KeyType::Bool as i32) == res {
+            Ok("Bool".to_string())
+        } else if (KeyType::Float as i32) == res {
+            Ok("Float".to_string())
+        } else {
+            Err(Errs::string(format!("no match key type with {}", res)))
+        }
+    }
+
+    pub fn key_type_from_str(key_type: String) -> KeyType {
+        match key_type.as_str() {
+            "String" => KeyType::String,
+            "Int" => KeyType::Int,
+            "Float" => KeyType::Float,
+            "Bool" => KeyType::Bool,
+            "UInt" => KeyType::UInt,
+            _ => KeyType::Nonsupport,
         }
     }
 

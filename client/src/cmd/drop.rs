@@ -18,7 +18,7 @@ use crate::cmd::{george_error, Config, Drop};
 
 impl Drop {
     pub(crate) fn analysis(
-        config: &Config,
+        config: &mut Config,
         used: String,
         scan: String,
         vss: Vec<String>,

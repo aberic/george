@@ -18,7 +18,7 @@ use crate::cmd::{george_error, Config, Put};
 
 impl Put {
     pub(crate) fn analysis(
-        config: &Config,
+        config: &mut Config,
         disk: bool,
         used: String,
         scan: String,

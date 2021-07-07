@@ -52,7 +52,7 @@ impl ViewService for ViewServer {
                     views.push(View {
                         name: view_r.name(),
                         comment: view_r.comment(),
-                        create_time: Some(Trans::proto_time_2_grpc_timestamp(view_r.create_time())),
+                        create_time: Some(Trans::time_2_grpc_timestamp(view_r.create_time())),
                         indexes,
                         filepath: view_r.filepath(),
                         version: view_r.version() as u32,
@@ -117,7 +117,7 @@ impl ViewService for ViewServer {
                     view: Some(View {
                         name: view_r.name(),
                         comment: view_r.comment(),
-                        create_time: Some(Trans::proto_time_2_grpc_timestamp(view_r.create_time())),
+                        create_time: Some(Trans::time_2_grpc_timestamp(view_r.create_time())),
                         indexes,
                         filepath: view_r.filepath(),
                         version: view_r.version() as u32,
@@ -175,7 +175,7 @@ impl ViewService for ViewServer {
                     msg_err: "".to_string(),
                     record: Some(ViewRecord {
                         filepath,
-                        time: Some(Trans::proto_time_2_grpc_timestamp(create_time)),
+                        time: Some(Trans::time_2_grpc_timestamp(create_time)),
                         version: request.get_ref().version,
                     }),
                 }
@@ -205,7 +205,7 @@ impl ViewService for ViewServer {
                 for (filepath, time, version) in v8s {
                     records.push(ViewRecord {
                         filepath,
-                        time: Some(Trans::proto_time_2_grpc_timestamp(time)),
+                        time: Some(Trans::time_2_grpc_timestamp(time)),
                         version: version as u32,
                     });
                 }

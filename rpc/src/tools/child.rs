@@ -31,7 +31,7 @@ impl Children {
                 unique: index.unique(),
                 null: index.null(),
                 key_type: Trans::db_2_key_type_i32(index.key_type()),
-                create_time: Some(Trans::proto_time_2_grpc_timestamp(index.create_time())),
+                create_time: Some(Trans::time_2_grpc_timestamp(index.create_time())),
             })
         }
         indexes
@@ -48,7 +48,7 @@ impl Children {
             views.push(View {
                 name: view_r.name(),
                 comment: view_r.comment(),
-                create_time: Some(Trans::proto_time_2_grpc_timestamp(view_r.create_time())),
+                create_time: Some(Trans::time_2_grpc_timestamp(view_r.create_time())),
                 indexes,
                 filepath: view_r.filepath(),
                 version: view_r.version() as u32,

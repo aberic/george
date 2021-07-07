@@ -16,13 +16,13 @@ use cli_table::format::Justify;
 use cli_table::{Cell, Style, Table};
 
 use comm::errors::{Errs, GeorgeResult};
-use protocols::impls::utils::Comm;
+use rpc::tools::Trans;
 
 use crate::cmd::{george_error, print_table, Config, Show};
 
 impl Show {
     pub(crate) fn analysis(
-        config: &Config,
+        config: &mut Config,
         disk: bool,
         used: String,
         scan: String,
@@ -40,17 +40,15 @@ impl Show {
         match intent {
             "databases" => {
                 // show databases;
-                let db_list = config.database.list()?;
-                let list = db_list.databases;
+                let list = config.database.list()?;
                 let mut table = vec![];
                 for db in list.iter() {
                     table.push(vec![
-                        db.get_name().cell(),
-                        db.get_comment().cell(),
-                        Comm::proto_grpc_timestamp_2_time(db.get_create_time().seconds)
-                            .to_string("%Y-%m-%d %H:%M:%S")
+                        db.name.clone().cell(),
+                        db.comment.clone().cell(),
+                        Trans::grpc_timestamp_2_string(db.create_time.as_ref().unwrap().seconds)
                             .cell(),
-                        db.get_views().len().cell().justify(Justify::Right),
+                        db.views.len().cell().justify(Justify::Right),
                     ])
                 }
                 print_table(
@@ -67,17 +65,15 @@ impl Show {
             }
             "pages" => {
                 // show pages;
-                let page_list = config.page.list()?;
-                let list = page_list.pages;
+                let list = config.page.list()?;
                 let mut table = vec![];
                 for page in list.iter() {
                     table.push(vec![
-                        page.get_name().cell(),
-                        page.get_comment().cell(),
-                        page.get_size().cell(),
-                        page.get_period().cell(),
-                        Comm::proto_grpc_timestamp_2_time(page.get_create_time().seconds)
-                            .to_string("%Y-%m-%d %H:%M:%S")
+                        page.name.clone().cell(),
+                        page.comment.clone().cell(),
+                        page.size.cell(),
+                        page.period.cell(),
+                        Trans::grpc_timestamp_2_string(page.create_time.as_ref().unwrap().seconds)
                             .cell()
                             .justify(Justify::Right),
                     ])
@@ -103,17 +99,15 @@ impl Show {
                         "database name not defined, please use `use [database/page/ledger] [database]` first!",
                     ));
                 }
-                let view_list = config.view.list(used)?;
-                let list = view_list.views;
+                let list = config.view.list(used)?;
                 let mut table = vec![];
                 for view in list.iter() {
                     table.push(vec![
-                        view.get_name().cell(),
-                        view.get_comment().cell(),
-                        Comm::proto_grpc_timestamp_2_time(view.get_create_time().seconds)
-                            .to_string("%Y-%m-%d %H:%M:%S")
+                        view.name.clone().cell(),
+                        view.comment.clone().cell(),
+                        Trans::grpc_timestamp_2_string(view.create_time.as_ref().unwrap().seconds)
                             .cell(),
-                        view.get_indexes().len().cell().justify(Justify::Right),
+                        view.indexes.len().cell().justify(Justify::Right),
                     ])
                 }
                 print_table(
@@ -142,10 +136,8 @@ impl Show {
                 let version = vss[3].parse::<u32>().unwrap();
                 let record = config.view.record(used, name, version)?;
                 let table = vec![vec![
-                    record.get_filepath().cell(),
-                    Comm::proto_grpc_timestamp_2_time(record.get_time().seconds)
-                        .to_string("%Y-%m-%d %H:%M:%S")
-                        .cell(),
+                    record.filepath.cell(),
+                    Trans::grpc_timestamp_2_string(record.time.as_ref().unwrap().seconds).cell(),
                     version.cell().justify(Justify::Right),
                 ]]
                 .table()
@@ -172,11 +164,10 @@ impl Show {
                 let mut table = vec![];
                 for record in records {
                     table.push(vec![
-                        record.get_filepath().cell(),
-                        Comm::proto_grpc_timestamp_2_time(record.get_time().seconds)
-                            .to_string("%Y-%m-%d %H:%M:%S")
+                        record.filepath.cell(),
+                        Trans::grpc_timestamp_2_string(record.time.as_ref().unwrap().seconds)
                             .cell(),
-                        record.get_version().cell().justify(Justify::Right),
+                        record.version.cell().justify(Justify::Right),
                     ])
                 }
                 print_table(
@@ -207,9 +198,10 @@ impl Show {
                 let mut view_exist = false;
                 match config.view.list(used.clone()) {
                     Ok(list) => {
-                        for view in list.views.iter() {
-                            if view_name.eq(view.get_name()) {
-                                view_exist = true
+                        for view in list.iter() {
+                            if view_name.eq(view.name.as_str()) {
+                                view_exist = true;
+                                break;
                             }
                         }
                     }
@@ -226,19 +218,17 @@ impl Show {
                         view_name, used
                     )));
                 }
-                let index_list = config.index.list(used, view_name)?;
-                let list = index_list.indexes;
+                let list = config.index.list(used, view_name)?;
                 let mut table = vec![];
                 for index in list.iter() {
                     table.push(vec![
-                        index.get_name().cell(),
-                        index.get_unique().cell(),
-                        index.get_primary().cell(),
-                        index.get_null().cell(),
-                        Comm::key_type_str(index.get_key_type()).cell(),
-                        Comm::engine_str(index.get_engine()).cell(),
-                        Comm::proto_grpc_timestamp_2_time(index.get_create_time().seconds)
-                            .to_string("%Y-%m-%d %H:%M:%S")
+                        index.name.clone().cell(),
+                        index.unique.cell(),
+                        index.primary.cell(),
+                        index.null.cell(),
+                        Trans::i32_2_key_type_str(index.key_type)?.cell(),
+                        Trans::i32_2_engine_str(index.engine)?.cell(),
+                        Trans::grpc_timestamp_2_string(index.create_time.as_ref().unwrap().seconds)
                             .cell()
                             .justify(Justify::Right),
                     ])

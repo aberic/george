@@ -23,7 +23,7 @@ use crate::cmd::{george_error, print_table, Config, Select};
 
 impl Select {
     pub(crate) fn analysis(
-        config: &Config,
+        config: &mut Config,
         used: String,
         scan: String,
         vss: Vec<String>,

@@ -47,7 +47,7 @@ impl PageService for PageServer {
                 comment: page_r.comment(),
                 size: page_r.size(),
                 period: page_r.period(),
-                create_time: Some(Trans::proto_time_2_grpc_timestamp(page_r.create_time())),
+                create_time: Some(Trans::time_2_grpc_timestamp(page_r.create_time())),
             });
         }
         Results::response(ResponsePageList {
@@ -95,7 +95,7 @@ impl PageService for PageServer {
                         comment: page_r.comment(),
                         size: page_r.size(),
                         period: page_r.period(),
-                        create_time: Some(Trans::proto_time_2_grpc_timestamp(page_r.create_time())),
+                        create_time: Some(Trans::time_2_grpc_timestamp(page_r.create_time())),
                     }),
                 }
             }

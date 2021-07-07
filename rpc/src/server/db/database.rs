@@ -46,7 +46,7 @@ impl DatabaseService for DatabaseServer {
             let database = Database {
                 name: db_r.name(),
                 comment: db_r.comment(),
-                create_time: Some(Trans::proto_time_2_grpc_timestamp(db_r.create_time())),
+                create_time: Some(Trans::time_2_grpc_timestamp(db_r.create_time())),
                 views,
             };
             databases.push(database);
@@ -100,7 +100,7 @@ impl DatabaseService for DatabaseServer {
                     database: Some(Database {
                         name: item_r.name(),
                         comment: item_r.comment(),
-                        create_time: Some(Trans::proto_time_2_grpc_timestamp(item_r.create_time())),
+                        create_time: Some(Trans::time_2_grpc_timestamp(item_r.create_time())),
                         views,
                     }),
                 }

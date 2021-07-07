@@ -20,7 +20,7 @@ use crate::cmd::{george_error, Config, Get};
 
 impl Get {
     pub(crate) fn analysis(
-        config: &Config,
+        config: &mut Config,
         disk: bool,
         used: String,
         scan: String,

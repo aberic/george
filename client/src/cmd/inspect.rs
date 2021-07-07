@@ -16,14 +16,14 @@ use cli_table::format::Justify;
 use cli_table::{Cell, Style, Table};
 
 use comm::errors::{Errs, GeorgeResult};
-use protocols::impls::utils::Comm;
+use db::utils::comm::INDEX_INCREMENT;
+use rpc::tools::Trans;
 
 use crate::cmd::{george_error, print_table, Config, Inspect};
-use db::utils::comm::INDEX_INCREMENT;
 
 impl Inspect {
     pub(crate) fn analysis(
-        config: &Config,
+        config: &mut Config,
         used: String,
         scan: String,
         vss: Vec<String>,
@@ -40,12 +40,11 @@ impl Inspect {
                 }
                 let database = config.database.info(name)?;
                 let table = vec![vec![
-                    database.get_name().cell(),
-                    database.get_comment().cell(),
-                    Comm::proto_grpc_timestamp_2_time(database.get_create_time().seconds)
-                        .to_string("%Y-%m-%d %H:%M:%S")
+                    database.name.clone().cell(),
+                    database.comment.clone().cell(),
+                    Trans::grpc_timestamp_2_string(database.create_time.as_ref().unwrap().seconds)
                         .cell(),
-                    database.get_views().len().cell().justify(Justify::Right),
+                    database.views.len().cell().justify(Justify::Right),
                 ]]
                 .table()
                 .title(vec![
@@ -67,12 +66,11 @@ impl Inspect {
                 }
                 let page = config.page.info(name)?;
                 let table = vec![vec![
-                    page.get_name().cell(),
-                    page.get_comment().cell(),
-                    page.get_size().cell(),
-                    page.get_period().cell(),
-                    Comm::proto_grpc_timestamp_2_time(page.get_create_time().seconds)
-                        .to_string("%Y-%m-%d %H:%M:%S")
+                    page.name.clone().cell(),
+                    page.comment.clone().cell(),
+                    page.size.cell(),
+                    page.period.cell(),
+                    Trans::grpc_timestamp_2_string(page.create_time.as_ref().unwrap().seconds)
                         .cell()
                         .justify(Justify::Right),
                 ]]
@@ -109,18 +107,18 @@ impl Inspect {
                 for index in view.indexes.iter() {
                     if index.name.eq(INDEX_INCREMENT) {
                         increment = true;
+                        break;
                     }
                 }
                 let table = vec![vec![
-                    view.get_name().cell(),
-                    view.get_comment().cell(),
+                    view.name.clone().cell(),
+                    view.comment.clone().cell(),
                     increment.cell(),
-                    Comm::proto_grpc_timestamp_2_time(view.get_create_time().seconds)
-                        .to_string("%Y-%m-%d %H:%M:%S")
+                    Trans::grpc_timestamp_2_string(view.create_time.as_ref().unwrap().seconds)
                         .cell(),
-                    view.get_indexes().len().cell().justify(Justify::Right),
-                    view.get_filepath().cell(),
-                    view.get_version().cell(),
+                    view.indexes.len().cell().justify(Justify::Right),
+                    view.filepath.cell(),
+                    view.version.cell(),
                 ]]
                 .table()
                 .title(vec![
@@ -155,14 +153,13 @@ impl Inspect {
                 }
                 let index = config.index.info(used, view_name, name)?;
                 let table = vec![vec![
-                    index.get_name().cell(),
-                    index.get_unique().cell(),
-                    index.get_primary().cell(),
-                    index.get_null().cell(),
-                    Comm::key_type_str(index.get_key_type()).cell(),
-                    Comm::engine_str(index.get_engine()).cell(),
-                    Comm::proto_grpc_timestamp_2_time(index.get_create_time().seconds)
-                        .to_string("%Y-%m-%d %H:%M:%S")
+                    index.name.clone().cell(),
+                    index.unique.cell(),
+                    index.primary.cell(),
+                    index.null.cell(),
+                    Trans::i32_2_key_type_str(index.key_type)?.cell(),
+                    Trans::i32_2_engine_str(index.engine)?.cell(),
+                    Trans::grpc_timestamp_2_string(index.create_time.as_ref().unwrap().seconds)
                         .cell()
                         .justify(Justify::Right),
                 ]]

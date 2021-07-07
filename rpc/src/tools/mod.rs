@@ -15,9 +15,12 @@
 pub mod child;
 pub mod results;
 pub mod trans;
+pub mod trim;
 
 pub struct Children;
 
+pub struct Results;
+
 pub struct Trans;
 
-pub struct Results;
+pub struct Trim;

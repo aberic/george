@@ -56,7 +56,7 @@ impl IndexService for IndexServer {
                         unique: index.unique(),
                         null: index.null(),
                         key_type: Trans::db_2_key_type_i32(index.key_type()),
-                        create_time: Some(Trans::proto_time_2_grpc_timestamp(index.create_time())),
+                        create_time: Some(Trans::time_2_grpc_timestamp(index.create_time())),
                     });
                 }
                 resp = ResponseIndexList {
@@ -123,7 +123,7 @@ impl IndexService for IndexServer {
                         unique: res.unique(),
                         null: res.null(),
                         key_type: Trans::db_2_key_type_i32(res.key_type()),
-                        create_time: Some(Trans::proto_time_2_grpc_timestamp(res.create_time())),
+                        create_time: Some(Trans::time_2_grpc_timestamp(res.create_time())),
                     }),
                 }
             }

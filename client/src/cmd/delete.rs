@@ -21,7 +21,7 @@ use crate::cmd::{george_error, print_table, Config, Delete};
 
 impl Delete {
     pub(crate) fn analysis(
-        config: &Config,
+        config: &mut Config,
         used: String,
         scan: String,
         vss: Vec<String>,
