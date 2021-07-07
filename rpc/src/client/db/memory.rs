@@ -16,25 +16,54 @@ use tonic::Request;
 
 use comm::errors::{Errs, GeorgeResult};
 
-use crate::client::db::MemoryRpcClient;
-use crate::client::{endpoint, status_check};
+use crate::client::db::{MemoryRpcClient, RpcClient};
+use crate::client::{endpoint, endpoint_tls_bytes, endpoint_tls_check_bytes, status_check};
 use crate::protos::db::db::memory_service_client::MemoryServiceClient;
 use crate::protos::db::db::{
     RequestMemoryInto, RequestMemoryOut, RequestMemoryPInto, RequestMemoryPOut,
     RequestMemoryPRemove, RequestMemoryRemove,
 };
 
-impl MemoryRpcClient {
-    pub fn new(
+impl RpcClient for MemoryRpcClient {
+    fn new(remote: &str, port: u16) -> GeorgeResult<Self>
+    where
+        Self: Sized,
+    {
+        let (inner, rt) = endpoint(remote, port)?;
+        Ok(MemoryRpcClient {
+            client: MemoryServiceClient::new(inner),
+            rt,
+        })
+    }
+
+    fn new_tls_bytes(
         remote: &str,
         port: u16,
-        tls: bool,
-        key: Option<Vec<u8>>,
-        cert: Option<Vec<u8>>,
-        server_ca: Option<Vec<u8>>,
+        ca: Vec<u8>,
         domain_name: impl Into<String>,
-    ) -> GeorgeResult<MemoryRpcClient> {
-        let (inner, rt) = endpoint(remote, port, tls, key, cert, server_ca, domain_name)?;
+    ) -> GeorgeResult<Self>
+    where
+        Self: Sized,
+    {
+        let (inner, rt) = endpoint_tls_bytes(remote, port, ca, domain_name)?;
+        Ok(MemoryRpcClient {
+            client: MemoryServiceClient::new(inner),
+            rt,
+        })
+    }
+
+    fn new_tls_check_bytes(
+        remote: &str,
+        port: u16,
+        key: Vec<u8>,
+        cert: Vec<u8>,
+        ca: Vec<u8>,
+        domain_name: impl Into<String>,
+    ) -> GeorgeResult<Self>
+    where
+        Self: Sized,
+    {
+        let (inner, rt) = endpoint_tls_check_bytes(remote, port, key, cert, ca, domain_name)?;
         Ok(MemoryRpcClient {
             client: MemoryServiceClient::new(inner),
             rt,

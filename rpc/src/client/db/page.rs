@@ -16,25 +16,54 @@ use tonic::Request;
 
 use comm::errors::{Errs, GeorgeResult};
 
-use crate::client::db::PageRpcClient;
-use crate::client::{endpoint, status_check};
+use crate::client::db::{PageRpcClient, RpcClient};
+use crate::client::{endpoint, endpoint_tls_bytes, endpoint_tls_check_bytes, status_check};
 use crate::protos::db::db::page_service_client::PageServiceClient;
 use crate::protos::db::db::{
     Page, RequestPageCreate, RequestPageInfo, RequestPageModify, RequestPageRemove,
 };
 use crate::protos::utils::utils::Req;
 
-impl PageRpcClient {
-    pub fn new(
+impl RpcClient for PageRpcClient {
+    fn new(remote: &str, port: u16) -> GeorgeResult<Self>
+    where
+        Self: Sized,
+    {
+        let (inner, rt) = endpoint(remote, port)?;
+        Ok(PageRpcClient {
+            client: PageServiceClient::new(inner),
+            rt,
+        })
+    }
+
+    fn new_tls_bytes(
         remote: &str,
         port: u16,
-        tls: bool,
-        key: Option<Vec<u8>>,
-        cert: Option<Vec<u8>>,
-        server_ca: Option<Vec<u8>>,
+        ca: Vec<u8>,
         domain_name: impl Into<String>,
-    ) -> GeorgeResult<PageRpcClient> {
-        let (inner, rt) = endpoint(remote, port, tls, key, cert, server_ca, domain_name)?;
+    ) -> GeorgeResult<Self>
+    where
+        Self: Sized,
+    {
+        let (inner, rt) = endpoint_tls_bytes(remote, port, ca, domain_name)?;
+        Ok(PageRpcClient {
+            client: PageServiceClient::new(inner),
+            rt,
+        })
+    }
+
+    fn new_tls_check_bytes(
+        remote: &str,
+        port: u16,
+        key: Vec<u8>,
+        cert: Vec<u8>,
+        ca: Vec<u8>,
+        domain_name: impl Into<String>,
+    ) -> GeorgeResult<Self>
+    where
+        Self: Sized,
+    {
+        let (inner, rt) = endpoint_tls_check_bytes(remote, port, key, cert, ca, domain_name)?;
         Ok(PageRpcClient {
             client: PageServiceClient::new(inner),
             rt,

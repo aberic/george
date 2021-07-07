@@ -16,8 +16,8 @@ use tonic::Request;
 
 use comm::errors::{Errs, GeorgeResult};
 
-use crate::client::db::DatabaseRpcClient;
-use crate::client::{endpoint, status_check};
+use crate::client::db::{DatabaseRpcClient, RpcClient};
+use crate::client::{endpoint, endpoint_tls_bytes, endpoint_tls_check_bytes, status_check};
 use crate::protos::db::db::database_service_client::DatabaseServiceClient;
 use crate::protos::db::db::{
     Database, RequestDatabaseCreate, RequestDatabaseInfo, RequestDatabaseModify,
@@ -25,17 +25,46 @@ use crate::protos::db::db::{
 };
 use crate::protos::utils::utils::Req;
 
-impl DatabaseRpcClient {
-    pub fn new(
+impl RpcClient for DatabaseRpcClient {
+    fn new(remote: &str, port: u16) -> GeorgeResult<Self>
+    where
+        Self: Sized,
+    {
+        let (inner, rt) = endpoint(remote, port)?;
+        Ok(DatabaseRpcClient {
+            client: DatabaseServiceClient::new(inner),
+            rt,
+        })
+    }
+
+    fn new_tls_bytes(
         remote: &str,
         port: u16,
-        tls: bool,
-        key: Option<Vec<u8>>,
-        cert: Option<Vec<u8>>,
-        server_ca: Option<Vec<u8>>,
+        ca: Vec<u8>,
         domain_name: impl Into<String>,
-    ) -> GeorgeResult<DatabaseRpcClient> {
-        let (inner, rt) = endpoint(remote, port, tls, key, cert, server_ca, domain_name)?;
+    ) -> GeorgeResult<Self>
+    where
+        Self: Sized,
+    {
+        let (inner, rt) = endpoint_tls_bytes(remote, port, ca, domain_name)?;
+        Ok(DatabaseRpcClient {
+            client: DatabaseServiceClient::new(inner),
+            rt,
+        })
+    }
+
+    fn new_tls_check_bytes(
+        remote: &str,
+        port: u16,
+        key: Vec<u8>,
+        cert: Vec<u8>,
+        ca: Vec<u8>,
+        domain_name: impl Into<String>,
+    ) -> GeorgeResult<Self>
+    where
+        Self: Sized,
+    {
+        let (inner, rt) = endpoint_tls_check_bytes(remote, port, key, cert, ca, domain_name)?;
         Ok(DatabaseRpcClient {
             client: DatabaseServiceClient::new(inner),
             rt,

@@ -16,25 +16,54 @@ use tonic::Request;
 
 use comm::errors::{Errs, GeorgeResult};
 
-use crate::client::db::DiskRpcClient;
-use crate::client::{endpoint, status_check};
+use crate::client::db::{DiskRpcClient, RpcClient};
+use crate::client::{endpoint, endpoint_tls_bytes, endpoint_tls_check_bytes, status_check};
 use crate::protos::db::db::disk_service_client::DiskServiceClient;
 use crate::protos::db::db::{
     DiskDeleted, DiskSelected, RequestDiskDelete, RequestDiskIOut, RequestDiskInto, RequestDiskOut,
     RequestDiskRemove, RequestDiskSelect,
 };
 
-impl DiskRpcClient {
-    pub fn new(
+impl RpcClient for DiskRpcClient {
+    fn new(remote: &str, port: u16) -> GeorgeResult<Self>
+    where
+        Self: Sized,
+    {
+        let (inner, rt) = endpoint(remote, port)?;
+        Ok(DiskRpcClient {
+            client: DiskServiceClient::new(inner),
+            rt,
+        })
+    }
+
+    fn new_tls_bytes(
         remote: &str,
         port: u16,
-        tls: bool,
-        key: Option<Vec<u8>>,
-        cert: Option<Vec<u8>>,
-        server_ca: Option<Vec<u8>>,
+        ca: Vec<u8>,
         domain_name: impl Into<String>,
-    ) -> GeorgeResult<DiskRpcClient> {
-        let (inner, rt) = endpoint(remote, port, tls, key, cert, server_ca, domain_name)?;
+    ) -> GeorgeResult<Self>
+    where
+        Self: Sized,
+    {
+        let (inner, rt) = endpoint_tls_bytes(remote, port, ca, domain_name)?;
+        Ok(DiskRpcClient {
+            client: DiskServiceClient::new(inner),
+            rt,
+        })
+    }
+
+    fn new_tls_check_bytes(
+        remote: &str,
+        port: u16,
+        key: Vec<u8>,
+        cert: Vec<u8>,
+        ca: Vec<u8>,
+        domain_name: impl Into<String>,
+    ) -> GeorgeResult<Self>
+    where
+        Self: Sized,
+    {
+        let (inner, rt) = endpoint_tls_check_bytes(remote, port, key, cert, ca, domain_name)?;
         Ok(DiskRpcClient {
             client: DiskServiceClient::new(inner),
             rt,

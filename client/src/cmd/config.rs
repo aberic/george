@@ -16,90 +16,29 @@ use std::io;
 use std::io::Write;
 
 use comm::errors::{Errs, GeorgeResult};
+use rpc::client::db::{
+    DatabaseRpcClient, DiskRpcClient, IndexRpcClient, MemoryRpcClient, PageRpcClient, RpcClient,
+    UserRpcClient, ViewRpcClient,
+};
+use rpc::tools::Trim;
 
 use crate::cmd::{
     george_error, Alter, Config, Create, Delete, Drop, Get, Insert, Inspect, Put, Remove, Select,
     Set, Show,
 };
-use rpc::client::db::{
-    DatabaseRpcClient, DiskRpcClient, IndexRpcClient, MemoryRpcClient, PageRpcClient,
-    UserRpcClient, ViewRpcClient,
-};
-use rpc::tools::Trim;
 
-impl Config {
-    pub(crate) fn new(
-        remote: &str,
-        port: u16,
-        tls: bool,
-        key: Option<Vec<u8>>,
-        cert: Option<Vec<u8>>,
-        server_ca: Option<Vec<u8>>,
-        domain_name: String,
-    ) -> GeorgeResult<Self> {
-        let user = UserRpcClient::new(
-            remote,
-            port,
-            tls,
-            key.clone(),
-            cert.clone(),
-            server_ca.clone(),
-            domain_name.clone(),
-        )?;
-        let database = DatabaseRpcClient::new(
-            remote,
-            port,
-            tls,
-            key.clone(),
-            cert.clone(),
-            server_ca.clone(),
-            domain_name.clone(),
-        )?;
-        let page = PageRpcClient::new(
-            remote,
-            port,
-            tls,
-            key.clone(),
-            cert.clone(),
-            server_ca.clone(),
-            domain_name.clone(),
-        )?;
-        let view = ViewRpcClient::new(
-            remote,
-            port,
-            tls,
-            key.clone(),
-            cert.clone(),
-            server_ca.clone(),
-            domain_name.clone(),
-        )?;
-        let index = IndexRpcClient::new(
-            remote,
-            port,
-            tls,
-            key.clone(),
-            cert.clone(),
-            server_ca.clone(),
-            domain_name.clone(),
-        )?;
-        let disk = DiskRpcClient::new(
-            remote,
-            port,
-            tls,
-            key.clone(),
-            cert.clone(),
-            server_ca.clone(),
-            domain_name.clone(),
-        )?;
-        let memory = MemoryRpcClient::new(
-            remote,
-            port,
-            tls,
-            key.clone(),
-            cert.clone(),
-            server_ca.clone(),
-            domain_name.clone(),
-        )?;
+impl RpcClient for Config {
+    fn new(remote: &str, port: u16) -> GeorgeResult<Self>
+    where
+        Self: Sized,
+    {
+        let user = UserRpcClient::new(remote, port)?;
+        let database = DatabaseRpcClient::new(remote, port)?;
+        let page = PageRpcClient::new(remote, port)?;
+        let view = ViewRpcClient::new(remote, port)?;
+        let index = IndexRpcClient::new(remote, port)?;
+        let disk = DiskRpcClient::new(remote, port)?;
+        let memory = MemoryRpcClient::new(remote, port)?;
         Ok(Config {
             user,
             database,
@@ -111,6 +50,115 @@ impl Config {
         })
     }
 
+    fn new_tls_bytes(
+        remote: &str,
+        port: u16,
+        ca: Vec<u8>,
+        domain_name: impl Into<String>,
+    ) -> GeorgeResult<Self>
+    where
+        Self: Sized,
+    {
+        let dn = domain_name.into();
+        let user = UserRpcClient::new_tls_bytes(remote, port, ca.clone(), dn.clone())?;
+        let database = DatabaseRpcClient::new_tls_bytes(remote, port, ca.clone(), dn.clone())?;
+        let page = PageRpcClient::new_tls_bytes(remote, port, ca.clone(), dn.clone())?;
+        let view = ViewRpcClient::new_tls_bytes(remote, port, ca.clone(), dn.clone())?;
+        let index = IndexRpcClient::new_tls_bytes(remote, port, ca.clone(), dn.clone())?;
+        let disk = DiskRpcClient::new_tls_bytes(remote, port, ca.clone(), dn.clone())?;
+        let memory = MemoryRpcClient::new_tls_bytes(remote, port, ca.clone(), dn.clone())?;
+        Ok(Config {
+            user,
+            database,
+            page,
+            view,
+            index,
+            disk,
+            memory,
+        })
+    }
+
+    fn new_tls_check_bytes(
+        remote: &str,
+        port: u16,
+        key: Vec<u8>,
+        cert: Vec<u8>,
+        ca: Vec<u8>,
+        domain_name: impl Into<String>,
+    ) -> GeorgeResult<Self>
+    where
+        Self: Sized,
+    {
+        let dn = domain_name.into();
+        let user = UserRpcClient::new_tls_check_bytes(
+            remote,
+            port,
+            key.clone(),
+            cert.clone(),
+            ca.clone(),
+            dn.clone(),
+        )?;
+        let database = DatabaseRpcClient::new_tls_check_bytes(
+            remote,
+            port,
+            key.clone(),
+            cert.clone(),
+            ca.clone(),
+            dn.clone(),
+        )?;
+        let page = PageRpcClient::new_tls_check_bytes(
+            remote,
+            port,
+            key.clone(),
+            cert.clone(),
+            ca.clone(),
+            dn.clone(),
+        )?;
+        let view = ViewRpcClient::new_tls_check_bytes(
+            remote,
+            port,
+            key.clone(),
+            cert.clone(),
+            ca.clone(),
+            dn.clone(),
+        )?;
+        let index = IndexRpcClient::new_tls_check_bytes(
+            remote,
+            port,
+            key.clone(),
+            cert.clone(),
+            ca.clone(),
+            dn.clone(),
+        )?;
+        let disk = DiskRpcClient::new_tls_check_bytes(
+            remote,
+            port,
+            key.clone(),
+            cert.clone(),
+            ca.clone(),
+            dn.clone(),
+        )?;
+        let memory = MemoryRpcClient::new_tls_check_bytes(
+            remote,
+            port,
+            key.clone(),
+            cert.clone(),
+            ca.clone(),
+            dn.clone(),
+        )?;
+        Ok(Config {
+            user,
+            database,
+            page,
+            view,
+            index,
+            disk,
+            memory,
+        })
+    }
+}
+
+impl Config {
     pub(crate) fn login(&mut self, name: String, pass: String) -> GeorgeResult<()> {
         self.user.login(name, pass)
     }

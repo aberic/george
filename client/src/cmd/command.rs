@@ -20,6 +20,7 @@ use comm::io::Filer;
 use deploy::Builder;
 
 use crate::cmd::{Command, Config, Options};
+use rpc::client::db::RpcClient;
 
 impl Command {
     pub fn init() {
@@ -50,9 +51,9 @@ fn match_value(matches: ArgMatches) -> GeorgeResult<()> {
     let remote: &str;
     let port: u16;
     let tls: bool;
-    let mut key: Option<Vec<u8>> = None;
-    let mut cert: Option<Vec<u8>> = None;
-    let mut server_ca: Option<Vec<u8>> = None;
+    let mut key_bytes_op: Option<Vec<u8>> = None;
+    let mut cert_bytes_op: Option<Vec<u8>> = None;
+    let mut ca_bytes_op: Option<Vec<u8>> = None;
     let mut domain_name: String = "".to_string();
     let name: String;
     let pass: String;
@@ -61,9 +62,9 @@ fn match_value(matches: ArgMatches) -> GeorgeResult<()> {
         port = port_fn(&matches)?;
         tls = tls_fn(&matches)?;
         if tls {
-            key = key_fn(&matches)?;
-            cert = cert_fn(&matches)?;
-            server_ca = ca_fn(&matches)?;
+            key_bytes_op = key_fn(&matches)?;
+            cert_bytes_op = cert_fn(&matches)?;
+            ca_bytes_op = ca_fn(&matches)?;
             domain_name = domain_fn(&matches);
         }
         name = user_fn(&matches);
@@ -71,7 +72,24 @@ fn match_value(matches: ArgMatches) -> GeorgeResult<()> {
     } else {
         return Err(Errs::str("user & pass must be assign!"));
     }
-    let mut config = Config::new(remote, port, tls, key, cert, server_ca, domain_name)?;
+    let mut config;
+    if tls {
+        if let Some(ca) = ca_bytes_op {
+            if key_bytes_op.is_none() && cert_bytes_op.is_none() {
+                config = Config::new_tls_bytes(remote, port, ca, domain_name)?;
+            } else if key_bytes_op.is_some() && cert_bytes_op.is_some() {
+                let key = key_bytes_op.unwrap();
+                let cert = cert_bytes_op.unwrap();
+                config = Config::new_tls_check_bytes(remote, port, key, cert, ca, domain_name)?;
+            } else {
+                return Err(Errs::str("key & cert must be assign together!"));
+            }
+        } else {
+            return Err(Errs::str("ca must be assign!"));
+        }
+    } else {
+        config = Config::new(remote, port)?;
+    }
     config.login(name, pass)?;
     Ok(config.scan())
 }
