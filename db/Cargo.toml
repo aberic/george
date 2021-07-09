@@ -25,7 +25,6 @@ comm = { path = "../comm", version = "0.1.0" }
 ge = { path = "../ge", version = "0.1.0" }
 logs = { path = "../logs", version = "0.1.0" }
 deploy = { path = "../deploy", version = "0.1.0" }
-#protocols = { path = "../protocols", version = "0.1.0" }
 lazy_static = "1.4.0"
 once_cell = "1.7.2"
 hex = "0.4.3"

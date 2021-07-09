@@ -13,9 +13,8 @@
  */
 
 use std::path::Path;
-
-use openssl::ssl::{SslConnector, SslMethod};
 use tokio::runtime::{Builder, Runtime};
+// use tonic::codegen::*;
 use tonic::transport::{Certificate, Channel, ClientTlsConfig, Identity, Uri};
 
 use comm::errors::{Errs, GeorgeResult};
@@ -24,11 +23,25 @@ use comm::io::Filer;
 
 use crate::protos::utils::utils::Status;
 use crate::tools::Trans;
+// use comm::cryptos::Cert;
+// use comm::openssl::tonic::ALPN_H2_WIRE;
+// use hyper::client::HttpConnector;
+// use hyper::client::{Client, ResponseFuture};
+// use hyper::Request;
+// use hyper_openssl::HttpsConnector;
+// use openssl::ssl::{SslConnector, SslMethod};
+// use tonic::body::BoxBody;
+// use tower::util::ServiceFn;
 
 pub mod db;
 
-fn request_resource(remote: &str, port: u16) -> GeorgeResult<(Runtime, Uri)> {
-    let dst = format!("{}://{}:{}", "http", remote, port);
+fn request_resource(remote: &str, port: u16, openssl: bool) -> GeorgeResult<(Runtime, Uri)> {
+    let dst: String;
+    if openssl {
+        dst = format!("{}://{}:{}", "https", remote, port);
+    } else {
+        dst = format!("{}://{}:{}", "http", remote, port);
+    }
     let rt: Runtime;
     match Builder::new_multi_thread().enable_all().build() {
         Ok(res) => rt = res,
@@ -41,17 +54,7 @@ fn request_resource(remote: &str, port: u16) -> GeorgeResult<(Runtime, Uri)> {
 }
 
 fn endpoint(remote: &str, port: u16) -> GeorgeResult<(Channel, Runtime)> {
-    let dst = format!("{}://{}:{}", "http", remote, port);
-    let rt: Runtime;
-    match Builder::new_multi_thread().enable_all().build() {
-        Ok(res) => rt = res,
-        Err(err) => return Err(Errs::strs("failed to obtain a new RunTime object!", err)),
-    }
-    let uri;
-    match Uri::from_maybe_shared(dst) {
-        Ok(res) => uri = res,
-        Err(err) => return Err(Errs::strs("uri from maybe shared", err)),
-    }
+    let (rt, uri) = request_resource(remote, port, false)?;
     let endpoint = Channel::builder(uri);
     // endpoint = endpoint.timeout(Duration::from_secs(30));
     let future = endpoint.connect();
@@ -69,6 +72,40 @@ fn endpoint_tls<P: AsRef<Path>>(
 ) -> GeorgeResult<(Channel, Runtime)> {
     let ca = Filer::read_bytes(ca_path)?;
     endpoint_tls_bytes(remote, port, ca, domain_name)
+
+    // let (rt, uri) = request_resource(remote, port, true)?;
+    // let mut ssl = SslConnector::builder(SslMethod::tls_client()).unwrap();
+    // // let ca_bytes = Filer::read_bytes(ca_path)?;
+    // // let cert = Cert::load_pem(ca_bytes)?.x509;
+    // // connector_builder.cert_store_mut().add_cert(cert);
+    // ssl.set_ca_file(ca_path).unwrap();
+    // ssl.set_alpn_protos(ALPN_H2_WIRE).unwrap();
+    //
+    // let mut http = HttpConnector::new();
+    // http.enforce_http(false);
+    // let mut https = HttpsConnector::with_connector(http, ssl).unwrap();
+    //
+    // https.set_callback(|c, _| {
+    //     c.set_verify_hostname(false);
+    //     Ok(())
+    // });
+    //
+    // let hyper = Client::builder().http2_only(true).build(https);
+    //
+    // let add_origin = tower::service_fn(|mut req: hyper::Request<tonic::body::BoxBody>| {
+    //     let uri = Uri::builder()
+    //         .scheme(uri.scheme().unwrap().clone())
+    //         .authority(uri.authority().unwrap().clone())
+    //         .path_and_query(req.uri().path_and_query().unwrap().clone())
+    //         .build()
+    //         .unwrap();
+    //
+    //     *req.uri_mut() = uri;
+    //
+    //     hyper.request(req)
+    // });
+    //
+    // Ok((add_origin, rt))
 }
 
 fn endpoint_tls_check<P: AsRef<Path>>(
@@ -91,7 +128,7 @@ fn endpoint_tls_bytes(
     ca: Vec<u8>,
     domain_name: impl Into<String>,
 ) -> GeorgeResult<(Channel, Runtime)> {
-    let (rt, uri) = request_resource(remote, port)?;
+    let (rt, uri) = request_resource(remote, port, false)?;
     let mut endpoint = Channel::builder(uri);
 
     let mut tls_config = ClientTlsConfig::new().domain_name(domain_name);
@@ -99,9 +136,7 @@ fn endpoint_tls_bytes(
     tls_config = tls_config.ca_certificate(cert);
 
     endpoint = endpoint.tls_config(tls_config).unwrap();
-    // let connector = SslConnector::builder(SslMethod::tls_client()).unwrap();
     // endpoint = endpoint.timeout(Duration::from_secs(30));
-    // let future = endpoint.connect_with_connector(connector);
     let future = endpoint.connect();
     match rt.block_on(future) {
         Ok(res) => Ok((res, rt)),
@@ -117,7 +152,7 @@ fn endpoint_tls_check_bytes(
     ca: Vec<u8>,
     domain_name: impl Into<String>,
 ) -> GeorgeResult<(Channel, Runtime)> {
-    let (rt, uri) = request_resource(remote, port)?;
+    let (rt, uri) = request_resource(remote, port, false)?;
     let mut endpoint = Channel::builder(uri);
 
     let mut tls_config = ClientTlsConfig::new().domain_name(domain_name);

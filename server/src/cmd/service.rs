@@ -18,12 +18,15 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
+use openssl::ssl::{select_next_proto, AlpnError, SslAcceptor, SslFiletype, SslMethod};
+use tokio::net::TcpListener;
 use tokio::runtime::Runtime;
 use tonic::transport::{Certificate, Identity, ServerTlsConfig};
 
-use comm::errors::GeorgeResult;
+use comm::errors::{Errs, GeorgeResult};
 use comm::io::file::FilerReader;
 use comm::io::Filer;
+use comm::openssl::tonic::ALPN_H2_WIRE;
 use db::task::traits::TMaster;
 use db::Task;
 use deploy::{Init, LogPolicy};
@@ -44,106 +47,156 @@ use crate::cmd::Service;
 impl Service {
     /// filepath e.g: `server/src/example/conf.yaml` | `server/src/example/conf_tls.yaml`
     pub fn start<P: AsRef<Path>>(filepath: P) {
-        let init: Init;
-        match Init::from(filepath) {
-            Ok(res) => init = res,
-            Err(err) => panic!("Init from failed! {}", err),
-        }
-        log_policy(init.clone());
-        let task: Arc<Task>;
-        match Task::new(init.clone()) {
-            Ok(res) => task = Arc::new(res),
-            Err(err) => panic!("Task new failed! {}", err),
-        }
-        match init_data(task.clone()) {
-            Err(err) => panic!("Init data failed! {}", err),
+        let (init, task, addr) = run_prepare(filepath).unwrap();
+        let rt = Runtime::new().expect("failed to obtain a new RunTime object");
+        rt.block_on(run(init, task, addr))
+            .expect("failed to successfully run the future on RunTime");
+    }
+}
+
+fn run_prepare<P: AsRef<Path>>(filepath: P) -> GeorgeResult<(Init, Arc<Task>, SocketAddr)> {
+    let init = Init::from(filepath)?;
+    log_policy(init.clone());
+    let task = Arc::new(Task::new(init.clone())?);
+    init_data(task.clone())?;
+
+    log::info!("listener port: {}", init.port_unwrap());
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), init.port_unwrap());
+
+    Ok((init, task, addr))
+}
+
+async fn run(init: Init, task: Arc<Task>, addr: SocketAddr) -> GeorgeResult<()> {
+    let mut server = tonic::transport::Server::builder();
+    if init.tls() {
+        let mut tls_config = ServerTlsConfig::new();
+        match init.server().unwrap().tls_key {
+            Some(res) => {
+                let key = Filer::read_bytes(res)?;
+                match init.server().unwrap().tls_cert {
+                    Some(res) => {
+                        let cert = Filer::read_bytes(res)?;
+                        let identity = Identity::from_pem(cert, key);
+                        tls_config = tls_config.identity(identity);
+                        log::info!("listener tls config identity success!");
+                    }
+                    _ => {}
+                }
+            }
             _ => {}
         }
-
-        log::info!("listener port: {}", init.port_unwrap());
-        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), init.port_unwrap());
-
-        let database_service = DatabaseServiceServer::new(DatabaseServer::new(task.clone()));
-        let disk_service = DiskServiceServer::new(DiskServer::new(task.clone()));
-        let index_service = IndexServiceServer::new(IndexServer::new(task.clone()));
-        let memory_service = MemoryServiceServer::new(MemoryServer::new(task.clone()));
-        let page_service = PageServiceServer::new(PageServer::new(task.clone()));
-        let user_service = UserServiceServer::new(UserServer::new(task.clone()));
-        let view_service = ViewServiceServer::new(ViewServer::new(task.clone()));
-
-        let server_future;
-        let mut server = tonic::transport::Server::builder();
-        if init.tls() {
-            let mut tls_config = ServerTlsConfig::new();
-            match init.server().unwrap().tls_key {
-                Some(res) => {
-                    let key = Filer::read_bytes(res).unwrap();
-                    match init.server().unwrap().tls_cert {
-                        Some(res) => {
-                            let cert = Filer::read_bytes(res).unwrap();
-                            let identity = Identity::from_pem(cert, key);
-                            tls_config = tls_config.identity(identity);
-                            log::info!("listener tls config identity success!");
-                        }
-                        _ => {}
-                    }
-                }
-                _ => {}
+        match init.server().unwrap().tls_client_root_cert {
+            Some(res) => {
+                let client_ca = Filer::read_bytes(res)?;
+                let cert = Certificate::from_pem(client_ca);
+                tls_config = tls_config.client_ca_root(cert);
+                log::info!("listener tls config client ca root success!");
             }
-            match init.server().unwrap().tls_client_root_cert {
-                Some(res) => {
-                    let client_ca = Filer::read_bytes(res).unwrap();
-                    let cert = Certificate::from_pem(client_ca);
-                    tls_config = tls_config.client_ca_root(cert);
-                    log::info!("listener tls config client ca root success!");
-                }
-                _ => {}
-            }
-            server = server.tls_config(tls_config).unwrap();
-            log::info!("listener tls open!");
+            _ => {}
         }
-        if let Some(res) = init.server().unwrap().timeout {
-            server.timeout(Duration::from_secs(res));
-        }
-        if let Some(res) = init.server().unwrap().concurrency_limit_per_connection {
-            server = server.concurrency_limit_per_connection(res);
-        }
-        if let Some(res) = init.server().unwrap().tcp_nodelay {
-            server = server.tcp_nodelay(res);
-        }
-        if let Some(res) = init.server().unwrap().tcp_keepalive {
-            server = server.tcp_keepalive(Some(Duration::from_millis(res)));
-        }
-        if let Some(res) = init.server().unwrap().http2_keepalive_interval {
-            server = server.http2_keepalive_interval(Some(Duration::from_millis(res)));
-        }
-        if let Some(res) = init.server().unwrap().http2_keepalive_timeout {
-            server = server.http2_keepalive_timeout(Some(Duration::from_millis(res)));
-        }
-        if let Some(res) = init.server().unwrap().initial_connection_window_size {
-            server = server.initial_connection_window_size(res);
-        }
-        if let Some(res) = init.server().unwrap().initial_stream_window_size {
-            server = server.initial_stream_window_size(res);
-        }
-        if let Some(res) = init.server().unwrap().max_concurrent_streams {
-            server = server.max_concurrent_streams(res);
-        }
-        if let Some(res) = init.server().unwrap().max_frame_size {
-            server = server.max_frame_size(res);
-        }
-        server_future = server
-            .add_service(database_service)
-            .add_service(disk_service)
-            .add_service(index_service)
-            .add_service(memory_service)
-            .add_service(page_service)
-            .add_service(user_service)
-            .add_service(view_service)
-            .serve(addr);
-        let rt = Runtime::new().expect("failed to obtain a new RunTime object");
-        rt.block_on(server_future)
-            .expect("failed to successfully run the future on RunTime");
+        server = server.tls_config(tls_config).unwrap();
+        log::info!("listener tls open!");
+    }
+    if let Some(res) = init.server().unwrap().timeout {
+        server.timeout(Duration::from_secs(res));
+    }
+    if let Some(res) = init.server().unwrap().concurrency_limit_per_connection {
+        server = server.concurrency_limit_per_connection(res);
+    }
+    if let Some(res) = init.server().unwrap().tcp_nodelay {
+        server = server.tcp_nodelay(res);
+    }
+    if let Some(res) = init.server().unwrap().tcp_keepalive {
+        server = server.tcp_keepalive(Some(Duration::from_millis(res)));
+    }
+    if let Some(res) = init.server().unwrap().http2_keepalive_interval {
+        server = server.http2_keepalive_interval(Some(Duration::from_millis(res)));
+    }
+    if let Some(res) = init.server().unwrap().http2_keepalive_timeout {
+        server = server.http2_keepalive_timeout(Some(Duration::from_millis(res)));
+    }
+    if let Some(res) = init.server().unwrap().initial_connection_window_size {
+        server = server.initial_connection_window_size(res);
+    }
+    if let Some(res) = init.server().unwrap().initial_stream_window_size {
+        server = server.initial_stream_window_size(res);
+    }
+    if let Some(res) = init.server().unwrap().max_concurrent_streams {
+        server = server.max_concurrent_streams(res);
+    }
+    if let Some(res) = init.server().unwrap().max_frame_size {
+        server = server.max_frame_size(res);
+    }
+
+    let database_service = DatabaseServiceServer::new(DatabaseServer::new(task.clone()));
+    let disk_service = DiskServiceServer::new(DiskServer::new(task.clone()));
+    let index_service = IndexServiceServer::new(IndexServer::new(task.clone()));
+    let memory_service = MemoryServiceServer::new(MemoryServer::new(task.clone()));
+    let page_service = PageServiceServer::new(PageServer::new(task.clone()));
+    let user_service = UserServiceServer::new(UserServer::new(task.clone()));
+    let view_service = ViewServiceServer::new(ViewServer::new(task.clone()));
+
+    match server
+        .add_service(database_service)
+        .add_service(disk_service)
+        .add_service(index_service)
+        .add_service(memory_service)
+        .add_service(page_service)
+        .add_service(user_service)
+        .add_service(view_service)
+        .serve(addr)
+        .await
+    {
+        Ok(()) => Ok(()),
+        Err(err) => Err(Errs::strs("serve with incoming", err)),
+    }
+}
+
+async fn run_with_openssl(init: Init, task: Arc<Task>, addr: SocketAddr) -> GeorgeResult<()> {
+    let mut server = tonic::transport::Server::builder();
+
+    let mut acceptor_builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
+    acceptor_builder
+        .set_private_key_file(init.server_key_unwrap(), SslFiletype::PEM)
+        .unwrap();
+    acceptor_builder
+        .set_certificate_chain_file(init.server_cert_unwrap())
+        .unwrap();
+    acceptor_builder.check_private_key().unwrap();
+    acceptor_builder.set_alpn_protos(ALPN_H2_WIRE).unwrap();
+    acceptor_builder.set_alpn_select_callback(|_ssl, alpn| {
+        select_next_proto(ALPN_H2_WIRE, alpn).ok_or(AlpnError::NOACK)
+    });
+    let acceptor = acceptor_builder.build();
+
+    let listener = TcpListener::bind(addr).await.unwrap();
+    let listener = listener.into_std().unwrap();
+    let incoming = tokio_stream::wrappers::TcpListenerStream::new(
+        tokio::net::TcpListener::from_std(listener).unwrap(),
+    );
+    let incoming = comm::openssl::tonic::incoming(incoming, acceptor);
+
+    let database_service = DatabaseServiceServer::new(DatabaseServer::new(task.clone()));
+    let disk_service = DiskServiceServer::new(DiskServer::new(task.clone()));
+    let index_service = IndexServiceServer::new(IndexServer::new(task.clone()));
+    let memory_service = MemoryServiceServer::new(MemoryServer::new(task.clone()));
+    let page_service = PageServiceServer::new(PageServer::new(task.clone()));
+    let user_service = UserServiceServer::new(UserServer::new(task.clone()));
+    let view_service = ViewServiceServer::new(ViewServer::new(task.clone()));
+
+    match server
+        .add_service(database_service)
+        .add_service(disk_service)
+        .add_service(index_service)
+        .add_service(memory_service)
+        .add_service(page_service)
+        .add_service(user_service)
+        .add_service(view_service)
+        .serve_with_incoming(incoming)
+        .await
+    {
+        Ok(()) => Ok(()),
+        Err(err) => Err(Errs::strs("serve with incoming", err)),
     }
 }
 

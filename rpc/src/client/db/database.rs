@@ -17,13 +17,17 @@ use tonic::Request;
 use comm::errors::{Errs, GeorgeResult};
 
 use crate::client::db::{DatabaseRpcClient, RpcClient};
-use crate::client::{endpoint, endpoint_tls_bytes, endpoint_tls_check_bytes, status_check};
+use crate::client::{
+    endpoint, endpoint_tls, endpoint_tls_bytes, endpoint_tls_check_bytes, status_check,
+};
 use crate::protos::db::db::database_service_client::DatabaseServiceClient;
 use crate::protos::db::db::{
     Database, RequestDatabaseCreate, RequestDatabaseInfo, RequestDatabaseModify,
     RequestDatabaseRemove,
 };
 use crate::protos::utils::utils::Req;
+use std::path::Path;
+// use tonic::codegen::*;
 
 impl RpcClient for DatabaseRpcClient {
     fn new(remote: &str, port: u16) -> GeorgeResult<Self>
@@ -31,6 +35,22 @@ impl RpcClient for DatabaseRpcClient {
         Self: Sized,
     {
         let (inner, rt) = endpoint(remote, port)?;
+        Ok(DatabaseRpcClient {
+            client: DatabaseServiceClient::new(inner),
+            rt,
+        })
+    }
+
+    fn new_tls<P: AsRef<Path>>(
+        remote: &str,
+        port: u16,
+        ca_path: P,
+        domain_name: impl Into<String>,
+    ) -> GeorgeResult<Self>
+    where
+        Self: Sized,
+    {
+        let (inner, rt) = endpoint_tls(remote, port, ca_path, domain_name)?;
         Ok(DatabaseRpcClient {
             client: DatabaseServiceClient::new(inner),
             rt,
