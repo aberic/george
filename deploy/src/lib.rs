@@ -97,6 +97,8 @@ pub struct ConfigDB {
 pub struct ConfigServer {
     /// 是否开启`TLS`，默认`false`
     pub tls: Option<bool>,
+    /// 服务端是否用`rustls`做校验，默认`openssl`，即`false`
+    pub rust_tls: Option<bool>,
     /// 服务端`key`，开启`TLS`后生效
     pub tls_key: Option<String>,
     /// 服务端`cert`，开启`TLS`后生效

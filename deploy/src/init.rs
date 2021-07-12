@@ -61,6 +61,13 @@ impl Init {
         }
     }
 
+    pub fn rustls(&self) -> bool {
+        match self.conf.server().unwrap().rust_tls {
+            Some(res) => res,
+            None => false,
+        }
+    }
+
     pub fn server_key_unwrap(&self) -> String {
         self.conf.server().unwrap().tls_key.unwrap()
     }

@@ -43,7 +43,8 @@ where
     try_stream! {
         while let Some(stream) = incoming.try_next().await? {
             let ssl = openssl::ssl::Ssl::new(acceptor.context()).unwrap();
-            let tls = super::tokio::SslStream::new(ssl, stream).unwrap();
+            let mut tls = super::tokio::SslStream::new(ssl, stream).unwrap();
+            Pin::new(&mut tls).accept().await?;
 
             let ssl = SslStream {
                 inner: tls
@@ -57,7 +58,8 @@ where
     //     // let tls = tokio_openssl::accept(&acceptor, stream).await?;
     //
     //     let ssl = openssl::ssl::Ssl::new(acceptor.context()).unwrap();
-    //     let tls = super::tokio::SslStream::new(ssl, stream).unwrap();
+    //     let mut tls = super::tokio::SslStream::new(ssl, stream).unwrap();
+    //     Pin::new(&mut tls).accept().await?;
     //
     //     let ssl = SslStream {
     //         inner: tls

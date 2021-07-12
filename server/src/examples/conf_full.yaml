@@ -10,6 +10,7 @@ config:
     thread_count: 100 # ThreadCount 线程数
   server:
     tls: true # 是否开启`TLS`，为空则默认`false`
+    rust_tls: false # 服务端是否用rustls做校验，默认openssl
     tls_key: server/src/example/server.key # 服务端`key`，开启`TLS`后生效
     tls_cert: server/src/example/server.pem # 服务端`cert`，开启`TLS`后生效
     timeout: 30 # 为所有请求处理程序设置超时，单位secs

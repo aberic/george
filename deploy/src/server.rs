@@ -18,6 +18,7 @@ impl ConfigServer {
     pub fn default() -> ConfigServer {
         ConfigServer {
             tls: None,
+            rust_tls: None,
             tls_key: None,
             tls_cert: None,
             tls_client_root_cert: None,

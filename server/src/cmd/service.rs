@@ -49,8 +49,15 @@ impl Service {
     pub fn start<P: AsRef<Path>>(filepath: P) {
         let (init, task, addr) = run_prepare(filepath).unwrap();
         let rt = Runtime::new().expect("failed to obtain a new RunTime object");
-        rt.block_on(run(init, task, addr))
-            .expect("failed to successfully run the future on RunTime");
+        if init.rustls() {
+            log::info!("checkout tls: rustls!");
+            rt.block_on(run(init, task, addr))
+                .expect("failed to successfully run the future on RunTime");
+        } else {
+            log::info!("checkout tls: openssl!");
+            rt.block_on(run_with_openssl(init, task, addr))
+                .expect("failed to successfully run the future on RunTime");
+        }
     }
 }
 
