@@ -1,11 +1,11 @@
 [workspace]
 members = [
-    "client",
-    "comm",
-    "db",
-    "deploy",
-    "ge",
-    "logs",
-    "rpc",
-    "server",
+    "george-client",
+    "george-comm",
+    "george-db",
+    "george-deploy",
+    "george-ge",
+    "george-log",
+    "george-rpc",
+    "george-server",
 ]

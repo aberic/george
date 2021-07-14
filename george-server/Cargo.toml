@@ -1,0 +1,27 @@
+[package]
+name = "george-server"
+version = "0.1.0"
+authors = ["aberic <100309595@qq.com>"]
+license = "Apache-2.0"
+description = "George DB service"
+repository = "https://github.com/aberic/george/george-server"
+readme = "../README.md"
+keywords = ["server"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4.14"
+log4rs = "1.0.0"
+george-comm = { path = "../george-comm", version = "0.1.0" }
+george-db = { path = "../george-db", version = "0.1.0" }
+george-log = { path = "../george-log", version = "0.1.0" }
+george-deploy = { path = "../george-deploy", version = "0.1.0" }
+george-rpc = { path = "../george-rpc", version = "0.1.0" }
+clap = "~2.32"
+tokio = { version = "1.8.1", features = ["full"] }
+tokio-stream = { version =  "0.1.7", features = ["net"] }
+tonic = { version = "0.5.0", features = ["tls"]  }
+futures = { version = "0.3.15", default-features = false }
+openssl = "0.10.35"

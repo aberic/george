@@ -1,0 +1,15 @@
+config:
+  log:
+    log_dir: george-server/src/test/log # LogDir 日志文件目录
+    log_file_max_size: 100 # LogFileMaxSize 每个日志文件保存的最大尺寸 单位：M
+    log_file_max_count: 100 # LogFileMaxCount 文件最多保存多少个
+    log_level: info # LogLevel 日志级别(debugLevel/infoLevel/warnLevel/ErrorLevel/panicLevel/fatalLevel)
+    production: false # Production 是否生产环境，在生产环境下控制台不会输出任何日志
+  db:
+    data_dir: george-server/src/test/george # DataFileName Lily服务数据默认存储目录名
+    thread_count: 100 # ThreadCount 线程数
+  server:
+    tls: true
+    tls_key: george-rpc/src/examples/terraform/server1.key # 服务端`key`，开启`TLS`后生效
+    tls_cert: george-rpc/src/examples/terraform/server1.pem # 服务端`cert`，开启`TLS`后生效
+    port: 9219 # 服务端口号

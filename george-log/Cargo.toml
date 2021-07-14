@@ -1,0 +1,19 @@
+[package]
+name = "george-log"
+version = "0.1.0"
+authors = ["aberic <100309595@qq.com>"]
+license = "Apache-2.0"
+description = "Log secondary library"
+repository = "https://github.com/aberic/george/george-log"
+readme = "../README.md"
+keywords = ["log"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4.14"
+log4rs = "1.0.0"
+lazy_static = "1.4.0"
+once_cell = "1.7.2"
+george-comm = { path = "../george-comm", version = "0.1.0" }

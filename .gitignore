@@ -47,14 +47,14 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-/comm/src/test/
-/logs/src/test/
-/db/src/test/
-/comm/db/
-/db/test/
-/db/db/
-/ge/src/test/
+/george-comm/src/test/
+/george-log/src/test/
+/george-db/src/test/
+/george-comm/db/
+/george-db/test/
+/george-db/db/
+/george-ge/src/test/
 /src/test/
-/server/src/test/
-/deploy/src/test/
+/george-server/src/test/
+/george-deploy/src/test/
 /test/

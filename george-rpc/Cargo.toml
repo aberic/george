@@ -1,0 +1,27 @@
+[package]
+name = "george-rpc"
+version = "0.1.0"
+authors = ["aberic <100309595@qq.com>"]
+license = "Apache-2.0"
+description = "Protobuf impl library"
+repository = "https://github.com/aberic/george/george-rpc"
+readme = "../README.md"
+keywords = ["rpc"]
+edition = "2018"
+build = "build.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+george-comm = { path = "../george-comm", version = "0.1.0" }
+george-db = { path = "../george-db", version = "0.1.0" }
+tonic = { version = "0.5.0", features = ["tls"]  }
+prost = "0.8.0"
+tokio = { version = "1.8.1", features = ["full"] }
+tower = "0.4.8"
+openssl = "0.10.35"
+hyper = "0.14.10"
+hyper-openssl = "0.9.1"
+
+[build-dependencies]
+tonic-build = "0.5.0"
