@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2021. Aberic - All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 //! A openssl adaptor for `tonic`.
 //!
 //! Examples can be found in the `example` crate
@@ -6,18 +20,18 @@
 #![doc(html_root_url = "https://docs.rs/tonic-openssl/0.1.0")]
 #![warn(missing_debug_implementations, missing_docs, unreachable_pub)]
 
-use async_stream::try_stream;
-use futures_util::{Stream, TryStream, TryStreamExt};
-use openssl::ssl::SslAcceptor;
 use std::{
     fmt::Debug,
     io,
-    net::SocketAddr,
     pin::Pin,
     task::{Context, Poll},
 };
+
+use async_stream::try_stream;
+use futures_util::{Stream, TryStream, TryStreamExt};
+use openssl::ssl::SslAcceptor;
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
-use tonic::transport::{server::Connected, Certificate};
+use tonic::transport::server::Connected;
 
 /// Wrapper error type.
 pub type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
@@ -77,23 +91,9 @@ pub struct SslStream<S> {
 }
 
 impl<S: Connected> Connected for SslStream<S> {
-    fn remote_addr(&self) -> Option<SocketAddr> {
-        let tcp = self.inner.get_ref();
-        tcp.remote_addr()
-    }
+    type ConnectInfo = ();
 
-    fn peer_certs(&self) -> Option<Vec<Certificate>> {
-        let ssl = self.inner.ssl();
-        let certs = ssl.verified_chain()?;
-
-        let certs = certs
-            .iter()
-            .filter_map(|c| c.to_pem().ok())
-            .map(Certificate::from_pem)
-            .collect();
-
-        Some(certs)
-    }
+    fn connect_info(&self) -> Self::ConnectInfo {}
 }
 
 impl<S> AsyncRead for SslStream<S>

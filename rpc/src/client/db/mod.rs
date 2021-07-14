@@ -12,12 +12,8 @@
  * limitations under the License.
  */
 
-use std::path::Path;
-
 use tokio::runtime::Runtime;
 use tonic::transport::Channel;
-
-use comm::errors::GeorgeResult;
 
 use crate::protos::db::db::database_service_client::DatabaseServiceClient;
 use crate::protos::db::db::disk_service_client::DiskServiceClient;
@@ -26,74 +22,16 @@ use crate::protos::db::db::memory_service_client::MemoryServiceClient;
 use crate::protos::db::db::page_service_client::PageServiceClient;
 use crate::protos::db::db::user_service_client::UserServiceClient;
 use crate::protos::db::db::view_service_client::ViewServiceClient;
-use comm::io::file::FilerReader;
-use comm::io::Filer;
 
-pub mod database;
+mod database;
 mod database_test;
-pub mod disk;
-pub mod index;
-pub mod memory;
-pub mod page;
+mod disk;
+mod index;
+mod memory;
+mod page;
 mod page_test;
-pub mod user;
-pub mod view;
-
-pub trait RpcClient {
-    fn new(remote: &str, port: u16) -> GeorgeResult<Self>
-    where
-        Self: Sized;
-
-    fn new_tls<P: AsRef<Path>>(
-        remote: &str,
-        port: u16,
-        ca_path: P,
-        domain_name: impl Into<String>,
-    ) -> GeorgeResult<Self>
-    where
-        Self: Sized,
-    {
-        let ca = Filer::read_bytes(ca_path)?;
-        RpcClient::new_tls_bytes(remote, port, ca, domain_name)
-    }
-
-    fn new_tls_bytes(
-        remote: &str,
-        port: u16,
-        ca: Vec<u8>,
-        domain_name: impl Into<String>,
-    ) -> GeorgeResult<Self>
-    where
-        Self: Sized;
-
-    fn new_tls_check<P: AsRef<Path>>(
-        remote: &str,
-        port: u16,
-        key_path: P,
-        cert_path: P,
-        ca_path: P,
-        domain_name: impl Into<String>,
-    ) -> GeorgeResult<Self>
-    where
-        Self: Sized,
-    {
-        let key = Filer::read_bytes(ca_path)?;
-        let cert = Filer::read_bytes(key_path)?;
-        let ca = Filer::read_bytes(cert_path)?;
-        RpcClient::new_tls_check_bytes(remote, port, key, cert, ca, domain_name)
-    }
-
-    fn new_tls_check_bytes(
-        remote: &str,
-        port: u16,
-        key: Vec<u8>,
-        cert: Vec<u8>,
-        ca: Vec<u8>,
-        domain_name: impl Into<String>,
-    ) -> GeorgeResult<Self>
-    where
-        Self: Sized;
-}
+mod user;
+mod view;
 
 pub struct DatabaseRpcClient {
     client: DatabaseServiceClient<Channel>,

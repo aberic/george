@@ -14,12 +14,13 @@
 
 #[cfg(test)]
 mod page {
-    use crate::client::db::{PageRpcClient, RpcClient};
+    use crate::client::db::PageRpcClient;
+    use crate::client::RpcClient;
     use crate::tools::Trans;
 
     #[test]
     fn list() {
-        let mut cli = PageRpcClient::new("127.0.0.1", 9219).unwrap();
+        let mut cli = PageRpcClient::new("127.0.0.1", 9219, None).unwrap();
         let res = cli.list().unwrap();
         for page in res {
             println!("page {}", page.name)
@@ -28,7 +29,7 @@ mod page {
 
     #[test]
     fn create() {
-        let mut cli = PageRpcClient::new("127.0.0.1", 9219).unwrap();
+        let mut cli = PageRpcClient::new("127.0.0.1", 9219, None).unwrap();
         cli.create("test".to_string(), "test comment".to_string(), 0, 300)
             .unwrap();
         let res = cli.list().unwrap();
@@ -39,7 +40,7 @@ mod page {
 
     #[test]
     fn info() {
-        let mut cli = PageRpcClient::new("127.0.0.1", 9219).unwrap();
+        let mut cli = PageRpcClient::new("127.0.0.1", 9219, None).unwrap();
         let res = cli.info("test".to_string()).unwrap();
         println!(
             "page name = {}, comment = {}, comment = {}, size = {}, period = {}",

@@ -16,41 +16,22 @@ use tonic::Request;
 
 use comm::errors::{Errs, GeorgeResult};
 
-use crate::client::db::{DatabaseRpcClient, RpcClient};
-use crate::client::{
-    endpoint, endpoint_tls, endpoint_tls_bytes, endpoint_tls_check_bytes, status_check,
-};
+use crate::client::db::DatabaseRpcClient;
+use crate::client::{status_check, Notls, Openssl, RequestCond, Rustls, TLSType};
+use crate::client::{RpcClient, TLS};
 use crate::protos::db::db::database_service_client::DatabaseServiceClient;
 use crate::protos::db::db::{
     Database, RequestDatabaseCreate, RequestDatabaseInfo, RequestDatabaseModify,
     RequestDatabaseRemove,
 };
 use crate::protos::utils::utils::Req;
-use std::path::Path;
-// use tonic::codegen::*;
 
 impl RpcClient for DatabaseRpcClient {
-    fn new(remote: &str, port: u16) -> GeorgeResult<Self>
+    fn new(remote: &str, port: u16, cond_op: Option<RequestCond>) -> GeorgeResult<Self>
     where
         Self: Sized,
     {
-        let (inner, rt) = endpoint(remote, port)?;
-        Ok(DatabaseRpcClient {
-            client: DatabaseServiceClient::new(inner),
-            rt,
-        })
-    }
-
-    fn new_tls<P: AsRef<Path>>(
-        remote: &str,
-        port: u16,
-        ca_path: P,
-        domain_name: impl Into<String>,
-    ) -> GeorgeResult<Self>
-    where
-        Self: Sized,
-    {
-        let (inner, rt) = endpoint_tls(remote, port, ca_path, domain_name)?;
+        let (inner, rt) = Notls::make(remote, port, cond_op)?;
         Ok(DatabaseRpcClient {
             client: DatabaseServiceClient::new(inner),
             rt,
@@ -58,36 +39,72 @@ impl RpcClient for DatabaseRpcClient {
     }
 
     fn new_tls_bytes(
+        tls_type: TLSType,
         remote: &str,
         port: u16,
-        ca: Vec<u8>,
+        ca_bytes: Vec<u8>,
         domain_name: impl Into<String>,
+        cond_op: Option<RequestCond>,
     ) -> GeorgeResult<Self>
     where
         Self: Sized,
     {
-        let (inner, rt) = endpoint_tls_bytes(remote, port, ca, domain_name)?;
+        let endpoint;
+        match tls_type {
+            TLSType::Rustls => {
+                endpoint = Rustls::new_bytes(remote, port, ca_bytes, domain_name, cond_op)?
+            }
+            TLSType::Openssl => {
+                endpoint = Openssl::new_bytes(remote, port, ca_bytes, domain_name, cond_op)?
+            }
+        }
         Ok(DatabaseRpcClient {
-            client: DatabaseServiceClient::new(inner),
-            rt,
+            client: DatabaseServiceClient::new(endpoint.0),
+            rt: endpoint.1,
         })
     }
 
-    fn new_tls_check_bytes(
+    fn new_tls_bytes_check(
+        tls_type: TLSType,
         remote: &str,
         port: u16,
-        key: Vec<u8>,
-        cert: Vec<u8>,
-        ca: Vec<u8>,
+        key_bytes: Vec<u8>,
+        cert_bytes: Vec<u8>,
+        ca_bytes: Vec<u8>,
         domain_name: impl Into<String>,
+        cond_op: Option<RequestCond>,
     ) -> GeorgeResult<Self>
     where
         Self: Sized,
     {
-        let (inner, rt) = endpoint_tls_check_bytes(remote, port, key, cert, ca, domain_name)?;
+        let endpoint;
+        match tls_type {
+            TLSType::Rustls => {
+                endpoint = Rustls::new_bytes_check(
+                    remote,
+                    port,
+                    key_bytes,
+                    cert_bytes,
+                    ca_bytes,
+                    domain_name,
+                    cond_op,
+                )?
+            }
+            TLSType::Openssl => {
+                endpoint = Openssl::new_bytes_check(
+                    remote,
+                    port,
+                    key_bytes,
+                    cert_bytes,
+                    ca_bytes,
+                    domain_name,
+                    cond_op,
+                )?
+            }
+        }
         Ok(DatabaseRpcClient {
-            client: DatabaseServiceClient::new(inner),
-            rt,
+            client: DatabaseServiceClient::new(endpoint.0),
+            rt: endpoint.1,
         })
     }
 

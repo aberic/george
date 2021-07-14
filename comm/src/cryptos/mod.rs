@@ -33,6 +33,7 @@ pub mod hex;
 mod hex_test;
 pub mod homomorphic;
 mod homomorphic_test;
+pub mod key;
 pub mod rsa;
 mod rsa_test;
 mod rust_tls;
@@ -49,6 +50,8 @@ pub struct Hex;
 
 #[derive(Debug, Clone)]
 pub struct Hash;
+
+pub struct Key;
 
 pub struct RSA {
     // /// 私钥位数

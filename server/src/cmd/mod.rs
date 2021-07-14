@@ -19,8 +19,8 @@ mod status;
 mod stop;
 
 pub struct Command;
-pub struct Start;
-pub struct Restart;
-pub struct Stop;
-pub struct Status;
+struct Start;
+struct Restart;
+struct Stop;
+struct Status;
 pub struct Service;

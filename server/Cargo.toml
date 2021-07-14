@@ -21,7 +21,7 @@ deploy = { path = "../deploy", version = "0.1.0" }
 rpc = { path = "../rpc", version = "0.1.0" }
 clap = "~2.32"
 tokio = { version = "1.8.1", features = ["full"] }
-tokio-stream = { version =  "0.1", features = ["net"] }
-tonic = { version = "0.4.3", features = ["tls"]  }
+tokio-stream = { version =  "0.1.7", features = ["net"] }
+tonic = { version = "0.5.0", features = ["tls"]  }
 futures = { version = "0.3.15", default-features = false }
 openssl = "0.10.35"

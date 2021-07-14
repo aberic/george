@@ -10,7 +10,7 @@ config:
     thread_count: 100 # ThreadCount 线程数
   server:
     tls: true
-    rust_tls: true # 服务端是否用rustls做校验，默认openssl
+    rust_tls: false # 服务端是否用rustls做校验，默认openssl
     tls_key: rpc/src/examples/terraform/server1.key # 服务端`key`，开启`TLS`后生效
     tls_cert: rpc/src/examples/terraform/server1.pem # 服务端`cert`，开启`TLS`后生效
     port: 9219 # 服务端口号

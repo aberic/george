@@ -15,13 +15,21 @@
 #[cfg(test)]
 mod database_tls {
 
-    use crate::client::db::{DatabaseRpcClient, RpcClient};
+    use crate::client::db::DatabaseRpcClient;
+    use crate::client::RpcClient;
+    use crate::client::TLSType;
 
     #[test]
     fn list_tls_cross() {
-        let mut cli =
-            DatabaseRpcClient::new_tls("127.0.0.1", 9219, "src/examples/ca.pem", "example.com")
-                .unwrap();
+        let mut cli = DatabaseRpcClient::new_tls(
+            TLSType::Rustls,
+            "127.0.0.1",
+            9219,
+            "src/examples/ca.pem",
+            "example.com",
+            None,
+        )
+        .unwrap();
         let res = cli.list().unwrap();
         for db in res {
             println!("db {}", db.name)
@@ -31,10 +39,12 @@ mod database_tls {
     #[test]
     fn list_tls_terraform() {
         let mut cli = DatabaseRpcClient::new_tls(
+            TLSType::Rustls,
             "127.0.0.1",
             9219,
             "src/examples/terraform/ca.pem",
             "foo.test.google.fr".to_string(),
+            None,
         )
         .unwrap();
         let res = cli.list().unwrap();
@@ -46,10 +56,12 @@ mod database_tls {
     #[test]
     fn list_tls_terraform_str() {
         let mut cli = DatabaseRpcClient::new_tls(
+            TLSType::Openssl,
             "127.0.0.1",
             9219,
             "src/examples/terraform/ca.pem",
             "foo.test.google.fr",
+            None,
         )
         .unwrap();
         let res = cli.list().unwrap();
@@ -61,12 +73,14 @@ mod database_tls {
     #[test]
     fn list_tls_terraform_1() {
         let mut cli = DatabaseRpcClient::new_tls_check(
+            TLSType::Openssl,
             "127.0.0.1",
             9219,
             "src/examples/terraform/server1.key",
             "src/examples/terraform/server1.pem",
             "src/examples/terraform/ca.pem",
             "foo.test.google.fr".to_string(),
+            None,
         )
         .unwrap();
         let res = cli.list().unwrap();
@@ -78,10 +92,12 @@ mod database_tls {
     #[test]
     fn list_tls_1() {
         let mut cli = DatabaseRpcClient::new_tls(
+            TLSType::Openssl,
             "127.0.0.1",
             9219,
             "src/examples/tls/server_ca.pem",
             "example.com",
+            None,
         )
         .unwrap();
         let res = cli.list().unwrap();
@@ -93,10 +109,12 @@ mod database_tls {
     #[test]
     fn list_pki_1() {
         let mut cli = DatabaseRpcClient::new_tls(
+            TLSType::Openssl,
             "127.0.0.1",
             9219,
             "src/examples/pki/rsa/client.fullchain",
             "example.com",
+            None,
         )
         .unwrap();
         let res = cli.list().unwrap();
@@ -108,12 +126,14 @@ mod database_tls {
     #[test]
     fn list_tls() {
         let mut cli = DatabaseRpcClient::new_tls_check(
+            TLSType::Openssl,
             "127.0.0.1",
             9219,
             "src/examples/tls/client_sk.key",
             "src/examples/tls/client.pem",
             "src/examples/tls/server_ca.pem",
             "example.com",
+            None,
         )
         .unwrap();
         let res = cli.list().unwrap();
@@ -125,12 +145,13 @@ mod database_tls {
 
 #[cfg(test)]
 mod database {
-    use crate::client::db::{DatabaseRpcClient, RpcClient};
+    use crate::client::db::DatabaseRpcClient;
+    use crate::client::RpcClient;
     use crate::tools::Trans;
 
     #[test]
     fn list() {
-        let mut cli = DatabaseRpcClient::new("127.0.0.1", 9219).unwrap();
+        let mut cli = DatabaseRpcClient::new("127.0.0.1", 9219, None).unwrap();
         let res = cli.list().unwrap();
         for db in res {
             println!("db {}", db.name)
@@ -139,7 +160,7 @@ mod database {
 
     #[test]
     fn create() {
-        let mut cli = DatabaseRpcClient::new("127.0.0.1", 9219).unwrap();
+        let mut cli = DatabaseRpcClient::new("127.0.0.1", 9219, None).unwrap();
         cli.create("test".to_string(), "test comment".to_string())
             .unwrap();
         let res = cli.list().unwrap();
@@ -150,7 +171,7 @@ mod database {
 
     #[test]
     fn info() {
-        let mut cli = DatabaseRpcClient::new("127.0.0.1", 9219).unwrap();
+        let mut cli = DatabaseRpcClient::new("127.0.0.1", 9219, None).unwrap();
         let res = cli.info("test".to_string()).unwrap();
         println!(
             "db name = {}, comment = {}, create_time = {}",

@@ -16,8 +16,9 @@ use tonic::Request;
 
 use comm::errors::{Errs, GeorgeResult};
 
-use crate::client::db::{DiskRpcClient, RpcClient};
-use crate::client::{endpoint, endpoint_tls_bytes, endpoint_tls_check_bytes, status_check};
+use crate::client::db::DiskRpcClient;
+use crate::client::{status_check, Notls, Openssl, RequestCond, Rustls, TLSType};
+use crate::client::{RpcClient, TLS};
 use crate::protos::db::db::disk_service_client::DiskServiceClient;
 use crate::protos::db::db::{
     DiskDeleted, DiskSelected, RequestDiskDelete, RequestDiskIOut, RequestDiskInto, RequestDiskOut,
@@ -25,11 +26,11 @@ use crate::protos::db::db::{
 };
 
 impl RpcClient for DiskRpcClient {
-    fn new(remote: &str, port: u16) -> GeorgeResult<Self>
+    fn new(remote: &str, port: u16, cond_op: Option<RequestCond>) -> GeorgeResult<Self>
     where
         Self: Sized,
     {
-        let (inner, rt) = endpoint(remote, port)?;
+        let (inner, rt) = Notls::make(remote, port, cond_op)?;
         Ok(DiskRpcClient {
             client: DiskServiceClient::new(inner),
             rt,
@@ -37,36 +38,72 @@ impl RpcClient for DiskRpcClient {
     }
 
     fn new_tls_bytes(
+        tls_type: TLSType,
         remote: &str,
         port: u16,
-        ca: Vec<u8>,
+        ca_bytes: Vec<u8>,
         domain_name: impl Into<String>,
+        cond_op: Option<RequestCond>,
     ) -> GeorgeResult<Self>
     where
         Self: Sized,
     {
-        let (inner, rt) = endpoint_tls_bytes(remote, port, ca, domain_name)?;
+        let endpoint;
+        match tls_type {
+            TLSType::Rustls => {
+                endpoint = Rustls::new_bytes(remote, port, ca_bytes, domain_name, cond_op)?
+            }
+            TLSType::Openssl => {
+                endpoint = Openssl::new_bytes(remote, port, ca_bytes, domain_name, cond_op)?
+            }
+        }
         Ok(DiskRpcClient {
-            client: DiskServiceClient::new(inner),
-            rt,
+            client: DiskServiceClient::new(endpoint.0),
+            rt: endpoint.1,
         })
     }
 
-    fn new_tls_check_bytes(
+    fn new_tls_bytes_check(
+        tls_type: TLSType,
         remote: &str,
         port: u16,
-        key: Vec<u8>,
-        cert: Vec<u8>,
-        ca: Vec<u8>,
+        key_bytes: Vec<u8>,
+        cert_bytes: Vec<u8>,
+        ca_bytes: Vec<u8>,
         domain_name: impl Into<String>,
+        cond_op: Option<RequestCond>,
     ) -> GeorgeResult<Self>
     where
         Self: Sized,
     {
-        let (inner, rt) = endpoint_tls_check_bytes(remote, port, key, cert, ca, domain_name)?;
+        let endpoint;
+        match tls_type {
+            TLSType::Rustls => {
+                endpoint = Rustls::new_bytes_check(
+                    remote,
+                    port,
+                    key_bytes,
+                    cert_bytes,
+                    ca_bytes,
+                    domain_name,
+                    cond_op,
+                )?
+            }
+            TLSType::Openssl => {
+                endpoint = Openssl::new_bytes_check(
+                    remote,
+                    port,
+                    key_bytes,
+                    cert_bytes,
+                    ca_bytes,
+                    domain_name,
+                    cond_op,
+                )?
+            }
+        }
         Ok(DiskRpcClient {
-            client: DiskServiceClient::new(inner),
-            rt,
+            client: DiskServiceClient::new(endpoint.0),
+            rt: endpoint.1,
         })
     }
 }
@@ -146,7 +183,7 @@ impl DiskRpcClient {
         }
     }
 
-    pub fn get_by_index(
+    pub fn fetch_by_index(
         &mut self,
         database_name: String,
         view_name: String,

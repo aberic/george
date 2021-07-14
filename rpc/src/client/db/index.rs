@@ -16,19 +16,20 @@ use tonic::Request;
 
 use comm::errors::{Errs, GeorgeResult};
 
-use crate::client::db::{IndexRpcClient, RpcClient};
-use crate::client::{endpoint, endpoint_tls_bytes, endpoint_tls_check_bytes, status_check};
+use crate::client::db::IndexRpcClient;
+use crate::client::{status_check, Notls, Openssl, RequestCond, Rustls, TLSType};
+use crate::client::{RpcClient, TLS};
 use crate::protos::db::db::index_service_client::IndexServiceClient;
 use crate::protos::db::db::{
     Engine, Index, KeyType, RequestIndexCreate, RequestIndexInfo, RequestIndexList,
 };
 
 impl RpcClient for IndexRpcClient {
-    fn new(remote: &str, port: u16) -> GeorgeResult<Self>
+    fn new(remote: &str, port: u16, cond_op: Option<RequestCond>) -> GeorgeResult<Self>
     where
         Self: Sized,
     {
-        let (inner, rt) = endpoint(remote, port)?;
+        let (inner, rt) = Notls::make(remote, port, cond_op)?;
         Ok(IndexRpcClient {
             client: IndexServiceClient::new(inner),
             rt,
@@ -36,36 +37,72 @@ impl RpcClient for IndexRpcClient {
     }
 
     fn new_tls_bytes(
+        tls_type: TLSType,
         remote: &str,
         port: u16,
-        ca: Vec<u8>,
+        ca_bytes: Vec<u8>,
         domain_name: impl Into<String>,
+        cond_op: Option<RequestCond>,
     ) -> GeorgeResult<Self>
     where
         Self: Sized,
     {
-        let (inner, rt) = endpoint_tls_bytes(remote, port, ca, domain_name)?;
+        let endpoint;
+        match tls_type {
+            TLSType::Rustls => {
+                endpoint = Rustls::new_bytes(remote, port, ca_bytes, domain_name, cond_op)?
+            }
+            TLSType::Openssl => {
+                endpoint = Openssl::new_bytes(remote, port, ca_bytes, domain_name, cond_op)?
+            }
+        }
         Ok(IndexRpcClient {
-            client: IndexServiceClient::new(inner),
-            rt,
+            client: IndexServiceClient::new(endpoint.0),
+            rt: endpoint.1,
         })
     }
 
-    fn new_tls_check_bytes(
+    fn new_tls_bytes_check(
+        tls_type: TLSType,
         remote: &str,
         port: u16,
-        key: Vec<u8>,
-        cert: Vec<u8>,
-        ca: Vec<u8>,
+        key_bytes: Vec<u8>,
+        cert_bytes: Vec<u8>,
+        ca_bytes: Vec<u8>,
         domain_name: impl Into<String>,
+        cond_op: Option<RequestCond>,
     ) -> GeorgeResult<Self>
     where
         Self: Sized,
     {
-        let (inner, rt) = endpoint_tls_check_bytes(remote, port, key, cert, ca, domain_name)?;
+        let endpoint;
+        match tls_type {
+            TLSType::Rustls => {
+                endpoint = Rustls::new_bytes_check(
+                    remote,
+                    port,
+                    key_bytes,
+                    cert_bytes,
+                    ca_bytes,
+                    domain_name,
+                    cond_op,
+                )?
+            }
+            TLSType::Openssl => {
+                endpoint = Openssl::new_bytes_check(
+                    remote,
+                    port,
+                    key_bytes,
+                    cert_bytes,
+                    ca_bytes,
+                    domain_name,
+                    cond_op,
+                )?
+            }
+        }
         Ok(IndexRpcClient {
-            client: IndexServiceClient::new(inner),
-            rt,
+            client: IndexServiceClient::new(endpoint.0),
+            rt: endpoint.1,
         })
     }
 }

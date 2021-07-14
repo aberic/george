@@ -50,7 +50,9 @@ impl Get {
                 let view_name = vss[1].clone();
                 let key = vss[2].clone();
                 let index_name = vss[3].clone();
-                let value = config.disk.get_by_index(used, view_name, index_name, key)?;
+                let value = config
+                    .disk
+                    .fetch_by_index(used, view_name, index_name, key)?;
                 println!("{}", Strings::from_utf8(value)?);
                 Ok(())
             } else {
@@ -67,7 +69,7 @@ impl Get {
                 let value = config.memory.get(key)?;
                 println!("{}", Strings::from_utf8(value)?);
             } else {
-                let value = config.memory.get_by_page(used, key)?;
+                let value = config.memory.fetch_by_page(used, key)?;
                 println!("{}", Strings::from_utf8(value)?);
             }
             Ok(())
