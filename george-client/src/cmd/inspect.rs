@@ -19,11 +19,11 @@ use george_comm::errors::{Errs, GeorgeResult};
 use george_db::utils::comm::INDEX_INCREMENT;
 use george_rpc::tools::Trans;
 
-use crate::cmd::{george_error, print_table, Config, Inspect};
+use crate::cmd::{george_error, print_table, Client, Inspect};
 
 impl Inspect {
     pub(crate) fn analysis(
-        config: &mut Config,
+        client: &mut Client,
         used: String,
         scan: String,
         vss: Vec<String>,
@@ -38,7 +38,7 @@ impl Inspect {
                 } else {
                     return Err(Errs::str("database name is none!"));
                 }
-                let database = config.database.info(name)?;
+                let database = client.database.info(name)?;
                 let table = vec![vec![
                     database.name.clone().cell(),
                     database.comment.clone().cell(),
@@ -64,7 +64,7 @@ impl Inspect {
                 } else {
                     return Err(Errs::str("page name is none!"));
                 }
-                let page = config.page.info(name)?;
+                let page = client.page.info(name)?;
                 let table = vec![vec![
                     page.name.clone().cell(),
                     page.comment.clone().cell(),
@@ -102,7 +102,7 @@ impl Inspect {
                 } else {
                     return Err(Errs::str("page name is none!"));
                 }
-                let view = config.view.info(used, name)?;
+                let view = client.view.info(used, name)?;
                 let mut increment = false;
                 for index in view.indexes.iter() {
                     if index.name.eq(INDEX_INCREMENT) {
@@ -151,7 +151,7 @@ impl Inspect {
                 } else {
                     return Err(george_error(scan));
                 }
-                let index = config.index.info(used, view_name, name)?;
+                let index = client.index.info(used, view_name, name)?;
                 let table = vec![vec![
                     index.name.clone().cell(),
                     index.unique.cell(),

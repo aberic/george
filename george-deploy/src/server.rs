@@ -18,21 +18,8 @@ impl ConfigServer {
     pub fn default() -> ConfigServer {
         ConfigServer {
             tls: None,
-            rust_tls: None,
-            tls_key: None,
-            tls_cert: None,
-            tls_client_root_cert: None,
-            timeout: None,
-            concurrency_limit_per_connection: None,
-            tcp_nodelay: None,
-            tcp_keepalive: None,
-            http2_keepalive_interval: None,
-            http2_keepalive_timeout: None,
-            initial_connection_window_size: None,
-            initial_stream_window_size: None,
-            max_concurrent_streams: None,
-            max_frame_size: None,
             port: Some(9219),
+            http: None,
         }
     }
 

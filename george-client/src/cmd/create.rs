@@ -16,11 +16,11 @@ use george_comm::errors::{Errs, GeorgeResult};
 use george_rpc::protos::db::db::{Engine, KeyType};
 use george_rpc::tools::Trans;
 
-use crate::cmd::{george_error, george_errors, Config, Create};
+use crate::cmd::{george_error, george_errors, Client, Create};
 
 impl Create {
     pub(crate) fn analysis(
-        config: &mut Config,
+        client: &mut Client,
         used: String,
         scan: String,
         vss: Vec<String>,
@@ -41,7 +41,7 @@ impl Create {
                 } else {
                     return Err(george_error(scan));
                 }
-                config.database.create(name, comment)
+                client.database.create(name, comment)
             }
             "page" => {
                 // create page [page:string]
@@ -70,7 +70,7 @@ impl Create {
                 } else {
                     return Err(george_error(scan));
                 }
-                config.page.create(name, comment, size, period)
+                client.page.create(name, comment, size, period)
             }
             "ledger" => Err(Errs::str("no support ledger now!")),
             "view" => {
@@ -95,7 +95,7 @@ impl Create {
                     Ok(b) => increment = b,
                     Err(err) => return Err(george_errors(scan, err)),
                 }
-                config.view.create(used, name, comment, increment)
+                client.view.create(used, name, comment, increment)
             }
             "index" => {
                 // create index [index:string] from [view:string] [primary:bool] [unique:bool] [null:bool] [key_type:string] [engine:string]
@@ -136,7 +136,7 @@ impl Create {
                 } else {
                     return Err(george_error(scan));
                 }
-                config.index.create(
+                client.index.create(
                     used, view_name, name, unique, primary, null, key_type, engine,
                 )
             }

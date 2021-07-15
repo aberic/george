@@ -12,12 +12,13 @@
  * limitations under the License.
  */
 
-use crate::cmd::{Config, Insert};
 use george_comm::errors::GeorgeResult;
+
+use crate::cmd::{Client, Insert};
 
 impl Insert {
     pub(crate) fn analysis(
-        _config: &Config,
+        _client: &Client,
         _used: String,
         _scan: String,
         _vss: Vec<String>,

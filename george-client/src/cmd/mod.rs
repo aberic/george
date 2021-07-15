@@ -15,12 +15,15 @@
 use cli_table::{print_stdout, Table};
 
 use george_comm::errors::{Errs, GeorgeError, GeorgeResult};
+use george_deploy::ConfigServerTLS;
 use george_rpc::client::db::{
     DatabaseRpcClient, DiskRpcClient, IndexRpcClient, MemoryRpcClient, PageRpcClient,
     UserRpcClient, ViewRpcClient,
 };
+use george_rpc::client::RequestCond;
 
 mod alter;
+mod client;
 mod command;
 mod config;
 mod create;
@@ -35,6 +38,21 @@ mod remove;
 mod select;
 mod set;
 mod show;
+
+/// yaml解析辅助结构
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+pub(crate) struct Config {
+    config: Option<Conf>,
+}
+
+/// 基础配置信息，优先读取环境变量中的结果<p>
+///
+/// 该配置信息可通过指定路径的文件中进行读取，文件格式支持yaml
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+pub(crate) struct Conf {
+    tls: Option<ConfigServerTLS>,
+    http: Option<RequestCond>,
+}
 
 pub(crate) struct Command;
 
@@ -64,7 +82,7 @@ pub(crate) struct Select;
 
 pub(crate) struct Delete;
 
-pub(crate) struct Config {
+pub(crate) struct Client {
     user: UserRpcClient,
     database: DatabaseRpcClient,
     page: PageRpcClient,

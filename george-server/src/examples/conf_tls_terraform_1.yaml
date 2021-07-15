@@ -9,8 +9,8 @@ config:
     data_dir: george-server/src/test/george # DataFileName Lily服务数据默认存储目录名
     thread_count: 100 # ThreadCount 线程数
   server:
-    tls: true
-    tls_key: george-rpc/src/examples/terraform/server1.key # 服务端`key`，开启`TLS`后生效
-    tls_cert: george-rpc/src/examples/terraform/server1.pem # 服务端`cert`，开启`TLS`后生效
-    tls_client_root_cert: george-rpc/src/examples/terraform/ca.pem # 客户端根证书，开启`TLS`后生效
     port: 9219 # 服务端口号
+    tls:
+      key: george-rpc/src/examples/terraform/server1.key # 服务端`key`，开启`TLS`后生效
+      cert: george-rpc/src/examples/terraform/server1.pem # 服务端`cert`，开启`TLS`后生效
+      ca: george-rpc/src/examples/terraform/ca.pem # 客户端根证书，开启`TLS`后生效

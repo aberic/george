@@ -115,9 +115,9 @@ pub trait RpcClient {
     where
         Self: Sized,
     {
-        let key_bytes = Filer::read_bytes(ca_path)?;
-        let cert_bytes = Filer::read_bytes(key_path)?;
-        let ca_bytes = Filer::read_bytes(cert_path)?;
+        let key_bytes = Filer::read_bytes(key_path)?;
+        let cert_bytes = Filer::read_bytes(cert_path)?;
+        let ca_bytes = Filer::read_bytes(ca_path)?;
         RpcClient::new_tls_bytes_check(
             tls_type,
             remote,

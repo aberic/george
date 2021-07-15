@@ -58,29 +58,82 @@ impl Init {
     }
 
     pub fn tls(&self) -> bool {
-        match self.conf.server().unwrap().tls {
-            Some(res) => res,
+        match self.conf.server() {
+            Some(res) => match res.tls {
+                Some(_) => true,
+                None => false,
+            },
             None => false,
         }
     }
 
     pub fn rustls(&self) -> bool {
-        match self.conf.server().unwrap().rust_tls {
-            Some(res) => res,
-            None => false,
+        match self.conf.server().unwrap().tls {
+            Some(res) => match res.rust_tls {
+                Some(res) => res,
+                None => false,
+            },
+            None => true,
         }
     }
 
-    pub fn server_key_unwrap(&self) -> String {
-        self.conf.server().unwrap().tls_key.unwrap()
+    pub fn tls_key_unwrap(&self) -> String {
+        self.conf.server().unwrap().tls.unwrap().key.unwrap()
     }
 
-    pub fn server_cert_unwrap(&self) -> String {
-        self.conf.server().unwrap().tls_cert.unwrap()
+    pub fn tls_cert_unwrap(&self) -> String {
+        self.conf.server().unwrap().tls.unwrap().cert.unwrap()
     }
 
-    pub fn client_root_cert_unwrap(&self) -> String {
-        self.conf.server().unwrap().tls_client_root_cert.unwrap()
+    pub fn tls_ca(&self) -> Option<String> {
+        self.conf.server().unwrap().tls.unwrap().ca
+    }
+
+    pub fn domain(&self) -> String {
+        match self.conf.server().unwrap().tls.unwrap().domain {
+            Some(res) => res,
+            None => "".to_string(),
+        }
+    }
+
+    pub fn timeout(&self) -> Option<u64> {
+        self.conf.server()?.http?.timeout
+    }
+
+    pub fn concurrency_limit_per_connection(&self) -> Option<usize> {
+        self.conf.server()?.http?.concurrency_limit_per_connection
+    }
+
+    pub fn tcp_nodelay(&self) -> Option<bool> {
+        self.conf.server()?.http?.tcp_nodelay
+    }
+
+    pub fn tcp_keepalive(&self) -> Option<u64> {
+        self.conf.server()?.http?.tcp_keepalive
+    }
+
+    pub fn http2_keepalive_interval(&self) -> Option<u64> {
+        self.conf.server()?.http?.http2_keepalive_interval
+    }
+
+    pub fn http2_keepalive_timeout(&self) -> Option<u64> {
+        self.conf.server()?.http?.http2_keepalive_timeout
+    }
+
+    pub fn initial_connection_window_size(&self) -> Option<u32> {
+        self.conf.server()?.http?.initial_connection_window_size
+    }
+
+    pub fn initial_stream_window_size(&self) -> Option<u32> {
+        self.conf.server()?.http?.initial_stream_window_size
+    }
+
+    pub fn max_concurrent_streams(&self) -> Option<u32> {
+        self.conf.server()?.http?.max_concurrent_streams
+    }
+
+    pub fn max_frame_size(&self) -> Option<u32> {
+        self.conf.server()?.http?.max_frame_size
     }
 
     pub fn db_unwrap(&self) -> ConfigDB {

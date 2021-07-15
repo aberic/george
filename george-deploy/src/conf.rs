@@ -68,7 +68,7 @@ impl Conf {
             .expect("It's not gonna happen!")
     }
 
-    pub(crate) fn check(&mut self) {
+    fn check(&mut self) {
         match self.config() {
             Some(mut res) => {
                 res.check();

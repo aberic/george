@@ -18,28 +18,22 @@ mod test {
 
     #[test]
     fn init_test() {
-        let mut conf = Conf::from("src/example/conf.yaml").unwrap();
-        conf.check();
+        let conf = Conf::from("src/example/conf.yaml").unwrap();
         println!("conf = {:#?}", conf);
 
-        let mut conf = Conf::from("src/example/conf_empty.yaml").unwrap();
-        conf.check();
+        let conf = Conf::from("src/example/conf_empty.yaml").unwrap();
         println!("conf_empty = {:#?}", conf);
 
-        let mut conf = Conf::from("src/example/conf_with_no_db.yaml").unwrap();
-        conf.check();
+        let conf = Conf::from("src/example/conf_with_no_db.yaml").unwrap();
         println!("conf_with_no_db = {:#?}", conf);
 
-        let mut conf = Conf::from("src/example/conf_with_no_log.yaml").unwrap();
-        conf.check();
+        let conf = Conf::from("src/example/conf_with_no_log.yaml").unwrap();
         println!("conf_with_no_log = {:#?}", conf);
 
-        let mut conf = Conf::from("src/example/conf_with_no_server.yaml").unwrap();
-        conf.check();
+        let conf = Conf::from("src/example/conf_with_no_server.yaml").unwrap();
         println!("conf_with_no_server = {:#?}", conf);
 
-        let mut conf = Conf::from("src/example/conf_tls.yaml").unwrap();
-        conf.check();
+        let conf = Conf::from("src/example/conf_tls.yaml").unwrap();
         println!("conf_tls = {:#?}", conf);
     }
 

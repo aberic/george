@@ -30,9 +30,12 @@ impl Key {
     pub fn load_sk_bytes(bytes: Vec<u8>) -> GeorgeResult<PKey<Private>> {
         match RSA::from_bytes(bytes.clone()) {
             Ok(rsa) => Ok(rsa.sk()),
-            Err(_) => match ECDSA::from_sk_bytes(bytes) {
+            Err(_) => match ECDSA::from_sk_bytes(bytes.clone()) {
                 Ok(ecdsa) => Ok(ecdsa.sk()),
-                Err(_) => return Err(Errs::str("key is not match any rsa or ec!")),
+                Err(_) => match ECDSA::from_sk_pem_pkcs8(bytes) {
+                    Ok(ecdsa) => Ok(ecdsa.sk()),
+                    Err(_) => return Err(Errs::str("key is not match any rsa or ec!")),
+                },
             },
         }
     }

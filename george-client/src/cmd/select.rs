@@ -19,11 +19,11 @@ use george_comm::errors::{Errs, GeorgeResult};
 use george_comm::strings::StringHandler;
 use george_comm::Strings;
 
-use crate::cmd::{george_error, print_table, Config, Select};
+use crate::cmd::{george_error, print_table, Client, Select};
 
 impl Select {
     pub(crate) fn analysis(
-        config: &mut Config,
+        client: &mut Client,
         used: String,
         scan: String,
         vss: Vec<String>,
@@ -39,7 +39,7 @@ impl Select {
         }
         let view_name = vss[1].clone();
         let constraint_json_bytes = vss[2].as_bytes().to_vec();
-        let selected = config.disk.select(used, view_name, constraint_json_bytes)?;
+        let selected = client.disk.select(used, view_name, constraint_json_bytes)?;
         let mut table = vec![];
         for v8s in selected.values.to_vec() {
             table.push(vec![Strings::from_utf8(v8s)?

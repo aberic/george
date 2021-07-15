@@ -9,18 +9,20 @@ config:
     data_dir: server/src/test/server/george # DataFileName Lily服务数据默认存储目录名
     thread_count: 100 # ThreadCount 线程数
   server:
-    tls: true # 是否开启`TLS`，为空则默认`false`
-    tls_key: src/examples/server.key # 服务端`key`，开启`TLS`后生效
-    tls_cert: src/examples/server.pem # 服务端`cert`，开启`TLS`后生效
-    tls_client_root_cert: src/examples/server.pem # 客户端根证书，开启`TLS`后生效
-    #timeout: 30 # 为所有请求处理程序设置超时，单位secs
-    #concurrency_limit_per_connection: 32 # 设置应用于每个连接入站请求的并发限制
-    #tcp_nodelay: true # 为接受的连接设置`TCP_NODELAY`选项的值。默认启用
-    #tcp_keepalive: 60000 # 设置是否在接受的连接上启用`TCP keepalive`消息，单位ms。默认禁用
-    #http2_keepalive_interval: 5000 # 设置是否在接受的连接上启用HTTP2 Ping帧，单位ms
-    #http2_keepalive_timeout: 20000 # 设置接收keepalive ping应答的超时时间，单位ms
-    #initial_connection_window_size: 65535 # 设置HTTP2的最大连接级流控制，默认是65535字节
-    #initial_stream_window_size: 65535 # 设置HTTP2流级别的流量控制的初始窗口大小，默认是65535字节
-    #max_concurrent_streams: 1000000 # 限制对等端流的最大并发量，默认不限制
-    #max_frame_size: 100 # 设置HTTP2使用的最大帧大小
     port: 9219 # 服务端口号
+    tls:
+      rust_tls: false # 服务端是否用rustls做校验，默认openssl
+      key: george-rpc/src/example/server.key # 服务端`key`，开启`TLS`后生效
+      cert: george-rpc/src/example/server.pem # 服务端`cert`，开启`TLS`后生效
+      ca: george-rpc/src/examples/tls/ca.pem # 客户端根证书，开启`TLS`后生效
+#    http:
+#      timeout: 30 # 为所有请求处理程序设置超时，单位secs
+#      concurrency_limit_per_connection: 32 # 设置应用于每个连接入站请求的并发限制
+#      tcp_nodelay: true # 为接受的连接设置`TCP_NODELAY`选项的值。默认启用
+#      tcp_keepalive: 60000 # 设置是否在接受的连接上启用`TCP keepalive`消息，单位ms。默认禁用
+#      http2_keepalive_interval: 5000 # 设置是否在接受的连接上启用HTTP2 Ping帧，单位ms
+#      http2_keepalive_timeout: 20000 # 设置接收keepalive ping应答的超时时间，单位ms
+#      initial_connection_window_size: 65535 # 设置HTTP2的最大连接级流控制，默认是65535字节
+#      initial_stream_window_size: 65535 # 设置HTTP2流级别的流量控制的初始窗口大小，默认是65535字节
+#      max_concurrent_streams: 1000000 # 限制对等端流的最大并发量，默认不限制
+#      max_frame_size: 100 # 设置HTTP2使用的最大帧大小

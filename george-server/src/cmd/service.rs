@@ -77,22 +77,13 @@ async fn run(init: Init, task: Arc<Task>, addr: SocketAddr) -> GeorgeResult<()> 
     let mut server = tonic::transport::Server::builder();
     if init.tls() {
         let mut tls_config = ServerTlsConfig::new();
-        match init.server().unwrap().tls_key {
-            Some(res) => {
-                let key = Filer::read_bytes(res)?;
-                match init.server().unwrap().tls_cert {
-                    Some(res) => {
-                        let cert = Filer::read_bytes(res)?;
-                        let identity = Identity::from_pem(cert, key);
-                        tls_config = tls_config.identity(identity);
-                        log::info!("listener tls config identity success!");
-                    }
-                    _ => {}
-                }
-            }
-            _ => {}
-        }
-        match init.server().unwrap().tls_client_root_cert {
+        let key = Filer::read_bytes(init.tls_key_unwrap())?;
+        let cert = Filer::read_bytes(init.tls_cert_unwrap())?;
+        let identity = Identity::from_pem(cert, key);
+        tls_config = tls_config.identity(identity);
+        log::info!("listener tls config identity success!");
+
+        match init.tls_ca() {
             Some(res) => {
                 let client_ca = Filer::read_bytes(res)?;
                 let cert = Certificate::from_pem(client_ca);
@@ -104,34 +95,34 @@ async fn run(init: Init, task: Arc<Task>, addr: SocketAddr) -> GeorgeResult<()> 
         server = server.tls_config(tls_config).unwrap();
         log::info!("listener tls open!");
     }
-    if let Some(res) = init.server().unwrap().timeout {
+    if let Some(res) = init.timeout() {
         server.timeout(Duration::from_secs(res));
     }
-    if let Some(res) = init.server().unwrap().concurrency_limit_per_connection {
+    if let Some(res) = init.concurrency_limit_per_connection() {
         server = server.concurrency_limit_per_connection(res);
     }
-    if let Some(res) = init.server().unwrap().tcp_nodelay {
+    if let Some(res) = init.tcp_nodelay() {
         server = server.tcp_nodelay(res);
     }
-    if let Some(res) = init.server().unwrap().tcp_keepalive {
+    if let Some(res) = init.tcp_keepalive() {
         server = server.tcp_keepalive(Some(Duration::from_millis(res)));
     }
-    if let Some(res) = init.server().unwrap().http2_keepalive_interval {
+    if let Some(res) = init.http2_keepalive_interval() {
         server = server.http2_keepalive_interval(Some(Duration::from_millis(res)));
     }
-    if let Some(res) = init.server().unwrap().http2_keepalive_timeout {
+    if let Some(res) = init.http2_keepalive_timeout() {
         server = server.http2_keepalive_timeout(Some(Duration::from_millis(res)));
     }
-    if let Some(res) = init.server().unwrap().initial_connection_window_size {
+    if let Some(res) = init.initial_connection_window_size() {
         server = server.initial_connection_window_size(res);
     }
-    if let Some(res) = init.server().unwrap().initial_stream_window_size {
+    if let Some(res) = init.initial_stream_window_size() {
         server = server.initial_stream_window_size(res);
     }
-    if let Some(res) = init.server().unwrap().max_concurrent_streams {
+    if let Some(res) = init.max_concurrent_streams() {
         server = server.max_concurrent_streams(res);
     }
-    if let Some(res) = init.server().unwrap().max_frame_size {
+    if let Some(res) = init.max_frame_size() {
         server = server.max_frame_size(res);
     }
 
@@ -163,25 +154,32 @@ async fn run_with_openssl(init: Init, task: Arc<Task>, addr: SocketAddr) -> Geor
     let mut server = tonic::transport::Server::builder();
 
     let mut acceptor_builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
+    // match init.tls_ca() {
+    //     Some(res) => {
+    //         acceptor_builder.set_verify(SslVerifyMode::PEER);
+    //         acceptor_builder.set_ca_file(res).unwrap();
+    //     }
+    //     None => {}
+    // }
     acceptor_builder
-        .set_private_key_file(init.server_key_unwrap(), SslFiletype::PEM)
+        .set_private_key_file(init.tls_key_unwrap(), SslFiletype::PEM)
         .unwrap();
     acceptor_builder
-        .set_certificate_chain_file(init.server_cert_unwrap())
+        .set_certificate_chain_file(init.tls_cert_unwrap())
         .unwrap();
     acceptor_builder.check_private_key().unwrap();
     acceptor_builder.set_alpn_protos(ALPN_H2_WIRE).unwrap();
     acceptor_builder.set_alpn_select_callback(|_ssl, alpn| {
-        select_next_proto(ALPN_H2_WIRE, alpn).ok_or(AlpnError::NOACK)
+        select_next_proto(ALPN_H2_WIRE, alpn).ok_or(AlpnError::ALERT_FATAL)
     });
     let acceptor = acceptor_builder.build();
 
     let listener = TcpListener::bind(addr).await.unwrap();
     let listener = listener.into_std().unwrap();
-    let incoming = tokio_stream::wrappers::TcpListenerStream::new(
+    let tcp_listener_stream = tokio_stream::wrappers::TcpListenerStream::new(
         tokio::net::TcpListener::from_std(listener).unwrap(),
     );
-    let incoming = george_comm::openssl::tonic::incoming(incoming, acceptor);
+    let incoming = george_comm::openssl::tonic::incoming(tcp_listener_stream, acceptor);
 
     let database_service = DatabaseServiceServer::new(DatabaseServer::new(task.clone()));
     let disk_service = DiskServiceServer::new(DiskServer::new(task.clone()));

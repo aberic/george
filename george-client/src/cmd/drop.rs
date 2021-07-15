@@ -14,11 +14,11 @@
 
 use george_comm::errors::{Errs, GeorgeResult};
 
-use crate::cmd::{george_error, Config, Drop};
+use crate::cmd::{george_error, Client, Drop};
 
 impl Drop {
     pub(crate) fn analysis(
-        config: &mut Config,
+        client: &mut Client,
         used: String,
         scan: String,
         vss: Vec<String>,
@@ -34,7 +34,7 @@ impl Drop {
                     return Err(george_error(scan));
                 }
                 let name = vss[2].clone();
-                config.database.remove(name)
+                client.database.remove(name)
             }
             "page" => {
                 // drop page [page:string]
@@ -42,7 +42,7 @@ impl Drop {
                     return Err(george_error(scan));
                 }
                 let name = vss[2].clone();
-                config.page.remove(name)
+                client.page.remove(name)
             }
             "ledger" => Err(Errs::str("no support ledger now!")),
             "view" => {
@@ -56,7 +56,7 @@ impl Drop {
                     return Err(george_error(scan));
                 }
                 let name = vss[2].clone();
-                config.view.remove(used, name)
+                client.view.remove(used, name)
             }
             _ => Err(Errs::string(format!(
                 "command do not support prefix {} in {}",

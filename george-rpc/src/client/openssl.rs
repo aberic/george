@@ -98,7 +98,7 @@ impl TLS for Openssl {
         remote: &str,
         port: u16,
         ca_bytes: Vec<u8>,
-        _domain_name: impl Into<String>,
+        domain_name: impl Into<String>,
         cond_op: Option<RequestCond>,
     ) -> GeorgeResult<(Channel, Runtime)> {
         let tls = Openssl::new(remote, port)?;
@@ -112,8 +112,13 @@ impl TLS for Openssl {
         http.enforce_http(false);
         let mut https = HttpsConnector::with_connector(http, ssl).unwrap();
 
-        https.set_callback(|c, _| {
-            c.set_verify_hostname(false);
+        let domain_name = domain_name.into();
+        https.set_callback(move |c, _| {
+            if domain_name.is_empty() {
+                c.set_verify_hostname(false);
+            } else {
+                c.set_hostname(domain_name.as_str()).unwrap()
+            }
             Ok(())
         });
 
@@ -127,7 +132,7 @@ impl TLS for Openssl {
         key_bytes: Vec<u8>,
         cert_bytes: Vec<u8>,
         ca_bytes: Vec<u8>,
-        _domain_name: impl Into<String>,
+        domain_name: impl Into<String>,
         cond_op: Option<RequestCond>,
     ) -> GeorgeResult<(Channel, Runtime)> {
         let tls = Openssl::new(remote, port)?;
@@ -147,8 +152,13 @@ impl TLS for Openssl {
         http.enforce_http(false);
         let mut https = HttpsConnector::with_connector(http, ssl).unwrap();
 
-        https.set_callback(|c, _| {
-            c.set_verify_hostname(false);
+        let domain_name = domain_name.into();
+        https.set_callback(move |c, _| {
+            if domain_name.is_empty() {
+                c.set_verify_hostname(false);
+            } else {
+                c.set_hostname(domain_name.as_str()).unwrap()
+            }
             Ok(())
         });
 

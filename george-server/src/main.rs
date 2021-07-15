@@ -22,9 +22,9 @@ fn main() {
     // 测试时启用如下代码
     // Service::start("george-server/src/examples/conf.yaml")
     // Service::start("george-server/src/examples/conf_tls_cross.yaml")
-    Service::start("george-server/src/examples/conf_tls_terraform.yaml")
+    // Service::start("george-server/src/examples/conf_tls_terraform.yaml")
     // Service::start("george-server/src/examples/conf_tls_terraform_1.yaml")
     // Service::start("george-server/src/examples/conf_tls_1.yaml")
     // Service::start("george-server/src/examples/conf_pki_1.yaml")
-    // Service::start("george-server/src/examples/conf_tls.yaml")
+    Service::start("george-server/src/examples/conf_tls.yaml")
 }

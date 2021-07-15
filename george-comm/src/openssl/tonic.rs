@@ -44,7 +44,7 @@ pub const ALPN_H2_WIRE: &[u8] = b"\x02h2";
 /// `SslStream` type. This will take some acceptor and a
 /// stream of io types and accept connections.
 pub fn incoming<S>(
-    incoming: S,
+    tcp_listener_stream: S,
     acceptor: SslAcceptor,
 ) -> impl Stream<Item = Result<SslStream<S::Ok>, Error>>
 where
@@ -52,28 +52,74 @@ where
     S::Ok: AsyncRead + AsyncWrite + Send + Sync + Debug + Unpin + 'static,
     S::Error: Into<Error>,
 {
-    let mut incoming = incoming;
+    let mut tcp_listener_stream = tcp_listener_stream;
+
+    // try_stream! {
+    //     while let Some(stream) = tcp_listener_stream.try_next().await? {
+    //         let ssl = openssl::ssl::Ssl::new(acceptor.context()).unwrap();
+    //         let mut tls = super::tokio::SslStream::new(ssl, stream).unwrap();
+    //         Pin::new(&mut tls).accept().await?;
+    //
+    //         let ssl = SslStream {
+    //             inner: tls
+    //         };
+    //
+    //         yield ssl;
+    //     }
+    // }
 
     try_stream! {
-        while let Some(stream) = incoming.try_next().await? {
-            let ssl = openssl::ssl::Ssl::new(acceptor.context()).unwrap();
-            let mut tls = super::tokio::SslStream::new(ssl, stream).unwrap();
-            Pin::new(&mut tls).accept().await?;
+        while let Some(stream) = tcp_listener_stream.try_next().await? {
+            match openssl::ssl::Ssl::new(acceptor.context()) {
+                Ok(ssl) => {
+                    if ssl.verify_result() != openssl::x509::X509VerifyResult::OK {
+                        println!("ssl verify failed!")
+                    }
+                    match super::tokio::SslStream::new(ssl, stream) {
+                        Ok(mut tls) => {
+                            Pin::new(&mut tls).accept().await?;
 
-            let ssl = SslStream {
-                inner: tls
-            };
+                            let ssl = SslStream {
+                                inner: tls
+                            };
 
-            yield ssl;
+                            yield ssl;
+                        },
+                        Err(err) => println!("error is {}", err)
+                    }
+                },
+                Err(err) => println!("error is {}", err)
+            }
         }
     }
 
-    // while let Some(stream) = incoming.try_next().await? {
+    // while let Some(stream) = tcp_listener_stream.try_next().await? {
     //     // let tls = tokio_openssl::accept(&acceptor, stream).await?;
     //
+    //     match openssl::ssl::Ssl::new(acceptor.context()) {
+    //         Ok(ssl) => {
+    //             if ssl.verify_result() != openssl::x509::X509VerifyResult::OK {
+    //                 println!("ssl verify failed!")
+    //             }
+    //             match super::tokio::SslStream::new(ssl, stream) {
+    //                 Ok(mut tls) => {
+    //                     Pin::new(&mut tls).accept().await?;
+    //
+    //                     let ssl = SslStream {
+    //                         inner: res
+    //                     };
+    //
+    //                     yield ssl;
+    //                 },
+    //                 Err(err) => println!("error is {}", err)
+    //             }
+    //         },
+    //         Err(err) => println!("error is {}", err)
+    //     }
+    //
     //     let ssl = openssl::ssl::Ssl::new(acceptor.context()).unwrap();
-    //     let mut tls = super::tokio::SslStream::new(ssl, stream).unwrap();
-    //     Pin::new(&mut tls).accept().await?;
+    //     let tls = super::tokio::SslStream::new(ssl, stream).unwrap();
+    //     Pin::new(&tls).accept().await?;
     //
     //     let ssl = SslStream {
     //         inner: tls

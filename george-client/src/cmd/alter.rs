@@ -14,11 +14,11 @@
 
 use george_comm::errors::{Errs, GeorgeResult};
 
-use crate::cmd::{george_error, Alter, Config};
+use crate::cmd::{george_error, Alter, Client};
 
 impl Alter {
     pub(crate) fn analysis(
-        config: &mut Config,
+        client: &mut Client,
         used: String,
         scan: String,
         vss: Vec<String>,
@@ -38,7 +38,7 @@ impl Alter {
                 }
                 let name = vss[2].clone();
                 let name_new = vss[3].clone();
-                config.database.modify(name, comment_new, name_new)
+                client.database.modify(name, comment_new, name_new)
             }
             "page" => {
                 // alter page [page:string] [page:string]
@@ -47,7 +47,7 @@ impl Alter {
                 }
                 let name = vss[2].clone();
                 let name_new = vss[3].clone();
-                config.page.modify(name, name_new)
+                client.page.modify(name, name_new)
             }
             "ledger" => Err(Errs::str("no support ledger now!")),
             "view" => {
@@ -68,7 +68,7 @@ impl Alter {
                 }
                 let name = vss[2].clone();
                 let name_new = vss[3].clone();
-                config.view.modify(used, name, name_new, comment)
+                client.view.modify(used, name, name_new, comment)
             }
             "archive" => {
                 // alter archive [view:string] [filepath:String]
@@ -82,7 +82,7 @@ impl Alter {
                 }
                 let name = vss[2].clone();
                 let filepath = vss[3].clone();
-                config.view.archive(used, name, filepath)
+                client.view.archive(used, name, filepath)
             }
             _ => Err(Errs::string(format!(
                 "command do not support prefix {} in {}",

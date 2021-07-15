@@ -1,10 +1,11 @@
 config:
-  client:
-    tls: true # 是否开启`TLS`，为空则默认`false`
+  tls:
     rust_tls: false # 客户端是否用rustls做校验，默认openssl
-    tls_key: george-rpc/src/example/server.key # 客户端`key`，开启`TLS`后生效
-    tls_cert: george-rpc/src/example/server.pem # 客户端`cert`，开启`TLS`后生效
-    tls_server_root_cert: george-rpc/src/examples/tls/ca.pem # 客户端根证书，开启`TLS`后生效
+    key: george-rpc/src/example/server.key # 客户端`key`，开启`TLS`后生效
+    cert: george-rpc/src/example/server.pem # 客户端`cert`，开启`TLS`后生效
+    ca: george-rpc/src/examples/tls/ca.pem # 服务端根证书，开启`TLS`后生效
+    domain: example.com # 服务端域名
+  http:
     timeout: 30 # 为所有请求处理程序设置超时，单位secs
     concurrency_limit: 32 # 设置应用于每个连接入站请求的并发限制
     tcp_nodelay: true # 为接受的连接设置`TCP_NODELAY`选项的值。默认启用

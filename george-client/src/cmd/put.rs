@@ -14,11 +14,11 @@
 
 use george_comm::errors::{Errs, GeorgeResult};
 
-use crate::cmd::{george_error, Config, Put};
+use crate::cmd::{george_error, Client, Put};
 
 impl Put {
     pub(crate) fn analysis(
-        config: &mut Config,
+        client: &mut Client,
         disk: bool,
         used: String,
         scan: String,
@@ -42,7 +42,7 @@ impl Put {
             let view_name = vss[1].clone();
             let key = vss[2].clone();
             let value = vss[3].as_bytes().to_vec();
-            config.disk.put(used, view_name, key, value)
+            client.disk.put(used, view_name, key, value)
         } else {
             // put [key:string] [value:string]
             // put [key:string] [value:string]
@@ -52,9 +52,9 @@ impl Put {
             let key = vss[1].clone();
             let value = vss[2].as_bytes().to_vec();
             if used.is_empty() {
-                config.memory.put(key, value)
+                client.memory.put(key, value)
             } else {
-                config.memory.put_by_page(used, key, value)
+                client.memory.put_by_page(used, key, value)
             }
         }
     }

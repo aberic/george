@@ -18,11 +18,11 @@ use cli_table::{Cell, Style, Table};
 use george_comm::errors::{Errs, GeorgeResult};
 use george_rpc::tools::Trans;
 
-use crate::cmd::{george_error, print_table, Config, Show};
+use crate::cmd::{george_error, print_table, Client, Show};
 
 impl Show {
     pub(crate) fn analysis(
-        config: &mut Config,
+        client: &mut Client,
         disk: bool,
         used: String,
         scan: String,
@@ -40,7 +40,7 @@ impl Show {
         match intent {
             "databases" => {
                 // show databases;
-                let list = config.database.list()?;
+                let list = client.database.list()?;
                 let mut table = vec![];
                 for db in list.iter() {
                     table.push(vec![
@@ -65,7 +65,7 @@ impl Show {
             }
             "pages" => {
                 // show pages;
-                let list = config.page.list()?;
+                let list = client.page.list()?;
                 let mut table = vec![];
                 for page in list.iter() {
                     table.push(vec![
@@ -99,7 +99,7 @@ impl Show {
                         "database name not defined, please use `use [database/page/ledger] [database]` first!",
                     ));
                 }
-                let list = config.view.list(used)?;
+                let list = client.view.list(used)?;
                 let mut table = vec![];
                 for view in list.iter() {
                     table.push(vec![
@@ -134,7 +134,7 @@ impl Show {
                 }
                 let name = vss[2].clone();
                 let version = vss[3].parse::<u32>().unwrap();
-                let record = config.view.record(used, name, version)?;
+                let record = client.view.record(used, name, version)?;
                 let table = vec![vec![
                     record.filepath.cell(),
                     Trans::grpc_timestamp_2_string(record.time.as_ref().unwrap().seconds).cell(),
@@ -160,7 +160,7 @@ impl Show {
                     return Err(george_error(scan));
                 }
                 let name = vss[2].clone();
-                let records = config.view.records(used, name)?;
+                let records = client.view.records(used, name)?;
                 let mut table = vec![];
                 for record in records {
                     table.push(vec![
@@ -196,7 +196,7 @@ impl Show {
                 }
                 let view_name = vss[3].clone();
                 let mut view_exist = false;
-                match config.view.list(used.clone()) {
+                match client.view.list(used.clone()) {
                     Ok(list) => {
                         for view in list.iter() {
                             if view_name.eq(view.name.as_str()) {
@@ -218,7 +218,7 @@ impl Show {
                         view_name, used
                     )));
                 }
-                let list = config.index.list(used, view_name)?;
+                let list = client.index.list(used, view_name)?;
                 let mut table = vec![];
                 for index in list.iter() {
                     table.push(vec![

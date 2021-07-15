@@ -16,11 +16,11 @@ use george_comm::errors::{Errs, GeorgeResult};
 use george_comm::strings::StringHandler;
 use george_comm::Strings;
 
-use crate::cmd::{george_error, Config, Get};
+use crate::cmd::{george_error, Client, Get};
 
 impl Get {
     pub(crate) fn analysis(
-        config: &mut Config,
+        client: &mut Client,
         disk: bool,
         used: String,
         scan: String,
@@ -43,14 +43,14 @@ impl Get {
             if len == 3 {
                 let view_name = vss[1].clone();
                 let key = vss[2].clone();
-                let value = config.disk.get(used, view_name, key)?;
+                let value = client.disk.get(used, view_name, key)?;
                 println!("{}", Strings::from_utf8(value)?);
                 Ok(())
             } else if len == 4 {
                 let view_name = vss[1].clone();
                 let key = vss[2].clone();
                 let index_name = vss[3].clone();
-                let value = config
+                let value = client
                     .disk
                     .fetch_by_index(used, view_name, index_name, key)?;
                 println!("{}", Strings::from_utf8(value)?);
@@ -66,10 +66,10 @@ impl Get {
             }
             let key = vss[1].clone();
             if used.is_empty() {
-                let value = config.memory.get(key)?;
+                let value = client.memory.get(key)?;
                 println!("{}", Strings::from_utf8(value)?);
             } else {
-                let value = config.memory.fetch_by_page(used, key)?;
+                let value = client.memory.fetch_by_page(used, key)?;
                 println!("{}", Strings::from_utf8(value)?);
             }
             Ok(())

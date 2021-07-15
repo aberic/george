@@ -12,8 +12,9 @@
  * limitations under the License.
  */
 
-use crate::cmd::Options;
 use clap::Arg;
+
+use crate::cmd::Options;
 
 impl Options {
     pub(crate) fn remote() -> Arg<'static, 'static> {
@@ -30,40 +31,6 @@ impl Options {
             .takes_value(true)
     }
 
-    pub(crate) fn tls() -> Arg<'static, 'static> {
-        Arg::with_name("tls")
-            .short("t")
-            .help("remote host tls")
-            .takes_value(true)
-    }
-
-    pub(crate) fn key() -> Arg<'static, 'static> {
-        Arg::with_name("key")
-            .short("k")
-            .help("remote host key")
-            .takes_value(true)
-    }
-
-    pub(crate) fn cert() -> Arg<'static, 'static> {
-        Arg::with_name("cert")
-            .short("c")
-            .help("remote host cert")
-            .takes_value(true)
-    }
-
-    pub(crate) fn ca() -> Arg<'static, 'static> {
-        Arg::with_name("ca")
-            .help("remote host ca")
-            .takes_value(true)
-    }
-
-    pub(crate) fn domain() -> Arg<'static, 'static> {
-        Arg::with_name("domain")
-            .short("d")
-            .help("remote host domain")
-            .takes_value(true)
-    }
-
     pub(crate) fn user() -> Arg<'static, 'static> {
         Arg::with_name("user")
             .short("u")
@@ -75,6 +42,13 @@ impl Options {
         Arg::with_name("pass")
             .short("p")
             .help("remote host pass")
+            .takes_value(true)
+    }
+
+    pub(crate) fn config() -> Arg<'static, 'static> {
+        Arg::with_name("config-path")
+            .short("c")
+            .help("client init config filepath")
             .takes_value(true)
     }
 }

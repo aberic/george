@@ -95,16 +95,36 @@ pub struct ConfigDB {
 /// 该配置信息可通过指定路径的文件中进行读取，文件格式支持yaml
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct ConfigServer {
-    /// 是否开启`TLS`，默认`false`
-    pub tls: Option<bool>,
+    /// 服务端口号
+    pub port: Option<u16>,
+    /// `TLS`配置
+    pub tls: Option<ConfigServerTLS>,
+    /// `HTTP`配置
+    pub http: Option<ConfigServerHttp>,
+}
+
+/// 服务配置信息，优先读取环境变量中的结果<p>
+///
+/// 该配置信息可通过指定路径的文件中进行读取，文件格式支持yaml
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+pub struct ConfigServerTLS {
     /// 服务端是否用`rustls`做校验，默认`openssl`，即`false`
     pub rust_tls: Option<bool>,
     /// 服务端`key`，开启`TLS`后生效
-    pub tls_key: Option<String>,
+    pub key: Option<String>,
     /// 服务端`cert`，开启`TLS`后生效
-    pub tls_cert: Option<String>,
+    pub cert: Option<String>,
     /// 客户端根证书，开启`TLS`后生效
-    pub tls_client_root_cert: Option<String>,
+    pub ca: Option<String>,
+    /// 服务端域名，开启`TLS`后生效
+    pub domain: Option<String>,
+}
+
+/// 服务配置信息，优先读取环境变量中的结果<p>
+///
+/// 该配置信息可通过指定路径的文件中进行读取，文件格式支持yaml
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+pub struct ConfigServerHttp {
     /// 为所有请求处理程序设置超时，单位secs
     pub timeout: Option<u64>,
     /// 设置应用于每个连接入站请求的并发限制
@@ -146,6 +166,4 @@ pub struct ConfigServer {
     /// 设置HTTP2使用的最大帧大小。
     /// 如果未设置，将默认从底层传输。
     pub max_frame_size: Option<u32>,
-    /// 服务端口号
-    pub port: Option<u16>,
 }

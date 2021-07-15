@@ -17,11 +17,11 @@ use cli_table::{Cell, Style, Table};
 
 use george_comm::errors::{Errs, GeorgeResult};
 
-use crate::cmd::{george_error, print_table, Config, Delete};
+use crate::cmd::{george_error, print_table, Client, Delete};
 
 impl Delete {
     pub(crate) fn analysis(
-        config: &mut Config,
+        client: &mut Client,
         used: String,
         scan: String,
         vss: Vec<String>,
@@ -37,7 +37,7 @@ impl Delete {
         }
         let view_name = vss[1].clone();
         let constraint_json_bytes = vss[2].as_bytes().to_vec();
-        let deleted = config.disk.delete(used, view_name, constraint_json_bytes)?;
+        let deleted = client.disk.delete(used, view_name, constraint_json_bytes)?;
         let table = vec![vec![
             deleted.total.cell(),
             deleted.count.cell(),

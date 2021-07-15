@@ -14,11 +14,11 @@
 
 use george_comm::errors::{Errs, GeorgeResult};
 
-use crate::cmd::{george_error, Config, Remove};
+use crate::cmd::{george_error, Client, Remove};
 
 impl Remove {
     pub(crate) fn analysis(
-        config: &mut Config,
+        client: &mut Client,
         disk: bool,
         used: String,
         scan: String,
@@ -41,7 +41,7 @@ impl Remove {
             }
             let view_name = vss[1].clone();
             let key = vss[2].clone();
-            config.disk.remove(used, view_name, key)
+            client.disk.remove(used, view_name, key)
         } else {
             // remove [key:string]
             // remove [key:string]
@@ -50,9 +50,9 @@ impl Remove {
             }
             let key = vss[1].clone();
             if used.is_empty() {
-                config.memory.remove(key)
+                client.memory.remove(key)
             } else {
-                config.memory.remove_by_page(used, key)
+                client.memory.remove_by_page(used, key)
             }
         }
     }
