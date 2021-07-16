@@ -973,45 +973,45 @@ mod test {
                 );
             }
 
-            // #[test]
-            // fn select_delete_increment() {
-            //     let task = Task::default().unwrap();
-            //     let database_name = "database_select_base_test";
-            //     let view_name = "view_base_test";
-            //     let cond_str0 = r#"
-            //                       {
-            //                         "Conditions":[
-            //                             {
-            //                                 "Param":"george_db_index_increment",
-            //                                 "Cond":"ge",
-            //                                 "Value":4990
-            //                             },
-            //                             {
-            //                                 "Param":"age",
-            //                                 "Cond":"ge",
-            //                                 "Value":4990
-            //                             },
-            //                             {
-            //                                 "Param":"age",
-            //                                 "Cond":"le",
-            //                                 "Value":9010
-            //                             }
-            //                         ],
-            //                         "Sort":{
-            //                             "Param":"height",
-            //                             "Asc":true
-            //                         },
-            //                         "Skip":10,
-            //                         "Limit":100
-            //                       }"#;
-            //     delete(
-            //         task.clone(),
-            //         database_name,
-            //         view_name,
-            //         cond_str0.as_bytes().to_vec(),
-            //         0,
-            //     );
-            // }
+            #[test]
+            fn select_delete_increment() {
+                let task = Task::default().unwrap();
+                let database_name = "database_select_base_test";
+                let view_name = "view_base_test";
+                let cond_str0 = r#"
+                                  {
+                                    "Conditions":[
+                                        {
+                                            "Param":"george_db_index_increment",
+                                            "Cond":"ge",
+                                            "Value":4990
+                                        },
+                                        {
+                                            "Param":"age",
+                                            "Cond":"ge",
+                                            "Value":4990
+                                        },
+                                        {
+                                            "Param":"age",
+                                            "Cond":"le",
+                                            "Value":9010
+                                        }
+                                    ],
+                                    "Sort":{
+                                        "Param":"height",
+                                        "Asc":true
+                                    },
+                                    "Skip":10,
+                                    "Limit":100
+                                  }"#;
+                delete(
+                    task.clone(),
+                    database_name,
+                    view_name,
+                    cond_str0.as_bytes().to_vec(),
+                    0,
+                );
+            }
         }
     }
 

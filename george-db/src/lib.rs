@@ -12,6 +12,27 @@
  * limitations under the License.
  */
 
+//! 一个数据库底层实现，并致力于做到与数据大小无关性能平衡的、支持文件写准确预执行的、通用开源的框架。<p>
+//!
+//! [`george-db`]提供外部交互接口[`TMaster`]，由[`Task`]暴露使用，内部交付[`Master`]进行具体实现，同时
+//! 也会提供诸如[`Database`]、[`Page`]、[`View`]、[`TIndex`]、[`Engine`]、[`KeyType`]和[`Expectation`]
+//! 等结构体或接口。
+//!
+//! # 数据库底层
+//! `george`底层基于`B+Tree`和`递增链式结构`实现。<p>
+//! 无序数据入库使用`B+Tree`索引，支持64位，数据的增删查改效率与数据体量关联性不大。<p>
+//! 有序或依赖底层自增数据入库使用`递增链式结构`实现，支持64位，存在非空占位的情况，非顺序递增正数`key`避免使用。
+//!
+//! # 存储支持
+//! `george`支持磁盘存储和内存存储两种方式，磁盘存储支持富查询，参考[`Constraint`]实现。内存存储仅使用`B+Tree`索引，在
+//! 计划中会实现富查询，并实现与磁盘存储组合富查询，以实现效率最大化。
+//!
+//! # 案例集
+//! 相关案例可以参考[`george-examples`]
+//!
+//! # 应用方法
+//! 相关应用可以参考[`george-server`]和[`george-client`]
+
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 

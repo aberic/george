@@ -4,6 +4,7 @@ members = [
     "george-comm",
     "george-db",
     "george-deploy",
+    "george-examples",
     "george-ge",
     "george-log",
     "george-rpc",
